@@ -1,16 +1,11 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { Button, HStack } from "@chakra-ui/react"
 
-
-function App() {
-  const [count, setCount] = useState(0)
-
+const Demo = () => {
   return (
-    <>
-      <button>Hello</button>
-    </>
+    <HStack>
+      <Button>Click me</Button>
+      <Button>Click me</Button>
+    </HStack>
   )
 }
-
-export default App
+export default Demo
