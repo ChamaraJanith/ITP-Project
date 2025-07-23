@@ -54,10 +54,11 @@ function Chatbot() {
 
   return (
     <div className={`container ${showChatbot ? "show-chatbot" : ''}`}>
-      <button onClick={()=> setShowChatbot(prev => !prev)} id="chatbot-toggler">
-        <span className="material-symbols-rounded">mode_comment</span>
-         <span className="material-symbols-rounded">close</span>
-      </button>
+      <button onClick={() => setShowChatbot(prev => !prev)} id="chatbot-toggler">
+  <img src="./" alt="Chat" width="20" height="20" />
+  <img src="/icons/close-icon.png" alt="Close" width="20" height="20" />
+</button>
+
       <div className="chatbot-popup">
         {/* Chatbot Header */}
         <div className="chatbot-header">

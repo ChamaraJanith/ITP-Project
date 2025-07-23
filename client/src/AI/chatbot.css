@@ -19,7 +19,7 @@ body {
   right: 35px;
   width: 50px;
   height: 50px;
-  background: #6D4FC2;
+  background: #F97316; /* Changed from purple to orange */
   color: #FFF;
   border-radius: 50%;
   border: none;
@@ -27,8 +27,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
- transition: all 0.2s ease;
-  }
+  transition: all 0.2s ease;
+}
 
 #chatbot-toggler span {
   position: absolute;
@@ -70,7 +70,6 @@ body {
   opacity: 1;
   transform:scale(1);
   pointer-events: auto;
- 
 }
 
 /* Header styling */
@@ -79,7 +78,7 @@ body {
   padding: 15px 22px;
   align-items: center;
   justify-content: space-between;
-  background: #6D4FC2;
+  background: #F97316; /* Changed from purple to orange */
   border-top-left-radius: 15px; /* Match parent radius */
   border-top-right-radius: 15px; /* Match parent radius */
 }
@@ -94,7 +93,7 @@ body {
   width: 35px;
   height: 35px;
   padding: 6px;
-  fill: #6D4FC2;
+  fill: #F97316; /* Changed from purple to orange */
   flex-shrink: 0;
   background: #FFF;
   border-radius: 50%;
@@ -135,7 +134,7 @@ body {
   padding: 25px 22px;
   background: #FFF; 
   scrollbar-width: thin;
-  scrollbar-color: #DDD3F9 transparent;/* Ensure background covers the area */
+  scrollbar-color: #FDBA74 transparent; /* Changed from purple to light orange */
 }
 
 /* Message styling */
@@ -156,7 +155,7 @@ body {
   fill: #FFF;
   align-self: flex-end;
   flex-shrink: 0;
-  background: #6D4FC2;
+  background: #F97316; /* Changed from purple to orange */
   margin-bottom: 2px;
   border-radius: 50%;
 }
@@ -170,7 +169,7 @@ body {
 }
 
 .chat-body .bot-message .message-text {
-  background: #F6F2FF;
+  background: #FED7AA; /* Changed from purple light to orange light */
   border-radius: 13px 13px 13px 3px;
 }
 
@@ -180,7 +179,7 @@ body {
 }
 
 .chat-body .user-message .message-text {
-  background: #6D4FC2;
+  background: #F97316; /* Changed from purple to orange */
   color: #FFF;
   border-radius: 13px 13px 3px 13px;
 }
@@ -213,11 +212,11 @@ body {
 }
 
 .message-input:focus {
-  border-color: #6D4FC2;
+  border-color: #F97316; /* Changed from purple to orange */
 }
 
 .message-input:invalid {
-  border-color: #f4a261;
+  border-color: #EA580C; /* Changed to darker orange for error state */
   background-color: #fff;
 }
 
@@ -226,7 +225,7 @@ body {
   position: absolute;
   top: -25px;
   left: 10px;
-  color: #f4a261;
+  color: #EA580C; /* Changed to darker orange */
   font-size: 0.8rem;
   background: #fff;
   padding: 2px 5px;
@@ -238,8 +237,8 @@ body {
   height: 40px;
   border: none;
   outline: none;
-  color: #6D4FC2;
-  background: #F6F2FF;
+  color: #F97316; /* Changed from purple to orange */
+  background: #FED7AA; /* Changed from purple light to orange light */
   border-radius: 50%;
   font-size: 1.5rem;
   cursor: pointer;
@@ -247,7 +246,7 @@ body {
 }
 
 .chat-form button:hover {
-  background: #E8E3F1;
+  background: #FB923C; /* Changed from purple to darker orange for hover */
 }
 
 /* Hide button when input is invalid */
