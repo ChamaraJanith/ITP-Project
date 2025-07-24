@@ -265,9 +265,9 @@ function MobileMenu({ isOpen, onClose }) {
                   👨‍⚕️ Login
                 </Button>
               </Link>
-              <Link to="/specialties" onClick={onClose}>
+              <Link to="/register" onClick={onClose}>
                 <Button variant="ghost" justifyContent="flex-start" color="teal.700" w="100%">
-                  🩺 Specialties
+                  🩺 Register
                 </Button>
               </Link>
               <Link to="/hospitals" onClick={onClose}>
@@ -367,11 +367,11 @@ function MedicalNavbar() {
                   </Box>
                 </Button>
               </Link>
-              <Link to="/specialties">
+              <Link to="/register">
                 <Button variant="ghost" size="sm" color="teal.700" _hover={{ bg: "teal.50" }}>
                   <Box display="flex" alignItems="center" gap={2}>
                     <FaStethoscope />
-                    <Text>Specialties</Text>
+                    <Text>Register</Text>
                   </Box>
                 </Button>
               </Link>
