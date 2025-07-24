@@ -116,7 +116,7 @@ function AdvancedSearchBar({ isMobile = false }) {
   };
 
   return (
-    <Box position="relative" w={isMobile ? "100%" : { base: "200px", md: "300px", lg: "400px" }}>
+    <Box position="relative" w={isMobile ? "100%" : { base: "100px", md: "300px", lg: "400px" }}>
       <form onSubmit={handleSearch}>
         <Box position="relative">
           <Input
@@ -245,7 +245,7 @@ function MobileMenu({ isOpen, onClose }) {
             {/* Mobile Search */}
             <Box>
               <Text fontSize="sm" fontWeight="semibold" mb={2} color="teal.600">
-                Find Doctors
+                Login
               </Text>
               <AdvancedSearchBar isMobile={true} />
             </Box>
@@ -258,10 +258,11 @@ function MobileMenu({ isOpen, onClose }) {
                 <Button variant="ghost" justifyContent="flex-start" color="teal.700" w="100%">
                   🏠 Home
                 </Button>
+
               </Link>
-              <Link to="/doctors" onClick={onClose}>
+              <Link to="/login" onClick={onClose}>
                 <Button variant="ghost" justifyContent="flex-start" color="teal.700" w="100%">
-                  👨‍⚕️ Find Doctors
+                  👨‍⚕️ Login
                 </Button>
               </Link>
               <Link to="/specialties" onClick={onClose}>
@@ -280,6 +281,7 @@ function MobileMenu({ isOpen, onClose }) {
                 </Button>
               </Link>
             </VStack>
+            
 
             <Separator />
 
@@ -357,11 +359,11 @@ function MedicalNavbar() {
 
             {/* Desktop Navigation Links */}
             <HStack spacing={6} display={{ base: "none", lg: "flex" }}>
-              <Link to="/doctors">
+              <Link to="/login">
                 <Button variant="ghost" size="sm" color="teal.700" _hover={{ bg: "teal.50" }}>
                   <Box display="flex" alignItems="center" gap={2}>
                     <FaUserMd />
-                    <Text>Find Doctors</Text>
+                    <Text>Login</Text>
                   </Box>
                 </Button>
               </Link>
