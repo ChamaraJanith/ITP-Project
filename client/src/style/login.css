@@ -1,0 +1,14 @@
+/* (login.css, optional) */
+body {
+  background: linear-gradient(120deg, #e0eafc, #cfdef3 65%);
+}
+.card {
+  border-radius: 18px;
+}
+.btn-primary {
+  background: #007bff;
+  border: none;
+}
+.btn-primary:hover {
+  background: #0056b3;
+}
