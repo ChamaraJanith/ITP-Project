@@ -1,10 +1,11 @@
 import { Box } from "@chakra-ui/react"
 import { Routes, Route } from "react-router-dom"
 import Home from "./pages/Home.jsx"
-import CreatePage from "./pages/CreatePage.jsx"
+import CreatePage from "./pages/Register.jsx"
 import Navbar from "./component/Navbar.jsx"   
 import Chatbot from "./AI/Chatbot.jsx"
 import Login from "./pages/Login.jsx"
+import Register from "./pages/Register.jsx"
 
 const Demo = () => {
   return (
@@ -18,8 +19,8 @@ const Demo = () => {
       
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/create" element={<CreatePage />} />
         <Route path="/login" element={<Login/>}/>
+        <Route path="/register" element={<Register />} />
       </Routes>
     </Box>
 
