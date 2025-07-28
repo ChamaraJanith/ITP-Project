@@ -9,7 +9,7 @@ import connectDB from "./config/mongodb.js"; // Add ".js" for ES Module import
 const app = express();
 const PORT = process.env.PORT || 7000;
 
-// FIX: Call the connectDB function to actually initiate the MongoDB connection
+// Call the connectDB function to actually initiate the MongoDB connection
 connectDB();
 
 // Middleware to parse incoming JSON requests and cookies, making data available as req.body
