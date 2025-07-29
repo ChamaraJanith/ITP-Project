@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import UserModel from "../model/userModel.js";
 import nodemailer from "nodemailer";
 import 'dotenv/config';
+import transporter from "../config/nodemailer.js";
 
 // --- Set up transporter (Gmail example) ---
 // const transporter = nodemailer.createTransport({
@@ -41,15 +42,15 @@ export const register = async (req, res) => {
       path: '/',
     });
 
-    // // Send welcome email
-    // const mailOptions = {
-    //   from: process.env.SENDER_EMAIL,
-    //   to: email,
-    //   subject: "Welcome to Our Service",
-    //   text: `Hello ${name},\n\nThank you for registering with us! We're excited to have you on board.\n\nBest regards,\nYour Team`
-    // };
+    // Send welcome email
+    const mailOptions = {
+      from: process.env.SENDER_EMAIL,
+      to: email,
+      subject: 'Welcome to Our Service',
+      text: `Hello ${name},\n\nThank you for registering with us! We're excited to have you on board.\n\nBest regards,\nYour Team`
+    };
 
-    // await transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
 
     return res.status(201).json({
       success: true,
@@ -60,6 +61,12 @@ export const register = async (req, res) => {
         email: user.email
       }
     });
+
+    transporter.verify(function(error, success) {
+   if (error) console.error(error);
+   else console.log('Server is ready to take messages');
+});
+
 
   } catch (error) {
     console.error("Error in register:", error);
