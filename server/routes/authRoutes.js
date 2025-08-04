@@ -1,18 +1,26 @@
 import express from 'express';
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { register, login, logout, sendVerifyOtp, verifyEmail, isAuthenticated} from '../controller/authController.js';
+import {
+  register,
+  login,
+  logout,
+  sendVerifyOtp,
+  verifyEmail,
+  isAuthenticated,
+  sendResetOtp,
+  resetPassword
+} from '../controller/authController.js';
 import userAuth from '../middleware/userAuth.js';
-
 
 const authRouter = express.Router();
 
 authRouter.post('/register', register);
 authRouter.post('/login', login);
 authRouter.post('/logout', logout);
-authRouter.post('/sendverifyotp', userAuth,sendVerifyOtp);
-authRouter.post('/verifyaccount', userAuth,verifyEmail);
-authRouter.post('/isAuth', userAuth,isAuthenticated);
+// Important: verify routes should use the authenticated user's ID from the middleware, not from body!
+authRouter.post('/sendverifyotp', userAuth, sendVerifyOtp);
+authRouter.post('/verifyaccount', userAuth, verifyEmail);
+authRouter.post('/isAuth', userAuth, isAuthenticated);
+authRouter.post('/sendResetOtp', sendResetOtp); // Fixed extra space typo
+authRouter.post('/resetPassword', resetPassword);
 
- export default authRouter;
+export default authRouter;
