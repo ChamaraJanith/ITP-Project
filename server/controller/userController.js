@@ -1,8 +1,6 @@
 import UserModel from "../model/userModel.js";
 
 
-import UserModel from "../model/userModel.js";
-
 export const getUserData = async (req, res) => {
   try {
     // Use user ID from middleware (req.user.id)
