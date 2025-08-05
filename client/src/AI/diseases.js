@@ -1,23 +1,40 @@
-import express from "express";
-const router = express.Router();
-
-const sicknessData = [
-  // ... (your full array as posted above) ...
-  // Only a partial shown here for context. Use your entire array!
-  {
-    name: "Common Cold",
-    symptoms: ["runny nose", "sneezing", "cough", "sore throat", "mild fever", "fatigue"],
-    treatment: ["Rest 8-10 hours daily", "Drink 8-10 glasses of water", "Use humidifier", "Gargle salt water 3x daily"],
-    healthyHabits: [
-      "Wash hands for 20 seconds, 8-10 times daily",
-      "Take 1000mg Vitamin C daily",
-      "Sleep 7-9 hours nightly",
-      "Exercise 150 minutes moderate activity weekly",
-      "Eat 5-9 servings fruits/vegetables daily",
-      "Maintain humidity levels 40-60% at home"
-    ]
+export const companyInfo = {
+  name: "NovaTech Solutions",
+  tagline: "Innovating Your Digital Future",
+  description: "NovaTech Solutions is a leading provider of innovative software solutions, helping businesses transform digitally through cutting-edge technologies and custom-built platforms.",
+  founded: "2015",
+  employees: 120,
+  headquarters: {
+    city: "San Francisco",
+    state: "California",
+    country: "USA"
   },
-  
+  services: [
+    "Web Development",
+    "Mobile App Development",
+    "AI & Machine Learning Solutions",
+    "Cloud Computing",
+    "UI/UX Design",
+    "IT Consulting"
+  ],
+  contact: {
+    phone: "+1 (800) 123-4567",
+    email: "info@novatechsolutions.com",
+    address: "123 Market Street, San Francisco, CA 94103"
+  },
+  socialMedia: {
+    linkedin: "https://www.linkedin.com/company/novatechsolutions",
+    twitter: "https://twitter.com/novatechsol",
+    facebook: "https://facebook.com/novatechsolutions"
+  },
+  website: "https://www.novatechsolutions.com",
+  mission: "To empower businesses with technology-driven solutions that enhance efficiency, productivity, and growth.",
+  vision: "To be the most trusted technology partner for businesses worldwide.",
+  values: ["Innovation", "Integrity", "Customer-Centricity", "Excellence", "Collaboration"]
+};
+
+export const diseasesData = [
+  // Respiratory System
   {
     name: "Common Cold",
     symptoms: ["runny nose", "sneezing", "cough", "sore throat", "mild fever", "fatigue"],
@@ -585,87 +602,3 @@ const sicknessData = [
     ]
   }
 ];
-
-
-
-function findRelevantDiseases(userText) {
-  if (!userText || typeof userText !== "string" || !userText.trim()) return [];
-
-  const inputText = userText.toLowerCase().trim();
-
-  // 1. Try direct disease name match (partial or complete)
-  const directMatch = sicknessData.find(dis =>
-    dis.name.toLowerCase() === inputText ||
-    inputText.includes(dis.name.toLowerCase()) ||
-    dis.name.toLowerCase().includes(inputText)
-  );
-  if (directMatch) return [directMatch];
-
-  // 2. Otherwise, treat input as symptoms. Build unique symptom words.
-  const inputSymptoms = Array.from(new Set(inputText.split(/[\s,;.]+/).filter(w => w.length > 2)));
-
-  const scored = sicknessData.map(dis => {
-    const diseaseSymptoms = dis.symptoms.map(s => s.toLowerCase());
-    // Count matching symptom words from user input
-    let matchCount = 0;
-    for (const userSymptom of inputSymptoms) {
-      if (diseaseSymptoms.some(ds => ds.includes(userSymptom) || userSymptom.includes(ds))) matchCount++;
-    }
-    return { ...dis, matchCount };
-  }).filter(dis => dis.matchCount > 0);
-
-  if (scored.length === 0) return [];
-
-  const maxScore = Math.max(...scored.map(d => d.matchCount));
-  return scored.filter(d => d.matchCount === maxScore && maxScore > 0);
-}
-
-router.post("/", (req, res) => {
-  try {
-    const history = req.body?.contents || [];
-    let userMessage = "";
-
-    if (history.length > 0) {
-      const lastMessage = history[history.length - 1];
-      if (lastMessage && lastMessage.parts && lastMessage.parts.length > 0) {
-        userMessage = lastMessage.parts.map(part => part.text || "").join(' ').trim();
-      }
-    }
-
-    const matches = findRelevantDiseases(userMessage);
-    let reply;
-
-    if (matches.length > 0) {
-      reply = matches.map(disease => {
-        const symptomsText = `**Symptoms:** ${disease.symptoms.join(", ")}`;
-        const treatmentText = `**Treatment:**\n${disease.treatment.map(t => `• ${t}`).join('\n')}`;
-        const habitsText = `**Healthy Habits:**\n${disease.healthyHabits.map(h => `• ${h}`).join('\n')}`;
-        return `**${disease.name}**\n${symptomsText}\n\n${treatmentText}\n\n${habitsText}`;
-      }).join("\n\n---\n\n");
-    } else if (userMessage.trim()) {
-      reply = `No highly relevant disease found. Please describe your symptoms as clearly as possible, or use a known disease name.`;
-    } else {
-      reply = "🏥 *Health Assistant* 🏥\n\nDescribe your symptoms or provide a disease name. For example:\n- \"chest pain fatigue\"\n- \"diabetes\"\n- \"migraine headache\"\n\nI'll show you the most relevant conditions with symptoms, treatment, and healthy-habit advice.";
-    }
-
-    reply += "\n\n⚠️ *Medical Disclaimer:* This information is for educational purposes only. Consult your doctor for diagnosis/treatment.";
-
-    res.json({
-      candidates: [
-        {
-          content: {
-            parts: [
-              { text: reply }
-            ]
-          }
-        }
-      ]
-    });
-  } catch (err) {
-    res.status(500).json({
-      error: { message: err.message || "Internal server error" }
-    });
-  }
-});
-
-export default router;
