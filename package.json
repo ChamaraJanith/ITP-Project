@@ -1,0 +1,17 @@
+{
+  "name": "itp-project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "client": "npm start --prefix client",
+    "server": "nodemon server/server.js",
+    "dev": "concurrently -n \"CLIENT,SERVER\" -c \"cyan,yellow\" \"npm run client\" \"npm run server\"",
+    "start": "node server/server.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0",
+    "nodemon": "^3.1.10"
+  }
+}
