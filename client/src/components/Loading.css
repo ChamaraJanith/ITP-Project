@@ -1,0 +1,33 @@
+/* components/Loading.css */
+.loading-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f9fafb;
+}
+
+.loading-spinner {
+  text-align: center;
+}
+
+.spinner-ring {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+.loading-spinner p {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
