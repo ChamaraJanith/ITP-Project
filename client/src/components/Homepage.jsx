@@ -4,25 +4,23 @@ import {
   FaSearch, FaTimes, FaUserMd, FaHeartbeat, FaStethoscope, FaHospital, 
   FaCalendarAlt, FaStar, FaPhone, FaMapMarkerAlt, FaComments, FaPaperPlane,
   FaChevronDown, FaChevronUp, FaPlay, FaFacebook, FaTwitter, FaInstagram,
-  FaLinkedin, FaYoutube, FaNewspaper, FaCertificate, FaAward,
+  FaLinkedin, FaYoutube, FaNewspaper, FaCertificate, FaAward, 
+  FaShieldAlt,
   FaQuestionCircle, FaEnvelope, FaClock, FaUsers, FaThumbsUp, FaCalculator,
   FaPills, FaCreditCard, FaEye, FaWeight, FaTooth, FaBrain, FaLungs,
   FaTrash, FaRedo, FaChevronLeft, FaChevronRight, FaDownload, FaFileAlt,
-  FaHeadset, FaGraduationCap, FaFlask, FaAmbulance, FaShieldAlt, FaRobot,
-  FaVideo, FaMicrophone, FaCamera, FaMapPin, FaGlobe, FaWifi, FaBell,
+  FaHeadset, FaGraduationCap, FaFlask, FaAmbulance, FaRobot,
+  FaVideo, FaMicrophone, FaMicrophoneSlash, FaCamera, FaMapPin, FaGlobe, FaWifi, FaBell,
   FaChartLine, FaClipboardCheck, FaUserCheck, FaMedkit, FaCaretDown,
   FaBookmark, FaShareAlt, FaVolumeUp, FaVolumeOff, FaExpand, FaCompress,
-  FaLanguage, FaSyncAlt, FaHistory, FaSave, FaCopy, FaPrint, FaQrcode
+  FaLanguage, FaSyncAlt, FaHistory, FaSave, FaCopy, FaPrint, FaQrcode,
+  FaStop, FaStopCircle
 } from 'react-icons/fa';
 import { diseasesData } from '../data/diseasesData';
 import './Homepage.css';
-// Try importing from fa6 instead:
-import { FaShield } from 'react-icons/fa6';
 
-
-// Emoji Constants - Fixes Babel parsing error
+// Emoji Constants
 const EMOJIS = {
-  // Medical & Healthcare
   robot: '🤖',
   hospital: '🏥',
   stethoscope: '🩺',
@@ -32,16 +30,12 @@ const EMOJIS = {
   microscope: '🔬',
   testTube: '🧪',
   dna: '🧬',
-  
-  // Communication & UI
   phone: '📞',
   phoneIcon: '📱',
   envelope: '📧',
   bell: '🔔',
   megaphone: '📢',
   speaker: '🔊',
-  
-  // Actions & Status
   checkMark: '✅',
   crossMark: '❌',
   warning: '⚠️',
@@ -49,83 +43,61 @@ const EMOJIS = {
   shield: '🛡️',
   lock: '🔒',
   key: '🔑',
-  
-  // Navigation & Search
   magnifyingGlass: '🔍',
   target: '🎯',
   compass: '🧭',
   location: '📍',
   map: '🗺️',
-  
-  // Time & Calendar
   calendar: '📅',
   clock: '🕒',
   hourglass: '⏳',
   stopwatch: '⏱️',
-  
-  // Documents & Data
   clipboard: '📋',
   fileAlt: '📄',
   chart: '📊',
   graph: '📈',
   bookmark: '🔖',
-  
-  // Money & Business
   creditCard: '💳',
   moneyBag: '💰',
   dollarSign: '💲',
   receipt: '🧾',
-  
-  // Technology
   computer: '💻',
   smartphone: '📱',
   wifi: '📶',
   satellite: '📡',
   battery: '🔋',
-  
-  // Emotions & Reactions
   wave: '👋',
   thumbsUp: '👍',
   clap: '👏',
   heart: '❤️',
   star: '⭐',
-  
-  // Arrows & Directions
   rightArrow: '➡️',
   leftArrow: '⬅️',
   upArrow: '⬆️',
   downArrow: '⬇️',
   refresh: '🔄',
-  
-  // Tools & Actions
   wrench: '🔧',
   gear: '⚙️',
   hammer: '🔨',
   broom: '🧹',
   magnet: '🧲',
-  
-  // Nature & Health
   leaf: '🍃',
   seedling: '🌱',
   apple: '🍎',
   water: '💧',
   fire: '🔥',
-  
-  // Achievement & Success
   trophy: '🏆',
   medal: '🏅',
   crown: '👑',
   gem: '💎',
   sparkles: '✨',
-  
-  // Transportation
   ambulance: '🚑',
   car: '🚗',
   plane: '✈️',
   rocket: '🚀'
 };
 
-// Advanced Floating Chatbot with Enhanced Clear Chat Feature
+// Enhanced Advanced Floating Chatbot with Complete AI Speech Stop Functionality
 const AdvancedFloatingChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -143,7 +115,14 @@ const AdvancedFloatingChatbot = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [recognition, setRecognition] = useState(null);
   const [language, setLanguage] = useState('en');
+  const [voiceStatus, setVoiceStatus] = useState('ready');
+  
+  // ✅ AI Speech Control States
+  const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [currentUtterance, setCurrentUtterance] = useState(null);
 
   // Advanced disease matching with confidence scoring
   const findDiseasesBySymptoms = (inputText) => {
@@ -187,7 +166,7 @@ const AdvancedFloatingChatbot = () => {
     
     // AI capabilities showcase
     if (input.includes('what can you do') || input.includes('capabilities') || input.includes('features')) {
-      return `${EMOJIS.robot} **ARIA's Advanced Capabilities:**\n\n${EMOJIS.microscope} **Medical Analysis:**\n• Symptom analysis with 95% accuracy\n• Disease prediction with confidence scoring\n• Drug interaction checking\n• Vital signs interpretation\n\n${EMOJIS.calendar} **Smart Scheduling:**\n• Real-time doctor availability\n• Insurance verification\n• Automatic reminders\n• Telehealth setup\n\n${EMOJIS.stethoscope} **Health Monitoring:**\n• Track vital signs\n• Medication reminders\n• Health goal setting\n• Risk assessment\n\n${EMOJIS.phone} **Communication:**\n• 24/7 availability\n• Multi-language support\n• Voice interaction\n• Emergency escalation\n\n${EMOJIS.lock} **Security:**\n• HIPAA compliant\n• End-to-end encryption\n• Secure data storage\n\nTry: "Check drug interactions" or "Book cardiology appointment"`;
+      return `${EMOJIS.robot} **ARIA's Advanced Capabilities:**\n\n${EMOJIS.microscope} **Medical Analysis:**\n• Symptom analysis with 95% accuracy\n• Disease prediction with confidence scoring\n• Drug interaction checking\n• Vital signs interpretation\n\n${EMOJIS.calendar} **Smart Scheduling:**\n• Real-time doctor availability\n• Insurance verification\n• Automatic reminders\n• Telehealth setup\n\n${EMOJIS.stethoscope} **Health Monitoring:**\n• Track vital signs\n• Medication reminders\n• Health goal setting\n• Risk assessment\n\n${EMOJIS.phone} **Communication:**\n• 24/7 availability\n• Multi-language support\n• Voice interaction with precise stop controls\n• Emergency escalation\n\n${EMOJIS.lock} **Security:**\n• HIPAA compliant\n• End-to-end encryption\n• Secure data storage\n\nTry: "Check drug interactions" or "Book cardiology appointment"`;
     }
 
     // Enhanced symptom analysis
@@ -219,6 +198,8 @@ const AdvancedFloatingChatbot = () => {
         response += `${EMOJIS.warning} **AI Disclaimer:** This analysis is for informational purposes only. Confidence scores are based on symptom matching algorithms. Please consult with a healthcare professional for proper diagnosis.\n\n${EMOJIS.phone} **Next Steps:**\n• Book appointment: "Schedule with specialist"\n• Emergency help: +1 (555) 911-HELP\n• Get second opinion: "Find another doctor"`;
         
         return response;
+      } else {
+        return "I couldn't find specific matches for your symptoms. Please describe them more clearly or consult with a healthcare professional for proper evaluation.";
       }
     }
 
@@ -253,11 +234,39 @@ const AdvancedFloatingChatbot = () => {
     }
 
     // Default enhanced response
-    return `${EMOJIS.robot} **Hello! I'm ARIA, your AI Healthcare Assistant**\n\n${EMOJIS.target} **Popular Actions:**\n• "Analyze my symptoms" - AI symptom checker\n• "Book appointment now" - Smart scheduling\n• "Check drug interactions" - Medication safety\n• "Verify my insurance" - Coverage check\n• "Start video call" - Telehealth consult\n• "Track my health" - Data monitoring\n• "Emergency help" - Urgent care\n\n${EMOJIS.star} **New Features:**\n• Voice interaction (click ${EMOJIS.phoneIcon})\n• Multi-language support\n• Appointment reminders\n• Health risk assessment\n• Family member access\n\n${EMOJIS.phone} **Quick Examples:**\n• "I have chest pain and shortness of breath"\n• "Book me with a cardiologist tomorrow"\n• "Does ibuprofen interact with my medications?"\n• "What's my insurance copay for an MRI?"\n\n${EMOJIS.lock} **Your privacy is protected** with HIPAA-compliant encryption.\n\nWhat would you like to do today?`;
+    return `${EMOJIS.robot} **Hello! I'm ARIA, your AI Healthcare Assistant**\n\n${EMOJIS.target} **Popular Actions:**\n• "Analyze my symptoms" - AI symptom checker\n• "Book appointment now" - Smart scheduling\n• "Check drug interactions" - Medication safety\n• "Verify my insurance" - Coverage check\n• "Start video call" - Telehealth consult\n• "Emergency help" - Urgent care\n\n${EMOJIS.star} **Enhanced Voice Features:**\n• Click ${EMOJIS.phoneIcon} to start voice input\n• Use the red stop button to end voice recognition instantly\n• AI speech can be stopped with the stop button in header\n• Supports multiple languages\n• Hands-free interaction with precise control\n\n${EMOJIS.phone} **Quick Examples:**\n• "I have chest pain and shortness of breath"\n• "Book me with a cardiologist tomorrow"\n• "What's my insurance copay for an MRI?"\n\n${EMOJIS.lock} **Your privacy is protected** with HIPAA-compliant encryption.\n\nWhat would you like to do today?`;
   };
 
+  // ✅ Enhanced Function to Stop AI Speech
+  const stopAISpeech = () => {
+    if (isAISpeaking && 'speechSynthesis' in window) {
+      speechSynthesis.cancel(); // Stop all speech synthesis
+      setIsAISpeaking(false);
+      setCurrentUtterance(null);
+      
+      // Add feedback message
+      const stopMessage = {
+        id: Date.now(),
+        text: `${EMOJIS.robot} AI speech stopped successfully. You can continue our conversation normally.`,
+        sender: 'bot',
+        timestamp: new Date().toLocaleTimeString(),
+        type: 'system'
+      };
+      
+      setTimeout(() => {
+        setMessages(prev => [...prev, stopMessage]);
+      }, 300);
+    }
+  };
+
+  // ✅ Enhanced sendMessage with AI Speech Control
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
+
+    // Stop AI speaking if it's currently speaking
+    if (isAISpeaking) {
+      stopAISpeech();
+    }
 
     const userMessage = { 
       id: Date.now(), 
@@ -271,6 +280,11 @@ const AdvancedFloatingChatbot = () => {
     const currentMessage = inputMessage;
     setInputMessage('');
     setIsTyping(true);
+
+    // Stop voice recognition if active
+    if (isListening && recognition) {
+      stopVoiceRecognition();
+    }
 
     // Simulate AI processing time
     setTimeout(() => {
@@ -286,18 +300,140 @@ const AdvancedFloatingChatbot = () => {
       setMessages(prev => [...prev, botMessage]);
       setIsTyping(false);
 
-      // Text-to-speech for bot responses (if not muted)
+      // ✅ Enhanced Text-to-speech with Stop Control
       if (!isMuted && 'speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(botResponse.replace(/\*\*|🤖|📅|💊|🚨|🔍/g, ''));
+        const cleanText = botResponse.replace(/\*\*|🤖|📅|💊|🚨|🔍|✅|⚠️|📋|🌟|🕒|📍|👋|💳|🎯|🔬|📱|💰|🎥|📊|🧹|🔄/g, '');
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        
         utterance.rate = 0.8;
         utterance.pitch = 1;
+        utterance.volume = 0.8;
+        
+        // Set speaking state and utterance reference
+        setIsAISpeaking(true);
+        setCurrentUtterance(utterance);
+        
+        // Event listeners for speech synthesis
+        utterance.onstart = () => {
+          setIsAISpeaking(true);
+        };
+        
+        utterance.onend = () => {
+          setIsAISpeaking(false);
+          setCurrentUtterance(null);
+        };
+        
+        utterance.onerror = () => {
+          setIsAISpeaking(false);
+          setCurrentUtterance(null);
+        };
+        
         speechSynthesis.speak(utterance);
       }
     }, 2000);
   };
 
-  // Enhanced clear chat with confirmation and history save
+  // Enhanced Voice Recognition with Stop Functionality
+  const startVoiceRecognition = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+      const newRecognition = new SpeechRecognition();
+      
+      newRecognition.continuous = true;
+      newRecognition.interimResults = true;
+      newRecognition.lang = language;
+      
+      newRecognition.onstart = () => {
+        setIsListening(true);
+        setIsVoiceMode(true);
+        setVoiceStatus('listening');
+        console.log('Voice recognition started');
+      };
+      
+      newRecognition.onresult = (event) => {
+        const transcript = event.results[event.results.length - 1][0].transcript;
+        setInputMessage(transcript);
+        setVoiceStatus('processing');
+        
+        // Auto-send if final result and has content
+        if (event.results[event.results.length - 1].isFinal && transcript.trim()) {
+          setVoiceStatus('ready');
+          setTimeout(() => {
+            sendMessage();
+          }, 500);
+        }
+      };
+      
+      newRecognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        setIsVoiceMode(false);
+        setVoiceStatus('error');
+        setTimeout(() => setVoiceStatus('ready'), 3000);
+      };
+      
+      newRecognition.onend = () => {
+        setIsListening(false);
+        setIsVoiceMode(false);
+        setVoiceStatus('ready');
+        console.log('Voice recognition ended');
+      };
+      
+      setRecognition(newRecognition);
+      newRecognition.start();
+    } else {
+      alert('Voice recognition is not supported in your browser. Please use Chrome or Edge.');
+      setVoiceStatus('error');
+      setTimeout(() => setVoiceStatus('ready'), 3000);
+    }
+  };
+
+  // Stop Voice Recognition Function
+  const stopVoiceRecognition = () => {
+    if (recognition && isListening) {
+      recognition.stop();
+      setIsListening(false);
+      setIsVoiceMode(false);
+      setVoiceStatus('ready');
+      setRecognition(null);
+      console.log('Voice recognition stopped by user');
+      
+      // Add user feedback
+      const stopMessage = {
+        id: Date.now(),
+        text: `${EMOJIS.robot} Voice recognition stopped. You can type your message or start voice input again.`,
+        sender: 'bot',
+        timestamp: new Date().toLocaleTimeString(),
+        type: 'system'
+      };
+      
+      setTimeout(() => {
+        setMessages(prev => [...prev, stopMessage]);
+      }, 500);
+    }
+  };
+
+  // Toggle Voice Mode with Better Control
+  const toggleVoiceMode = () => {
+    if (isListening) {
+      stopVoiceRecognition();
+    } else {
+      startVoiceRecognition();
+    }
+  };
+
+  // ✅ Enhanced clear chat with all stop functionality
   const clearChatAdvanced = () => {
+    // Stop voice recognition if active
+    if (isListening) {
+      stopVoiceRecognition();
+    }
+    
+    // Stop AI speech if active
+    if (isAISpeaking) {
+      stopAISpeech();
+    }
+
     if (messages.length > 1) {
       // Save current chat to history
       const chatSession = {
@@ -306,7 +442,7 @@ const AdvancedFloatingChatbot = () => {
         timestamp: new Date().toLocaleString(),
         summary: `Chat session with ${messages.length} messages`
       };
-      setChatHistory(prev => [chatSession, ...prev.slice(0, 4)]); // Keep last 5 sessions
+      setChatHistory(prev => [chatSession, ...prev.slice(0, 4)]);
     }
 
     setMessages([
@@ -318,26 +454,6 @@ const AdvancedFloatingChatbot = () => {
         type: 'system'
       }
     ]);
-  };
-
-  // Voice input toggle
-  const toggleVoiceMode = () => {
-    if ('webkitSpeechRecognition' in window) {
-      setIsVoiceMode(!isVoiceMode);
-      if (!isVoiceMode) {
-        const recognition = new window.webkitSpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = language;
-        
-        recognition.onresult = (event) => {
-          const transcript = event.results[event.results.length - 1][0].transcript;
-          setInputMessage(transcript);
-        };
-        
-        recognition.start();
-      }
-    }
   };
 
   // Export chat history
@@ -380,6 +496,18 @@ const AdvancedFloatingChatbot = () => {
     setTimeout(() => sendMessage(), 100);
   };
 
+  // ✅ Enhanced Cleanup with all stop functionality
+  useEffect(() => {
+    return () => {
+      if (recognition && isListening) {
+        recognition.stop();
+      }
+      if (isAISpeaking && 'speechSynthesis' in window) {
+        speechSynthesis.cancel();
+      }
+    };
+  }, [recognition, isListening, isAISpeaking]);
+
   return (
     <div className="advanced-chatbot-widget">
       <button
@@ -404,10 +532,27 @@ const AdvancedFloatingChatbot = () => {
               </div>
               <div className="ai-details">
                 <h4>{EMOJIS.robot} ARIA</h4>
-                <span className="ai-status">AI Healthcare Assistant • Online</span>
+                <span className="ai-status">
+                  AI Healthcare Assistant • {
+                    isAISpeaking ? 'Speaking...' : 
+                    isListening ? 'Listening...' : 
+                    voiceStatus === 'error' ? 'Voice Error' : 'Online'
+                  }
+                </span>
               </div>
             </div>
             <div className="chat-controls">
+              {/* ✅ AI Speech Stop Button - Prominent in Header */}
+              {isAISpeaking && (
+                <button 
+                  onClick={stopAISpeech}
+                  className="ai-speech-stop-btn" 
+                  title="Stop AI Speech Immediately"
+                >
+                  <FaStop />
+                </button>
+              )}
+              
               <button 
                 onClick={() => setIsMuted(!isMuted)} 
                 className="chat-control-btn" 
@@ -518,25 +663,104 @@ const AdvancedFloatingChatbot = () => {
 
           <div className="advanced-chat-input">
             <div className="input-controls">
-              <button 
-                onClick={toggleVoiceMode} 
-                className={`voice-btn ${isVoiceMode ? 'active' : ''}`}
-                title="Voice Input"
-              >
-                <FaMicrophone />
-              </button>
+              {/* Enhanced Voice Controls */}
+              <div className="voice-controls">
+                <button 
+                  onClick={toggleVoiceMode} 
+                  className={`voice-btn ${isListening ? 'listening' : ''} ${voiceStatus === 'error' ? 'error' : ''}`}
+                  title={isListening ? "Voice is listening..." : voiceStatus === 'error' ? "Voice Error - Click to retry" : "Start Voice Input"}
+                  disabled={voiceStatus === 'processing'}
+                >
+                  {voiceStatus === 'error' ? <FaTimes /> : 
+                   isListening ? <FaMicrophoneSlash /> : <FaMicrophone />}
+                </button>
+                
+                {isListening && (
+                  <button 
+                    onClick={stopVoiceRecognition}
+                    className="voice-stop-btn-enhanced"
+                    title="Stop Voice Recognition Immediately"
+                  >
+                    <FaStopCircle />
+                  </button>
+                )}
+                
+                {isListening && (
+                  <button 
+                    onClick={stopVoiceRecognition}
+                    className="emergency-stop-btn"
+                    title="Emergency Stop"
+                  >
+                    STOP
+                  </button>
+                )}
+              </div>
+
               <input
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask ARIA anything about your health..."
+                placeholder={
+                  isAISpeaking ? "AI is speaking... Click stop to interrupt" :
+                  isListening ? "🎤 Listening... Speak now or click STOP" : 
+                  voiceStatus === 'processing' ? "Processing voice input..." :
+                  voiceStatus === 'error' ? "Voice error - Type your message" :
+                  "Ask ARIA anything about your health..."
+                }
                 className="advanced-message-input"
+                disabled={(isListening && voiceStatus !== 'error') || isAISpeaking}
               />
               <button onClick={sendMessage} className="advanced-send-button" title="Send Message">
                 <FaPaperPlane />
               </button>
             </div>
+            
+            {/* Voice Status Indicator */}
+            {isListening && (
+              <div className="voice-status-indicator enhanced">
+                <div className="listening-animation">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <span className="voice-status-text">
+                  {EMOJIS.phoneIcon} {voiceStatus === 'processing' ? 'Processing...' : 'Listening...'} 
+                  Click the red STOP button to end immediately
+                </span>
+              </div>
+            )}
+
+            {/* ✅ AI Speaking Status Indicator */}
+            {isAISpeaking && (
+              <div className="ai-speaking-indicator">
+                <div className="speaking-animation">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <span className="ai-speaking-text">
+                  {EMOJIS.speaker} AI is speaking... Click the stop button in header to interrupt
+                </span>
+                <button 
+                  onClick={stopAISpeech}
+                  className="inline-speech-stop-btn"
+                  title="Stop AI Speech"
+                >
+                  <FaStop /> Stop Speech
+                </button>
+              </div>
+            )}
+
+            {voiceStatus === 'error' && (
+              <div className="voice-error-indicator">
+                <span className="error-text">
+                  ⚠️ Voice recognition error. Please try again or type your message.
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="advanced-quick-actions">
@@ -557,6 +781,7 @@ const AdvancedFloatingChatbot = () => {
                   className="advanced-quick-action-btn"
                   onClick={() => handleQuickAction(quickAction.action)}
                   title={quickAction.text}
+                  disabled={isAISpeaking} // Disable when AI is speaking
                 >
                   <span className="quick-action-icon">{quickAction.icon}</span>
                   <span className="quick-action-text">{quickAction.text}</span>
@@ -1245,6 +1470,43 @@ const Homepage = () => {
         </div>
       </section>
 
+      {/* Enhanced Featured Doctors */}
+      <section className="featured-doctors">
+        <div className="container">
+          <h2>👨‍⚕️ Meet Our AI-Enhanced Medical Team</h2>
+          <p className="section-subtitle">Expert physicians powered by advanced AI diagnostic tools</p>
+          <div className="doctors-grid">
+            {FEATURED_DOCTORS.map(doctor => (
+              <div key={doctor.id} className="doctor-card">
+                <div className="doctor-avatar">
+                  <FaUserMd />
+                </div>
+                <h3>{doctor.name}</h3>
+                <p className="specialty">{doctor.specialty}</p>
+                <div className="doctor-stats">
+                  <span className="rating">
+                    <FaStar /> {doctor.rating}
+                  </span>
+                  <span className="experience">{doctor.experience}</span>
+                </div>
+                <div className="doctor-status">
+                  <span className={`status-badge ${doctor.status}`}>
+                    {doctor.status === 'online' ? 'Available' : 'Busy'}
+                  </span>
+                  <span className="next-slot">{doctor.nextSlot}</span>
+                </div>
+                <button 
+                  className="book-btn"
+                  onClick={() => navigate('/book-appointment')}
+                >
+                  {EMOJIS.calendar} Book Appointment
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* AI-Enhanced FAQ Section */}
       <section className="ai-faq-section">
         <div className="container">
@@ -1328,7 +1590,7 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* Advanced AI Chatbot */}
+      {/* ✅ Enhanced AI Chatbot with Complete AI Speech Stop Functionality */}
       <AdvancedFloatingChatbot />
     </div>
   );
