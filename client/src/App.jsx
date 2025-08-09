@@ -1,7 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import MedicalNavbar from './components/NavBar'; // Import your navbar
+import MedicalNavbar from './components/NavBar';
 import Login from './pages/Login';
+import Register from './components/Register'; // Add this import
 import Homepage from './components/Homepage';
 import Profile from './components/Profile';
 
@@ -9,22 +10,23 @@ function App() {
   return (
     <Router>
       <div className="App">
-        {/* NavBar appears on all pages */}
         <MedicalNavbar />
         
         <Routes>
           <Route path="/" element={<Homepage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} /> {/* Add this route */}
           <Route path="/profile" element={<Profile />} />
-          <Route path="/register" element={<div>Register Page</div>} />
-          <Route path="/hospitals" element={<div>Hospitals Page</div>} />
-          <Route path="/emergency" element={<div>Emergency Page</div>} />
-          <Route path="/book-appointment" element={<div>Book Appointment</div>} />
-          <Route path="/appointments" element={<div>My Appointments</div>} />
-          <Route path="/medical-records" element={<div>Medical Records</div>} />
-          <Route path="/doctors" element={<div>Doctors Page</div>} />
-          <Route path="/specialty/:id" element={<div>Specialty Page</div>} />
-          <Route path="/search" element={<div>Search Results</div>} />
+          
+          {/* Placeholder routes for navbar links */}
+          <Route path="/hospitals" element={<div style={{padding: '2rem'}}>Hospitals Page</div>} />
+          <Route path="/emergency" element={<div style={{padding: '2rem', color: 'red'}}>Emergency Services</div>} />
+          <Route path="/book-appointment" element={<div style={{padding: '2rem'}}>Book Appointment</div>} />
+          <Route path="/appointments" element={<div style={{padding: '2rem'}}>My Appointments</div>} />
+          <Route path="/medical-records" element={<div style={{padding: '2rem'}}>Medical Records</div>} />
+          <Route path="/doctors" element={<div style={{padding: '2rem'}}>Doctors Page</div>} />
+          <Route path="/specialty/:id" element={<div style={{padding: '2rem'}}>Specialty Page</div>} />
+          <Route path="/search" element={<div style={{padding: '2rem'}}>Search Results</div>} />
         </Routes>
       </div>
     </Router>
