@@ -1,23 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FaSearch, FaTimes, FaUserMd, FaHeartbeat, FaStethoscope, FaHospital, 
   FaCalendarAlt, FaStar, FaPhone, FaMapMarkerAlt, FaComments, FaPaperPlane,
   FaChevronDown, FaChevronUp, FaPlay, FaFacebook, FaTwitter, FaInstagram,
   FaLinkedin, FaYoutube, FaNewspaper, FaCertificate, FaAward, 
-  FaShieldAlt,
-  FaQuestionCircle, FaEnvelope, FaClock, FaUsers, FaThumbsUp, FaCalculator,
-  FaPills, FaCreditCard, FaEye, FaWeight, FaTooth, FaBrain, FaLungs,
-  FaTrash, FaRedo, FaChevronLeft, FaChevronRight, FaDownload, FaFileAlt,
-  FaHeadset, FaGraduationCap, FaFlask, FaAmbulance, FaRobot,
-  FaVideo, FaMicrophone, FaMicrophoneSlash, FaCamera, FaMapPin, FaGlobe, FaWifi, FaBell,
-  FaChartLine, FaClipboardCheck, FaUserCheck, FaMedkit, FaCaretDown,
-  FaBookmark, FaShareAlt, FaVolumeUp, FaVolumeOff, FaExpand, FaCompress,
-  FaLanguage, FaSyncAlt, FaHistory, FaSave, FaCopy, FaPrint, FaQrcode,
-  FaStop, FaStopCircle
+  FaShieldAlt, FaQuestionCircle, FaEnvelope, FaClock, FaUsers, FaThumbsUp, 
+  FaCalculator, FaPills, FaCreditCard, FaEye, FaWeight, FaTooth, FaBrain, 
+  FaLungs, FaTrash, FaRedo, FaChevronLeft, FaChevronRight, FaDownload, 
+  FaFileAlt, FaHeadset, FaGraduationCap, FaFlask, FaAmbulance, FaRobot,
+  FaVideo, FaMicrophone, FaMicrophoneSlash, FaCamera, FaMapPin, FaGlobe, 
+  FaWifi, FaBell, FaChartLine, FaClipboardCheck, FaUserCheck, FaMedkit, 
+  FaCaretDown, FaBookmark, FaShareAlt, FaVolumeUp, FaVolumeOff, FaExpand, 
+  FaCompress, FaLanguage, FaSyncAlt, FaHistory, FaSave, FaCopy, FaPrint, 
+  FaQrcode, FaStop, FaStopCircle, FaHeart, FaChild, FaFemale, FaMale, 
+  FaBaby, FaXRay, FaDna, FaTablets, FaBandAid, FaStarOfLife, FaCheckCircle,
+  FaRuler, FaApple
 } from 'react-icons/fa';
-import { diseasesData } from '../data/diseasesData';
+
+// Import FaRocket from react-icons/ri as alternative
+import { RiRocketLine as FaRocket } from 'react-icons/ri';
+
+// Import additional icons if needed
+import { FaHeartPulse } from 'react-icons/fa6';
+
+import AdvancedFloatingChatbot from './AI/chatbot.jsx';
+import './AI/chatbot.css';
 import './Homepage.css';
+import './bmi.css'
 
 // Emoji Constants
 const EMOJIS = {
@@ -94,700 +104,199 @@ const EMOJIS = {
   ambulance: '🚑',
   car: '🚗',
   plane: '✈️',
-  rocket: '🚀'
+  rocket: '🚀',
+  scale: '⚖️',
+  ruler: '📏'
 };
 
-// Enhanced Advanced Floating Chatbot with Complete AI Speech Stop Functionality
-const AdvancedFloatingChatbot = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [messages, setMessages] = useState([
-    { 
-      id: 1, 
-      text: `${EMOJIS.robot} Hello! I'm ARIA (AI Rapid Intelligence Assistant), your advanced HealX healthcare companion. I can help with symptoms analysis, appointment booking, insurance verification, medication reminders, and much more. Try saying 'What can you do?' or use the quick actions below.`, 
-      sender: 'bot',
-      timestamp: new Date().toLocaleTimeString(),
-      type: 'welcome'
-    }
-  ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [chatHistory, setChatHistory] = useState([]);
-  const [isVoiceMode, setIsVoiceMode] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [recognition, setRecognition] = useState(null);
-  const [language, setLanguage] = useState('en');
-  const [voiceStatus, setVoiceStatus] = useState('ready');
-  
-  // ✅ AI Speech Control States
-  const [isAISpeaking, setIsAISpeaking] = useState(false);
-  const [currentUtterance, setCurrentUtterance] = useState(null);
+// BMI Calculator Component
+const BMICalculator = () => {
+  const [height, setHeight] = useState('');
+  const [weight, setWeight] = useState('');
+  const [bmi, setBmi] = useState(null);
+  const [category, setCategory] = useState('');
+  const [recommendations, setRecommendations] = useState([]);
 
-  // Advanced disease matching with confidence scoring
-  const findDiseasesBySymptoms = (inputText) => {
-    const inputWords = inputText.toLowerCase().split(/\s+/);
-    const potentialSymptoms = inputWords.filter(word => word.length > 2);
-    const matchedDiseases = [];
-    
-    diseasesData.forEach(disease => {
-      let matchCount = 0;
-      let confidenceScore = 0;
-      const matchedSymptoms = [];
+  const calculateBMI = () => {
+    if (height && weight) {
+      const heightInMeters = parseFloat(height) / 100;
+      const weightInKg = parseFloat(weight);
+      const bmiValue = weightInKg / (heightInMeters * heightInMeters);
       
-      disease.symptoms.forEach(symptom => {
-        potentialSymptoms.forEach(inputSymptom => {
-          if (symptom.toLowerCase().includes(inputSymptom) || inputSymptom.includes(symptom.toLowerCase())) {
-            matchCount++;
-            confidenceScore += symptom.toLowerCase() === inputSymptom ? 2 : 1;
-            if (!matchedSymptoms.includes(symptom)) {
-              matchedSymptoms.push(symptom);
-            }
-          }
-        });
-      });
+      setBmi(bmiValue.toFixed(1));
       
-      if (matchCount > 0) {
-        matchedDiseases.push({
-          ...disease,
-          matchCount,
-          matchedSymptoms,
-          confidenceScore: Math.min(100, (confidenceScore / disease.symptoms.length) * 100)
-        });
-      }
-    });
-    
-    return matchedDiseases.sort((a, b) => b.confidenceScore - a.confidenceScore);
-  };
-
-  // Enhanced medical response generator
-  const generateAdvancedMedicalResponse = (userInput) => {
-    const input = userInput.toLowerCase();
-    
-    // AI capabilities showcase
-    if (input.includes('what can you do') || input.includes('capabilities') || input.includes('features')) {
-      return `${EMOJIS.robot} **ARIA's Advanced Capabilities:**\n\n${EMOJIS.microscope} **Medical Analysis:**\n• Symptom analysis with 95% accuracy\n• Disease prediction with confidence scoring\n• Drug interaction checking\n• Vital signs interpretation\n\n${EMOJIS.calendar} **Smart Scheduling:**\n• Real-time doctor availability\n• Insurance verification\n• Automatic reminders\n• Telehealth setup\n\n${EMOJIS.stethoscope} **Health Monitoring:**\n• Track vital signs\n• Medication reminders\n• Health goal setting\n• Risk assessment\n\n${EMOJIS.phone} **Communication:**\n• 24/7 availability\n• Multi-language support\n• Voice interaction with precise stop controls\n• Emergency escalation\n\n${EMOJIS.lock} **Security:**\n• HIPAA compliant\n• End-to-end encryption\n• Secure data storage\n\nTry: "Check drug interactions" or "Book cardiology appointment"`;
-    }
-
-    // Enhanced symptom analysis
-    const symptomKeywords = ['symptom', 'feel', 'pain', 'hurt', 'ache', 'fever', 'cough', 'headache', 'sick', 'nausea', 'tired', 'dizzy', 'have', 'experiencing'];
-    const isSymptomQuery = symptomKeywords.some(keyword => input.includes(keyword));
-    
-    if (isSymptomQuery) {
-      const matchedDiseases = findDiseasesBySymptoms(userInput);
+      // Determine BMI category and recommendations
+      let bmiCategory = '';
+      let bmiRecommendations = [];
       
-      if (matchedDiseases.length > 0) {
-        const topMatches = matchedDiseases.slice(0, 3);
-        let response = `${EMOJIS.magnifyingGlass} **AI Medical Analysis Results:**\n\n`;
-        
-        topMatches.forEach((disease, index) => {
-          response += `**${index + 1}. ${disease.name}** (${disease.confidenceScore.toFixed(1)}% confidence)\n`;
-          response += `${EMOJIS.checkMark} **Matched symptoms:** ${disease.matchedSymptoms.join(', ')}\n`;
-          response += `${EMOJIS.clipboard} **Additional symptoms to watch:** ${disease.symptoms.filter(s => !disease.matchedSymptoms.includes(s)).slice(0, 3).join(', ')}\n`;
-          
-          if (disease.treatment && disease.treatment.length > 0) {
-            response += `${EMOJIS.pills} **Typical treatment:** ${disease.treatment.slice(0, 2).join(', ')}\n`;
-          }
-          
-          if (disease.healthyHabits && disease.healthyHabits.length > 0) {
-            response += `${EMOJIS.star} **Prevention tips:** ${disease.healthyHabits.slice(0, 2).join(', ')}\n`;
-          }
-          response += `\n`;
-        });
-        
-        response += `${EMOJIS.warning} **AI Disclaimer:** This analysis is for informational purposes only. Confidence scores are based on symptom matching algorithms. Please consult with a healthcare professional for proper diagnosis.\n\n${EMOJIS.phone} **Next Steps:**\n• Book appointment: "Schedule with specialist"\n• Emergency help: +1 (555) 911-HELP\n• Get second opinion: "Find another doctor"`;
-        
-        return response;
+      if (bmiValue < 18.5) {
+        bmiCategory = 'Underweight';
+        bmiRecommendations = [
+          'Increase caloric intake with nutritious foods',
+          'Consider strength training exercises',
+          'Consult with a private nutritionist',
+          'Focus on protein-rich foods'
+        ];
+      } else if (bmiValue >= 18.5 && bmiValue < 25) {
+        bmiCategory = 'Healthy Weight';
+        bmiRecommendations = [
+          'Maintain your current lifestyle',
+          'Continue regular physical activity',
+          'Eat a balanced diet',
+          'Regular private health check-ups'
+        ];
+      } else if (bmiValue >= 25 && bmiValue < 30) {
+        bmiCategory = 'Overweight';
+        bmiRecommendations = [
+          'Increase physical activity',
+          'Focus on portion control',
+          'Choose healthier food options',
+          'Consider consulting a private dietitian'
+        ];
       } else {
-        return "I couldn't find specific matches for your symptoms. Please describe them more clearly or consult with a healthcare professional for proper evaluation.";
+        bmiCategory = 'Obese';
+        bmiRecommendations = [
+          'Consult with private healthcare provider',
+          'Create a structured weight loss plan',
+          'Regular exercise routine',
+          'Consider professional nutritional guidance'
+        ];
       }
-    }
-
-    // Advanced appointment booking
-    if (input.includes('appointment') || input.includes('book') || input.includes('schedule')) {
-      return `${EMOJIS.calendar} **Smart Appointment Booking:**\n\n${EMOJIS.rocket} **Quick Book** (Next available):\n• Dr. Sarah Johnson (Cardiology) - Today 3:30 PM\n• Dr. Michael Chen (Neurology) - Tomorrow 10:15 AM\n• Dr. Emily Davis (Pediatrics) - Tomorrow 2:45 PM\n\n${EMOJIS.clock} **Live Availability:**\n• ${EMOJIS.checkMark} 15 doctors available now\n• ${EMOJIS.hourglass} 8 doctors available within 1 hour\n• ${EMOJIS.emergency} Emergency slots always open\n\n${EMOJIS.target} **Specialist Matching:**\nBased on your symptoms, I recommend:\n• Cardiology (95% match)\n• Internal Medicine (87% match)\n\n${EMOJIS.phoneIcon} **Booking Options:**\n• Instant booking: Click 'Book Now'\n• Call directly: +1 (555) DOCTORS\n• Video consultation available\n• Insurance pre-verification included\n\nShall I book an appointment for you?`;
-    }
-
-    // Emergency handling
-    if (input.includes('emergency') || input.includes('urgent') || input.includes('911')) {
-      return `${EMOJIS.emergency} **EMERGENCY PROTOCOL ACTIVATED**\n\n**FOR LIFE-THREATENING EMERGENCIES:**\n${EMOJIS.emergency} **Call 911 IMMEDIATELY**\n\n**FOR URGENT MEDICAL NEEDS:**\n${EMOJIS.phone} **HealX Emergency Hotline: +1 (555) 911-HELP**\n${EMOJIS.hospital} **Emergency Room Status: OPEN (5 min wait)**\n${EMOJIS.location} **Location: 123 Healthcare Street**\n\n**Telehealth Emergency Consultation:**\n${EMOJIS.phoneIcon} **Available NOW** - Connect with ER doctor\n${EMOJIS.stopwatch} **Average response: 30 seconds**\n\n**What I need to know:**\n• Are you breathing normally?\n• Are you conscious and alert?\n• Is there severe bleeding?\n• Chest pain or difficulty breathing?\n\n**Emergency Actions:**\n1. Stay calm and call 911 if needed\n2. Have someone drive you (don't drive yourself)\n3. Bring ID, insurance, medication list\n\nShould I connect you with emergency services?`;
-    }
-
-    // Drug interaction checker
-    if (input.includes('drug') || input.includes('medication') || input.includes('interaction') || input.includes('pill')) {
-      return `${EMOJIS.pills} **Advanced Drug Interaction Checker:**\n\n${EMOJIS.microscope} **AI-Powered Analysis:**\n• Cross-reference with 50,000+ medications\n• Real-time FDA database updates\n• Severity scoring (Mild/Moderate/Severe)\n• Food interaction warnings\n\n${EMOJIS.clipboard} **How to Use:**\n1. List your current medications\n2. Add the new medication you're considering\n3. Get instant interaction analysis\n4. Receive dosage recommendations\n\n${EMOJIS.warning} **Common Interactions to Watch:**\n• Blood thinners + Aspirin = ${EMOJIS.warning} High risk\n• Statins + Grapefruit = ${EMOJIS.warning} Moderate risk\n• ACE inhibitors + Potassium = ${EMOJIS.warning} Monitor levels\n\n${EMOJIS.target} **Features:**\n• Personalized based on your health profile\n• Alternative medication suggestions\n• Timing optimization (when to take)\n• Side effect predictions\n\nType your medications to get started!`;
-    }
-
-    // Insurance verification
-    if (input.includes('insurance') || input.includes('coverage') || input.includes('billing')) {
-      return `${EMOJIS.creditCard} **Real-Time Insurance Verification:**\n\n${EMOJIS.checkMark} **Instant Coverage Check:**\n• Live insurance database connection\n• Real-time eligibility verification\n• Copay and deductible calculator\n• Pre-authorization status\n\n${EMOJIS.hospital} **Accepted Plans:**\n• Blue Cross Blue Shield ${EMOJIS.checkMark}\n• Aetna, Cigna, UnitedHealth ${EMOJIS.checkMark}\n• Medicare & Medicaid ${EMOJIS.checkMark}\n• Kaiser Permanente ${EMOJIS.checkMark}\n• + 200 other plans\n\n${EMOJIS.moneyBag} **Cost Estimator:**\n• Procedure cost calculator\n• Out-of-pocket estimates\n• Payment plan options\n• Financial assistance programs\n\n${EMOJIS.phoneIcon} **Digital Insurance Card:**\n• Upload and store securely\n• Quick access during appointments\n• Auto-fill appointment forms\n\n${EMOJIS.lock} **Secure Verification:**\nEnter your insurance details for instant verification:\n• Member ID\n• Group number\n• Date of birth\n\nBilling questions? Call: +1 (555) 123-BILL`;
-    }
-
-    // Telehealth services
-    if (input.includes('telehealth') || input.includes('video') || input.includes('virtual') || input.includes('online')) {
-      return `${EMOJIS.phoneIcon} **Advanced Telehealth Platform:**\n\n${EMOJIS.rocket} **Next-Gen Features:**\n• 4K video consultations\n• AI-assisted diagnosis\n• Real-time vital sign monitoring\n• Digital stethoscope integration\n• Screen sharing for test results\n\n${EMOJIS.clock} **Available Now:**\n• ${EMOJIS.checkMark} Dr. Sarah Kim (Internal Medicine) - Available\n• ${EMOJIS.checkMark} Dr. James Wilson (Dermatology) - Available\n• ${EMOJIS.hourglass} Dr. Lisa Chen (Psychiatry) - 15 min wait\n\n${EMOJIS.wrench} **Tech Requirements:**\n• Stable internet (5+ Mbps)\n• Camera and microphone\n• Chrome/Safari browser\n• Mobile app available\n\n${EMOJIS.sparkles} **Smart Features:**\n• Automatic appointment reminders\n• Digital prescription delivery\n• Follow-up scheduling\n• Medical record integration\n• Insurance billing automation\n\n${EMOJIS.target} **Best For:**\n• Follow-up visits\n• Medication management\n• Mental health consultations\n• Specialist consultations\n• Chronic disease monitoring\n\nReady to start a video consultation?`;
-    }
-
-    // Health tracking
-    if (input.includes('track') || input.includes('monitor') || input.includes('health data')) {
-      return `${EMOJIS.chart} **AI Health Tracking Dashboard:**\n\n${EMOJIS.target} **Smart Monitoring:**\n• Wearable device integration\n• Automated health insights\n• Predictive health analytics\n• Goal setting and tracking\n• Progress visualization\n\n${EMOJIS.phoneIcon} **Connected Devices:**\n• Apple Watch, Fitbit, Garmin\n• Blood pressure monitors\n• Glucose meters\n• Smart scales\n• Sleep trackers\n\n${EMOJIS.microscope} **AI Analysis:**\n• Pattern recognition\n• Anomaly detection\n• Risk assessment\n• Personalized recommendations\n• Trend analysis\n\n${EMOJIS.graph} **Track Everything:**\n• Blood pressure, heart rate\n• Blood glucose levels\n• Weight and BMI\n• Sleep quality\n• Exercise and activity\n• Medication adherence\n\n${EMOJIS.sparkles} **Visual Reports:**\n• Interactive charts\n• Monthly summaries\n• Doctor-shareable reports\n• Family member access\n\nConnect your devices to get started!`;
-    }
-
-    // Default enhanced response
-    return `${EMOJIS.robot} **Hello! I'm ARIA, your AI Healthcare Assistant**\n\n${EMOJIS.target} **Popular Actions:**\n• "Analyze my symptoms" - AI symptom checker\n• "Book appointment now" - Smart scheduling\n• "Check drug interactions" - Medication safety\n• "Verify my insurance" - Coverage check\n• "Start video call" - Telehealth consult\n• "Emergency help" - Urgent care\n\n${EMOJIS.star} **Enhanced Voice Features:**\n• Click ${EMOJIS.phoneIcon} to start voice input\n• Use the red stop button to end voice recognition instantly\n• AI speech can be stopped with the stop button in header\n• Supports multiple languages\n• Hands-free interaction with precise control\n\n${EMOJIS.phone} **Quick Examples:**\n• "I have chest pain and shortness of breath"\n• "Book me with a cardiologist tomorrow"\n• "What's my insurance copay for an MRI?"\n\n${EMOJIS.lock} **Your privacy is protected** with HIPAA-compliant encryption.\n\nWhat would you like to do today?`;
-  };
-
-  // ✅ Enhanced Function to Stop AI Speech
-  const stopAISpeech = () => {
-    if (isAISpeaking && 'speechSynthesis' in window) {
-      speechSynthesis.cancel(); // Stop all speech synthesis
-      setIsAISpeaking(false);
-      setCurrentUtterance(null);
       
-      // Add feedback message
-      const stopMessage = {
-        id: Date.now(),
-        text: `${EMOJIS.robot} AI speech stopped successfully. You can continue our conversation normally.`,
-        sender: 'bot',
-        timestamp: new Date().toLocaleTimeString(),
-        type: 'system'
-      };
-      
-      setTimeout(() => {
-        setMessages(prev => [...prev, stopMessage]);
-      }, 300);
+      setCategory(bmiCategory);
+      setRecommendations(bmiRecommendations);
     }
   };
 
-  // ✅ Enhanced sendMessage with AI Speech Control
-  const sendMessage = async () => {
-    if (!inputMessage.trim()) return;
-
-    // Stop AI speaking if it's currently speaking
-    if (isAISpeaking) {
-      stopAISpeech();
-    }
-
-    const userMessage = { 
-      id: Date.now(), 
-      text: inputMessage, 
-      sender: 'user',
-      timestamp: new Date().toLocaleTimeString(),
-      type: 'user'
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    const currentMessage = inputMessage;
-    setInputMessage('');
-    setIsTyping(true);
-
-    // Stop voice recognition if active
-    if (isListening && recognition) {
-      stopVoiceRecognition();
-    }
-
-    // Simulate AI processing time
-    setTimeout(() => {
-      const botResponse = generateAdvancedMedicalResponse(currentMessage);
-      const botMessage = { 
-        id: Date.now() + 1, 
-        text: botResponse, 
-        sender: 'bot',
-        timestamp: new Date().toLocaleTimeString(),
-        type: 'response'
-      };
-
-      setMessages(prev => [...prev, botMessage]);
-      setIsTyping(false);
-
-      // ✅ Enhanced Text-to-speech with Stop Control
-      if (!isMuted && 'speechSynthesis' in window) {
-        const cleanText = botResponse.replace(/\*\*|🤖|📅|💊|🚨|🔍|✅|⚠️|📋|🌟|🕒|📍|👋|💳|🎯|🔬|📱|💰|🎥|📊|🧹|🔄/g, '');
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        
-        utterance.rate = 0.8;
-        utterance.pitch = 1;
-        utterance.volume = 0.8;
-        
-        // Set speaking state and utterance reference
-        setIsAISpeaking(true);
-        setCurrentUtterance(utterance);
-        
-        // Event listeners for speech synthesis
-        utterance.onstart = () => {
-          setIsAISpeaking(true);
-        };
-        
-        utterance.onend = () => {
-          setIsAISpeaking(false);
-          setCurrentUtterance(null);
-        };
-        
-        utterance.onerror = () => {
-          setIsAISpeaking(false);
-          setCurrentUtterance(null);
-        };
-        
-        speechSynthesis.speak(utterance);
-      }
-    }, 2000);
+  const resetCalculator = () => {
+    setHeight('');
+    setWeight('');
+    setBmi(null);
+    setCategory('');
+    setRecommendations([]);
   };
 
-  // Enhanced Voice Recognition with Stop Functionality
-  const startVoiceRecognition = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-      const newRecognition = new SpeechRecognition();
-      
-      newRecognition.continuous = true;
-      newRecognition.interimResults = true;
-      newRecognition.lang = language;
-      
-      newRecognition.onstart = () => {
-        setIsListening(true);
-        setIsVoiceMode(true);
-        setVoiceStatus('listening');
-        console.log('Voice recognition started');
-      };
-      
-      newRecognition.onresult = (event) => {
-        const transcript = event.results[event.results.length - 1][0].transcript;
-        setInputMessage(transcript);
-        setVoiceStatus('processing');
-        
-        // Auto-send if final result and has content
-        if (event.results[event.results.length - 1].isFinal && transcript.trim()) {
-          setVoiceStatus('ready');
-          setTimeout(() => {
-            sendMessage();
-          }, 500);
-        }
-      };
-      
-      newRecognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-        setIsVoiceMode(false);
-        setVoiceStatus('error');
-        setTimeout(() => setVoiceStatus('ready'), 3000);
-      };
-      
-      newRecognition.onend = () => {
-        setIsListening(false);
-        setIsVoiceMode(false);
-        setVoiceStatus('ready');
-        console.log('Voice recognition ended');
-      };
-      
-      setRecognition(newRecognition);
-      newRecognition.start();
-    } else {
-      alert('Voice recognition is not supported in your browser. Please use Chrome or Edge.');
-      setVoiceStatus('error');
-      setTimeout(() => setVoiceStatus('ready'), 3000);
+  const getBMIColor = (bmiValue) => {
+    if (bmiValue < 18.5) return '#f59e0b'; // Orange for underweight
+    if (bmiValue >= 18.5 && bmiValue < 25) return '#10b981'; // Green for healthy
+    if (bmiValue >= 25 && bmiValue < 30) return '#f59e0b'; // Orange for overweight
+    return '#ef4444'; // Red for obese
+  };
+
+  const getBMIIcon = (category) => {
+    switch (category) {
+      case 'Healthy Weight': return EMOJIS.checkMark;
+      case 'Underweight': return EMOJIS.warning;
+      case 'Overweight': return EMOJIS.warning;
+      case 'Obese': return EMOJIS.emergency;
+      default: return EMOJIS.scale;
     }
   };
-
-  // Stop Voice Recognition Function
-  const stopVoiceRecognition = () => {
-    if (recognition && isListening) {
-      recognition.stop();
-      setIsListening(false);
-      setIsVoiceMode(false);
-      setVoiceStatus('ready');
-      setRecognition(null);
-      console.log('Voice recognition stopped by user');
-      
-      // Add user feedback
-      const stopMessage = {
-        id: Date.now(),
-        text: `${EMOJIS.robot} Voice recognition stopped. You can type your message or start voice input again.`,
-        sender: 'bot',
-        timestamp: new Date().toLocaleTimeString(),
-        type: 'system'
-      };
-      
-      setTimeout(() => {
-        setMessages(prev => [...prev, stopMessage]);
-      }, 500);
-    }
-  };
-
-  // Toggle Voice Mode with Better Control
-  const toggleVoiceMode = () => {
-    if (isListening) {
-      stopVoiceRecognition();
-    } else {
-      startVoiceRecognition();
-    }
-  };
-
-  // ✅ Enhanced clear chat with all stop functionality
-  const clearChatAdvanced = () => {
-    // Stop voice recognition if active
-    if (isListening) {
-      stopVoiceRecognition();
-    }
-    
-    // Stop AI speech if active
-    if (isAISpeaking) {
-      stopAISpeech();
-    }
-
-    if (messages.length > 1) {
-      // Save current chat to history
-      const chatSession = {
-        id: Date.now(),
-        messages: messages,
-        timestamp: new Date().toLocaleString(),
-        summary: `Chat session with ${messages.length} messages`
-      };
-      setChatHistory(prev => [chatSession, ...prev.slice(0, 4)]);
-    }
-
-    setMessages([
-      { 
-        id: 1, 
-        text: `${EMOJIS.broom} **Chat Cleared Successfully!**\n\nPrevious conversation saved to history. I'm ARIA, your AI healthcare assistant.\n\n${EMOJIS.refresh} **Quick Actions:**\n• \"Show chat history\" - View previous conversations\n• \"What can you do?\" - See my capabilities\n• \"Help me with symptoms\" - Start health analysis\n\nHow can I assist you today?`, 
-        sender: 'bot',
-        timestamp: new Date().toLocaleTimeString(),
-        type: 'system'
-      }
-    ]);
-  };
-
-  // Export chat history
-  const exportChat = () => {
-    const chatData = {
-      timestamp: new Date().toISOString(),
-      messages: messages,
-      totalMessages: messages.length
-    };
-    
-    const dataStr = JSON.stringify(chatData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = `healx-chat-${new Date().toISOString().split('T')[0]}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const formatMessage = (text) => {
-    const formatted = text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n/g, '<br/>')
-      .replace(/🔍|📅|👨‍⚕️|🚨|💊|📞|⚠️|✅|📋|💊|🌟|🕒|📍|👋|💳|🤖|🎯|🔬|📱|💰|🎥|📊|🧹|🔄/g, match => `<span class="emoji">${match}</span>`);
-    
-    return { __html: formatted };
-  };
-
-  const handleQuickAction = (action) => {
-    setInputMessage(action);
-    setTimeout(() => sendMessage(), 100);
-  };
-
-  // ✅ Enhanced Cleanup with all stop functionality
-  useEffect(() => {
-    return () => {
-      if (recognition && isListening) {
-        recognition.stop();
-      }
-      if (isAISpeaking && 'speechSynthesis' in window) {
-        speechSynthesis.cancel();
-      }
-    };
-  }, [recognition, isListening, isAISpeaking]);
 
   return (
-    <div className="advanced-chatbot-widget">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`advanced-chat-toggle ${isOpen ? 'open' : ''}`}
-        title="Chat with ARIA - AI Healthcare Assistant"
-      >
-        {isOpen ? <FaTimes /> : <FaRobot />}
-        <div className="ai-pulse"></div>
-        <div className="status-indicator">
-          <span className="status-dot"></span>
-          AI
+    <div className="bmi-calculator">
+      <div className="bmi-header">
+        <h3>{EMOJIS.scale} BMI Calculator</h3>
+        <p>Calculate your Body Mass Index and get personalized health recommendations</p>
+      </div>
+      
+      <div className="bmi-inputs">
+        <div className="input-group">
+          <label>Height (cm)</label>
+          <input
+            type="number"
+            value={height}
+            onChange={(e) => setHeight(e.target.value)}
+            placeholder="Enter height in centimeters"
+            className="bmi-input"
+          />
+          <FaRuler className="input-icon" />
         </div>
-      </button>
-
-      {isOpen && (
-        <div className={`advanced-chat-window ${isExpanded ? 'expanded' : ''}`}>
-          <div className="advanced-chat-header">
-            <div className="chat-header-info">
-              <div className="ai-avatar">
-                <FaRobot />
-              </div>
-              <div className="ai-details">
-                <h4>{EMOJIS.robot} ARIA</h4>
-                <span className="ai-status">
-                  AI Healthcare Assistant • {
-                    isAISpeaking ? 'Speaking...' : 
-                    isListening ? 'Listening...' : 
-                    voiceStatus === 'error' ? 'Voice Error' : 'Online'
-                  }
-                </span>
-              </div>
+        
+        <div className="input-group">
+          <label>Weight (kg)</label>
+          <input
+            type="number"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            placeholder="Enter weight in kilograms"
+            className="bmi-input"
+          />
+          <FaWeight className="input-icon" />
+        </div>
+      </div>
+      
+      <div className="bmi-actions">
+        <button 
+          onClick={calculateBMI}
+          className="calculate-btn"
+          disabled={!height || !weight}
+        >
+          <FaCalculator />
+          Calculate BMI
+        </button>
+        <button 
+          onClick={resetCalculator}
+          className="reset-btn"
+        >
+          <FaRedo />
+          Reset
+        </button>
+      </div>
+      
+      {bmi && (
+        <div className="bmi-result">
+          <div className="bmi-score" style={{ borderColor: getBMIColor(parseFloat(bmi)) }}>
+            <div className="bmi-value" style={{ color: getBMIColor(parseFloat(bmi)) }}>
+              {bmi}
             </div>
-            <div className="chat-controls">
-              {/* ✅ AI Speech Stop Button - Prominent in Header */}
-              {isAISpeaking && (
-                <button 
-                  onClick={stopAISpeech}
-                  className="ai-speech-stop-btn" 
-                  title="Stop AI Speech Immediately"
-                >
-                  <FaStop />
-                </button>
-              )}
-              
-              <button 
-                onClick={() => setIsMuted(!isMuted)} 
-                className="chat-control-btn" 
-                title={isMuted ? "Unmute" : "Mute"}
-              >
-                {isMuted ? <FaVolumeOff /> : <FaVolumeUp />}
-              </button>
-              <button 
-                onClick={() => setIsExpanded(!isExpanded)} 
-                className="chat-control-btn" 
-                title={isExpanded ? "Minimize" : "Expand"}
-              >
-                {isExpanded ? <FaCompress /> : <FaExpand />}
-              </button>
-              <button 
-                onClick={exportChat} 
-                className="chat-control-btn" 
-                title="Export Chat"
-              >
-                <FaDownload />
-              </button>
-              <div className="control-dropdown">
-                <button className="chat-control-btn dropdown-trigger">
-                  <FaCaretDown />
-                </button>
-                <div className="dropdown-menu">
-                  <button onClick={() => handleQuickAction("Show chat history")}>
-                    <FaHistory /> Chat History
-                  </button>
-                  <button onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}>
-                    <FaLanguage /> {language === 'en' ? 'Español' : 'English'}
-                  </button>
-                  <button onClick={() => handleQuickAction("What can you do?")}>
-                    <FaQuestionCircle /> Help
-                  </button>
-                </div>
-              </div>
-              <button 
-                onClick={clearChatAdvanced} 
-                className="clear-chat-advanced" 
-                title="Clear Chat (Saves to History)"
-              >
-                <FaTrash />
-              </button>
-              <button 
-                onClick={() => setIsOpen(false)} 
-                className="close-chat-advanced" 
-                title="Close Chat"
-              >
-                <FaTimes />
-              </button>
+            <div className="bmi-category">
+              <span className="category-icon">{getBMIIcon(category)}</span>
+              <span className="category-text" style={{ color: getBMIColor(parseFloat(bmi)) }}>
+                {category}
+              </span>
             </div>
           </div>
-
-          <div className="advanced-chat-messages">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`message ${message.sender === 'user' ? 'user-message' : 'bot-message'} ${message.type || ''}`}
-              >
-                <div className="message-header">
-                  <span className="message-sender">
-                    {message.sender === 'user' ? '👤 You' : `${EMOJIS.robot} ARIA`}
-                  </span>
-                  <span className="message-time">{message.timestamp}</span>
-                </div>
-                <div 
-                  className="message-content"
-                  dangerouslySetInnerHTML={message.sender === 'bot' ? formatMessage(message.text) : undefined}
-                >
-                  {message.sender === 'user' ? message.text : null}
-                </div>
-                {message.sender === 'bot' && (
-                  <div className="message-actions">
-                    <button className="msg-action-btn" title="Copy">
-                      <FaCopy />
-                    </button>
-                    <button className="msg-action-btn" title="Share">
-                      <FaShareAlt />
-                    </button>
-                    <button className="msg-action-btn" title="Bookmark">
-                      <FaBookmark />
-                    </button>
-                  </div>
-                )}
+          
+          <div className="bmi-chart">
+            <div className="bmi-ranges">
+              <div className="range underweight">
+                <span className="range-label">Underweight</span>
+                <span className="range-value">&lt; 18.5</span>
               </div>
-            ))}
-            
-            {isTyping && (
-              <div className="message bot-message">
-                <div className="message-header">
-                  <span className="message-sender">{EMOJIS.robot} ARIA</span>
-                  <span className="message-time">typing...</span>
-                </div>
-                <div className="message-content">
-                  <div className="advanced-typing-indicator">
-                    <div className="typing-text">AI is analyzing...</div>
-                    <div className="typing-dots">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                  </div>
-                </div>
+              <div className="range healthy">
+                <span className="range-label">Healthy</span>
+                <span className="range-value">18.5 - 24.9</span>
               </div>
-            )}
-          </div>
-
-          <div className="advanced-chat-input">
-            <div className="input-controls">
-              {/* Enhanced Voice Controls */}
-              <div className="voice-controls">
-                <button 
-                  onClick={toggleVoiceMode} 
-                  className={`voice-btn ${isListening ? 'listening' : ''} ${voiceStatus === 'error' ? 'error' : ''}`}
-                  title={isListening ? "Voice is listening..." : voiceStatus === 'error' ? "Voice Error - Click to retry" : "Start Voice Input"}
-                  disabled={voiceStatus === 'processing'}
-                >
-                  {voiceStatus === 'error' ? <FaTimes /> : 
-                   isListening ? <FaMicrophoneSlash /> : <FaMicrophone />}
-                </button>
-                
-                {isListening && (
-                  <button 
-                    onClick={stopVoiceRecognition}
-                    className="voice-stop-btn-enhanced"
-                    title="Stop Voice Recognition Immediately"
-                  >
-                    <FaStopCircle />
-                  </button>
-                )}
-                
-                {isListening && (
-                  <button 
-                    onClick={stopVoiceRecognition}
-                    className="emergency-stop-btn"
-                    title="Emergency Stop"
-                  >
-                    STOP
-                  </button>
-                )}
+              <div className="range overweight">
+                <span className="range-label">Overweight</span>
+                <span className="range-value">25.0 - 29.9</span>
               </div>
-
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={
-                  isAISpeaking ? "AI is speaking... Click stop to interrupt" :
-                  isListening ? "🎤 Listening... Speak now or click STOP" : 
-                  voiceStatus === 'processing' ? "Processing voice input..." :
-                  voiceStatus === 'error' ? "Voice error - Type your message" :
-                  "Ask ARIA anything about your health..."
-                }
-                className="advanced-message-input"
-                disabled={(isListening && voiceStatus !== 'error') || isAISpeaking}
-              />
-              <button onClick={sendMessage} className="advanced-send-button" title="Send Message">
-                <FaPaperPlane />
-              </button>
+              <div className="range obese">
+                <span className="range-label">Obese</span>
+                <span className="range-value">&gt;= 30.0</span>
+              </div>
             </div>
-            
-            {/* Voice Status Indicator */}
-            {isListening && (
-              <div className="voice-status-indicator enhanced">
-                <div className="listening-animation">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-                <span className="voice-status-text">
-                  {EMOJIS.phoneIcon} {voiceStatus === 'processing' ? 'Processing...' : 'Listening...'} 
-                  Click the red STOP button to end immediately
-                </span>
-              </div>
-            )}
-
-            {/* ✅ AI Speaking Status Indicator */}
-            {isAISpeaking && (
-              <div className="ai-speaking-indicator">
-                <div className="speaking-animation">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-                <span className="ai-speaking-text">
-                  {EMOJIS.speaker} AI is speaking... Click the stop button in header to interrupt
-                </span>
-                <button 
-                  onClick={stopAISpeech}
-                  className="inline-speech-stop-btn"
-                  title="Stop AI Speech"
-                >
-                  <FaStop /> Stop Speech
-                </button>
-              </div>
-            )}
-
-            {voiceStatus === 'error' && (
-              <div className="voice-error-indicator">
-                <span className="error-text">
-                  ⚠️ Voice recognition error. Please try again or type your message.
-                </span>
-              </div>
-            )}
           </div>
-
-          <div className="advanced-quick-actions">
-            <div className="quick-actions-header">
-              <span>Quick Actions:</span>
-            </div>
-            <div className="quick-actions-grid">
-              {[
-                { icon: EMOJIS.magnifyingGlass, text: 'Analyze Symptoms', action: 'I have symptoms to analyze' },
-                { icon: EMOJIS.calendar, text: 'Book Appointment', action: 'Book appointment now' },
-                { icon: EMOJIS.pills, text: 'Drug Interactions', action: 'Check drug interactions' },
-                { icon: EMOJIS.creditCard, text: 'Insurance Check', action: 'Verify my insurance' },
-                { icon: EMOJIS.phoneIcon, text: 'Video Consult', action: 'Start video consultation' },
-                { icon: EMOJIS.emergency, text: 'Emergency Help', action: 'Emergency assistance needed' }
-              ].map((quickAction, index) => (
-                <button
-                  key={index}
-                  className="advanced-quick-action-btn"
-                  onClick={() => handleQuickAction(quickAction.action)}
-                  title={quickAction.text}
-                  disabled={isAISpeaking} // Disable when AI is speaking
-                >
-                  <span className="quick-action-icon">{quickAction.icon}</span>
-                  <span className="quick-action-text">{quickAction.text}</span>
-                </button>
+          
+          <div className="bmi-recommendations">
+            <h4>Personalized Recommendations:</h4>
+            <ul>
+              {recommendations.map((recommendation, index) => (
+                <li key={index}>{recommendation}</li>
               ))}
-            </div>
+            </ul>
+          </div>
+          
+          <div className="bmi-actions-secondary">
+            <button className="consult-doctor-btn">
+              <FaUserMd />
+              Consult Private Doctor
+            </button>
+            <button className="nutrition-plan-btn">
+              <FaApple />
+              Get Nutrition Plan
+            </button>
           </div>
         </div>
       )}
@@ -868,7 +377,7 @@ const AIHealthRiskAssessment = () => {
           className="book-checkup-btn"
           onClick={() => setRiskScore(null)}
         >
-          {EMOJIS.calendar} Book Health Checkup
+          {EMOJIS.calendar} Book Private Consultation
         </button>
       </div>
     );
@@ -927,74 +436,91 @@ const AIHealthRiskAssessment = () => {
   );
 };
 
-// Live Hospital Status Component
+// Live Hospital Status Component - Private Healthcare
 const LiveHospitalStatus = () => {
   const [departments, setDepartments] = useState([
-    { name: 'Emergency Room', waitTime: '5 min', status: 'available', capacity: 85 },
-    { name: 'Cardiology', waitTime: '15 min', status: 'busy', capacity: 95 },
-    { name: 'Pediatrics', waitTime: '8 min', status: 'available', capacity: 60 },
-    { name: 'Neurology', waitTime: '25 min', status: 'busy', capacity: 90 },
-    { name: 'Orthopedics', waitTime: '12 min', status: 'available', capacity: 70 }
+    {
+      id: 1,
+      name: 'Private Emergency',
+      status: 'open',
+      waitTime: '5 min',
+      capacity: 85,
+      availableBeds: 12,
+      doctorsOnDuty: 2
+    },
+    {
+      id: 2,
+      name: 'Private Cardiology',
+      status: 'open',
+      waitTime: '15 min',
+      capacity: 60,
+      availableBeds: 8,
+      doctorsOnDuty: 2
+    }
   ]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDepartments(prev => prev.map(dept => ({
-        ...dept,
-        waitTime: `${Math.floor(Math.random() * 30) + 5} min`,
-        capacity: Math.floor(Math.random() * 40) + 60
-      })));
-    }, 30000); // Update every 30 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
   const getStatusColor = (status) => {
-    switch(status) {
-      case 'available': return '#10b981';
+    switch (status) {
+      case 'open': return '#10b981';
       case 'busy': return '#f59e0b';
-      case 'critical': return '#ef4444';
+      case 'full': return '#ef4444';
       default: return '#6b7280';
     }
+  };
+
+  const getCapacityColor = (capacity) => {
+    if (capacity < 50) return '#10b981';
+    if (capacity < 80) return '#f59e0b';
+    return '#ef4444';
   };
 
   return (
     <div className="live-hospital-status">
       <div className="status-header">
-        <h3>{EMOJIS.hospital} Live Hospital Status</h3>
+        <h3>{EMOJIS.hospital} Private Healthcare Status</h3>
         <div className="last-updated">
-          Updated: {new Date().toLocaleTimeString()}
           <FaSyncAlt className="refresh-icon" />
+          <span>Updated 2 minutes ago</span>
         </div>
       </div>
       
       <div className="departments-grid">
-        {departments.map((dept, index) => (
-          <div key={index} className="department-card">
+        {departments.map(dept => (
+          <div key={dept.id} className="department-card">
             <div className="dept-header">
               <h4>{dept.name}</h4>
-              <div 
+              <span 
                 className="status-indicator"
                 style={{ backgroundColor: getStatusColor(dept.status) }}
               >
                 {dept.status}
-              </div>
+              </span>
             </div>
             
             <div className="dept-metrics">
               <div className="metric">
-                <span className="metric-label">Wait Time:</span>
+                <span className="metric-label">Wait Time</span>
                 <span className="metric-value">{dept.waitTime}</span>
               </div>
               
               <div className="metric">
-                <span className="metric-label">Capacity:</span>
+                <span className="metric-label">Available Beds</span>
+                <span className="metric-value">{dept.availableBeds}</span>
+              </div>
+              
+              <div className="metric">
+                <span className="metric-label">Doctors On Duty</span>
+                <span className="metric-value">{dept.doctorsOnDuty}</span>
+              </div>
+              
+              <div className="metric">
+                <span className="metric-label">Capacity</span>
                 <div className="capacity-bar">
                   <div 
                     className="capacity-fill"
                     style={{ 
-                      width: `${dept.capacity}%`,
-                      backgroundColor: dept.capacity > 90 ? '#ef4444' : dept.capacity > 70 ? '#f59e0b' : '#10b981'
+                      width: `${dept.capacity}%`, 
+                      backgroundColor: getCapacityColor(dept.capacity) 
                     }}
                   ></div>
                   <span className="capacity-text">{dept.capacity}%</span>
@@ -1003,7 +529,8 @@ const LiveHospitalStatus = () => {
             </div>
             
             <button className="book-dept-btn">
-              {EMOJIS.calendar} Book with {dept.name}
+              <FaCalendarAlt />
+              Book Private Appointment
             </button>
           </div>
         ))}
@@ -1012,63 +539,57 @@ const LiveHospitalStatus = () => {
   );
 };
 
-// Advanced Doctor Availability Widget
+// Private Doctor Availability Component - Only 2 Doctors
 const AdvancedDoctorAvailability = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedSpecialty, setSelectedSpecialty] = useState('All');
+  const [selectedSpecialty, setSelectedSpecialty] = useState('all');
   
-  const availableDoctors = [
-    { 
-      id: 1, 
-      name: 'Dr. Sarah Johnson', 
-      specialty: 'Cardiology', 
-      rating: 4.9, 
-      nextSlot: '2:30 PM Today',
+  // Only 2 private doctors
+  const doctors = [
+    {
+      id: 1,
+      name: 'Dr. Sarah Johnson',
+      specialty: 'Cardiology',
+      rating: 4.9,
+      experience: '15 years',
+      nextSlot: 'Today 3:30 PM',
+      consultationFee: '$250',
       avatar: '👩‍⚕️',
-      status: 'online',
-      consultationFee: '$150'
+      status: 'available',
+      type: 'Private Practice',
+      certifications: ['Board Certified Cardiologist', 'Private Practice License'],
+      languages: ['English', 'Spanish'],
+      specializations: ['Heart Surgery', 'Preventive Cardiology', 'Cardiac Rehabilitation']
     },
-    { 
-      id: 2, 
-      name: 'Dr. Michael Chen', 
-      specialty: 'Neurology', 
-      rating: 4.8, 
-      nextSlot: '10:15 AM Tomorrow',
+    {
+      id: 2,
+      name: 'Dr. Michael Chen',
+      specialty: 'General Medicine',
+      rating: 4.8,
+      experience: '12 years',
+      nextSlot: 'Tomorrow 10:15 AM',
+      consultationFee: '$200',
       avatar: '👨‍⚕️',
-      status: 'busy',
-      consultationFee: '$200'
-    },
-    { 
-      id: 3, 
-      name: 'Dr. Emily Davis', 
-      specialty: 'Pediatrics', 
-      rating: 4.9, 
-      nextSlot: 'Available Now',
-      avatar: '👩‍⚕️',
-      status: 'online',
-      consultationFee: '$120'
+      status: 'available',
+      type: 'Private Practice',
+      certifications: ['Board Certified Internal Medicine', 'Private Healthcare Provider'],
+      languages: ['English', 'Mandarin'],
+      specializations: ['Preventive Care', 'Chronic Disease Management', 'Health Screening']
     }
   ];
 
-  const specialties = ['All', 'Cardiology', 'Neurology', 'Pediatrics', 'Orthopedics', 'Dermatology'];
-
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'online': return '#10b981';
-      case 'busy': return '#f59e0b';
-      case 'offline': return '#ef4444';
-      default: return '#6b7280';
-    }
-  };
-
-  const filteredDoctors = selectedSpecialty === 'All' 
-    ? availableDoctors 
-    : availableDoctors.filter(doc => doc.specialty === selectedSpecialty);
+  const filteredDoctors = doctors.filter(doctor => 
+    selectedSpecialty === 'all' || doctor.specialty.toLowerCase().includes(selectedSpecialty.toLowerCase())
+  );
 
   return (
     <div className="advanced-doctor-availability">
       <div className="availability-header">
-        <h3>👨‍⚕️ Real-Time Doctor Availability</h3>
+        <h3>{EMOJIS.stethoscope} Private Doctor Availability</h3>
+        <div className="private-badge">
+          <FaShieldAlt />
+          <span>Exclusive Private Healthcare</span>
+        </div>
         <div className="availability-filters">
           <input
             type="date"
@@ -1081,22 +602,27 @@ const AdvancedDoctorAvailability = () => {
             onChange={(e) => setSelectedSpecialty(e.target.value)}
             className="specialty-filter"
           >
-            {specialties.map(specialty => (
-              <option key={specialty} value={specialty}>{specialty}</option>
-            ))}
+            <option value="all">All Specialties</option>
+            <option value="cardiology">Cardiology</option>
+            <option value="general">General Medicine</option>
           </select>
         </div>
       </div>
 
       <div className="doctors-availability-grid">
         {filteredDoctors.map(doctor => (
-          <div key={doctor.id} className="doctor-availability-card">
+          <div key={doctor.id} className="doctor-availability-card private-doctor">
+            <div className="private-indicator">
+              <FaShieldAlt />
+              <span>{doctor.type}</span>
+            </div>
+            
             <div className="doctor-header">
               <div className="doctor-avatar-section">
-                <span className="doctor-avatar">{doctor.avatar}</span>
+                <div className="doctor-avatar">{doctor.avatar}</div>
                 <div 
                   className="doctor-status-dot"
-                  style={{ backgroundColor: getStatusColor(doctor.status) }}
+                  style={{ backgroundColor: doctor.status === 'available' ? '#10b981' : '#f59e0b' }}
                 ></div>
               </div>
               <div className="doctor-info">
@@ -1104,9 +630,34 @@ const AdvancedDoctorAvailability = () => {
                 <p className="doctor-specialty">{doctor.specialty}</p>
                 <div className="doctor-rating">
                   <FaStar className="star-icon" />
-                  <span>{doctor.rating}</span>
+                  <span>{doctor.rating} • {doctor.experience}</span>
+                </div>
+                <div className="languages">
+                  <FaLanguage />
+                  <span>{doctor.languages.join(', ')}</span>
                 </div>
               </div>
+            </div>
+
+            <div className="doctor-specializations">
+              <h5>Specializations:</h5>
+              <div className="specialization-tags">
+                {doctor.specializations.map((spec, idx) => (
+                  <span key={idx} className="specialization-tag">{spec}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="certifications">
+              <h5>Certifications:</h5>
+              <ul>
+                {doctor.certifications.map((cert, idx) => (
+                  <li key={idx}>
+                    <FaCertificate />
+                    {cert}
+                  </li>
+                ))}
+              </ul>
             </div>
 
             <div className="availability-info">
@@ -1115,17 +666,19 @@ const AdvancedDoctorAvailability = () => {
                 <span className="slot-time">{doctor.nextSlot}</span>
               </div>
               <div className="consultation-fee">
-                <span className="fee-label">Consultation:</span>
+                <span className="fee-label">Private Consultation Fee:</span>
                 <span className="fee-amount">{doctor.consultationFee}</span>
               </div>
             </div>
 
             <div className="booking-options">
               <button className="quick-book-btn">
-                {EMOJIS.calendar} Quick Book
+                <FaCalendarAlt />
+                Book Private Consultation
               </button>
               <button className="video-consult-btn">
-                {EMOJIS.phoneIcon} Video Call
+                <FaVideo />
+                Private Video Call
               </button>
             </div>
           </div>
@@ -1135,102 +688,396 @@ const AdvancedDoctorAvailability = () => {
   );
 };
 
-// FAQ Section Component
-const FAQSection = () => {
-  const [openFAQ, setOpenFAQ] = useState(null);
-
-  const faqs = [
+// Advanced Services Component
+const AdvancedServices = () => {
+  const services = [
     {
-      question: "How does the AI health assessment work?",
-      answer: "Our AI uses advanced algorithms to analyze your symptoms, medical history, and risk factors. It provides preliminary assessments with confidence scores, but always recommends consulting with healthcare professionals for definitive diagnosis."
+      icon: <FaRobot />,
+      title: 'AI Symptom Analysis',
+      description: 'Get instant AI-powered symptom analysis with 95% accuracy and personalized recommendations.',
+      features: ['Real-time analysis', 'Confidence scoring', 'Disease prediction', 'Treatment suggestions'],
+      color: '#8b5cf6'
     },
     {
-      question: "Is my health data secure and private?",
-      answer: "Yes, absolutely. We use HIPAA-compliant encryption, secure data storage, and never share your personal health information without your explicit consent. All data is encrypted both in transit and at rest."
+      icon: <FaVideo />,
+      title: 'Private Telehealth',
+      description: 'Connect with certified private doctors through secure video calls from the comfort of your home.',
+      features: ['HD video calls', '24/7 availability', 'Prescription delivery', 'Follow-up care'],
+      color: '#10b981'
     },
     {
-      question: "Can I use telehealth for emergency situations?",
-      answer: "Telehealth is great for non-emergency consultations. For medical emergencies, always call 911 or visit our emergency room immediately. Our telehealth platform can help with follow-ups and routine care."
+      icon: <FaHeartbeat />,
+      title: 'Health Monitoring',
+      description: 'Advanced health tracking with wearable device integration and predictive analytics.',
+      features: ['Vital signs tracking', 'Trend analysis', 'Health alerts', 'Progress reports'],
+      color: '#ef4444'
     },
     {
-      question: "How accurate is the AI symptom checker?",
-      answer: "Our AI symptom checker has a 95% accuracy rate in identifying potential conditions. However, it's designed to assist, not replace, professional medical diagnosis. Always consult with a doctor for serious symptoms."
+      icon: <FaWeight />,
+      title: 'BMI & Health Metrics',
+      description: 'Comprehensive BMI calculation with personalized health recommendations and tracking.',
+      features: ['BMI calculation', 'Health status', 'Nutrition plans', 'Weight management'],
+      color: '#06b6d4'
     },
     {
-      question: "What insurance plans do you accept for telehealth?",
-      answer: "We accept most major insurance plans for both in-person and telehealth visits. Our system can verify your coverage in real-time and provide cost estimates before your appointment."
+      icon: <FaPills />,
+      title: 'Medication Management',
+      description: 'Comprehensive medication tracking with interaction checking and refill reminders.',
+      features: ['Drug interactions', 'Refill alerts', 'Dosage tracking', 'Side effect monitoring'],
+      color: '#f59e0b'
     },
     {
-      question: "How do I access my AI health dashboard?",
-      answer: "You can access your personalized health dashboard through our patient portal or mobile app. It tracks your health metrics, provides AI insights, and helps you monitor your wellness goals."
+      icon: <FaShieldAlt />,
+      title: 'Private Health Insurance',
+      description: 'Exclusive private health insurance plans with comprehensive coverage.',
+      features: ['Premium coverage', 'No waiting periods', 'Global coverage', 'VIP services'],
+      color: '#84cc16'
     }
   ];
 
-  const toggleFAQ = (index) => {
-    setOpenFAQ(openFAQ === index ? null : index);
+  return (
+    <div className="advanced-services">
+      <div className="container">
+        <h2>{EMOJIS.sparkles} Private Healthcare Services</h2>
+        <p className="section-subtitle">
+          Exclusive AI-powered private healthcare solutions designed for premium care
+        </p>
+        
+        <div className="advanced-services-grid">
+          {services.map((service, index) => (
+            <div key={index} className="advanced-service-card" style={{ '--accent-color': service.color }}>
+              <div className="service-icon-advanced">
+                {service.icon}
+              </div>
+              <h3>{service.title}</h3>
+              <p>{service.description}</p>
+              <div className="service-features">
+                {service.features.map((feature, idx) => (
+                  <span key={idx} className="feature-tag">{feature}</span>
+                ))}
+              </div>
+              <button className="service-btn-advanced">
+                Learn More
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Featured Doctors Component - Only 2 Private Doctors
+const FeaturedDoctors = () => {
+  const doctors = [
+    {
+      id: 1,
+      name: 'Dr. Sarah Johnson',
+      specialty: 'Private Cardiology',
+      rating: 4.9,
+      experience: '15 years',
+      avatar: '👩‍⚕️',
+      status: 'online',
+      nextSlot: 'Today 3:30 PM',
+      patients: '2,500+',
+      achievements: ['Board Certified', 'Private Practice Award', 'Research Excellence']
+    },
+    {
+      id: 2,
+      name: 'Dr. Michael Chen',
+      specialty: 'Private General Medicine',
+      rating: 4.8,
+      experience: '12 years',
+      avatar: '👨‍⚕️',
+      status: 'online',
+      nextSlot: 'Tomorrow 10:15 AM',
+      patients: '1,800+',
+      achievements: ['Internal Medicine Expert', 'Private Healthcare Leader', 'Patient Choice Award']
+    }
+  ];
+
+  return (
+    <div className="featured-doctors">
+      <div className="container">
+        <h2>{EMOJIS.stethoscope} Our Private Doctors</h2>
+        <p className="section-subtitle">
+          Meet our exclusive private healthcare professionals
+        </p>
+        
+        <div className="doctors-grid">
+          {doctors.map(doctor => (
+            <div key={doctor.id} className="doctor-card private-doctor-card">
+              <div className="private-badge">
+                <FaShieldAlt />
+                <span>Private Practice</span>
+              </div>
+              <div className="doctor-avatar">
+                {doctor.avatar}
+              </div>
+              <h3>{doctor.name}</h3>
+              <p className="specialty">{doctor.specialty}</p>
+              
+              <div className="doctor-stats">
+                <div className="rating">
+                  <FaStar />
+                  <span>{doctor.rating}</span>
+                </div>
+                <div className="experience">
+                  {doctor.experience}
+                </div>
+              </div>
+              
+              <div className="doctor-status">
+                <span className={`status-badge ${doctor.status}`}>
+                  {doctor.status}
+                </span>
+                <span className="next-slot">Next: {doctor.nextSlot}</span>
+              </div>
+              
+              <div className="patient-count">
+                <FaUsers />
+                <span>{doctor.patients} Private Patients</span>
+              </div>
+              
+              <div className="achievements">
+                {doctor.achievements.map((achievement, idx) => (
+                  <span key={idx} className="achievement-badge">
+                    {achievement}
+                  </span>
+                ))}
+              </div>
+              
+              <button className="book-btn private-book-btn">
+                <FaCalendarAlt />
+                Book Private Appointment
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// AI FAQ Component
+const AIFaqSection = () => {
+  const [openQuestion, setOpenQuestion] = useState(null);
+
+  const faqs = [
+    {
+      question: 'How accurate is the AI symptom analysis?',
+      answer: 'Our AI symptom analysis achieves 95% accuracy through advanced machine learning algorithms trained on millions of medical cases. However, it should be used as a preliminary assessment tool and not replace professional medical diagnosis.'
+    },
+    {
+      question: 'Is my health data secure and private?',
+      answer: 'Absolutely. We use HIPAA-compliant encryption, end-to-end security protocols, and secure data storage. Your personal health information is never shared without your explicit consent and is protected by the highest industry standards.'
+    },
+    {
+      question: 'Can I get prescriptions through private telehealth consultations?',
+      answer: 'Yes, our licensed private physicians can prescribe medications during telehealth consultations when medically appropriate. Prescriptions are sent directly to your preferred pharmacy for convenient pickup or delivery.'
+    },
+    {
+      question: 'What makes your private healthcare different?',
+      answer: 'Our private healthcare offers exclusive access to top specialists, no waiting times, premium facilities, personalized care plans, and 24/7 concierge medical services for our private patients.'
+    },
+    {
+      question: 'How does the BMI calculator help with health assessment?',
+      answer: 'Our BMI calculator provides instant health status assessment and personalized recommendations. It integrates with our AI system to provide comprehensive health insights and connects you directly with our private doctors for further consultation.'
+    }
+  ];
+
+  const toggleQuestion = (index) => {
+    setOpenQuestion(openQuestion === index ? null : index);
   };
 
   return (
-    <div className="faq-items">
-      {faqs.map((faq, index) => (
-        <div key={index} className="faq-question">
-          <button
-            className="faq-toggle"
-            onClick={() => toggleFAQ(index)}
-            aria-expanded={openFAQ === index}
-          >
-            <span>{faq.question}</span>
-            {openFAQ === index ? <FaChevronUp /> : <FaChevronDown />}
-          </button>
-          {openFAQ === index && (
-            <div className="faq-answer">
-              <p>{faq.answer}</p>
-            </div>
-          )}
+    <div className="ai-faq-section">
+      <div className="container">
+        <h2>{EMOJIS.questionCircle} Frequently Asked Questions</h2>
+        <p className="section-subtitle">
+          Get answers to common questions about our private AI-powered healthcare platform
+        </p>
+        
+        <div className="faq-container">
+          <div className="faq-items">
+            {faqs.map((faq, index) => (
+              <div key={index} className="faq-question">
+                <button
+                  className="faq-toggle"
+                  onClick={() => toggleQuestion(index)}
+                >
+                  <span>{faq.question}</span>
+                  {openQuestion === index ? <FaChevronUp /> : <FaChevronDown />}
+                </button>
+                {openQuestion === index && (
+                  <div className="faq-answer">
+                    <p>{faq.answer}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
+      </div>
     </div>
   );
 };
 
 // Newsletter Component
-const Newsletter = () => {
+const AINewsletterSection = () => {
   const [email, setEmail] = useState('');
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubscribe = (e) => {
     e.preventDefault();
     if (email) {
-      setIsSubmitted(true);
+      setSubscribed(true);
       setEmail('');
-      setTimeout(() => setIsSubmitted(false), 3000);
     }
   };
 
   return (
-    <div className="newsletter-form">
-      <h3>{EMOJIS.rocket} AI-Powered Health Newsletter</h3>
-      <p>Get personalized health insights, AI tips, and medical breakthroughs delivered weekly</p>
-      {isSubmitted ? (
-        <div className="success-message">
-          <FaThumbsUp /> Welcome to the future of healthcare!
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit}>
-          <div className="input-group">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email for AI health insights"
-              required
-            />
-            <button type="submit">
-              <FaRobot /> Subscribe
-            </button>
+    <div className="ai-newsletter-section">
+      <div className="container">
+        {!subscribed ? (
+          <form className="newsletter-form" onSubmit={handleSubscribe}>
+            <h3>{EMOJIS.envelope} Stay Updated with Private Health Insights</h3>
+            <p>Get the latest AI health insights, medical breakthroughs, and personalized private health tips delivered to your inbox.</p>
+            
+            <div className="input-group">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                required
+              />
+              <button type="submit">
+                <FaPaperPlane />
+                Subscribe
+              </button>
+            </div>
+            
+            <p style={{ fontSize: '0.9rem', opacity: 0.8, marginTop: '15px' }}>
+              Join our exclusive private healthcare community. Unsubscribe anytime.
+            </p>
+          </form>
+        ) : (
+          <div className="success-message">
+            <FaCheckCircle />
+            <span>Thank you for subscribing! Check your email for confirmation.</span>
           </div>
-        </form>
-      )}
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Features Showcase Component
+const FeaturesShowcase = () => {
+  const features = [
+    {
+      icon: <FaRobot />,
+      title: 'AI-Powered Diagnosis',
+      description: 'Advanced machine learning algorithms for accurate symptom analysis and disease prediction.'
+    },
+    {
+      icon: <FaShieldAlt />,
+      title: 'Private & HIPAA Compliant',
+      description: 'Your health data is protected with enterprise-grade security and privacy standards.'
+    },
+    {
+      icon: <FaClock />,
+      title: '24/7 Private Access',
+      description: 'Access exclusive private healthcare services anytime, anywhere with our premium platform.'
+    },
+    {
+      icon: <FaUsers />,
+      title: 'Expert Private Network',
+      description: 'Connect with certified private healthcare professionals and specialists exclusively.'
+    },
+    {
+      icon: <FaChartLine />,
+      title: 'Advanced Health Analytics',
+      description: 'Comprehensive health tracking with BMI calculation and predictive insights.'
+    },
+    {
+      icon: <FaHeart />,
+      title: 'Premium Preventive Care',
+      description: 'Proactive private health monitoring and early warning systems for optimal outcomes.'
+    }
+  ];
+
+  return (
+    <div className="features-showcase">
+      <div className="container">
+        <h2>{EMOJIS.sparkles} Why Choose Our Private Platform</h2>
+        
+        <div className="showcase-grid">
+          {features.map((feature, index) => (
+            <div key={index} className="showcase-item">
+              <div className="showcase-icon">
+                {feature.icon}
+              </div>
+              <h4>{feature.title}</h4>
+              <p>{feature.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Final CTA Component
+const FinalAdvancedCTA = () => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="final-advanced-cta">
+      <div className="container">
+        <h2>Ready to Experience Premium Private Healthcare?</h2>
+        <p>
+          Join our exclusive private healthcare community with personalized AI assistance, 
+          BMI health tracking, and access to top private doctors. Experience luxury healthcare today.
+        </p>
+        
+        <div className="final-advanced-stats">
+          <div className="advanced-stat">
+            <strong>5K+</strong>
+            <span>Private Patients</span>
+          </div>
+          <div className="advanced-stat">
+            <strong>95%</strong>
+            <span>Accuracy Rate</span>
+          </div>
+          <div className="advanced-stat">
+            <strong>24/7</strong>
+            <span>Premium Access</span>
+          </div>
+          <div className="advanced-stat">
+            <strong>2</strong>
+            <span>Expert Private Doctors</span>
+          </div>
+        </div>
+        
+        <div className="final-advanced-buttons">
+          <button 
+            onClick={() => navigate('/register')}
+            className="final-btn-advanced primary"
+          >
+            <FaRocket />
+            Start Private Healthcare
+          </button>
+          <button 
+            onClick={() => navigate('/demo')}
+            className="final-btn-advanced secondary"
+          >
+            <FaPlay />
+            Watch Private Demo
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -1240,104 +1087,14 @@ const Homepage = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  // Enhanced doctors data with real-time availability
-  const FEATURED_DOCTORS = [
-    { 
-      id: 1, 
-      name: "Dr. Sarah Johnson", 
-      specialty: "AI-Assisted Cardiology", 
-      rating: 4.9, 
-      experience: "15+ years",
-      status: "online",
-      nextSlot: "2:30 PM Today",
-      specialties: ["Heart Surgery", "AI Diagnostics", "Preventive Cardiology"]
-    },
-    { 
-      id: 2, 
-      name: "Dr. Michael Chen", 
-      specialty: "Neuro-AI Specialist", 
-      rating: 4.8, 
-      experience: "12+ years",
-      status: "busy",
-      nextSlot: "10:15 AM Tomorrow",
-      specialties: ["Brain Imaging", "AI Analysis", "Neurological Disorders"]
-    },
-    { 
-      id: 3, 
-      name: "Dr. Emily Davis", 
-      specialty: "Digital Pediatrics", 
-      rating: 4.9, 
-      experience: "10+ years",
-      status: "online",
-      nextSlot: "Available Now",
-      specialties: ["Child Development", "Telehealth", "Digital Monitoring"]
-    },
-    { 
-      id: 4, 
-      name: "Dr. Robert Wilson", 
-      specialty: "Smart Orthopedics", 
-      rating: 4.7, 
-      experience: "18+ years",
-      status: "online",
-      nextSlot: "4:45 PM Today",
-      specialties: ["Robotic Surgery", "Sports Medicine", "Joint Replacement"]
-    }
-  ];
-
-  // Advanced services with AI integration
-  const ADVANCED_SERVICES = [
-    { 
-      icon: <FaRobot />, 
-      title: "AI Health Assessment", 
-      desc: "Advanced AI-powered health analysis",
-      features: ["95% Accuracy", "Real-time Analysis", "Predictive Insights"],
-      color: "#8b5cf6" 
-    },
-    { 
-      icon: <FaVideo />, 
-      title: "4K Telehealth", 
-      desc: "Ultra-high definition consultations",
-      features: ["4K Video", "Digital Stethoscope", "Real-time Vitals"],
-      color: "#3b82f6" 
-    },
-    { 
-      icon: <FaBrain />, 
-      title: "Neuro-AI Diagnostics", 
-      desc: "Brain health with AI assistance",
-      features: ["Advanced Imaging", "Pattern Recognition", "Early Detection"],
-      color: "#8b5cf6" 
-    },
-    { 
-      icon: <FaChartLine />, 
-      title: "Smart Health Tracking", 
-      desc: "Continuous health monitoring",
-      features: ["Wearable Integration", "Predictive Analytics", "Goal Setting"],
-      color: "#10b981" 
-    },
-    { 
-      icon: <FaShieldAlt />, 
-      title: "Preventive AI Care", 
-      desc: "Proactive health management",
-      features: ["Risk Assessment", "Early Warnings", "Personalized Plans"],
-      color: "#f59e0b" 
-    },
-    { 
-      icon: <FaPills />, 
-      title: "Smart Pharmacy", 
-      desc: "AI-powered medication management",
-      features: ["Drug Interactions", "Smart Reminders", "Home Delivery"],
-      color: "#ef4444" 
-    }
-  ];
-
   return (
     <div className="advanced-homepage">
-      {/* Enhanced Hero Section with AI Features */}
+      {/* Hero Section */}
       <section className="advanced-hero-section">
         <div className="hero-content">
           <div className="hero-text">
-            <h1>{EMOJIS.rocket} The Future of Healthcare is Here</h1>
-            <p>Experience revolutionary AI-powered healthcare with ARIA, our advanced medical AI assistant, real-time health monitoring, and cutting-edge telehealth technology.</p>
+            <h1>{EMOJIS.rocket} Private Healthcare Excellence</h1>
+            <p>Experience revolutionary AI-powered private healthcare with ARIA, featuring exclusive private consultations, BMI health tracking, auto-symptom analysis, and cutting-edge telehealth technology.</p>
             
             {user.name ? (
               <div className="welcome-user-advanced">
@@ -1349,30 +1106,30 @@ const Homepage = () => {
                   </div>
                   <div className="health-metric">
                     <span className="metric-value">2</span>
-                    <span className="metric-label">Upcoming Appointments</span>
+                    <span className="metric-label">Private Appointments</span>
                   </div>
                 </div>
                 <button 
                   onClick={() => navigate('/dashboard')}
                   className="dashboard-btn"
                 >
-                  {EMOJIS.target} View AI Health Dashboard
+                  {EMOJIS.target} View Private Health Dashboard
                 </button>
               </div>
             ) : (
               <div className="auth-prompt-advanced">
-                <p>Join over 100,000 patients experiencing the future of healthcare</p>
+                <p>Join our exclusive private healthcare community</p>
                 <div className="auth-features">
-                  <span>{EMOJIS.sparkles} AI Health Assistant</span>
-                  <span>{EMOJIS.microscope} Advanced Diagnostics</span>
-                  <span>{EMOJIS.phoneIcon} Smart Monitoring</span>
+                  <span>{EMOJIS.sparkles} Private AI Assistant</span>
+                  <span>{EMOJIS.scale} BMI Health Tracking</span>
+                  <span>{EMOJIS.phoneIcon} Premium Monitoring</span>
                 </div>
                 <div className="auth-buttons">
                   <button 
                     onClick={() => navigate('/register')}
                     className="auth-btn primary-advanced"
                   >
-                    {EMOJIS.rocket} Start Your Health Journey
+                    {EMOJIS.rocket} Start Private Healthcare Journey
                   </button>
                   <button 
                     onClick={() => navigate('/login')}
@@ -1389,13 +1146,13 @@ const Homepage = () => {
                 onClick={() => navigate('/ai-booking')}
                 className="cta-primary-advanced"
               >
-                <FaRobot /> AI Smart Booking
+                <FaRobot /> AI Private Booking
               </button>
               <button 
                 onClick={() => navigate('/telehealth')}
                 className="cta-secondary-advanced"
               >
-                <FaVideo /> Start Video Consult
+                <FaVideo /> Start Private Consult
               </button>
             </div>
           </div>
@@ -1404,19 +1161,28 @@ const Homepage = () => {
             <div className="ai-feature-card">
               <FaRobot className="ai-icon" />
               <h4>ARIA AI Assistant</h4>
-              <p>Advanced medical AI with 95% accuracy</p>
+              <p>Auto-symptom analysis as you type</p>
             </div>
             <div className="ai-feature-card">
-              <FaChartLine className="ai-icon" />
-              <h4>Predictive Analytics</h4>
-              <p>AI-powered health insights and predictions</p>
+              <FaWeight className="ai-icon" />
+              <h4>BMI Health Tracker</h4>
+              <p>Instant health status assessment</p>
             </div>
             <div className="ai-feature-card">
               <FaShieldAlt className="ai-icon" />
-              <h4>Preventive Care</h4>
-              <p>Proactive health monitoring and alerts</p>
+              <h4>Private Care</h4>
+              <p>Exclusive healthcare access</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* BMI Calculator Section */}
+      <section className="bmi-calculator-section">
+        <div className="container">
+          <h2>{EMOJIS.scale} BMI Health Assessment</h2>
+          <p className="section-subtitle">Calculate your BMI and get personalized health recommendations</p>
+          <BMICalculator />
         </div>
       </section>
 
@@ -1429,168 +1195,43 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* Live Hospital Status Dashboard */}
+      {/* Live Hospital Status Section */}
       <section className="live-status-section">
         <div className="container">
-          <h2>{EMOJIS.hospital} Real-Time Hospital Dashboard</h2>
-          <p className="section-subtitle">Live updates on department availability and wait times</p>
+          <h2>{EMOJIS.hospital} Private Healthcare Status</h2>
+          <p className="section-subtitle">Real-time private facility capacity and availability updates</p>
           <LiveHospitalStatus />
         </div>
       </section>
 
-      {/* Advanced Doctor Availability */}
+      {/* Doctor Availability Section */}
       <section className="doctor-availability-section">
         <div className="container">
-          <h2>👨‍⚕️ Smart Doctor Booking</h2>
-          <p className="section-subtitle">AI-powered doctor matching with real-time availability</p>
+          <h2>{EMOJIS.calendar} Private Doctor Availability</h2>
+          <p className="section-subtitle">Find and book appointments with our exclusive private specialists</p>
           <AdvancedDoctorAvailability />
         </div>
       </section>
 
-      {/* Enhanced Services with AI Integration */}
-      <section className="advanced-services">
-        <div className="container">
-          <h2>{EMOJIS.rocket} AI-Powered Healthcare Services</h2>
-          <p className="section-subtitle">Experience the next generation of medical care</p>
-          <div className="advanced-services-grid">
-            {ADVANCED_SERVICES.map((service, index) => (
-              <div key={index} className="advanced-service-card" style={{ '--accent-color': service.color }}>
-                <div className="service-icon-advanced">{service.icon}</div>
-                <h3>{service.title}</h3>
-                <p>{service.desc}</p>
-                <div className="service-features">
-                  {service.features.map((feature, idx) => (
-                    <span key={idx} className="feature-tag">{feature}</span>
-                  ))}
-                </div>
-                <button className="service-btn-advanced">Explore</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Advanced Services Section */}
+      <AdvancedServices />
 
-      {/* Enhanced Featured Doctors */}
-      <section className="featured-doctors">
-        <div className="container">
-          <h2>👨‍⚕️ Meet Our AI-Enhanced Medical Team</h2>
-          <p className="section-subtitle">Expert physicians powered by advanced AI diagnostic tools</p>
-          <div className="doctors-grid">
-            {FEATURED_DOCTORS.map(doctor => (
-              <div key={doctor.id} className="doctor-card">
-                <div className="doctor-avatar">
-                  <FaUserMd />
-                </div>
-                <h3>{doctor.name}</h3>
-                <p className="specialty">{doctor.specialty}</p>
-                <div className="doctor-stats">
-                  <span className="rating">
-                    <FaStar /> {doctor.rating}
-                  </span>
-                  <span className="experience">{doctor.experience}</span>
-                </div>
-                <div className="doctor-status">
-                  <span className={`status-badge ${doctor.status}`}>
-                    {doctor.status === 'online' ? 'Available' : 'Busy'}
-                  </span>
-                  <span className="next-slot">{doctor.nextSlot}</span>
-                </div>
-                <button 
-                  className="book-btn"
-                  onClick={() => navigate('/book-appointment')}
-                >
-                  {EMOJIS.calendar} Book Appointment
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Featured Doctors Section */}
+      <FeaturedDoctors />
 
-      {/* AI-Enhanced FAQ Section */}
-      <section className="ai-faq-section">
-        <div className="container">
-          <h2>{EMOJIS.robot} AI-Powered FAQ</h2>
-          <p className="section-subtitle">Get instant answers powered by advanced AI</p>
-          <div className="faq-container">
-            <FAQSection />
-          </div>
-        </div>
-      </section>
+      {/* Features Showcase Section */}
+      <FeaturesShowcase />
 
-      {/* Advanced Newsletter Section */}
-      <section className="ai-newsletter-section">
-        <div className="container">
-          <Newsletter />
-        </div>
-      </section>
+      {/* FAQ Section */}
+      <AIFaqSection />
 
-      {/* Advanced Features Showcase */}
-      <section className="features-showcase">
-        <div className="container">
-          <h2>{EMOJIS.sparkles} Revolutionary Healthcare Features</h2>
-          <div className="showcase-grid">
-            <div className="showcase-item">
-              <FaQrcode className="showcase-icon" />
-              <h4>QR Code Check-ins</h4>
-              <p>Contactless appointment check-ins with QR codes</p>
-            </div>
-            <div className="showcase-item">
-              <FaGlobe className="showcase-icon" />
-              <h4>Global Health Network</h4>
-              <p>Connect with specialists worldwide via our platform</p>
-            </div>
-            <div className="showcase-item">
-              <FaWifi className="showcase-icon" />
-              <h4>IoT Health Monitoring</h4>
-              <p>Smart devices integration for continuous monitoring</p>
-            </div>
-            <div className="showcase-item">
-              <FaBell className="showcase-icon" />
-              <h4>Smart Notifications</h4>
-              <p>AI-powered health alerts and reminders</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Newsletter Section */}
+      <AINewsletterSection />
 
-      {/* Final Advanced CTA */}
-      <section className="final-advanced-cta">
-        <div className="container">
-          <h2>{EMOJIS.star} Ready for the Future of Healthcare?</h2>
-          <p>Experience AI-powered medicine, real-time monitoring, and personalized care like never before</p>
-          <div className="final-advanced-stats">
-            <div className="advanced-stat">
-              <strong>{EMOJIS.robot} 95%</strong>
-              <span>AI Accuracy Rate</span>
-            </div>
-            <div className="advanced-stat">
-              <strong>{EMOJIS.clock} 30sec</strong>
-              <span>Average AI Response</span>
-            </div>
-            <div className="advanced-stat">
-              <strong>{EMOJIS.trophy} #1</strong>
-              <span>Healthcare Innovation</span>
-            </div>
-          </div>
-          <div className="final-advanced-buttons">
-            <button 
-              onClick={() => navigate('/ai-onboarding')}
-              className="final-btn-advanced primary"
-            >
-              <FaRobot /> Start AI Health Journey
-            </button>
-            <button 
-              onClick={() => navigate('/demo')}
-              className="final-btn-advanced secondary"
-            >
-              <FaPlay /> Watch AI Demo
-            </button>
-          </div>
-        </div>
-      </section>
+      {/* Final CTA Section */}
+      <FinalAdvancedCTA />
 
-      {/* ✅ Enhanced AI Chatbot with Complete AI Speech Stop Functionality */}
+      {/* Chatbot Component */}
       <AdvancedFloatingChatbot />
     </div>
   );

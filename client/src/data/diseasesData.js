@@ -568,3 +568,4 @@ export const diseasesData = [
     ]
   }
 ];
+export default diseasesData;
