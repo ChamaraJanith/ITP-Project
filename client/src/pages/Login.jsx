@@ -68,8 +68,8 @@ const Login = () => {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h2>Login</h2>
-          <p>Sign in with your registered credentials</p>
+          <h2>Welcome Back</h2>
+          <p>Sign in to your account</p>
         </div>
 
         {message && (
@@ -80,14 +80,14 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">Email Address</label>
             <input
               type="email"
               id="email"
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              placeholder="Enter registered email"
+              placeholder="Enter your email"
               required
             />
           </div>
@@ -100,7 +100,7 @@ const Login = () => {
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              placeholder="Enter password"
+              placeholder="Enter your password"
               required
             />
           </div>
@@ -110,10 +110,17 @@ const Login = () => {
             className={`login-btn ${loading ? 'loading' : ''}`}
             disabled={loading}
           >
-            {loading ? 'Signing in...' : 'Login'}
+            {loading ? (
+              <>
+                <div className="spinner"></div>
+                Signing in...
+              </>
+            ) : (
+              'Sign In'
+            )}
           </button>
 
-          {/* Forgot Password Link - Fixed navigation path */}
+          {/* Forgot Password Link */}
           <div className="forgot-password-link">
             <button
               type="button"
@@ -124,6 +131,18 @@ const Login = () => {
             </button>
           </div>
         </form>
+
+        {/* Register Navigation */}
+        <div className="login-footer">
+          <p>Don't have an account?</p>
+          <button
+            type="button"
+            className="register-link"
+            onClick={() => navigate('/register')}
+          >
+            Create Account
+          </button>
+        </div>
       </div>
     </div>
   );

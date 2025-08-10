@@ -5,8 +5,10 @@ import Login from './pages/Login';
 import Register from './components/Register';
 import Homepage from './components/Homepage';
 import Profile from './components/Profile';
-import ForgotPassword from './components/ForgotPassword'; // Add this import
-import ResetPassword from './components/ResetPassword';   // Add this import
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
+import Subscription from './components/Subscription'; // ← Add this import
+import SubscriptionConfirmation from './components/SubscriptionConfirmation';
 
 function App() {
   return (
@@ -19,11 +21,12 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
-
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/subscription" element={<Subscription />} />
+          <Route path="/confirm-subscription" element={<SubscriptionConfirmation />} />
           
-          {/* Placeholder routes for navbar links */}
+          {/* Other routes */}
           <Route path="/hospitals" element={<div style={{padding: '2rem'}}>Hospitals Page</div>} />
           <Route path="/emergency" element={<div style={{padding: '2rem', color: 'red'}}>Emergency Services</div>} />
           <Route path="/book-appointment" element={<div style={{padding: '2rem'}}>Book Appointment</div>} />

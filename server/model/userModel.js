@@ -39,6 +39,32 @@ const userSchema = new mongoose.Schema({
     type: Number, 
     default: 0 
   },
+  // Subscription fields
+  isSubscribed: {
+    type: Boolean,
+    default: false
+  },
+  subscribedAt: {
+    type: Date,
+    default: null
+  },
+  unsubscribedAt: {
+    type: Date,
+    default: null
+  },
+  subscriptionToken: {
+    type: String,
+    default: ''
+  },
+  subscriptionTokenExpiry: {
+    type: Number,
+    default: 0
+  },
+  role: {
+    type: String,
+    enum: ['user', 'doctor', 'admin'],
+    default: 'user'
+  },
 }, {
   timestamps: true // This adds createdAt and updatedAt fields
 });
