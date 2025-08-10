@@ -7,20 +7,26 @@ import {
   verifyEmail,
   isAuthenticated,
   sendResetOtp,
-  resetPassword
+  resetPassword,
+  resendResetOtp
 } from '../controller/authController.js';
 import userAuth from '../middleware/userAuth.js';
 
 const authRouter = express.Router();
 
+// Authentication routes
 authRouter.post('/register', register);
 authRouter.post('/login', login);
 authRouter.post('/logout', logout);
-// Important: verify routes should use the authenticated user's ID from the middleware, not from body!
+
+// Email verification routes (protected)
 authRouter.post('/sendverifyotp', userAuth, sendVerifyOtp);
 authRouter.post('/verifyaccount', userAuth, verifyEmail);
 authRouter.post('/isAuth', userAuth, isAuthenticated);
-authRouter.post('/sendResetOtp', sendResetOtp); // Fixed extra space typo
+
+// Password reset routes (public)
+authRouter.post('/sendResetOtp', sendResetOtp);
 authRouter.post('/resetPassword', resetPassword);
+authRouter.post('/resendResetOtp', resendResetOtp); // Optional
 
 export default authRouter;
