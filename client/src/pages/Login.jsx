@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import './styles/Login.css'; // Assuming you have a CSS file for styling
+import { useNavigate } from 'react-router-dom';
+import './styles/Login.css';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +10,7 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const navigate = useNavigate();
 
   const backendUrl = 'http://localhost:7000';
 
@@ -47,10 +49,8 @@ const Login = () => {
         setMessage(`✅ Welcome back, ${response.data.user.name}!`);
         console.log('User logged in:', response.data.user);
         
-        // Store user data in localStorage (optional)
         localStorage.setItem('user', JSON.stringify(response.data.user));
         
-        // Redirect or handle success here
         setTimeout(() => {
           window.location.href = '/';
         }, 2000);
@@ -112,6 +112,17 @@ const Login = () => {
           >
             {loading ? 'Signing in...' : 'Login'}
           </button>
+
+          {/* Forgot Password Link - Fixed navigation path */}
+          <div className="forgot-password-link">
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => navigate('/forgot-password')}
+            >
+              Forgot your password?
+            </button>
+          </div>
         </form>
       </div>
     </div>

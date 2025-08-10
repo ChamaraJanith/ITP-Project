@@ -2,9 +2,11 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MedicalNavbar from './components/NavBar';
 import Login from './pages/Login';
-import Register from './components/Register'; // Add this import
+import Register from './components/Register';
 import Homepage from './components/Homepage';
 import Profile from './components/Profile';
+import ForgotPassword from './components/ForgotPassword'; // Add this import
+import ResetPassword from './components/ResetPassword';   // Add this import
 
 function App() {
   return (
@@ -15,8 +17,11 @@ function App() {
         <Routes>
           <Route path="/" element={<Homepage />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} /> {/* Add this route */}
+          <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
+
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Placeholder routes for navbar links */}
           <Route path="/hospitals" element={<div style={{padding: '2rem'}}>Hospitals Page</div>} />
