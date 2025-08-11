@@ -6,7 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "server": "nodemon server.js"
+    "server": "nodemon server.js",
+    "verify-admin": "node scripts/verifyAdminUsers.js",
+    "fix-admin": "node scripts/fixAdminUsers.js",
+    "create-admin": "node scripts/createAdminUser.js"
   },
   "keywords": [],
   "author": "",
