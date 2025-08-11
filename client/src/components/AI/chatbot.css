@@ -504,6 +504,7 @@
   display: flex;
   flex-direction: column;
   position: relative;
+  flex-shrink: 0; /* Prevent squishing */
 }
 
 .message::before {
@@ -563,18 +564,13 @@
   padding: 18px 22px;
   border-radius: var(--border-radius-xl);
   font-size: 1rem;
-  line-height: 1.7;
-  min-height: 45px;
+  line-height: 1.6; /* Slightly tighter to avoid excess spacing */
   font-weight: 500;
   letter-spacing: 0.2px;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  -webkit-user-select: text;
-  -moz-user-select: text;
-  -ms-user-select: text;
-  user-select: text;
-  max-width: 100%;
+  word-break: break-word; /* Breaks long words to new line */
+  white-space: pre-wrap;  /* Preserves line breaks and wraps text */
+  overflow-wrap: anywhere; /* Prevents overflow from long words or URLs */
+  min-height: auto; /* Let height adjust naturally */
   position: relative;
   transition: var(--transition);
 }
