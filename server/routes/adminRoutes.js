@@ -6,6 +6,11 @@ import {
   getAdminProfile, 
   updateAdminProfile 
 } from '../controller/adminAuthController.js';
+import {
+  getDashboardStats,
+  getUserGrowthAnalytics,
+  getSystemActivityLogs
+} from '../controller/adminDashboardController.js';
 import { authenticateAdmin, authorizeRoles } from '../middleware/adminAuthMiddleware.js';
 
 const router = express.Router();
@@ -19,32 +24,20 @@ router.get('/verify', authenticateAdmin, verifyAdmin);
 router.get('/profile', authenticateAdmin, getAdminProfile);
 router.put('/profile', authenticateAdmin, updateAdminProfile);
 
-// Dashboard routes with role-based access
+// Dashboard data routes
+router.get('/dashboard/stats', authenticateAdmin, authorizeRoles(['admin']), getDashboardStats);
+router.get('/dashboard/analytics', authenticateAdmin, authorizeRoles(['admin']), getUserGrowthAnalytics);
+router.get('/dashboard/activity', authenticateAdmin, authorizeRoles(['admin']), getSystemActivityLogs);
+
+// Role-specific dashboards
 router.get('/dashboard', authenticateAdmin, authorizeRoles(['admin']), (req, res) => {
   res.json({ 
     success: true,
-    message: 'Admin dashboard data loaded successfully',
-    data: {
-      admin: {
-        id: req.admin._id,
-        name: req.admin.name,
-        role: req.admin.role,
-        department: req.admin.department
-      },
-      stats: {
-        totalUsers: 0, // Implement actual stats
-        totalAppointments: 0,
-        totalRevenue: 0,
-        activeStaff: 0
-      },
-      recentActivity: [],
-      notifications: []
-    },
-    timestamp: new Date().toISOString()
+    message: 'Admin dashboard loaded successfully',
+    redirect: '/admin/dashboard/stats'
   });
 });
 
-// Role-specific dashboards
 router.get('/receptionist-dashboard', 
   authenticateAdmin, 
   authorizeRoles(['receptionist', 'admin']), 
@@ -59,10 +52,7 @@ router.get('/receptionist-dashboard',
           'view_patients', 
           'check_in_patients',
           'schedule_appointments'
-        ],
-        todayAppointments: [],
-        waitingPatients: [],
-        notifications: []
+        ]
       }
     });
   }
@@ -82,10 +72,7 @@ router.get('/doctor-dashboard',
           'create_prescriptions', 
           'update_patient_records',
           'schedule_consultations'
-        ],
-        todayPatients: [],
-        pendingReports: [],
-        emergencyAlerts: []
+        ]
       }
     });
   }
@@ -105,30 +92,7 @@ router.get('/financial-dashboard',
           'manage_payments', 
           'generate_reports',
           'track_revenue'
-        ],
-        financialSummary: {
-          todayRevenue: 0,
-          pendingPayments: 0,
-          monthlyTarget: 0
-        },
-        recentTransactions: []
-      }
-    });
-  }
-);
-
-// Admin management routes (super admin only)
-router.get('/manage-staff', 
-  authenticateAdmin, 
-  authorizeRoles(['admin']), 
-  (req, res) => {
-    res.json({ 
-      success: true,
-      message: 'Staff management data',
-      data: {
-        staff: [], // Implement actual staff list
-        departments: ['Administration', 'Medical', 'Reception', 'Finance'],
-        roles: ['admin', 'doctor', 'receptionist', 'financial_manager']
+        ]
       }
     });
   }
@@ -146,11 +110,9 @@ router.get('/routes', authenticateAdmin, (req, res) => {
       'GET /verify': 'Verify admin session',
       'GET /profile': 'Get admin profile',
       'PUT /profile': 'Update admin profile',
-      'GET /dashboard': 'Admin dashboard (admin only)',
-      'GET /receptionist-dashboard': 'Receptionist dashboard',
-      'GET /doctor-dashboard': 'Doctor dashboard',
-      'GET /financial-dashboard': 'Financial dashboard',
-      'GET /manage-staff': 'Staff management (admin only)'
+      'GET /dashboard/stats': 'Get dashboard statistics',
+      'GET /dashboard/analytics': 'Get user growth analytics',
+      'GET /dashboard/activity': 'Get system activity logs'
     }
   });
 });
@@ -162,7 +124,7 @@ router.use('/{*path}', authenticateAdmin, (req, res) => {
     message: `Admin route ${req.originalUrl} not found`,
     userRole: req.admin?.role,
     availableRoutes: [
-      'GET /api/admin/dashboard',
+      'GET /api/admin/dashboard/stats',
       'GET /api/admin/profile',
       'PUT /api/admin/profile',
       'GET /api/admin/verify',
