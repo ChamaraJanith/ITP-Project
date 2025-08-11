@@ -1,121 +1,121 @@
-// components/admin/AdminLayout.jsx
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
 import './AdminLayout.css';
 
-const AdminLayout = ({ children, admin, title }) => {
+const AdminLayout = ({ admin, title, children }) => {
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
+  // ✅ FIXED: Handle null admin gracefully
+  if (!admin) {
+    return (
+      <div className="admin-layout">
+        <div className="admin-loading">
+          <div className="loading-spinner"></div>
+          <p>Loading admin session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ FIXED: Additional safety check for admin properties
+  const adminName = admin?.name || 'Admin User';
+  const adminRole = admin?.role || 'user';
+  const adminEmail = admin?.email || '';
+
+  const handleLogout = () => {
     try {
-      await axios.post('/api/auth/admin-logout', {}, {
-        withCredentials: true
-      });
+      // Clear admin data
+      localStorage.removeItem('admin');
       
-      localStorage.removeItem('admin');
+      // Redirect to admin login
       navigate('/admin/login');
+      
+      // Optional: Call logout API
+      fetch('/api/admin/logout', {
+        method: 'POST',
+        credentials: 'include'
+      }).catch(err => console.log('Logout API error:', err));
+      
     } catch (error) {
-      console.error('Admin logout error:', error);
-      localStorage.removeItem('admin');
-      navigate('/admin/login');
+      console.error('Logout error:', error);
+      // Force redirect even if logout fails
+      window.location.href = '/admin/login';
     }
-  };
-
-  const getRoleIcon = (role) => {
-    const icons = {
-      receptionist: '👩‍💼',
-      doctor: '👨‍⚕️',
-      financial_manager: '💰',
-      admin: '👑'
-    };
-    return icons[role] || '👤';
-  };
-
-  const getRoleName = (role) => {
-    const names = {
-      receptionist: 'Receptionist',
-      doctor: 'Doctor',
-      financial_manager: 'Financial Manager',
-      admin: 'Administrator'
-    };
-    return names[role] || 'Staff';
   };
 
   return (
     <div className="admin-layout">
       {/* Admin Header */}
       <header className="admin-header">
-        <div className="header-left">
+        <div className="admin-header-content">
           <div className="admin-logo">
-            <span className="logo-icon">🏥</span>
-            <span className="logo-text">HealX Healthcare</span>
-          </div>
-          <div className="page-title">
-            <h1>{title}</h1>
-          </div>
-        </div>
-        
-        <div className="header-right">
-          <div className="admin-profile">
-            <div className="admin-avatar">
-              <span>{getRoleIcon(admin.role)}</span>
-            </div>
-            <div className="admin-info">
-              <span className="admin-name">{admin.name}</span>
-              <span className="admin-role">{getRoleName(admin.role)}</span>
-            </div>
+            <Link to="/admin/dashboard">
+              🏥 HealX Admin
+            </Link>
           </div>
           
-          <div className="admin-actions">
-            <button className="notification-btn">
-              <span>🔔</span>
-              <span className="notification-count">3</span>
-            </button>
-            
-            <button className="settings-btn">
-              <span>⚙️</span>
-            </button>
-            
+          <div className="admin-nav">
+            <Link to="/admin/dashboard" className="nav-link">
+              📊 Dashboard
+            </Link>
+            <Link to="/admin/receptionist-dashboard" className="nav-link">
+              👩‍💼 Receptionist
+            </Link>
+            <Link to="/admin/doctor-dashboard" className="nav-link">
+              👩‍⚕️ Doctor
+            </Link>
+            <Link to="/admin/financial-dashboard" className="nav-link">
+              💰 Financial
+            </Link>
+          </div>
+
+          <div className="admin-user-info">
+            <div className="admin-user-details">
+              <span className="admin-name">{adminName}</span>
+              <span className={`admin-role role-${adminRole}`}>
+                {adminRole.replace('_', ' ').toUpperCase()}
+              </span>
+            </div>
             <button onClick={handleLogout} className="logout-btn">
-              <span>🚪</span>
-              Logout
+              🚪 Logout
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Admin Content */}
       <main className="admin-main">
         <div className="admin-content">
+          {title && (
+            <div className="admin-page-header">
+              <h1>{title}</h1>
+              <div className="admin-breadcrumb">
+                <Link to="/admin/dashboard">Dashboard</Link>
+                {title !== "System Administrator Dashboard" && (
+                  <>
+                    <span> / </span>
+                    <span>{title}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+          
           {children}
         </div>
       </main>
 
-      {/* Quick Navigation */}
-      <div className="admin-quick-nav">
-        <button 
-          onClick={() => navigate('/')}
-          className="quick-nav-btn"
-          title="Main Website"
-        >
-          🏠
-        </button>
-        <button 
-          onClick={() => navigate('/admin/help')}
-          className="quick-nav-btn"
-          title="Help"
-        >
-          ❓
-        </button>
-        <button 
-          onClick={() => window.print()}
-          className="quick-nav-btn"
-          title="Print"
-        >
-          🖨️
-        </button>
-      </div>
+      {/* Admin Footer */}
+      <footer className="admin-footer">
+        <div className="admin-footer-content">
+          <p>&copy; 2025 HealX Healthcare Admin Portal. All rights reserved.</p>
+          <div className="admin-footer-links">
+            <Link to="/" target="_blank">🏠 Main Site</Link>
+            <span>|</span>
+            <span>Logged in as: {adminEmail}</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
