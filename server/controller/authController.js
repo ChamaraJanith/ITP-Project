@@ -556,60 +556,6 @@ export const resetPassword = async (req, res) => {
 
     console.log('✅ Password reset successful for:', email);
 
-    // Send confirmation email
-    try {
-      const mailOptions = {
-        from: process.env.SENDER_EMAIL,
-        to: user.email,
-        subject: 'Password Reset Successful - HealX Healthcare',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #667eea; margin: 0;">HealX Healthcare</h1>
-            </div>
-            
-            <div style="text-align: center; margin-bottom: 30px;">
-              <div style="background: #28a745; color: white; padding: 15px; border-radius: 50%; width: 80px; height: 80px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 40px;">✓</span>
-              </div>
-            </div>
-            
-            <h2 style="color: #28a745; text-align: center;">Password Reset Successful!</h2>
-            <p>Dear <strong>${user.name}</strong>,</p>
-            <p>Your password has been successfully reset for your HealX Healthcare account.</p>
-            
-            <div style="background: #d1ecf1; border: 1px solid #bee5eb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #0c5460; margin-top: 0;">📋 What happens next:</h3>
-              <ul style="color: #0c5460; margin: 0; padding-left: 20px;">
-                <li>You can now log in to your account using your new password</li>
-                <li>Your previous password is no longer valid</li>
-                <li>All active sessions have been logged out for security</li>
-              </ul>
-            </div>
-            
-            <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #721c24; margin-top: 0;">🚨 Important Security Notice:</h3>
-              <p style="color: #721c24; margin: 0;">If you didn't make this change, please contact our support team immediately at <strong>support@healx.com</strong> or call us at <strong>+1-800-HEALX-24</strong></p>
-            </div>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.FRONTEND_URL}/login" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">Login to Your Account</a>
-            </div>
-            
-            <div style="border-top: 2px solid #eee; padding-top: 20px; text-align: center;">
-              <p style="color: #999; font-size: 14px;">This email was sent to ${user.email}</p>
-              <p style="color: #667eea; font-weight: bold;">Best regards,<br>HealX Healthcare Security Team</p>
-            </div>
-          </div>
-        `,
-      };
-      
-      await transporter.sendMail(mailOptions);
-      console.log('✅ Password reset confirmation email sent');
-    } catch (emailError) {
-      console.log('⚠️ Password reset confirmation email failed:', emailError.message);
-    }
-
     return res.json({ 
       success: true, 
       message: "Password updated successfully. You can now login with your new password." 
