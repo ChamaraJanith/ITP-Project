@@ -21,7 +21,7 @@ const fixAdminUsers = async () => {
     // ✅ FIXED: Added department field for each admin user
     const adminUsers = [
       {
-        name: "John Admin",
+        name: "Chamara Janith",
         email: "admin@healx.com",
         password: "admin123",
         role: "admin",
