@@ -32,7 +32,7 @@ export const adminDashboardApi = {
     }
   },
 
-  // NEW: Get individual profile details
+  // Get individual profile details
   getProfileDetails: async (profileType, profileId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/profile/${profileType}/${profileId}`, {
@@ -47,7 +47,7 @@ export const adminDashboardApi = {
     }
   },
 
-  // NEW: Update profile status
+  // Update profile status
   updateProfileStatus: async (profileType, profileId, action, data = {}) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/profile/${profileType}/${profileId}/update`, {
@@ -63,7 +63,7 @@ export const adminDashboardApi = {
     }
   },
 
-  // NEW: Get detailed profiles with filters
+  // Get detailed profiles with filters
   getDetailedProfiles: async (search = '', type = 'all', status = 'all', page = 1, limit = 20) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/profiles/detailed?search=${search}&type=${type}&status=${status}&page=${page}&limit=${limit}`, {
@@ -193,6 +193,235 @@ export const adminDashboardApi = {
     } catch (error) {
       console.error('Financial dashboard access error:', error);
       throw error;
+    }
+  },
+
+  // ===============================
+  // REPORT GENERATION FUNCTIONS
+  // ===============================
+
+  // Generate Summary Report (for floating action button)
+  generateSummaryReport: async (reportData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/reports/generate-summary`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(reportData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      // Handle different response types based on format
+      if (reportData.reportFormat === 'html') {
+        const htmlContent = await response.text();
+        return {
+          success: true,
+          data: htmlContent,
+          message: 'HTML report generated successfully'
+        };
+      } else {
+        // For PDF and Excel, return blob
+        const blob = await response.blob();
+        return {
+          success: true,
+          data: blob,
+          message: 'Report generated successfully'
+        };
+      }
+    } catch (error) {
+      console.error('Error generating summary report:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to generate summary report'
+      };
+    }
+  },
+
+  // Get Report Templates
+  getReportTemplates: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/reports/templates`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching report templates:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch report templates'
+      };
+    }
+  },
+
+  // Get Financial Data for Reports
+  getFinancialReportData: async (month, year) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/reports/financial-data?month=${month}&year=${year}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching financial data:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch financial data'
+      };
+    }
+  },
+
+  // Get Report History
+  getReportHistory: async (page = 1, limit = 10) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/reports/history?page=${page}&limit=${limit}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching report history:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch report history'
+      };
+    }
+  },
+
+  // Delete Report
+  deleteReport: async (reportId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/reports/${reportId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error deleting report:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to delete report'
+      };
+    }
+  },
+
+  // Download Existing Report
+  downloadReport: async (reportId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/reports/download/${reportId}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      return {
+        success: true,
+        data: blob,
+        message: 'Report downloaded successfully'
+      };
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to download report'
+      };
+    }
+  },
+
+  // ===============================
+  // SUPPORT FUNCTIONS
+  // ===============================
+
+  // Send Support Request
+  sendSupportRequest: async (supportData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/support/request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(supportData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error sending support request:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to send support request'
+      };
+    }
+  },
+
+  // Get Support Tickets
+  getSupportTickets: async (page = 1, limit = 10, status = 'all') => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/support/tickets?page=${page}&limit=${limit}&status=${status}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching support tickets:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch support tickets'
+      };
     }
   }
 };
