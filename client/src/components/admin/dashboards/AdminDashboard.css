@@ -871,3 +871,289 @@
     display: none;
   }
 }
+
+/* Floating Action Buttons */
+.floating-action-buttons {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 1000;
+}
+
+.fab-button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.fab-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.fab-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Print Button Styling */
+.print-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.print-button:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+/* Support Button Styling */
+.support-button {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.support-button:hover {
+  background: linear-gradient(135deg, #ee82f0 0%, #f04658 100%);
+}
+
+/* Tooltip effect */
+.fab-button::before {
+  content: attr(title);
+  position: absolute;
+  right: 70px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1001;
+}
+
+.fab-button::after {
+  content: '';
+  position: absolute;
+  right: 62px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid rgba(0, 0, 0, 0.8);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.fab-button:hover::before,
+.fab-button:hover::after {
+  opacity: 1;
+}
+
+/* Animation for floating effect */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.fab-button {
+  animation: float 3s ease-in-out infinite;
+}
+
+.fab-button:hover {
+  animation: none;
+}
+
+/* Support Modal Styles */
+.support-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.support-modal {
+  background: white;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.support-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.support-modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.3s ease;
+}
+
+.close-modal-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.support-modal-body {
+  padding: 30px;
+}
+
+.support-options {
+  display: grid;
+  gap: 15px;
+}
+
+.support-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
+  text-align: left;
+}
+
+.support-option:hover {
+  border-color: #667eea;
+  background: #f8faff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+/* Print media query - hide FAB buttons when printing */
+@media print {
+  .floating-action-buttons,
+  .support-modal-overlay {
+    display: none !important;
+  }
+  
+  /* Also hide other non-essential elements during print */
+  .dashboard-header .header-actions,
+  .realtime-profiles-section {
+    display: none !important;
+  }
+
+  /* Optimize print layout */
+  .admin-dashboard {
+    background: white !important;
+  }
+
+  .stat-card,
+  .analytics-card,
+  .activity-item {
+    break-inside: avoid;
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .floating-action-buttons {
+    bottom: 20px;
+    right: 20px;
+  }
+  
+  .fab-button {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+  
+  .fab-button::before {
+    right: 60px;
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+  
+  .fab-button::after {
+    right: 54px;
+  }
+
+  .support-modal {
+    width: 95%;
+    margin: 20px;
+  }
+
+  .support-modal-body {
+    padding: 20px;
+  }
+
+  .support-option {
+    padding: 12px 15px;
+    font-size: 14px;
+  }
+}
+
+/* Additional animations */
+.fab-button:nth-child(1) {
+  animation-delay: -0.5s;
+}
+
+.fab-button:nth-child(2) {
+  animation-delay: -1s;
+}
+
+/* Loading spinner for when buttons are processing */
+.fab-loading {
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #667eea;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
