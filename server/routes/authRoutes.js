@@ -20,13 +20,13 @@ authRouter.post('/login', login);
 authRouter.post('/logout', logout);
 
 // Password reset routes (public)
-authRouter.post('/send-reset-otp', sendResetOtp);
-authRouter.post('/reset-password', resetPassword);
-authRouter.post('/resend-reset-otp', resendResetOtp);
+authRouter.post('/sendResetOtp', sendResetOtp);
+authRouter.post('/resetPassword', resetPassword);
+authRouter.post('/resendResetOtp', resendResetOtp);
 
 // Protected routes (require authentication)
-authRouter.post('/send-verify-otp', userAuth, sendVerifyOtp);
-authRouter.post('/verify-account', userAuth, verifyEmail);
+authRouter.post('/sendVerifyOtp', userAuth, sendVerifyOtp);
+authRouter.post('/verifyEmail', userAuth, verifyEmail);
 authRouter.get('/verify-session', userAuth, isAuthenticated);
 authRouter.get('/profile', userAuth, isAuthenticated);
 
