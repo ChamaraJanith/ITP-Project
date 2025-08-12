@@ -609,7 +609,7 @@ function MedicalNavbar() {
             padding: "12px 0"
           }}
         >
-          <FaHeartbeat /> MedCenter
+          <FaHeartbeat /> Heal X
         </Link>
         
         <div style={{ marginBottom: 16 }}>
@@ -728,7 +728,7 @@ function MedicalNavbar() {
                 onMouseEnter={e => e.target.style.transform = "scale(1.05)"}
                 onMouseLeave={e => e.target.style.transform = "scale(1)"}
               >
-                <FaHeartbeat style={{ fontSize: 28 }} /> MedCenter
+                <FaHeartbeat style={{ fontSize: 28 }} /> Heal X
               </Link>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {navLinks}
@@ -797,7 +797,7 @@ function MedicalNavbar() {
                   gap: 8
                 }}
               >
-                <FaHeartbeat /> MedCenter
+                <FaHeartbeat /> Heal X
               </Link>
               <button
                 style={{
