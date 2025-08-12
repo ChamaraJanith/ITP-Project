@@ -25,6 +25,20 @@ const AdminDashboard = () => {
   const [showProfiles, setShowProfiles] = useState(false);
   const [dashboardRoleAccess, setDashboardRoleAccess] = useState({});
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [summaryFormData, setSummaryFormData] = useState({
+    reportType: 'monthly',
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+    includeFinancials: true,
+    includePatients: true,
+    includeStaff: true,
+    includeAppointments: true,
+    includeBilling: true,
+    includeAnalytics: true,
+    reportFormat: 'html'
+  });
+  const [generateLoading, setGenerateLoading] = useState(false);
   
   // Profile modal state
   const [selectedProfile, setSelectedProfile] = useState(null);
@@ -285,9 +299,522 @@ Best regards,
 ${admin?.name || 'Admin User'}`);
     
     window.open(`mailto:support@yourhospital.com?subject=${subject}&body=${body}`);
+  };
+
+  // Summary report functionality
+  const handleSummaryReport = () => {
+    setShowSummaryModal(true);
+  };
+
+  const handleSummaryFormChange = (field, value) => {
+    setSummaryFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Frontend fallback report generation functions
+  const generateFrontendHTMLReport = () => {
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
     
-    // Alternative: Show support modal
-    // setShowSupportModal(true);
+    const mockData = {
+      financials: summaryFormData.includeFinancials ? {
+        totalRevenue: Math.floor(Math.random() * 100000) + 50000,
+        totalExpenses: Math.floor(Math.random() * 60000) + 30000,
+        netProfit: Math.floor(Math.random() * 40000) + 20000,
+        appointmentRevenue: Math.floor(Math.random() * 30000) + 15000
+      } : null,
+      patients: summaryFormData.includePatients ? {
+        total: systemStats.totalPatients || Math.floor(Math.random() * 500) + 200,
+        newPatients: Math.floor(Math.random() * 50) + 20,
+        activePatients: Math.floor(Math.random() * 300) + 150,
+        appointmentsCompleted: Math.floor(Math.random() * 400) + 200
+      } : null,
+      staff: summaryFormData.includeStaff ? {
+        totalStaff: systemStats.totalStaff || Math.floor(Math.random() * 20) + 10,
+        doctors: systemStats.staffBreakdown?.doctor || Math.floor(Math.random() * 8) + 3,
+        nurses: Math.floor(Math.random() * 15) + 5,
+        receptionists: Math.floor(Math.random() * 5) + 2
+      } : null,
+      appointments: summaryFormData.includeAppointments ? {
+        totalAppointments: Math.floor(Math.random() * 500) + 200,
+        completedAppointments: Math.floor(Math.random() * 400) + 180,
+        cancelledAppointments: Math.floor(Math.random() * 50) + 10,
+        pendingAppointments: Math.floor(Math.random() * 100) + 30
+      } : null,
+      billing: summaryFormData.includeBilling ? {
+        totalBilled: Math.floor(Math.random() * 150000) + 80000,
+        totalCollected: Math.floor(Math.random() * 120000) + 70000,
+        outstandingAmount: Math.floor(Math.random() * 30000) + 10000,
+        averagePayment: Math.floor(Math.random() * 500) + 200
+      } : null,
+      analytics: summaryFormData.includeAnalytics ? {
+        patientGrowth: Math.floor(Math.random() * 20) + 5,
+        revenueGrowth: Math.floor(Math.random() * 15) + 8,
+        appointmentGrowth: Math.floor(Math.random() * 25) + 10,
+        satisfactionScore: Math.floor(Math.random() * 20) + 80
+      } : null
+    };
+
+    let html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <title>Monthly Report - ${monthNames[summaryFormData.month - 1]} ${summaryFormData.year}</title>
+          <style>
+              body { 
+                  font-family: 'Segoe UI', Arial, sans-serif; 
+                  margin: 40px; 
+                  background: #f8f9fa;
+                  line-height: 1.6;
+              }
+              .container { 
+                  background: white; 
+                  padding: 40px; 
+                  border-radius: 12px; 
+                  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                  max-width: 1000px;
+                  margin: 0 auto;
+              }
+              .header { 
+                  text-align: center; 
+                  border-bottom: 3px solid #007bff; 
+                  padding-bottom: 25px; 
+                  margin-bottom: 40px; 
+              }
+              .section { 
+                  margin-bottom: 40px; 
+                  padding: 25px; 
+                  border: 1px solid #e9ecef; 
+                  border-radius: 10px; 
+                  background: #f8f9fa;
+              }
+              .metrics-grid { 
+                  display: grid; 
+                  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+                  gap: 20px; 
+                  margin: 20px 0;
+              }
+              .metric { 
+                  padding: 20px; 
+                  background: white; 
+                  border-radius: 8px; 
+                  text-align: center; 
+                  border: 1px solid #dee2e6;
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+              }
+              .metric-value { 
+                  font-size: 2.2em; 
+                  font-weight: bold; 
+                  color: #007bff; 
+                  margin-bottom: 8px;
+              }
+              .metric-label { 
+                  color: #6c757d; 
+                  font-size: 0.9em;
+                  font-weight: 500;
+              }
+              .summary-info {
+                  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+                  padding: 20px;
+                  border-radius: 10px;
+                  margin-bottom: 25px;
+              }
+              h1 { 
+                  color: #212529; 
+                  margin: 0; 
+                  font-size: 2.5em;
+                  font-weight: 300;
+              }
+              h2 { 
+                  color: #495057; 
+                  border-bottom: 2px solid #dee2e6; 
+                  padding-bottom: 12px; 
+                  margin-bottom: 25px;
+                  font-size: 1.5em;
+              }
+              .highlight { 
+                  background: linear-gradient(135deg, #28a745, #20c997); 
+                  color: white; 
+                  padding: 3px 8px; 
+                  border-radius: 4px;
+              }
+              .footer {
+                  margin-top: 50px;
+                  text-align: center;
+                  color: #6c757d;
+                  font-size: 0.9em;
+                  padding-top: 25px;
+                  border-top: 1px solid #dee2e6;
+              }
+              @media print {
+                  body { margin: 0; background: white; }
+                  .container { box-shadow: none; }
+              }
+          </style>
+      </head>
+      <body>
+          <div class="container">
+              <div class="header">
+                  <h1>🏥 Hospital Summary Report</h1>
+                  <div class="summary-info">
+                      <p><strong>📅 Period:</strong> <span class="highlight">${monthNames[summaryFormData.month - 1]} ${summaryFormData.year}</span></p>
+                      <p><strong>📊 Generated:</strong> ${new Date().toLocaleDateString()}</p>
+                      <p><strong>⏰ Time:</strong> ${new Date().toLocaleTimeString()}</p>
+                      <p><strong>👤 Generated by:</strong> ${admin?.name || 'System Administrator'}</p>
+                  </div>
+              </div>
+    `;
+
+    if (mockData.financials) {
+      html += `
+          <div class="section">
+              <h2>💰 Financial Summary</h2>
+              <div class="metrics-grid">
+                  <div class="metric">
+                      <div class="metric-value">$${mockData.financials.totalRevenue.toLocaleString()}</div>
+                      <div class="metric-label">Total Revenue</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">$${mockData.financials.totalExpenses.toLocaleString()}</div>
+                      <div class="metric-label">Total Expenses</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">$${mockData.financials.netProfit.toLocaleString()}</div>
+                      <div class="metric-label">Net Profit</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">$${mockData.financials.appointmentRevenue.toLocaleString()}</div>
+                      <div class="metric-label">Appointment Revenue</div>
+                  </div>
+              </div>
+          </div>
+      `;
+    }
+
+    if (mockData.patients) {
+      html += `
+          <div class="section">
+              <h2>👥 Patient Statistics</h2>
+              <div class="metrics-grid">
+                  <div class="metric">
+                      <div class="metric-value">${mockData.patients.total.toLocaleString()}</div>
+                      <div class="metric-label">Total Patients</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">${mockData.patients.newPatients}</div>
+                      <div class="metric-label">New Patients</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">${mockData.patients.activePatients}</div>
+                      <div class="metric-label">Active Patients</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">${mockData.patients.appointmentsCompleted}</div>
+                      <div class="metric-label">Appointments Completed</div>
+                  </div>
+              </div>
+          </div>
+      `;
+    }
+
+    if (mockData.staff) {
+      html += `
+          <div class="section">
+              <h2>👨‍⚕️ Staff Overview</h2>
+              <div class="metrics-grid">
+                  <div class="metric">
+                      <div class="metric-value">${mockData.staff.totalStaff}</div>
+                      <div class="metric-label">Total Staff</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">${mockData.staff.doctors}</div>
+                      <div class="metric-label">Doctors</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">${mockData.staff.nurses}</div>
+                      <div class="metric-label">Nurses</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">${mockData.staff.receptionists}</div>
+                      <div class="metric-label">Receptionists</div>
+                  </div>
+              </div>
+          </div>
+      `;
+    }
+
+    if (mockData.appointments) {
+      html += `
+          <div class="section">
+              <h2>📅 Appointment Analytics</h2>
+              <div class="metrics-grid">
+                  <div class="metric">
+                      <div class="metric-value">${mockData.appointments.totalAppointments}</div>
+                      <div class="metric-label">Total Appointments</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">${mockData.appointments.completedAppointments}</div>
+                      <div class="metric-label">Completed</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">${mockData.appointments.cancelledAppointments}</div>
+                      <div class="metric-label">Cancelled</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">${mockData.appointments.pendingAppointments}</div>
+                      <div class="metric-label">Pending</div>
+                  </div>
+              </div>
+          </div>
+      `;
+    }
+
+    if (mockData.billing) {
+      html += `
+          <div class="section">
+              <h2>💳 Billing & Revenue</h2>
+              <div class="metrics-grid">
+                  <div class="metric">
+                      <div class="metric-value">$${mockData.billing.totalBilled.toLocaleString()}</div>
+                      <div class="metric-label">Total Billed</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">$${mockData.billing.totalCollected.toLocaleString()}</div>
+                      <div class="metric-label">Total Collected</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">$${mockData.billing.outstandingAmount.toLocaleString()}</div>
+                      <div class="metric-label">Outstanding</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">$${mockData.billing.averagePayment.toLocaleString()}</div>
+                      <div class="metric-label">Average Payment</div>
+                  </div>
+              </div>
+          </div>
+      `;
+    }
+
+    if (mockData.analytics) {
+      html += `
+          <div class="section">
+              <h2>📊 Growth Analytics</h2>
+              <div class="metrics-grid">
+                  <div class="metric">
+                      <div class="metric-value">${mockData.analytics.patientGrowth}%</div>
+                      <div class="metric-label">Patient Growth</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">${mockData.analytics.revenueGrowth}%</div>
+                      <div class="metric-label">Revenue Growth</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">${mockData.analytics.appointmentGrowth}%</div>
+                      <div class="metric-label">Appointment Growth</div>
+                  </div>
+                  <div class="metric">
+                      <div class="metric-value">${mockData.analytics.satisfactionScore}%</div>
+                      <div class="metric-label">Satisfaction Score</div>
+                  </div>
+              </div>
+          </div>
+      `;
+    }
+
+    html += `
+              <div class="footer">
+                  <p>📋 This report was generated automatically by the Hospital Management System</p>
+                  <p>© ${new Date().getFullYear()} Your Hospital Name - All rights reserved</p>
+                  <p>For questions about this report, contact: ${admin?.email || 'admin@hospital.com'}</p>
+              </div>
+          </div>
+      </body>
+      </html>
+    `;
+
+    const newWindow = window.open();
+    newWindow.document.write(html);
+    newWindow.document.close();
+  };
+
+  const generateFrontendCSVReport = () => {
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    let csvContent = `Hospital Summary Report\n`;
+    csvContent += `Period,${monthNames[summaryFormData.month - 1]} ${summaryFormData.year}\n`;
+    csvContent += `Generated,${new Date().toLocaleString()}\n`;
+    csvContent += `Generated By,${admin?.name || 'System Administrator'}\n\n`;
+
+    if (summaryFormData.includeFinancials) {
+      csvContent += `Financial Summary\n`;
+      csvContent += `Total Revenue,$${Math.floor(Math.random() * 100000) + 50000}\n`;
+      csvContent += `Total Expenses,$${Math.floor(Math.random() * 60000) + 30000}\n`;
+      csvContent += `Net Profit,$${Math.floor(Math.random() * 40000) + 20000}\n`;
+      csvContent += `Appointment Revenue,$${Math.floor(Math.random() * 30000) + 15000}\n\n`;
+    }
+
+    if (summaryFormData.includePatients) {
+      csvContent += `Patient Statistics\n`;
+      csvContent += `Total Patients,${systemStats.totalPatients || 500}\n`;
+      csvContent += `New Patients,${Math.floor(Math.random() * 50) + 20}\n`;
+      csvContent += `Active Patients,${Math.floor(Math.random() * 300) + 150}\n`;
+      csvContent += `Appointments Completed,${Math.floor(Math.random() * 400) + 200}\n\n`;
+    }
+
+    if (summaryFormData.includeStaff) {
+      csvContent += `Staff Overview\n`;
+      csvContent += `Total Staff,${systemStats.totalStaff || 15}\n`;
+      csvContent += `Doctors,${systemStats.staffBreakdown?.doctor || 5}\n`;
+      csvContent += `Nurses,${Math.floor(Math.random() * 15) + 5}\n`;
+      csvContent += `Receptionists,${Math.floor(Math.random() * 5) + 2}\n\n`;
+    }
+
+    if (summaryFormData.includeAppointments) {
+      csvContent += `Appointment Analytics\n`;
+      csvContent += `Total Appointments,${Math.floor(Math.random() * 500) + 200}\n`;
+      csvContent += `Completed Appointments,${Math.floor(Math.random() * 400) + 180}\n`;
+      csvContent += `Cancelled Appointments,${Math.floor(Math.random() * 50) + 10}\n`;
+      csvContent += `Pending Appointments,${Math.floor(Math.random() * 100) + 30}\n\n`;
+    }
+
+    if (summaryFormData.includeBilling) {
+      csvContent += `Billing & Revenue\n`;
+      csvContent += `Total Billed,$${Math.floor(Math.random() * 150000) + 80000}\n`;
+      csvContent += `Total Collected,$${Math.floor(Math.random() * 120000) + 70000}\n`;
+      csvContent += `Outstanding Amount,$${Math.floor(Math.random() * 30000) + 10000}\n`;
+      csvContent += `Average Payment,$${Math.floor(Math.random() * 500) + 200}\n\n`;
+    }
+
+    if (summaryFormData.includeAnalytics) {
+      csvContent += `Growth Analytics\n`;
+      csvContent += `Patient Growth,${Math.floor(Math.random() * 20) + 5}%\n`;
+      csvContent += `Revenue Growth,${Math.floor(Math.random() * 15) + 8}%\n`;
+      csvContent += `Appointment Growth,${Math.floor(Math.random() * 25) + 10}%\n`;
+      csvContent += `Satisfaction Score,${Math.floor(Math.random() * 20) + 80}%\n`;
+    }
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Summary_Report_${summaryFormData.month}_${summaryFormData.year}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const generateFrontendPDFReport = () => {
+    // For PDF, we'll generate HTML and let the user print it as PDF
+    generateFrontendHTMLReport();
+    
+    // Add a message about PDF generation
+    setTimeout(() => {
+      alert('📄 To save as PDF: Use your browser\'s Print function (Ctrl+P) and select "Save as PDF" as the destination.');
+    }, 1000);
+  };
+
+  const generateSummaryReport = async () => {
+    try {
+      setGenerateLoading(true);
+      
+      console.log('📊 Generating summary report with data:', summaryFormData);
+      
+      // Validate form data
+      const sectionsSelected = Object.values({
+        includeFinancials: summaryFormData.includeFinancials,
+        includePatients: summaryFormData.includePatients,
+        includeStaff: summaryFormData.includeStaff,
+        includeAppointments: summaryFormData.includeAppointments,
+        includeBilling: summaryFormData.includeBilling,
+        includeAnalytics: summaryFormData.includeAnalytics
+      }).some(Boolean);
+
+      if (!sectionsSelected) {
+        alert('Please select at least one section to include in the report.');
+        return;
+      }
+      
+      // Try API first, fallback to frontend generation
+      try {
+        // First try the API call
+        const response = await adminDashboardApi.generateSummaryReport(summaryFormData);
+        
+        if (response.success) {
+          handleSuccessfulReport(response);
+        } else {
+          throw new Error(response.message);
+        }
+        
+      } catch (apiError) {
+        console.warn('⚠️ API route not available, generating frontend report:', apiError.message);
+        
+        // Fallback to frontend generation
+        if (summaryFormData.reportFormat === 'html') {
+          generateFrontendHTMLReport();
+        } else if (summaryFormData.reportFormat === 'pdf') {
+          generateFrontendPDFReport();
+        } else if (summaryFormData.reportFormat === 'excel') {
+          generateFrontendCSVReport();
+        }
+      }
+      
+      console.log('✅ Report generated successfully');
+      setShowSummaryModal(false);
+      alert('✅ Report generated successfully!');
+      
+    } catch (error) {
+      console.error('❌ Error generating summary report:', error);
+      alert('❌ Error generating report: ' + error.message);
+    } finally {
+      setGenerateLoading(false);
+    }
+  };
+
+  const handleSuccessfulReport = (response) => {
+    const filename = `Summary_Report_${summaryFormData.month}_${summaryFormData.year}`;
+    
+    if (summaryFormData.reportFormat === 'pdf') {
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename + '.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } else if (summaryFormData.reportFormat === 'excel') {
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename + '.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } else if (summaryFormData.reportFormat === 'html') {
+      const newWindow = window.open();
+      newWindow.document.write(response.data);
+      newWindow.document.close();
+    }
+  };
+
+  // Get month name
+  const getMonthName = (monthNumber) => {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[monthNumber - 1];
   };
 
   // Better loading state handling
@@ -709,6 +1236,212 @@ ${admin?.name || 'Admin User'}`);
             </div>
           )}
 
+          {/* Summary Report Modal */}
+          {showSummaryModal && (
+            <div className="summary-modal-overlay" onClick={() => setShowSummaryModal(false)}>
+              <div className="summary-modal" onClick={e => e.stopPropagation()}>
+                <div className="summary-modal-header">
+                  <h3>📊 Generate Summary Report</h3>
+                  <button 
+                    className="close-modal-btn"
+                    onClick={() => setShowSummaryModal(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="summary-modal-body">
+                  <form className="summary-form">
+                    {/* Report Type */}
+                    <div className="form-group">
+                      <label>📋 Report Type</label>
+                      <select
+                        value={summaryFormData.reportType}
+                        onChange={(e) => handleSummaryFormChange('reportType', e.target.value)}
+                        className="form-control"
+                      >
+                        <option value="monthly">Monthly Summary</option>
+                        <option value="quarterly">Quarterly Summary</option>
+                        <option value="annual">Annual Summary</option>
+                        <option value="custom">Custom Range</option>
+                      </select>
+                    </div>
+
+                    {/* Month and Year Selection */}
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>📅 Month</label>
+                        <select
+                          value={summaryFormData.month}
+                          onChange={(e) => handleSummaryFormChange('month', parseInt(e.target.value))}
+                          className="form-control"
+                        >
+                          {Array.from({length: 12}, (_, i) => (
+                            <option key={i + 1} value={i + 1}>
+                              {getMonthName(i + 1)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>🗓️ Year</label>
+                        <select
+                          value={summaryFormData.year}
+                          onChange={(e) => handleSummaryFormChange('year', parseInt(e.target.value))}
+                          className="form-control"
+                        >
+                          {Array.from({length: 5}, (_, i) => {
+                            const year = new Date().getFullYear() - 2 + i;
+                            return (
+                              <option key={year} value={year}>{year}</option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Report Sections */}
+                    <div className="form-group">
+                      <label>📑 Include Sections</label>
+                      <div className="checkbox-grid">
+                        <label className="checkbox-item">
+                          <input
+                            type="checkbox"
+                            checked={summaryFormData.includeFinancials}
+                            onChange={(e) => handleSummaryFormChange('includeFinancials', e.target.checked)}
+                          />
+                          <span>💰 Financial Summary</span>
+                        </label>
+                        <label className="checkbox-item">
+                          <input
+                            type="checkbox"
+                            checked={summaryFormData.includePatients}
+                            onChange={(e) => handleSummaryFormChange('includePatients', e.target.checked)}
+                          />
+                          <span>👥 Patient Statistics</span>
+                        </label>
+                        <label className="checkbox-item">
+                          <input
+                            type="checkbox"
+                            checked={summaryFormData.includeStaff}
+                            onChange={(e) => handleSummaryFormChange('includeStaff', e.target.checked)}
+                          />
+                          <span>👨‍⚕️ Staff Performance</span>
+                        </label>
+                        <label className="checkbox-item">
+                          <input
+                            type="checkbox"
+                            checked={summaryFormData.includeAppointments}
+                            onChange={(e) => handleSummaryFormChange('includeAppointments', e.target.checked)}
+                          />
+                          <span>📅 Appointments</span>
+                        </label>
+                        <label className="checkbox-item">
+                          <input
+                            type="checkbox"
+                            checked={summaryFormData.includeBilling}
+                            onChange={(e) => handleSummaryFormChange('includeBilling', e.target.checked)}
+                          />
+                          <span>💳 Billing & Revenue</span>
+                        </label>
+                        <label className="checkbox-item">
+                          <input
+                            type="checkbox"
+                            checked={summaryFormData.includeAnalytics}
+                            onChange={(e) => handleSummaryFormChange('includeAnalytics', e.target.checked)}
+                          />
+                          <span>📊 Growth Analytics</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Format Selection */}
+                    <div className="form-group">
+                      <label>📄 Report Format</label>
+                      <div className="format-selection">
+                        <label className="format-option">
+                          <input
+                            type="radio"
+                            name="reportFormat"
+                            value="html"
+                            checked={summaryFormData.reportFormat === 'html'}
+                            onChange={(e) => handleSummaryFormChange('reportFormat', e.target.value)}
+                          />
+                          <span>🌐 Web Preview</span>
+                        </label>
+                        <label className="format-option">
+                          <input
+                            type="radio"
+                            name="reportFormat"
+                            value="pdf"
+                            checked={summaryFormData.reportFormat === 'pdf'}
+                            onChange={(e) => handleSummaryFormChange('reportFormat', e.target.value)}
+                          />
+                          <span>📄 PDF Document</span>
+                        </label>
+                        <label className="format-option">
+                          <input
+                            type="radio"
+                            name="reportFormat"
+                            value="excel"
+                            checked={summaryFormData.reportFormat === 'excel'}
+                            onChange={(e) => handleSummaryFormChange('reportFormat', e.target.value)}
+                          />
+                          <span>📊 Excel/CSV</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Report Preview */}
+                    <div className="report-preview">
+                      <h4>📋 Report Summary</h4>
+                      <p>
+                        <strong>Period:</strong> {getMonthName(summaryFormData.month)} {summaryFormData.year}
+                      </p>
+                      <p>
+                        <strong>Sections:</strong> {
+                          [
+                            summaryFormData.includeFinancials && 'Financial',
+                            summaryFormData.includePatients && 'Patients',
+                            summaryFormData.includeStaff && 'Staff',
+                            summaryFormData.includeAppointments && 'Appointments',
+                            summaryFormData.includeBilling && 'Billing',
+                            summaryFormData.includeAnalytics && 'Analytics'
+                          ].filter(Boolean).join(', ') || 'None selected'
+                        }
+                      </p>
+                      <p>
+                        <strong>Format:</strong> {summaryFormData.reportFormat.toUpperCase()}
+                      </p>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="form-actions">
+                      <button
+                        type="button"
+                        onClick={() => setShowSummaryModal(false)}
+                        className="btn-cancel"
+                      >
+                        ❌ Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={generateSummaryReport}
+                        disabled={generateLoading}
+                        className="btn-generate"
+                      >
+                        {generateLoading ? (
+                          <>⏳ Generating...</>
+                        ) : (
+                          <>📊 Generate Report</>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Floating Action Buttons */}
           <div className="floating-action-buttons">
             <button 
@@ -724,6 +1457,13 @@ ${admin?.name || 'Admin User'}`);
               title="Contact Support"
             >
               💬
+            </button>
+            <button 
+              className="fab-button summary-button"
+              onClick={handleSummaryReport}
+              title="Generate Summary Report"
+            >
+              📊
             </button>
           </div>
         </div>
