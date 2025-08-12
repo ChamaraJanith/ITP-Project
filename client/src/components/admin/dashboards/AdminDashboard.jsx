@@ -24,6 +24,7 @@ const AdminDashboard = () => {
   const [profilesLoading, setProfilesLoading] = useState(false);
   const [showProfiles, setShowProfiles] = useState(false);
   const [dashboardRoleAccess, setDashboardRoleAccess] = useState({});
+  const [showSupportModal, setShowSupportModal] = useState(false);
   
   // Profile modal state
   const [selectedProfile, setSelectedProfile] = useState(null);
@@ -241,6 +242,52 @@ const AdminDashboard = () => {
       console.error(`❌ Error accessing ${dashboardType} dashboard:`, error);
       setError(`Failed to access ${dashboardType} dashboard`);
     }
+  };
+
+  // Print functionality
+  const handlePrint = () => {
+    // Hide floating buttons before printing
+    const fabButtons = document.querySelector('.floating-action-buttons');
+    if (fabButtons) {
+      fabButtons.style.display = 'none';
+    }
+    
+    // Print the page
+    window.print();
+    
+    // Show floating buttons after printing
+    setTimeout(() => {
+      if (fabButtons) {
+        fabButtons.style.display = 'flex';
+      }
+    }, 1000);
+  };
+
+  // Contact support functionality
+  const handleContactSupport = () => {
+    // Option 1: Open email client with pre-filled details
+    const subject = encodeURIComponent('Admin Dashboard Support Request');
+    const body = encodeURIComponent(`Hello Support Team,
+
+I need assistance with the Admin Dashboard.
+
+Admin Details:
+- Name: ${admin?.name || 'N/A'}
+- Email: ${admin?.email || 'N/A'}
+- Role: ${admin?.role || 'N/A'}
+- Dashboard: System Administrator
+- Timestamp: ${new Date().toLocaleString()}
+
+Issue Description:
+[Please describe your issue here]
+
+Best regards,
+${admin?.name || 'Admin User'}`);
+    
+    window.open(`mailto:support@yourhospital.com?subject=${subject}&body=${body}`);
+    
+    // Alternative: Show support modal
+    // setShowSupportModal(true);
   };
 
   // Better loading state handling
@@ -604,6 +651,81 @@ const AdminDashboard = () => {
             profileId={selectedProfile?._id}
             profileType={selectedProfile?.type}
           />
+
+          {/* Support Modal */}
+          {showSupportModal && (
+            <div className="support-modal-overlay" onClick={() => setShowSupportModal(false)}>
+              <div className="support-modal" onClick={e => e.stopPropagation()}>
+                <div className="support-modal-header">
+                  <h3>💬 Contact Support</h3>
+                  <button 
+                    className="close-modal-btn"
+                    onClick={() => setShowSupportModal(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="support-modal-body">
+                  <div className="support-options">
+                    <button 
+                      className="support-option"
+                      onClick={() => {
+                        handleContactSupport();
+                        setShowSupportModal(false);
+                      }}
+                    >
+                      📧 Send Email
+                    </button>
+                    <button 
+                      className="support-option"
+                      onClick={() => {
+                        window.open('tel:+1234567890');
+                        setShowSupportModal(false);
+                      }}
+                    >
+                      📞 Call Support
+                    </button>
+                    <button 
+                      className="support-option"
+                      onClick={() => {
+                        window.open('https://your-chat-support.com', '_blank');
+                        setShowSupportModal(false);
+                      }}
+                    >
+                      💬 Live Chat
+                    </button>
+                    <button 
+                      className="support-option"
+                      onClick={() => {
+                        window.open('https://your-knowledge-base.com', '_blank');
+                        setShowSupportModal(false);
+                      }}
+                    >
+                      📚 Knowledge Base
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Floating Action Buttons */}
+          <div className="floating-action-buttons">
+            <button 
+              className="fab-button print-button"
+              onClick={handlePrint}
+              title="Print Dashboard"
+            >
+              🖨️
+            </button>
+            <button 
+              className="fab-button support-button"
+              onClick={() => setShowSupportModal(true)}
+              title="Contact Support"
+            >
+              💬
+            </button>
+          </div>
         </div>
       </AdminLayout>
     </AdminErrorBoundary>
