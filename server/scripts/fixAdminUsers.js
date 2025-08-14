@@ -39,7 +39,7 @@ const fixAdminUsers = async () => {
         isAccountVerified: true
       },
       {
-        name: "Dr. Michael Johnson",
+        name: "Dr. Gayath Dahanayaka",
         email: "doctor@healx.com", 
         password: "doctor123",
         role: "doctor",

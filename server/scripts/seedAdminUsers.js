@@ -25,7 +25,7 @@ const seedAdminUsers = async () => {
         role: "receptionist"
       },
       {
-        name: "Dr. Michael Johnson",
+        name: "Dr. Gayath Dahanayaka",
         email: "doctor@healx.com", 
         password: await bcrypt.hash("doctor123", 12),
         role: "doctor",

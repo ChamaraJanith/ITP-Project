@@ -55,7 +55,7 @@ async function createAdminUser() {
     // Create additional admin users if needed
     const users = [
       {
-        name: 'Dr. Sarah Johnson',
+        name: 'Dr. Gayath Dahanayaka',
         email: 'doctor@healx.com',
         role: 'doctor',
         employeeId: 'DOC001',
