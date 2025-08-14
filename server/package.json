@@ -10,6 +10,7 @@
     "verify-admin": "node scripts/verifyAdminUsers.js",
     "fix-admin": "node scripts/fixAdminUsers.js",
     "create-admin": "node scripts/createAdminUser.js"
+
   },
   "keywords": [],
   "author": "",
