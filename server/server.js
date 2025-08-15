@@ -21,6 +21,7 @@ const { default: userRouter } = await import("./routes/userRoutes.js");
 const { default: chatbotRouter } = await import("./routes/chatbot.js");
 const { default: subscriptionRouter } = await import("./routes/subscriptionRoutes.js");
 const { default: adminRouter } = await import("./routes/adminRoutes.js");
+const { default: inventoryRouter } = await import("./routes/inventoryRoutes.js"); // ✅ MOVED HERE
 
 const app = express();
 const PORT = process.env.PORT || 7000;
@@ -85,7 +86,8 @@ app.get('/health', (req, res) => {
       admin_auth: '/api/admin',
       user_management: '/api/user',
       chatbot: '/api/chatbot',
-      subscription: '/api/subscription'
+      subscription: '/api/subscription',
+      inventory: '/api/inventory'
     }
   });
 });
@@ -102,17 +104,21 @@ app.get("/", (req, res) => {
       'POST /api/auth/register - User registration',
       'POST /api/admin/login - Admin login',
       'GET /api/user/profile - User profile (protected)',
-      'POST /api/chatbot/message - Chatbot interaction'
+      'POST /api/chatbot/message - Chatbot interaction',
+      'GET /api/inventory/surgical-items - Get surgical items',
+      'POST /api/inventory/surgical-items - Create surgical item',
+      'GET /api/inventory/dashboard-stats - Inventory stats'
     ]
   });
 });
 
 // API Routes - Mount in specific order
-app.use('/api/auth', authRouter);        // User authentication
-app.use('/api/admin', adminRouter);      // Admin authentication & management
-app.use('/api/user', userRouter);        // User management
-app.use('/api/chatbot', chatbotRouter);  // Chatbot functionality
-app.use('/api/subscription', subscriptionRouter); // Newsletter subscription
+app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/user', userRouter);
+app.use('/api/chatbot', chatbotRouter);
+app.use('/api/subscription', subscriptionRouter);
+app.use('/api/inventory', inventoryRouter); // ✅ NOW WORKS
 
 // Static file serving (if needed)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

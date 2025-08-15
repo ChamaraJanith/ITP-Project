@@ -19,6 +19,7 @@ import ReceptionistDashboard from './components/admin/dashboards/ReceptionistDas
 import DoctorDashboard from './components/admin/dashboards/DoctorDashboard';
 import FinancialDashboard from './components/admin/dashboards/FinancialDashboard';
 import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute';
+import SurgicalItemsManagement from './components/admin/SurgicalItemsManagement';
 
 // ✅ Healthcare Service Components (create these as needed)
 const HospitalsPage = () => (
@@ -282,6 +283,9 @@ function App() {
               </ProtectedAdminRoute>
             } 
           />
+          <Route 
+           path="/admin/surgical-items" 
+           element={<SurgicalItemsManagement />} />
 
           {/* ✅ 404 Fallback Route */}
           <Route path="*" element={<NotFoundPage />} />
