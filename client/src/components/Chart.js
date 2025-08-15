@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
 import AdminErrorBoundary from './AdminErrorBoundary';
 import SurgicalItemModal from './SurgicalItemModal';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,11 +11,21 @@ import {
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ArcElement,
 } from 'chart.js';
 import './SurgicalItemsManagement.css';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
 const SurgicalItemsManagement = () => {
   const navigate = useNavigate();
@@ -49,35 +59,9 @@ const SurgicalItemsManagement = () => {
     'Other'
   ];
 
-  // Function to calculate totals from items array using min stock level
-  const calculateStats = (itemsArray) => {
-    const totalItems = itemsArray.length;
-    const totalQuantity = itemsArray.reduce((sum, item) => sum + (item.quantity || 0), 0);
-    const lowStockItems = itemsArray.reduce((count, item) => {
-      const minStock = item.minStockLevel || 0;
-      return count + (item.quantity <= minStock ? 1 : 0);
-    }, 0);
-    const totalValue = itemsArray.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0);
-
-    return {
-      totalItems,
-      totalQuantity,
-      lowStockItems,
-      totalValue
-    };
-  };
-
   useEffect(() => {
     initializeComponent();
   }, []);
-
-  useEffect(() => {
-    // Recalculate stats whenever items change
-    if (items.length > 0) {
-      const calculatedStats = calculateStats(items);
-      setStats(calculatedStats);
-    }
-  }, [items]);
 
   const initializeComponent = async () => {
     try {
@@ -99,8 +83,9 @@ const SurgicalItemsManagement = () => {
       }
 
       await loadItems();
+      await loadStats();
     } catch (error) {
-      console.error('Initialization error:', error);
+      console.error('❌ Initialization error:', error);
       setError('Failed to initialize component');
     } finally {
       setLoading(false);
@@ -109,21 +94,30 @@ const SurgicalItemsManagement = () => {
 
   const loadItems = async () => {
     try {
-      // Load all items for accurate stats calculation
-      const response = await fetch(`${API_BASE_URL}/surgical-items?page=1&limit=1000`);
+      const response = await fetch(`${API_BASE_URL}/surgical-items?page=${currentPage}&limit=${itemsPerPage}`);
       const data = await response.json();
       
       if (data.success) {
         setItems(data.data.items);
-        // Calculate and set stats immediately after loading items
-        const calculatedStats = calculateStats(data.data.items);
-        setStats(calculatedStats);
       } else {
         throw new Error(data.message || 'Failed to fetch items');
       }
     } catch (error) {
-      console.error('Error loading items:', error);
+      console.error('❌ Error loading items:', error);
       setError('Failed to load surgical items');
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/dashboard-stats`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setStats(data.data.overview);
+      }
+    } catch (error) {
+      console.error('❌ Error loading stats:', error);
     }
   };
 
@@ -146,19 +140,19 @@ const SurgicalItemsManagement = () => {
         
         const data = await response.json();
         if (data.success) {
-          alert('Item deleted successfully!');
+          alert('✅ Item deleted successfully!');
           loadItems();
+          loadStats();
         } else {
           throw new Error(data.message);
         }
       } catch (error) {
-        console.error('Error deleting item:', error);
-        alert('Failed to delete item: ' + error.message);
+        console.error('❌ Error deleting item:', error);
+        alert('❌ Failed to delete item: ' + error.message);
       }
     }
   };
 
-  // Enhanced stock update with free input
   const handleUpdateStock = async (itemId, quantityChange, type) => {
     try {
       const response = await fetch(`${API_BASE_URL}/surgical-items/${itemId}/update-stock`, {
@@ -174,95 +168,24 @@ const SurgicalItemsManagement = () => {
       
       const data = await response.json();
       if (data.success) {
-        alert(`Stock ${type} updated successfully!`);
+        alert(`✅ Stock ${type} updated successfully!`);
         loadItems();
+        loadStats();
       } else {
         throw new Error(data.message);
       }
     } catch (error) {
-      console.error('Error updating stock:', error);
-      alert('Failed to update stock: ' + error.message);
+      console.error('❌ Error updating stock:', error);
+      alert('❌ Failed to update stock: ' + error.message);
     }
   };
 
-  // Custom input component for better user experience
-  const CustomNumberInput = ({ value, onSubmit, placeholder, title }) => {
-    const [inputValue, setInputValue] = useState('');
-    const [isEditing, setIsEditing] = useState(false);
-
-    const handleSubmit = () => {
-      const numValue = parseInt(inputValue);
-      if (!isNaN(numValue) && numValue > 0) {
-        onSubmit(numValue);
-        setInputValue('');
-        setIsEditing(false);
-      } else {
-        alert('Please enter a valid positive number');
-      }
-    };
-
-    const handleKeyPress = (e) => {
-      if (e.key === 'Enter') {
-        handleSubmit();
-      } else if (e.key === 'Escape') {
-        setInputValue('');
-        setIsEditing(false);
-      }
-    };
-
-    if (isEditing) {
-      return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <input
-            type="number"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={placeholder}
-            style={{ width: '60px', fontSize: '12px', padding: '2px' }}
-            autoFocus
-          />
-          <button onClick={handleSubmit} style={{ fontSize: '10px', padding: '2px 4px' }}>✓</button>
-          <button onClick={() => { setInputValue(''); setIsEditing(false); }} style={{ fontSize: '10px', padding: '2px 4px' }}>✕</button>
-        </div>
-      );
-    }
-
-    return (
-      <button
-        onClick={() => setIsEditing(true)}
-        title={title}
-        style={{ fontSize: '12px', padding: '4px 6px', cursor: 'pointer' }}
-      >
-        {placeholder}
-      </button>
-    );
-  };
-
-  // Modified status functions based on min stock level
-  const getStatusColor = (quantity, minStockLevel) => {
-    if (quantity <= (minStockLevel || 0)) {
-      return '#ffc107'; // Orange for Low Stock
-    }
-    return '#28a745'; // Green for Available
-  };
-
-  const getStatusText = (quantity, minStockLevel) => {
-    if (quantity <= (minStockLevel || 0)) {
-      return 'Low Stock';
-    }
-    return 'Available';
-  };
-
-  // Filter and search items - Updated to use min stock level
+  // Filter and search items
   const filteredItems = items.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
-    
-    // Updated status filtering to use min stock level
-    let itemStatus = getStatusText(item.quantity, item.minStockLevel);
-    const matchesStatus = filterStatus === 'all' || itemStatus === filterStatus;
+    const matchesStatus = filterStatus === 'all' || item.status === filterStatus;
     
     return matchesSearch && matchesCategory && matchesStatus;
   });
@@ -273,131 +196,136 @@ const SurgicalItemsManagement = () => {
   const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
-  // Enhanced stock chart using min stock level
-  const ItemStockChart = ({ item }) => {
-    const minStock = item.minStockLevel || 0;
-    const isLowStock = item.quantity <= minStock;
-    
-    const data = {
-      labels: ['Stock Level'],
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Available': return '#28a745';
+      case 'Low Stock': return '#ffc107';
+      case 'Out of Stock': return '#dc3545';
+      case 'Discontinued': return '#6c757d';
+      default: return '#007bff';
+    }
+  };
+
+  // Graphs component
+  const Graphs = ({ stats }) => {
+    const barData = {
+      labels: ['Total Items', 'Total Quantity', 'Low Stock Items'],
       datasets: [
         {
-          label: 'Current Stock',
-          data: [item.quantity],
-          backgroundColor: isLowStock ? '#ffc107' : '#28a745',
-          borderColor: isLowStock ? '#ffc107' : '#28a745',
-          borderWidth: 1,
-        },
-        {
-          label: `Min Stock (${minStock})`,
-          data: [minStock],
-          backgroundColor: '#dc3545',
-          borderColor: '#dc3545',
-          borderWidth: 1,
+          label: 'Inventory Overview',
+          data: [stats.totalItems || 0, stats.totalQuantity || 0, stats.lowStockItems || 0],
+          backgroundColor: ['#007bff', '#28a745', '#ffc107'],
+          borderColor: ['#0056b3', '#1e7e34', '#e0a800'],
+          borderWidth: 1
         }
       ]
     };
 
-    const options = {
-      indexAxis: 'y',
+    const barOptions = {
       responsive: true,
-      maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: false,
+          position: 'top',
         },
-        tooltip: {
-          callbacks: {
-            title: () => item.name,
-            label: (context) => {
-              const label = context.dataset.label;
-              const value = context.parsed.x;
-              return `${label}: ${value}`;
-            }
-          }
+        title: {
+          display: true,
+          text: 'Inventory Statistics Overview'
         }
       },
       scales: {
-        x: {
-          beginAtZero: true,
-          display: false,
-          max: Math.max(item.quantity, minStock) * 1.2,
-        },
         y: {
-          display: false,
-        }
-      },
-      layout: {
-        padding: {
-          top: 2,
-          bottom: 2,
-          left: 2,
-          right: 2
+          beginAtZero: true
         }
       }
     };
 
-    return (
-      <div style={{ width: '120px', height: '40px', position: 'relative' }}>
-        <Bar data={data} options={options} />
-        <div style={{ 
-          position: 'absolute', 
-          top: '50%', 
-          left: '50%', 
-          transform: 'translate(-50%, -50%)',
-          fontSize: '10px',
-          fontWeight: 'bold',
-          color: '#333',
-          pointerEvents: 'none'
-        }}>
-          {item.quantity}/{minStock}
-        </div>
-      </div>
-    );
-  };
+    // Prepare pie chart data for item statuses from items array
+    const statusCounts = items.reduce((acc, item) => {
+      acc[item.status] = (acc[item.status] || 0) + 1;
+      return acc;
+    }, {});
 
-  // Price trend mini chart
-  const PriceTrendChart = ({ item }) => {
-    const trendData = [
-      item.price * 0.9,
-      item.price * 0.95,
-      item.price,
-      item.price * 1.02,
-      item.price
-    ];
-
-    const data = {
-      labels: ['', '', '', '', ''],
-      datasets: [{
-        data: trendData,
-        borderColor: '#007bff',
-        backgroundColor: 'rgba(0, 123, 255, 0.1)',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.4,
-        pointRadius: 1,
-      }]
+    const pieData = {
+      labels: Object.keys(statusCounts),
+      datasets: [
+        {
+          data: Object.values(statusCounts),
+          backgroundColor: Object.keys(statusCounts).map(status => getStatusColor(status)),
+          borderColor: '#fff',
+          borderWidth: 2
+        }
+      ]
     };
 
-    const options = {
+    const pieOptions = {
       responsive: true,
-      maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
-        tooltip: { enabled: false }
+        legend: {
+          position: 'right',
+        },
+        title: {
+          display: true,
+          text: 'Items by Status'
+        }
+      }
+    };
+
+    // Category distribution chart
+    const categoryCounts = items.reduce((acc, item) => {
+      acc[item.category] = (acc[item.category] || 0) + 1;
+      return acc;
+    }, {});
+
+    const categoryData = {
+      labels: Object.keys(categoryCounts),
+      datasets: [
+        {
+          label: 'Items by Category',
+          data: Object.values(categoryCounts),
+          backgroundColor: [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+            '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384', '#36A2EB'
+          ],
+          borderWidth: 1
+        }
+      ]
+    };
+
+    const categoryOptions = {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'Items Distribution by Category'
+        }
       },
       scales: {
-        x: { display: false },
-        y: { display: false }
-      },
-      elements: {
-        point: { radius: 0 }
+        y: {
+          beginAtZero: true
+        }
       }
     };
 
     return (
-      <div style={{ width: '60px', height: '30px' }}>
-        <Bar data={data} options={options} />
+      <div className="graphs-container" style={{ margin: '20px 0', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#333' }}>📊 Inventory Analytics</h2>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '30px' }}>
+          <div className="chart-container" style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+            <Bar data={barData} options={barOptions} />
+          </div>
+          
+          <div className="chart-container" style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+            <Pie data={pieData} options={pieOptions} />
+          </div>
+        </div>
+
+        <div className="chart-container" style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+          <Bar data={categoryData} options={categoryOptions} />
+        </div>
       </div>
     );
   };
@@ -469,6 +397,9 @@ const SurgicalItemsManagement = () => {
             </div>
           </div>
 
+          {/* Render Graphs below stats cards */}
+          <Graphs stats={stats} />
+
           {/* Filters and Search */}
           <div className="filters-section">
             <div className="search-box">
@@ -499,26 +430,25 @@ const SurgicalItemsManagement = () => {
                 <option value="all">All Status</option>
                 <option value="Available">Available</option>
                 <option value="Low Stock">Low Stock</option>
+                <option value="Out of Stock">Out of Stock</option>
+                <option value="Discontinued">Discontinued</option>
               </select>
             </div>
           </div>
 
-          {/* Items Table with Individual Charts */}
+          {/* Items Table */}
           <div className="items-table-container">
             <table className="items-table">
               <thead>
                 <tr>
                   <th>Item Name</th>
                   <th>Category</th>
-                  <th>Stock Chart</th>
                   <th>Quantity</th>
                   <th>Min Stock</th>
                   <th>Price</th>
-                  <th>Item Value</th>
-                  <th>Price Trend</th>
                   <th>Status</th>
                   <th>Supplier</th>
-                  <th>Quick Actions</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -528,80 +458,66 @@ const SurgicalItemsManagement = () => {
                       <div className="item-info">
                         <strong>{item.name}</strong>
                         {item.description && (
-                          <small style={{ display: 'block', color: '#666', marginTop: '2px' }}>
-                            {item.description.substring(0, 40)}...
-                          </small>
+                          <small>{item.description.substring(0, 50)}...</small>
                         )}
                       </div>
                     </td>
                     <td>{item.category}</td>
                     <td>
-                      <ItemStockChart item={item} />
-                    </td>
-                    <td>
-                      <span 
-                        style={{ 
-                          fontWeight: 'bold',
-                          color: item.quantity <= (item.minStockLevel || 0) ? '#ffc107' : '#28a745'
-                        }}
-                      >
+                      <span className={item.quantity <= item.minStockLevel ? 'low-stock' : ''}>
                         {item.quantity}
                       </span>
                     </td>
-                    <td>{item.minStockLevel || 0}</td>
+                    <td>{item.minStockLevel}</td>
                     <td>${item.price.toFixed(2)}</td>
-                    <td>
-                      <strong>${((item.price || 0) * (item.quantity || 0)).toFixed(2)}</strong>
-                    </td>
-                    <td>
-                      <PriceTrendChart item={item} />
-                    </td>
                     <td>
                       <span 
                         className="status-badge"
-                        style={{ 
-                          backgroundColor: getStatusColor(item.quantity, item.minStockLevel),
-                          color: 'white',
-                          padding: '4px 8px',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          fontWeight: 'bold'
-                        }}
+                        style={{ backgroundColor: getStatusColor(item.status) }}
                       >
-                        {getStatusText(item.quantity, item.minStockLevel)}
+                        {item.status}
                       </span>
                     </td>
                     <td>{item.supplier?.name || 'N/A'}</td>
                     <td>
-                      <div className="action-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <div className="action-buttons">
                         <button
                           onClick={() => handleEditItem(item)}
                           className="action-btn edit-btn"
                           title="Edit Item"
-                          style={{ padding: '2px 4px', fontSize: '10px' }}
                         >
-                          ✏️ Edit
+                          ✏️
                         </button>
-                        
-                        <CustomNumberInput
-                          placeholder="+ Stock"
-                          title="Add Stock"
-                          onSubmit={(quantity) => handleUpdateStock(item._id, quantity, 'restock')}
-                        />
-                        
-                        <CustomNumberInput
-                          placeholder="- Stock"
-                          title="Use Stock"
-                          onSubmit={(quantity) => handleUpdateStock(item._id, quantity, 'usage')}
-                        />
-                        
+                        <button
+                          onClick={() => {
+                            const quantity = prompt('Enter quantity to add:');
+                            if (quantity && !isNaN(quantity)) {
+                              handleUpdateStock(item._id, parseInt(quantity), 'restock');
+                            }
+                          }}
+                          className="action-btn restock-btn"
+                          title="Restock"
+                        >
+                          📦
+                        </button>
+                        <button
+                          onClick={() => {
+                            const quantity = prompt('Enter quantity used:');
+                            if (quantity && !isNaN(quantity)) {
+                              handleUpdateStock(item._id, parseInt(quantity), 'usage');
+                            }
+                          }}
+                          className="action-btn usage-btn"
+                          title="Record Usage"
+                        >
+                          📉
+                        </button>
                         <button
                           onClick={() => handleDeleteItem(item._id)}
                           className="action-btn delete-btn"
                           title="Delete Item"
-                          style={{ padding: '2px 4px', fontSize: '10px' }}
                         >
-                          🗑️ Del
+                          🗑️
                         </button>
                       </div>
                     </td>
@@ -656,6 +572,7 @@ const SurgicalItemsManagement = () => {
               categories={categories}
               onSuccess={() => {
                 loadItems();
+                loadStats();
                 setShowAddModal(false);
                 setShowEditModal(false);
                 setSelectedItem(null);
