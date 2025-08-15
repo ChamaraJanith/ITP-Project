@@ -1081,6 +1081,63 @@ ${admin?.name || 'Admin User'}`);
             </div>
           </div>
 
+          {/* ✅ NEW: Inventory Management Section */}
+          <div className="inventory-management-section">
+            <h2>🏥 Inventory Management System</h2>
+            <div className="inventory-dashboard-grid">
+              <button 
+                className="inventory-dashboard-btn surgical-items-btn"
+                onClick={() => navigate('/admin/surgical-items')}
+              >
+                <div className="dashboard-icon">🔧</div>
+                <div className="dashboard-info">
+                  <h4>Surgical Items Management</h4>
+                  <p>Manage surgical instruments, supplies & medical equipment inventory</p>
+                  <div className="dashboard-stats">
+                    <small>
+                      Track stock levels, usage patterns, supplier information & automated alerts
+                    </small>
+                  </div>
+                </div>
+                <div className="access-indicator">✅</div>
+              </button>
+              
+              <button 
+                className="inventory-dashboard-btn reports-btn"
+                onClick={() => navigate('/admin/inventory-reports')}
+              >
+                <div className="dashboard-icon">📊</div>
+                <div className="dashboard-info">
+                  <h4>Inventory Reports & Analytics</h4>
+                  <p>Generate detailed inventory analytics, usage reports & financial summaries</p>
+                  <div className="dashboard-stats">
+                    <small>
+                      Low stock alerts, cost analysis, vendor performance & trend insights
+                    </small>
+                  </div>
+                </div>
+                <div className="access-indicator">✅</div>
+              </button>
+
+              <button 
+                className="inventory-dashboard-btn procurement-btn"
+                onClick={() => navigate('/admin/procurement')}
+              >
+                <div className="dashboard-icon">📦</div>
+                <div className="dashboard-info">
+                  <h4>Procurement & Suppliers</h4>
+                  <p>Manage purchase orders, supplier relationships & automated restocking</p>
+                  <div className="dashboard-stats">
+                    <small>
+                      Order tracking, supplier ratings, contract management & cost optimization
+                    </small>
+                  </div>
+                </div>
+                <div className="access-indicator">🔧</div>
+              </button>
+            </div>
+          </div>
+
           {/* Recent Patient Profiles - Also Clickable */}
           <div className="patient-profiles-section">
             <h2>👨‍⚕️ Recent Patient Profiles (Click to View Details)</h2>
