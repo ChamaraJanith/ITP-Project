@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MedicalNavbar from './components/NavBar';
 import EmergencyPage from './components/EmergencyPage';
+import HospitalsPage from './components/HospitalPage';
 
 // ✅ Existing User Components
 import Login from './pages/Login';
@@ -23,14 +24,6 @@ import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute';
 import SurgicalItemsManagement from './components/admin/SurgicalItemsManagement';
 
 // ✅ Healthcare Service Components (create these as needed)
-const HospitalsPage = () => (
-  <div style={{padding: '2rem'}}>
-    <h2>🏥 Hospitals Directory</h2>
-    <p>Find hospitals and medical centers near you.</p>
-    {/* Add actual hospitals listing functionality */}
-  </div>
-);
-
 
 const BookAppointmentPage = () => (
   <div style={{padding: '2rem'}}>
@@ -283,6 +276,10 @@ function App() {
           <Route
            path="/emergency"
             element={<EmergencyPage />} />
+
+          <Route
+           path="/hospitals"
+            element={<HospitalsPage />} />
           
 
           
