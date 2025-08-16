@@ -297,6 +297,7 @@ body, html {
   box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
   position: relative;
   overflow: hidden;
+  z-index: 1; /* Added for proper layering */
 }
 
 .dashboard-btn::before {
@@ -309,17 +310,23 @@ body, html {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  transition: width 0.3s ease, height 0.3s ease;
+  transition: width 0.6s ease, height 0.6s ease;
+  z-index: -1; 
 }
 
 .dashboard-btn:hover::before {
-  width: 100%;
-  height: 100%;
+  width: 300%;
+  height: 300%; 
 }
 
 .dashboard-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 15px 40px rgba(16, 185, 129, 0.4);
+}
+
+.dashboard-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
 }
 
 /* Auth Prompt Section */
@@ -448,6 +455,7 @@ body, html {
   position: relative;
   overflow: hidden;
   text-decoration: none;
+  z-index: 1; /* Added for proper layering */
 }
 
 .cta-primary-advanced::before,
@@ -461,13 +469,14 @@ body, html {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  transition: width 0.3s ease, height 0.3s ease;
+  transition: width 0.6s ease, height 0.6s ease; /* Increased duration */
+  z-index: -1; /* Ensures ripple stays behind content */
 }
 
 .cta-primary-advanced:hover::before,
 .cta-secondary-advanced:hover::before {
-  width: 100%;
-  height: 100%;
+  width: 300%; /* Increased for full coverage */
+  height: 300%; /* Increased for full coverage */
 }
 
 .cta-primary-advanced {
@@ -491,7 +500,20 @@ body, html {
 .cta-secondary-advanced:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2); /* Added shadow for consistency */
 }
+
+/* Optional: Add active states for better UX */
+.cta-primary-advanced:active {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5);
+}
+
+.cta-secondary-advanced:active {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.4);
+}
+
 
 /* Hero AI Features */
 .hero-ai-features {
@@ -809,6 +831,7 @@ section h2 {
   margin-top: 30px;
   position: relative;
   overflow: hidden;
+  z-index: 1; /* Added for proper layering */
 }
 
 .assessment-next-btn::before {
@@ -821,12 +844,13 @@ section h2 {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  transition: width 0.3s ease, height 0.3s ease;
+  transition: width 0.6s ease, height 0.6s ease; /* Increased duration */
+  z-index: -1; /* Ensures ripple stays behind content */
 }
 
 .assessment-next-btn:hover::before {
-  width: 100%;
-  height: 100%;
+  width: 300%; /* Increased for full coverage */
+  height: 300%; /* Increased for full coverage */
 }
 
 .assessment-next-btn:hover {
@@ -839,6 +863,23 @@ section h2 {
   cursor: not-allowed;
   transform: none;
 }
+
+/* Disable ripple effect when button is disabled */
+.assessment-next-btn:disabled::before {
+  display: none;
+}
+
+.assessment-next-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Optional: Add active state for better UX */
+.assessment-next-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-md);
+}
+
 
 /* Risk Assessment Result */
 .risk-assessment-result {
@@ -971,6 +1012,8 @@ section h2 {
   border: 1px solid var(--border-color);
   position: relative;
   overflow: hidden;
+  z-index: 1; /* Added for proper layering */
+  transition: var(--transition); /* Added transition for smoother effects */
 }
 
 .status-header::before {
@@ -982,16 +1025,24 @@ section h2 {
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.05), transparent);
   transition: left 0.5s ease;
+  z-index: -1; /* Ensures shine effect stays behind content */
 }
 
 .status-header:hover::before {
   left: 100%;
 }
 
+.status-header:hover {
+  transform: translateY(-2px); /* Added subtle lift effect */
+  box-shadow: var(--shadow-lg); /* Enhanced shadow on hover */
+  border-color: rgba(139, 92, 246, 0.2); /* Subtle border color change */
+}
+
 .status-header h3 {
   font-size: 1.8rem;
   color: var(--text-primary);
   font-weight: 700;
+  margin: 0; /* Reset margin for better control */
 }
 
 .last-updated {
@@ -1007,12 +1058,111 @@ section h2 {
   color: var(--secondary-color);
 }
 
+/* Add the rotate keyframe if not already defined */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .departments-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 25px;
 }
 
+/* Additional styles for the department metrics */
+.dept-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dept-header h4 {
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin: 0;
+}
+
+.status-indicator {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+}
+
+.dept-metrics {
+  display: grid;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.metric:last-child {
+  border-bottom: none;
+}
+
+.metric-label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.metric-value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.capacity-bar {
+  position: relative;
+  width: 100px;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.capacity-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.capacity-text {
+  position: absolute;
+  top: -20px;
+  right: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .status-header {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .departments-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* ===== DEPARTMENT CARDS ===== */
 .department-card {
   background: white;
   border-radius: var(--border-radius-lg);
@@ -1022,6 +1172,7 @@ section h2 {
   transition: var(--transition);
   position: relative;
   overflow: hidden;
+  z-index: 1; /* Added for proper layering */
 }
 
 .department-card::before {
@@ -1033,6 +1184,7 @@ section h2 {
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.05), transparent);
   transition: left 0.5s ease;
+  z-index: -1; /* Ensures shine effect stays behind content */
 }
 
 .department-card:hover::before {
@@ -1042,6 +1194,19 @@ section h2 {
 .department-card:hover {
   transform: translateY(-5px);
   box-shadow: var(--shadow-xl);
+  border-color: rgba(139, 92, 246, 0.2); /* Added subtle border color change */
+}
+
+/* Optional: Add active state for better UX */
+.department-card:active {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Optional: Add focus state for accessibility */
+.department-card:focus-within {
+  outline: 2px solid rgba(139, 92, 246, 0.3);
+  outline-offset: 2px;
 }
 
 .dept-header {
@@ -1148,6 +1313,7 @@ section h2 {
   gap: 8px;
   position: relative;
   overflow: hidden;
+  z-index: 1; /* Added for proper layering */
 }
 
 .book-dept-btn::before {
@@ -1160,17 +1326,40 @@ section h2 {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  transition: width 0.3s ease, height 0.3s ease;
+  transition: width 0.6s ease, height 0.6s ease; /* Increased duration */
+  z-index: -1; /* Ensures ripple stays behind content */
 }
 
 .book-dept-btn:hover::before {
-  width: 100%;
-  height: 100%;
+  width: 300%; /* Increased for full coverage */
+  height: 300%; /* Increased for full coverage */
 }
 
 .book-dept-btn:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
+}
+
+/* Optional: Add active state for better UX */
+.book-dept-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-md);
+}
+
+/* Optional: Add disabled state if needed */
+.book-dept-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.book-dept-btn:disabled::before {
+  display: none;
+}
+
+.book-dept-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 /* ===== ADVANCED DOCTOR AVAILABILITY ===== */
@@ -1375,6 +1564,7 @@ section h2 {
   gap: 6px;
   position: relative;
   overflow: hidden;
+  z-index: 1; /* Added for proper layering */
 }
 
 .quick-book-btn::before,
@@ -1388,13 +1578,14 @@ section h2 {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  transition: width 0.3s ease, height 0.3s ease;
+  transition: width 0.6s ease, height 0.6s ease; /* Increased duration */
+  z-index: -1; /* Ensures ripple stays behind content */
 }
 
 .quick-book-btn:hover::before,
 .video-consult-btn:hover::before {
-  width: 100%;
-  height: 100%;
+  width: 300%; /* Increased for full coverage */
+  height: 300%; /* Increased for full coverage */
 }
 
 .quick-book-btn {
@@ -1418,7 +1609,53 @@ section h2 {
   background: rgba(16, 185, 129, 0.2);
   border-color: var(--secondary-color);
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); /* Added shadow for consistency */
 }
+
+/* Optional: Add active states for better UX */
+.quick-book-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.video-consult-btn:active {
+  transform: translateY(0);
+  background: rgba(16, 185, 129, 0.3);
+}
+
+/* Optional: Add disabled states if needed */
+.quick-book-btn:disabled,
+.video-consult-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.quick-book-btn:disabled::before,
+.video-consult-btn:disabled::before {
+  display: none;
+}
+
+.quick-book-btn:disabled:hover,
+.video-consult-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+  background: var(--bg-color);
+  border-color: var(--border-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .booking-options {
+    flex-direction: column;
+  }
+  
+  .quick-book-btn,
+  .video-consult-btn {
+    flex: none;
+  }
+}
+
 
 /* ===== ADVANCED SERVICES ===== */
 .advanced-services {
@@ -1561,6 +1798,10 @@ section h2 {
   transition: var(--transition);
   position: relative;
   overflow: hidden;
+  z-index: 1; /* Added for proper layering */
+  display: inline-flex; /* Added for better alignment */
+  align-items: center;
+  justify-content: center;
 }
 
 .service-btn-advanced::before {
@@ -1573,17 +1814,46 @@ section h2 {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  transition: width 0.3s ease, height 0.3s ease;
+  transition: width 0.6s ease, height 0.6s ease; /* Increased duration */
+  z-index: -1; /* Ensures ripple stays behind content */
 }
 
 .service-btn-advanced:hover::before {
-  width: 100%;
-  height: 100%;
+  width: 300%; /* Increased for full coverage */
+  height: 300%; /* Increased for full coverage */
 }
 
 .service-btn-advanced:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
+}
+
+/* Optional: Add active state for better UX */
+.service-btn-advanced:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-md);
+}
+
+/* Optional: Add focus state for accessibility */
+.service-btn-advanced:focus {
+  outline: 2px solid rgba(var(--primary-color-rgb), 0.3);
+  outline-offset: 2px;
+}
+
+/* Optional: Add disabled state if needed */
+.service-btn-advanced:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.service-btn-advanced:disabled::before {
+  display: none;
+}
+
+.service-btn-advanced:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 /* ===== FEATURED DOCTORS ===== */
@@ -1787,6 +2057,8 @@ section h2 {
   gap: 8px;
   position: relative;
   overflow: hidden;
+  z-index: 1; /* Added for proper layering */
+  justify-content: center; /* Added for better alignment */
 }
 
 .book-btn::before {
@@ -1799,17 +2071,46 @@ section h2 {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  transition: width 0.3s ease, height 0.3s ease;
+  transition: width 0.6s ease, height 0.6s ease; /* Increased duration */
+  z-index: -1; /* Ensures ripple stays behind content */
 }
 
 .book-btn:hover::before {
-  width: 100%;
-  height: 100%;
+  width: 300%; /* Increased for full coverage */
+  height: 300%; /* Increased for full coverage */
 }
 
 .book-btn:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
+}
+
+/* Optional: Add active state for better UX */
+.book-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-md);
+}
+
+/* Optional: Add focus state for accessibility */
+.book-btn:focus {
+  outline: 2px solid rgba(var(--primary-color-rgb), 0.3);
+  outline-offset: 2px;
+}
+
+/* Optional: Add disabled state if needed */
+.book-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.book-btn:disabled::before {
+  display: none;
+}
+
+.book-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 /* ===== FEATURES SHOWCASE ===== */
@@ -2088,6 +2389,8 @@ section h2 {
   gap: 8px;
   position: relative;
   overflow: hidden;
+  z-index: 1; /* Added for proper layering */
+  justify-content: center; /* Added for better alignment */
 }
 
 .input-group button::before {
@@ -2100,17 +2403,46 @@ section h2 {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  transition: width 0.3s ease, height 0.3s ease;
+  transition: width 0.6s ease, height 0.6s ease; /* Increased duration */
+  z-index: -1; /* Ensures ripple stays behind content */
 }
 
 .input-group button:hover::before {
-  width: 100%;
-  height: 100%;
+  width: 300%; /* Increased for full coverage */
+  height: 300%; /* Increased for full coverage */
 }
 
 .input-group button:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
+}
+
+/* Optional: Add active state for better UX */
+.input-group button:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-md);
+}
+
+/* Optional: Add focus state for accessibility */
+.input-group button:focus {
+  outline: 2px solid rgba(var(--primary-color-rgb), 0.3);
+  outline-offset: 2px;
+}
+
+/* Optional: Add disabled state */
+.input-group button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.input-group button:disabled::before {
+  display: none;
+}
+
+.input-group button:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .success-message {
@@ -2130,6 +2462,41 @@ section h2 {
   gap: 12px;
   position: relative;
   z-index: 1;
+  transition: var(--transition); /* Added transition */
+  animation: fadeInScale 0.5s ease-out; /* Added entrance animation */
+}
+
+/* Add entrance animation for success message */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Optional: Add subtle hover effect for success message */
+.success-message:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .input-group button {
+    padding: 12px 24px;
+    font-size: 0.9rem;
+  }
+  
+  .success-message {
+    padding: 30px 20px;
+    font-size: 1rem;
+    flex-direction: column;
+    gap: 8px;
+  }
 }
 
 /* ===== FINAL CTA SECTION ===== */
@@ -2235,6 +2602,8 @@ section h2 {
   position: relative;
   overflow: hidden;
   text-decoration: none;
+  z-index: 1; /* Added for proper layering */
+  justify-content: center; /* Added for better alignment */
 }
 
 .final-btn-advanced::before {
@@ -2247,12 +2616,13 @@ section h2 {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  transition: width 0.3s ease, height 0.3s ease;
+  transition: width 0.6s ease, height 0.6s ease; /* Increased duration */
+  z-index: -1; /* Ensures ripple stays behind content */
 }
 
 .final-btn-advanced:hover::before {
-  width: 100%;
-  height: 100%;
+  width: 300%; /* Increased for full coverage */
+  height: 300%; /* Increased for full coverage */
 }
 
 .final-btn-advanced.primary {
@@ -2276,7 +2646,48 @@ section h2 {
 .final-btn-advanced.secondary:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2); /* Added shadow for consistency */
 }
+
+/* Optional: Add active states for better UX */
+.final-btn-advanced:active {
+  transform: translateY(-1px);
+}
+
+.final-btn-advanced.primary:active {
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5);
+}
+
+.final-btn-advanced.secondary:active {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Optional: Add focus states for accessibility */
+.final-btn-advanced:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.3);
+  outline-offset: 2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .final-advanced-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .final-btn-advanced {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .final-btn-advanced {
+    padding: 16px 28px;
+    font-size: 1rem;
+  }
+}
+
 
 /* ===== RESPONSIVE DESIGN ===== */
 
