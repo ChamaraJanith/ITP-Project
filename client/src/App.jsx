@@ -12,7 +12,7 @@ import ResetPassword from './components/ResetPassword';
 import Subscription from './components/Subscription';
 import SubscriptionConfirmation from './components/SubscriptionConfirmation';
 
-// ✅ Admin Components - Fixed paths to match previous conversation
+// ✅ Admin Components 
 import AdminLogin from './components/admin/AdminLogin';
 import AdminDashboard from './components/admin/dashboards/AdminDashboard';
 import ReceptionistDashboard from './components/admin/dashboards/ReceptionistDashboard';
