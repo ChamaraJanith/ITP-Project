@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MedicalNavbar from './components/NavBar';
+import EmergencyPage from './components/EmergencyPage';
 
 // ✅ Existing User Components
 import Login from './pages/Login';
@@ -30,14 +31,6 @@ const HospitalsPage = () => (
   </div>
 );
 
-const EmergencyPage = () => (
-  <div style={{padding: '2rem', color: 'red'}}>
-    <h2>🚨 Emergency Services</h2>
-    <p>24/7 Emergency Medical Services</p>
-    <p><strong>Emergency Hotline: 911</strong></p>
-    {/* Add emergency services information */}
-  </div>
-);
 
 const BookAppointmentPage = () => (
   <div style={{padding: '2rem'}}>
@@ -286,6 +279,13 @@ function App() {
           <Route 
            path="/admin/surgical-items" 
            element={<SurgicalItemsManagement />} />
+
+          <Route
+           path="/emergency"
+            element={<EmergencyPage />} />
+          
+
+          
 
           {/* ✅ 404 Fallback Route */}
           <Route path="*" element={<NotFoundPage />} />
