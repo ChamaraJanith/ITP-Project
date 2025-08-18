@@ -16,10 +16,8 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const { default: connectDB } = await import("./config/mongodb.js");
 
 // Route imports
-const { default: authRouter } = await import("./routes/authRoutes.js");
-const { default: userRouter } = await import("./routes/userRoutes.js");
+
 const { default: chatbotRouter } = await import("./routes/chatbot.js");
-const { default: subscriptionRouter } = await import("./routes/subscriptionRoutes.js");
 const { default: adminRouter } = await import("./routes/adminRoutes.js");
 const { default: inventoryRouter } = await import("./routes/inventoryRoutes.js"); // ✅ MOVED HERE
 
@@ -100,10 +98,7 @@ app.get("/", (req, res) => {
     timestamp: new Date().toISOString(),
     endpoints: [
       'GET /health - Health check',
-      'POST /api/auth/login - User login',
-      'POST /api/auth/register - User registration',
       'POST /api/admin/login - Admin login',
-      'GET /api/user/profile - User profile (protected)',
       'POST /api/chatbot/message - Chatbot interaction',
       'GET /api/inventory/surgical-items - Get surgical items',
       'POST /api/inventory/surgical-items - Create surgical item',
@@ -113,11 +108,9 @@ app.get("/", (req, res) => {
 });
 
 // API Routes - Mount in specific order
-app.use('/api/auth', authRouter);
+
 app.use('/api/admin', adminRouter);
-app.use('/api/user', userRouter);
 app.use('/api/chatbot', chatbotRouter);
-app.use('/api/subscription', subscriptionRouter);
 app.use('/api/inventory', inventoryRouter); // ✅ NOW WORKS
 
 // Static file serving (if needed)
@@ -169,12 +162,12 @@ app.use('/{*catchall}', (req, res) => {
     availableRoutes: {
       'GET /': 'Homepage',
       'GET /health': 'Health check',
-      'POST /api/auth/login': 'User login',
-      'POST /api/auth/register': 'User registration',
+ 
+
       'POST /api/admin/login': 'Admin login',
-      'GET /api/user/profile': 'User profile (protected)',
+
       'POST /api/chatbot/message': 'Chatbot interaction',
-      'POST /api/subscription/subscribe': 'Newsletter subscription'
+
     },
     timestamp: new Date().toISOString()
   });
