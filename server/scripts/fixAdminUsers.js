@@ -49,7 +49,7 @@ const fixAdminUsers = async () => {
         isAccountVerified: true
       },
       {
-        name: "Lisa Financial",
+        name: "Mr. Senuja Masinghe",
         email: "financial@healx.com",
         password: "financial123",
         role: "financial_manager",
