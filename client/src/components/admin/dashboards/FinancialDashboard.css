@@ -5,20 +5,31 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(2, 1fr); /* exactly 2 per row */
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
 .stat-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  transition: transform 0.2s;
+  align-items: flex-start; /* keep text left aligned */
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column; /* stack number and label */
+  align-items: flex-start;
+}
+
+.stat-info h3 {
+  font-size: 1.75rem;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.stat-info p {
+  margin: 0;
+  color: #6b7280;
 }
 
 .stat-card:hover {
@@ -55,17 +66,55 @@
   justify-content: center;
 }
 
-.stat-info h3 {
-  font-size: 1.75rem;
-  margin: 0 0 0.5rem 0;
+/* ✅ New: Charts Section Styling */
+.charts-section {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(2, 1fr));
+  gap: 6rem; /* more space between charts */
+  margin-top: 2rem;
+  justify-content: flex-end;
+  margin-left: auto; /* keep it on the right */
+}
+
+.chart-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chart-card h2 {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
   color: #1f2937;
+  font-weight: 600;
 }
 
-.stat-info p {
-  color: #6b7280;
-  margin: 0;
+/* Keep Recharts tooltip readable */
+.recharts-tooltip-wrapper {
+  font-size: 0.875rem;
 }
 
+/* ✅ Make charts stack on small screens */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  charts-section {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+    margin-left: 0;
+    justify-content: center;
+  }
+  .chart-card {
+    max-width: 100%;
+  }
+}
+
+/* Existing Action Buttons Section */
 .financial-actions-section {
   background: white;
   padding: 2rem;
@@ -140,12 +189,6 @@
   opacity: 0.8;
 }
 
-@media (max-width: 768px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .action-buttons {
-    grid-template-columns: 1fr;
-  }
+.financial-actions-section {
+  margin-top: 2rem;
 }
