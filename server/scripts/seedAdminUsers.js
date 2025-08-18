@@ -32,7 +32,7 @@ const seedAdminUsers = async () => {
         specialization: "General Medicine"
       },
       {
-        name: "Lisa Financial",
+        name: "Mr. Senuja Masinghe",
         email: "financial@healx.com",
         password: await bcrypt.hash("financial123", 12),
         role: "financial_manager"

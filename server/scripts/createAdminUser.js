@@ -69,7 +69,7 @@ async function createAdminUser() {
         department: 'Front Desk'
       },
       {
-        name: 'Michael Brown',
+        name: 'Mr. Senuja Masinghe',
         email: 'finance@healx.com',
         role: 'financial_manager',
         employeeId: 'FIN001',
