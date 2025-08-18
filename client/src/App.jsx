@@ -1,18 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Homepage from './components/Homepage';
 import MedicalNavbar from './components/NavBar';
 import EmergencyPage from './components/EmergencyPage';
 import HospitalsPage from './components/HospitalPage';
 
 // ✅ Existing User Components
-import Login from './pages/Login';
-import Register from './components/Register';
-import Homepage from './components/Homepage';
-import Profile from './components/Profile';
-import ForgotPassword from './components/ForgotPassword';
-import ResetPassword from './components/ResetPassword';
-import Subscription from './components/Subscription';
-import SubscriptionConfirmation from './components/SubscriptionConfirmation';
 
 // ✅ Admin Components 
 import AdminLogin from './components/admin/AdminLogin';
@@ -179,13 +172,6 @@ function App() {
         <Routes>
           {/* ✅ Public User Routes */}
           <Route path="/" element={<Homepage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/subscription" element={<Subscription />} />
-          <Route path="/confirm-subscription" element={<SubscriptionConfirmation />} />
 
           {/* ✅ Healthcare Service Routes */}
           <Route path="/hospitals" element={<HospitalsPage />} />

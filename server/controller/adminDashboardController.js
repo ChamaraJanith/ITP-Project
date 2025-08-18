@@ -1,4 +1,4 @@
-import UserModel from '../model/userModel.js';
+
 import UnifiedUserModel from '../model/UnifiedUserModel.js';
 import mongoose from 'mongoose';
 
