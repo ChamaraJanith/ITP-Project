@@ -14,7 +14,7 @@ import ReceptionistDashboard from './components/admin/dashboards/ReceptionistDas
 import DoctorDashboard from './components/admin/dashboards/DoctorDashboard';
 import FinancialDashboard from './components/admin/dashboards/FinancialDashboard';
 import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute';
-import SurgicalItemsManagement from './components/admin/SurgicalItemsManagement';
+import SurgicalItemsManagement from './components/admin/Admin/SurgicalItemsManagement';
 
 // ✅ Healthcare Service Components (create these as needed)
 
