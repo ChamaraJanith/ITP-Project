@@ -25,6 +25,7 @@ const FinancialDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showBills, setShowBills] = useState(false); // 🔹 moved here
 
   useEffect(() => {
     initializeDashboard();
@@ -49,7 +50,7 @@ const FinancialDashboard = () => {
     }
   };
 
-  // 🔹 Add scrollToChart function here
+  // Function to scroll to specific chart
   const scrollToChart = (chartId) => {
     const chartElement = document.getElementById(chartId);
     if (chartElement) {
@@ -64,6 +65,28 @@ const FinancialDashboard = () => {
       </AdminLayout>
     );
   }
+
+  // Example bills data (replace with API later)
+  const billsData = [
+    { id: 1, date: "2025-08-01", description: "Electricity Bill", amount: 120.50 },
+    { id: 2, date: "2025-08-03", description: "Water Bill", amount: 45.75 },
+    { id: 3, date: "2025-08-05", description: "Internet Bill", amount: 89.99 },
+    { id: 4, date: "2025-08-07", description: "Office Rent", amount: 1500.00 },
+    { id: 5, date: "2025-08-09", description: "Cleaning Services", amount: 250.00 },
+    { id: 6, date: "2025-08-10", description: "Software Subscription", amount: 99.99 },
+    { id: 7, date: "2025-08-12", description: "Telephone Bill", amount: 60.50 },
+    { id: 8, date: "2025-08-14", description: "Maintenance Fees", amount: 120.00 },
+    { id: 9, date: "2025-08-16", description: "Stationery Purchase", amount: 75.25 },
+    { id: 10, date: "2025-08-18", description: "Courier Charges", amount: 40.00 }
+  ];
+
+  const handleFeatureClick = (feature) => {
+  if (feature.toLowerCase().includes("billing")) {
+    setShowBills((prev) => !prev); // toggle instead of always true
+  } else {
+    alert(`⚡ Feature selected: ${feature}`);
+  }
+};
 
   // Chart Data
   const pieData = dashboardData?.stats
@@ -257,12 +280,47 @@ const FinancialDashboard = () => {
               <h2>💼 Financial Features</h2>
               <div className="features-grid">
                 {dashboardData.features?.map((feature, index) => (
-                  <div key={index} className="feature-card">
+                  <div
+                    key={index}
+                    className="feature-card"
+                    onClick={() => handleFeatureClick(feature)}
+                  >
                     <h4>{feature.replace("_", " ").toUpperCase()}</h4>
                   </div>
                 ))}
               </div>
             </div>
+
+            {showBills && (
+  <div className="bills-modal">
+    <div className="bills-modal-content">
+      <h3 className="modal-title">📑 Bills</h3>
+      <div className="table-wrapper">
+        <table className="bills-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Amount ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {billsData.map((bill, index) => (
+              <tr key={bill.id} className={index % 2 === 0 ? "even" : "odd"}>
+                <td>{bill.date}</td>
+                <td>{bill.description}</td>
+                <td>{bill.amount.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <button className="close-btn" onClick={() => setShowBills(false)}>
+        Close
+      </button>
+    </div>
+  </div>
+)}
 
             {/* Recent Activities */}
             <div className="activity-section">
@@ -284,5 +342,6 @@ const FinancialDashboard = () => {
 
 export default FinancialDashboard;
 
+import './FinancialDashboard.css'; // adjust path to your CSS file
 
 /*hell00000000ooooo */
