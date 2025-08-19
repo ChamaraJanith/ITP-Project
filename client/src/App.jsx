@@ -5,7 +5,7 @@ import MedicalNavbar from './components/NavBar';
 import EmergencyPage from './components/EmergencyPage';
 import HospitalsPage from './components/HospitalPage';
 
-// ✅ Existing User Components
+
 
 // ✅ Admin Components 
 import AdminLogin from './components/admin/AdminLogin';
