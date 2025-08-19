@@ -219,14 +219,14 @@ function App() {
             } 
           />
           
-          <Route 
+          {/* <Route 
             path="/admin/financial-dashboard" 
             element={
               <ProtectedAdminRoute allowedRoles={['financial_manager', 'admin']}>
                 <FinancialDashboard />
               </ProtectedAdminRoute>
             } 
-          />
+          /> */}
 
           {/* ✅ Alternative shorter routes for admin dashboards */}
           <Route 
@@ -247,14 +247,14 @@ function App() {
             } 
           />
           
-          <Route 
+          {/* <Route 
             path="/admin/financial" 
             element={
               <ProtectedAdminRoute allowedRoles={['financial_manager', 'admin']}>
                 <FinancialDashboard />
               </ProtectedAdminRoute>
             } 
-          />
+          /> */}
           <Route 
            path="/admin/surgical-items" 
            element={<SurgicalItemsManagement />} />
