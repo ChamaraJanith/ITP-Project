@@ -1,4 +1,4 @@
-import SurgicalItem from '../model/SurgicalItem.js';
+import SurgicalItem from '../model/SurgicalItem.js'; // Adjust path to your model
 import mongoose from 'mongoose';
 
 // @desc    Get all surgical items

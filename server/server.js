@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import disposalRoutes from './routes/disposalRoutes.js';
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -19,7 +20,9 @@ const { default: connectDB } = await import("./config/mongodb.js");
 
 const { default: chatbotRouter } = await import("./routes/chatbot.js");
 const { default: adminRouter } = await import("./routes/adminRoutes.js");
-const { default: inventoryRouter } = await import("./routes/inventoryRoutes.js"); // ✅ MOVED HERE
+const { default: inventoryRouter } = await import("./routes/inventoryRoutes.js"); 
+
+
 
 const app = express();
 const PORT = process.env.PORT || 7000;
@@ -70,6 +73,10 @@ app.use((req, res, next) => {
   
   next();
 });
+app.use('/api/inventory', disposalRoutes);
+
+// Or if you want a separate base path:
+app.use('/api/disposal', disposalRoutes);
 
 // Health check route (before other routes)
 app.get('/health', (req, res) => {
