@@ -12,7 +12,7 @@ import AdminLogin from './components/admin/AdminLogin';
 import AdminDashboard from './components/admin/dashboards/AdminDashboard';
 import ReceptionistDashboard from './components/admin/dashboards/ReceptionistDashboard';
 import DoctorDashboard from './components/admin/dashboards/DoctorDashboard';
-import FinancialDashboard from './components/admin/dashboards/FinancialDashboard';
+// import FinancialDashboard from './components/admin/dashboards/FinancialDashboard';
 import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute';
 import SurgicalItemsManagement from './components/admin/SurgicalItemsManagement';
 
