@@ -30,7 +30,7 @@ const fixAdminUsers = async () => {
         isAccountVerified: true
       },
       {
-        name: "Sarah Receptionist", 
+        name: " Madushi Rashmika", 
         email: "receptionist@healx.com",
         password: "receptionist123",
         role: "receptionist",
