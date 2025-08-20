@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import '../Admin/styles/SurgicalItemsManagement.css';
 import { useNavigate } from 'react-router-dom';
-import AdminLayout from './AdminLayout';
-import AdminErrorBoundary from './AdminErrorBoundary';
-import SurgicalItemModal from './SurgicalItemModal';
+import AdminLayout from '../AdminLayout';
+import AdminErrorBoundary from '../AdminErrorBoundary';
+import SurgicalItemModal from '../Admin/SurgicalItemModal';
+import DisposeModal from './disposeModal.jsx';
+import '../Admin/styles/DisposeModal.css' // Fixed import
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -13,7 +16,6 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-import './SurgicalItemsManagement.css';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -32,6 +34,7 @@ const SurgicalItemsManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [stats, setStats] = useState({});
+  const [showDisposeModal, setShowDisposeModal] = useState(false); // Fixed: Moved inside component
 
   const API_BASE_URL = 'http://localhost:7000/api/inventory';
 
@@ -130,6 +133,10 @@ const SurgicalItemsManagement = () => {
   const handleAddItem = () => {
     setSelectedItem(null);
     setShowAddModal(true);
+  };
+
+  const handleDisposeItem = () => {
+    setShowDisposeModal(true);
   };
 
   const handleEditItem = (item) => {
@@ -428,6 +435,9 @@ const SurgicalItemsManagement = () => {
                 <button onClick={handleAddItem} className="add-item-btn">
                   ➕ Add New Item
                 </button>
+                <button onClick={handleDisposeItem} className="dispose-item-btn">
+                  Dispose Items
+                </button>
               </div>
             </div>
             {error && (
@@ -659,6 +669,20 @@ const SurgicalItemsManagement = () => {
                 setShowAddModal(false);
                 setShowEditModal(false);
                 setSelectedItem(null);
+              }}
+              apiBaseUrl={API_BASE_URL}
+            />
+          )}
+
+          {/* Dispose Items Modal */}
+          {showDisposeModal && (
+            <DisposeModal
+              isOpen={showDisposeModal}
+              onClose={() => setShowDisposeModal(false)}
+              items={items}
+              onSuccess={() => {
+                loadItems();
+                setShowDisposeModal(false);
               }}
               apiBaseUrl={API_BASE_URL}
             />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './SurgicalItemModal.css';
+import '../Admin/styles/SurgicalItemModal.css';
 
 const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBaseUrl }) => {
   const [formData, setFormData] = useState({
@@ -25,7 +25,7 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-
+  
   useEffect(() => {
     if (item) {
       // Edit mode - populate form with existing data
@@ -54,7 +54,7 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
       // Add mode - reset form
       setFormData({
         name: '',
-        category: categories || '',
+        category: categories || '', // Fixed: Use first category instead of array
         description: '',
         quantity: 0,
         minStockLevel: 10,
@@ -93,7 +93,7 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
         [field]: value
       }));
     }
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -102,7 +102,6 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
 
   const validateForm = () => {
     const newErrors = {};
-
     if (!formData.name.trim()) newErrors.name = 'Item name is required';
     if (!formData.category) newErrors.category = 'Category is required';
     if (formData.quantity < 0) newErrors.quantity = 'Quantity cannot be negative';
@@ -112,7 +111,7 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
     if (formData.supplier.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.supplier.email)) {
       newErrors['supplier.email'] = 'Invalid email format';
     }
-
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -224,7 +223,6 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
                   />
                   {errors.quantity && <span className="error-text">{errors.quantity}</span>}
                 </div>
-
                 <div className="form-group">
                   <label>Min Stock Level</label>
                   <input
@@ -276,7 +274,6 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
                     placeholder="Phone number"
                   />
                 </div>
-
                 <div className="form-group">
                   <label>Email</label>
                   <input
@@ -305,7 +302,6 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
                     placeholder="Room number"
                   />
                 </div>
-
                 <div className="form-group">
                   <label>Shelf</label>
                   <input
@@ -315,7 +311,6 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
                     placeholder="Shelf number"
                   />
                 </div>
-
                 <div className="form-group">
                   <label>Bin</label>
                   <input
@@ -336,7 +331,6 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
                     onChange={(e) => handleInputChange('expiryDate', e.target.value)}
                   />
                 </div>
-
                 <div className="form-group">
                   <label>Batch Number</label>
                   <input
@@ -346,7 +340,6 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
                     placeholder="Batch number"
                   />
                 </div>
-
                 <div className="form-group">
                   <label>Serial Number</label>
                   <input
