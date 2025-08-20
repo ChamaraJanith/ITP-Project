@@ -275,17 +275,8 @@ function App() {
           <Route
            path="/hospitals"
             element={<HospitalsPage />} />
-
-          <Route
-          path="/Register"
-          element={<Register/>}/>
-
-          <Route
-          path='/Login'
-          element={<Login/>}/>
           
-         <Route path="/" element={<Login />} />
-        <Route path="/PatientProfile/:id" element={<profile />} />
+
           
 
           {/* ✅ 404 Fallback Route */}
