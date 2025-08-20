@@ -4,6 +4,8 @@ import { fileURLToPath } from 'url';
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import router from "./routes/auth.js";
+import authRouter from './routes/auth.js';
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -117,6 +119,12 @@ app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
 app.use('/api/inventory', inventoryRouter); 
 
+
+app.use("/api/auth", router);
+app.use("/api/auth", authRouter);
+
+
+
 //
 
 
@@ -200,7 +208,7 @@ app.listen(PORT, () => {
   console.log(`🔗 Base URL: http://localhost:${PORT}`);
   console.log('=====================================');
   console.log('📋 Available Endpoints:');
-  console.log(`   👤 User Login: POST http://localhost:${PORT}/api/auth/login`);
+  console.log(`   👤 User Login: POST http://localhost:${PORT}/api/auth/Login`);
   console.log(`   👤 User Register: POST http://localhost:${PORT}/api/auth/register`);
   console.log(`   👨‍💼 Admin Login: POST http://localhost:${PORT}/api/admin/login`);
   console.log(`   💊 Health Check: GET http://localhost:${PORT}/health`);

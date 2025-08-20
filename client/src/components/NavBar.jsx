@@ -245,7 +245,7 @@ function MedicalNavbar() {
   const navLinks = (
     <>
       <Link 
-        to="/login" 
+        to="/Login" 
         style={{
           textDecoration: "none", 
           color: "#4a5568", 

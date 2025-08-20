@@ -181,6 +181,8 @@ function App() {
           {/* ✅ Public User Routes */}
           <Route path="/" element={<Homepage />} />
           <Route path="/PatientProfile" element={<PatientProfile />} />
+          <Route path="/Login" element={<Login/>}/>
+          <Route path="/register" element={<Register/>}/>
 
           {/* ✅ Healthcare Service Routes */}
           <Route path="/hospitals" element={<HospitalsPage />} />
