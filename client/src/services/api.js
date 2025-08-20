@@ -4,7 +4,7 @@ const API_BASE_URL = 'http://localhost:7000';
 // Regular user login
 export const userLogin = async (email, password) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/Login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
