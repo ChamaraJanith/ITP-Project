@@ -4,8 +4,13 @@ import Homepage from './components/Homepage';
 import MedicalNavbar from './components/NavBar';
 import EmergencyPage from './components/EmergencyPage';
 import HospitalsPage from './components/HospitalPage';
+//
+
 
 // ✅ Existing User Components
+import Register from './components/Register';
+import Login from './components/Login';
+import PatientProfile from './components/PatientProfile';
 
 // ✅ Admin Components 
 import AdminLogin from './components/admin/AdminLogin';
@@ -165,6 +170,9 @@ const NotFoundPage = () => (
 
 function App() {
   return (
+  
+
+    
     <Router>
       <div className="App">
         <MedicalNavbar />
@@ -172,6 +180,7 @@ function App() {
         <Routes>
           {/* ✅ Public User Routes */}
           <Route path="/" element={<Homepage />} />
+          <Route path="/PatientProfile" element={<PatientProfile />} />
 
           {/* ✅ Healthcare Service Routes */}
           <Route path="/hospitals" element={<HospitalsPage />} />
@@ -266,8 +275,17 @@ function App() {
           <Route
            path="/hospitals"
             element={<HospitalsPage />} />
-          
 
+          <Route
+          path="/Register"
+          element={<Register/>}/>
+
+          <Route
+          path='/Login'
+          element={<Login/>}/>
+          
+         <Route path="/" element={<Login />} />
+        <Route path="/PatientProfile/:id" element={<profile />} />
           
 
           {/* ✅ 404 Fallback Route */}
@@ -275,6 +293,8 @@ function App() {
         </Routes>
       </div>
     </Router>
+
+    
   );
 }
 
