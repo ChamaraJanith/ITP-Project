@@ -4,6 +4,8 @@ import { fileURLToPath } from 'url';
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import authRouter from './routes/auth.js';
+import patientRoutes from "./routes/patientRoutes.js";
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -71,6 +73,8 @@ app.use((req, res, next) => {
   next();
 });
 
+
+
 // Health check route (before other routes)
 app.get('/health', (req, res) => {
   res.json({ 
@@ -89,6 +93,8 @@ app.get('/health', (req, res) => {
     }
   });
 });
+
+
 
 // Root route
 app.get("/", (req, res) => {
@@ -111,7 +117,11 @@ app.get("/", (req, res) => {
 
 app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
-app.use('/api/inventory', inventoryRouter); // ✅ NOW WORKS
+app.use('/api/inventory', inventoryRouter); 
+app.use("/api/auth",authRouter);// ✅ NOW WORKS
+app.use("/api/patient/PatientProfile", patientRoutes);
+//
+
 
 // Static file serving (if needed)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
