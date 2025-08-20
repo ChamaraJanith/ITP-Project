@@ -6,4 +6,4 @@ const router = express.Router();
 router.get("/:id", getProfile);
 router.put("/:id", updateProfile);
 
-export default router;
+export default patientRoutes;

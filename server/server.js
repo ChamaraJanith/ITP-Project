@@ -116,8 +116,7 @@ app.get("/", (req, res) => {
 app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
 app.use('/api/inventory', inventoryRouter); 
-app.use("/api/auth",authRouter);// ✅ NOW WORKS
-app.use("/api/patient/PatientProfile", patientRoutes);
+
 //
 
 
