@@ -177,10 +177,7 @@ app.use('/{*catchall}', (req, res) => {
     availableRoutes: {
       'GET /': 'Homepage',
       'GET /health': 'Health check',
- 
-
       'POST /api/admin/login': 'Admin login',
-
       'POST /api/chatbot/message': 'Chatbot interaction',
 
     },
