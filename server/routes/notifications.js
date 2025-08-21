@@ -3,10 +3,11 @@ import EmailService from '../services/emailService.js';
 
 const notificationRouter = express.Router();
 
-// Test email endpoint
+// POST /test-email - Send test email
 notificationRouter.post('/test-email', async (req, res) => {
   try {
     console.log('🔧 Test email request received...');
+    console.log('📧 EmailService status:', EmailService.getStatus());
     
     const result = await EmailService.sendTestEmail();
     
@@ -21,21 +22,22 @@ notificationRouter.post('/test-email', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Test email endpoint error:', error);
+    console.error('❌ Test email endpoint error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to send test email',
-      error: error.message
+      error: error.message,
+      serviceStatus: EmailService.getStatus()
     });
   }
 });
 
-// Low stock check endpoint
+// POST /check-low-stock - Send low stock alert
 notificationRouter.post('/check-low-stock', async (req, res) => {
   try {
     console.log('🔧 Low stock check request received...');
     
-    // Mock low stock items for demonstration
+    // Mock low stock items for testing
     const mockLowStockItems = [
       { name: 'Surgical Gloves', quantity: 5, minStockLevel: 50 },
       { name: 'Face Masks', quantity: 2, minStockLevel: 100 },
@@ -56,24 +58,29 @@ notificationRouter.post('/check-low-stock', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Low stock endpoint error:', error);
+    console.error('❌ Low stock endpoint error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to send low stock alert',
-      error: error.message
+      error: error.message,
+      serviceStatus: EmailService.getStatus()
     });
   }
 });
 
-// Settings endpoint
-notificationRouter.get('/settings', (req, res) => {
+// GET /status - Get email service status
+notificationRouter.get('/status', (req, res) => {
   res.status(200).json({
     success: true,
     data: {
-      recipients: ['chamarasweed44@gmail.com'],
-      monitoringEnabled: true,
-      timezone: 'Asia/Kolkata',
-      systemName: 'HealX Smart Healthcare System'
+      status: EmailService.getStatus(),
+      ready: EmailService.isReady(),
+      environmentVariables: {
+        EMAIL_USER: !!process.env.EMAIL_USER,
+        EMAIL_PASS: !!process.env.EMAIL_PASS,
+        SMTP_HOST: !!process.env.SMTP_HOST,
+        SMTP_PORT: !!process.env.SMTP_PORT
+      }
     }
   });
 });
