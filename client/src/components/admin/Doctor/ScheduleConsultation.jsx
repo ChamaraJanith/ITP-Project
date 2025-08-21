@@ -23,8 +23,7 @@ const ScheduleConsultation = () => {
         await fetch('http://localhost:7000/api/prescription/consultations', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-            },
+                'Content-Type': 'application/json'},
             body: JSON.stringify(formData),
         });
         setFormData({
@@ -33,16 +32,17 @@ const ScheduleConsultation = () => {
             time: "",
             reason: "",
             notes: "",
+
         });
         fetchConsultations();
     };
 
     //fetch consultations from the server
     const fetchConsultations = async () => {
-        const response = await fetch('http://localhost:7000/api/consultations');
+        const response = await fetch('http://localhost:7000/api/prescription/consultations');
         const data = await response.json();
-        setCosultations(data);
-    }
+        setConsultations(data.data || []);
+    };
 
     useEffect(() => {
         fetchConsultations();
