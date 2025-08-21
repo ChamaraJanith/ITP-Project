@@ -11,19 +11,27 @@ import authRouter from './routes/auth.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables FIRST
+// ✅ CRITICAL: Load environment variables FIRST - before any other imports
 dotenv.config({ path: path.join(__dirname, '.env') });
+
+// ✅ Debug environment variables IMMEDIATELY after loading
+console.log('🔍 Environment Variables Debug:');
+console.log('📧 EMAIL_USER:', process.env.EMAIL_USER);
+console.log('📧 EMAIL_PASS exists:', !!process.env.EMAIL_PASS);
+console.log('📧 SMTP_HOST:', process.env.SMTP_HOST);
+console.log('📧 SMTP_PORT:', process.env.SMTP_PORT);
+
+// ✅ NOW import modules that depend on environment variables
+import notificationRouter from './routes/notifications.js';
+import surgicalrouter from './routes/surgicalItems.js';
 
 // Database connection
 const { default: connectDB } = await import("./config/mongodb.js");
 
 // Route imports
-
 const { default: chatbotRouter } = await import("./routes/chatbot.js");
 const { default: adminRouter } = await import("./routes/adminRoutes.js");
-const { default: inventoryRouter } = await import("./routes/inventoryRoutes.js"); 
-
-
+const { default: inventoryRouter } = await import("./routes/inventoryRoutes.js");
 
 const app = express();
 const PORT = process.env.PORT || 7000;
@@ -94,8 +102,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-
-
 // Root route
 app.get("/", (req, res) => {
   res.json({ 
@@ -108,27 +114,30 @@ app.get("/", (req, res) => {
       'POST /api/chatbot/message - Chatbot interaction',
       'GET /api/inventory/surgical-items - Get surgical items',
       'POST /api/inventory/surgical-items - Create surgical item',
-      'GET /api/inventory/dashboard-stats - Inventory stats'
+      'GET /api/inventory/dashboard-stats - Inventory stats',
+      'POST /api/inventory/notifications/test-email - Test email',
+      'POST /api/inventory/notifications/check-low-stock - Low stock alert'
     ]
   });
 });
 
-// API Routes - Mount in specific order
+// ✅ CRITICAL: Mount notification routes FIRST (most specific)
+console.log('📧 Mounting notification router at /api/inventory/notifications');
+app.use('/api/inventory/notifications', notificationRouter);
 
+console.log('📦 Mounting surgical items router at /api/inventory');
+app.use('/api/inventory', surgicalrouter);
+
+// Mount other inventory routes
+app.use('/api/inventory', inventoryRouter);
+
+// Mount other API routes
 app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
-app.use('/api/inventory', inventoryRouter); 
-
-
 app.use("/api/auth", router);
 app.use("/api/auth", authRouter);
 
-
-
-//
-
-
-// Static file serving (if needed)
+// Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
@@ -166,24 +175,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler - FIXED for Express v5
-app.use('/{*catchall}', (req, res) => {
-  console.log(`❌ 404 - Route not found: ${req.method} ${req.originalUrl}`);
-  
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.originalUrl} not found`,
-    method: req.method,
-    availableRoutes: {
-      'GET /': 'Homepage',
-      'GET /health': 'Health check',
-      'POST /api/admin/login': 'Admin login',
-      'POST /api/chatbot/message': 'Chatbot interaction',
+// ✅ CORRECT - Express 5 compatible
 
-    },
-    timestamp: new Date().toISOString()
-  });
-});
 
 // Graceful shutdown handling
 process.on('SIGTERM', () => {
@@ -210,6 +203,9 @@ app.listen(PORT, () => {
   console.log(`   👨‍💼 Admin Login: POST http://localhost:${PORT}/api/admin/login`);
   console.log(`   💊 Health Check: GET http://localhost:${PORT}/health`);
   console.log(`   🤖 Chatbot: POST http://localhost:${PORT}/api/chatbot/message`);
+  console.log(`   📧 Test Email: POST http://localhost:${PORT}/api/inventory/notifications/test-email`);
+  console.log(`   🚨 Low Stock Alert: POST http://localhost:${PORT}/api/inventory/notifications/check-low-stock`);
+  console.log(`   📦 Surgical Items: GET http://localhost:${PORT}/api/inventory/surgical-items`);
   console.log('=====================================');
   console.log('✅ Server ready to accept connections!');
 });
