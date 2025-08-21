@@ -126,7 +126,7 @@ app.use('/api/inventory', inventoryRouter); // ✅ NOW WORKS
 
 //API FOR CONSULTATIONS
 
-app.use('/api/consultation', ConsultationRoutes);
+app.use('/api/prescription', ConsultationRoutes);
 
 
 // Static file serving (if needed)
