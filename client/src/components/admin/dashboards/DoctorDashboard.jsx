@@ -1,12 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import AdminLayout from '../AdminLayout';
-import { adminDashboardApi } from '../../../services/adminApi.js';
+import React, { useState, useEffect } from "react";
+import AdminLayout from "../AdminLayout";
+import { adminDashboardApi } from "../../../services/adminApi.js";
+import ScheduleConsultation from "../Doctor/ScheduleConsultation.jsx";
+import { Navigate } from "react-router-dom";
+import './DoctorDashboard.css'; // Assuming you have a CSS file for styling
+import { useNavigate } from "react-router-dom";
 
 const DoctorDashboard = () => {
   const [admin, setAdmin] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     initializeDashboard();
@@ -14,7 +20,7 @@ const DoctorDashboard = () => {
 
   const initializeDashboard = async () => {
     try {
-      const adminData = localStorage.getItem('admin');
+      const adminData = localStorage.getItem("admin");
       if (adminData) {
         setAdmin(JSON.parse(adminData));
       }
@@ -24,8 +30,8 @@ const DoctorDashboard = () => {
         setDashboardData(response.data);
       }
     } catch (error) {
-      console.error('❌ Error loading doctor dashboard:', error);
-      setError('Failed to load doctor dashboard');
+      console.error("❌ Error loading doctor dashboard:", error);
+      setError("Failed to load doctor dashboard");
     } finally {
       setLoading(false);
     }
@@ -51,6 +57,7 @@ const DoctorDashboard = () => {
 
         {dashboardData && (
           <>
+            {/* Stats Section */}
             <div className="stats-grid">
               <div className="stat-card">
                 <h3>{dashboardData.stats?.todayPatients || 0}</h3>
@@ -70,17 +77,44 @@ const DoctorDashboard = () => {
               </div>
             </div>
 
+            {/* Medical Features Section - MODIFIED */}
             <div className="features-section">
               <h2>🩺 Medical Features</h2>
               <div className="features-grid">
-                {dashboardData.features?.map((feature, index) => (
-                  <div key={index} className="feature-card">
-                    <h4>{feature.replace('_', ' ').toUpperCase()}</h4>
-                  </div>
-                ))}
+                <button
+                  className="feature-card"
+                  onClick={() => Navigate("/api/prescription/consultations")}
+                >
+                  SCHEDULE CONSULTATION
+                </button>
+                <button
+                  className="feature-card"
+                  onClick={() => Navigate("/api/consultations/")}
+                >
+                  PATIENT RECORDS
+                </button>
+                <button
+                  className="feature-card"
+                  onClick={() => alert("Lab Reports clicked")}
+                >
+                  LAB REPORTS
+                </button>
+                <button
+                  className="feature-card"
+                  onClick={() => alert("Prescriptions clicked")}
+                >
+                  PRESCRIPTIONS
+                </button>
+                <button
+                  className="feature-card"
+                  onClick={() => alert("Emergency Alerts clicked")}
+                >
+                  EMERGENCY ALERTS
+                </button>
               </div>
             </div>
 
+            {/* Recent Activities */}
             <div className="activity-section">
               <h2>📋 Recent Medical Activities</h2>
               <div className="activity-list">

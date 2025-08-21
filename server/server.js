@@ -5,6 +5,10 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import disposalRoutes from './routes/disposalRoutes.js';
+import mongoose from 'mongoose';
+import Consultation from './model/Consultation.js';
+import ConsultationRoutes from "./routes/consultationRoutes.js";
+
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -119,6 +123,11 @@ app.get("/", (req, res) => {
 app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
 app.use('/api/inventory', inventoryRouter); // ✅ NOW WORKS
+
+//API FOR CONSULTATIONS
+
+app.use('/api/consultation', ConsultationRoutes);
+
 
 // Static file serving (if needed)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
