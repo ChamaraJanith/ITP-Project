@@ -9,7 +9,6 @@ class EmailService {
   }
 
   async initialize() {
-    // Prevent multiple initialization attempts
     if (this.initializationPromise) {
       return this.initializationPromise;
     }
@@ -21,7 +20,6 @@ class EmailService {
   async _doInitialize() {
     console.log('📧 Starting EmailService initialization...');
     
-    // Check environment variables
     const requiredVars = {
       EMAIL_USER: process.env.EMAIL_USER,
       EMAIL_PASS: process.env.EMAIL_PASS,
@@ -38,7 +36,6 @@ class EmailService {
       }
     });
 
-    // Validate all required variables exist
     const missingVars = Object.entries(requiredVars)
       .filter(([key, value]) => !value)
       .map(([key]) => key);
@@ -50,7 +47,7 @@ class EmailService {
     }
 
     try {
-      // Create transporter
+      // ✅ FIXED: Changed from createTransporter to createTransport
       this.transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT),
@@ -64,8 +61,6 @@ class EmailService {
       });
 
       console.log('✅ Transporter created, verifying connection...');
-
-      // Verify connection
       await this.transporter.verify();
       
       console.log('✅ SMTP connection verified - EmailService ready!');
@@ -146,7 +141,7 @@ class EmailService {
   }
 
   async sendLowStockAlert(items = []) {
-    console.log('📧 sendLowStockAlert called');
+    console.log('📧 sendLowStockAlert called with', items.length, 'items');
     
     try {
       await this.ensureInitialized();
@@ -156,28 +151,44 @@ class EmailService {
     }
 
     try {
-      const itemsHtml = items.length > 0 ? items.map(item => `
-        <tr style="border-bottom: 1px solid #ddd;">
-          <td style="padding: 12px; font-weight: 500;">${item.name}</td>
-          <td style="padding: 12px; text-align: center; color: #d32f2f; font-weight: bold; background: #ffebee;">${item.quantity}</td>
-          <td style="padding: 12px; text-align: center;">${item.minStockLevel}</td>
-        </tr>
-      `).join('') : `
-        <tr>
-          <td colspan="3" style="padding: 30px; text-align: center; color: #666;">
-            No low stock items found at this time.
-          </td>
-        </tr>`;
+      if (items.length === 0) {
+        return await this.sendNoLowStockEmail();
+      }
+
+      const isSingleItemAlert = items.length === 1;
+      const alertTitle = isSingleItemAlert ? 
+        `🚨 URGENT: ${items[0].name} - Stock Alert` : 
+        `🚨 URGENT: Low Stock Alert - ${items.length} Items`;
+
+      const itemsHtml = items.map(item => {
+        const statusColor = item.quantity === 0 ? '#d32f2f' : '#ff9800';
+        const statusBg = item.quantity === 0 ? '#ffebee' : '#fff3e0';
+        const statusText = item.quantity === 0 ? 'OUT OF STOCK' : 'LOW STOCK';
+        
+        return `
+          <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding: 12px; font-weight: 500;">${item.name}</td>
+            <td style="padding: 12px; text-align: center; color: ${statusColor}; font-weight: bold; background: ${statusBg};">${item.quantity}</td>
+            <td style="padding: 12px; text-align: center;">${item.minStockLevel || 0}</td>
+            <td style="padding: 12px; text-align: center;">
+              <span style="background: ${statusColor}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                ${statusText}
+              </span>
+            </td>
+            <td style="padding: 12px; text-align: center; font-size: 12px; color: #666;">${item.category || 'N/A'}</td>
+          </tr>
+        `;
+      }).join('');
 
       const mailOptions = {
         from: `HealX Healthcare <${process.env.EMAIL_USER}>`,
         to: 'chamarasweed44@gmail.com',
-        subject: '🚨 URGENT: Low Stock Alert - HealX Healthcare System',
+        subject: alertTitle,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; border: 2px solid #d32f2f; border-radius: 10px;">
+          <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; border: 2px solid #d32f2f; border-radius: 10px;">
             <div style="background: linear-gradient(135deg, #d32f2f, #c62828); color: white; padding: 30px; text-align: center;">
-              <h1 style="margin: 0; font-size: 32px;">🚨 URGENT ALERT</h1>
-              <h2 style="margin: 15px 0 5px 0; font-size: 22px;">Low Stock Items Detected</h2>
+              <h1 style="margin: 0; font-size: 32px;">🚨 ${isSingleItemAlert ? 'ITEM ALERT' : 'STOCK ALERT'}</h1>
+              <h2 style="margin: 15px 0 5px 0; font-size: 22px;">${isSingleItemAlert ? items[0].name + ' Needs' : 'Multiple Items Need'} Attention</h2>
               <p style="margin: 0; opacity: 0.9; font-size: 16px;">HealX Healthcare Management System</p>
             </div>
             
@@ -185,7 +196,10 @@ class EmailService {
               <div style="background: #fff3cd; padding: 25px; border-radius: 8px; border-left: 5px solid #ffc107; margin-bottom: 30px;">
                 <h3 style="margin: 0 0 10px 0; color: #856404;">⚠️ IMMEDIATE ACTION REQUIRED</h3>
                 <p style="margin: 0; color: #856404; font-size: 16px; font-weight: 500;">
-                  The following surgical items are running critically low and need immediate restocking:
+                  ${isSingleItemAlert ? 
+                    'The following surgical item needs immediate attention:' :
+                    'The following surgical items are running critically low and need immediate restocking:'
+                  }
                 </p>
               </div>
               
@@ -194,7 +208,9 @@ class EmailService {
                   <tr style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white;">
                     <th style="padding: 15px; text-align: left; font-size: 16px;">Item Name</th>
                     <th style="padding: 15px; text-align: center; font-size: 16px;">Current Stock</th>
-                    <th style="padding: 15px; text-align: center; font-size: 16px;">Minimum Required</th>
+                    <th style="padding: 15px; text-align: center; font-size: 16px;">Min Required</th>
+                    <th style="padding: 15px; text-align: center; font-size: 16px;">Status</th>
+                    <th style="padding: 15px; text-align: center; font-size: 16px;">Category</th>
                   </tr>
                 </thead>
                 <tbody style="background: white;">
@@ -216,33 +232,56 @@ class EmailService {
             <div style="background: #333; color: white; padding: 20px; text-align: center;">
               <p style="margin: 0; font-size: 14px;">
                 <strong>Alert Generated:</strong> ${new Date().toLocaleString()} | 
+                <strong>Alert Type:</strong> ${isSingleItemAlert ? 'Individual Item' : 'Bulk Alert'} |
                 <strong>HealX Healthcare System</strong>
-              </p>
-              <p style="margin: 10px 0 0 0; font-size: 12px; opacity: 0.8;">
-                This is an automated critical alert from your inventory management system
               </p>
             </div>
           </div>
         `
       };
 
-      console.log(`📧 Sending low stock alert for ${items.length} items to chamarasweed44@gmail.com...`);
+      console.log(`📧 Sending ${isSingleItemAlert ? 'individual' : 'bulk'} alert for ${items.length} item(s)...`);
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('✅ Low stock alert sent successfully! MessageId:', result.messageId);
+      console.log('✅ Alert sent successfully! MessageId:', result.messageId);
       return result;
 
     } catch (error) {
-      console.error('❌ Failed to send low stock alert:', error);
-      throw new Error(`Failed to send low stock alert: ${error.message}`);
+      console.error('❌ Failed to send stock alert:', error);
+      throw new Error(`Failed to send stock alert: ${error.message}`);
     }
   }
 
-  // Method to check if service is ready
+  async sendNoLowStockEmail() {
+    const mailOptions = {
+      from: `HealX Healthcare <${process.env.EMAIL_USER}>`,
+      to: 'chamarasweed44@gmail.com',
+      subject: '✅ Inventory Status: All Items Well Stocked',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #4CAF50; border-radius: 10px;">
+          <div style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 25px; text-align: center;">
+            <h1 style="margin: 0; font-size: 28px;">✅ All Clear!</h1>
+            <p style="margin: 10px 0 0 0; font-size: 18px;">No Low Stock Items Found</p>
+          </div>
+          <div style="padding: 25px; text-align: center;">
+            <h2 style="color: #4CAF50;">🎉 Great News!</h2>
+            <p style="font-size: 16px;">All surgical items are currently well-stocked.</p>
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Checked at: ${new Date().toLocaleString()}
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const result = await this.transporter.sendMail(mailOptions);
+    console.log('✅ No low stock alert sent! MessageId:', result.messageId);
+    return result;
+  }
+
   isReady() {
     return this.initialized && this.transporter !== null;
   }
 
-  // Method to get service status
   getStatus() {
     return {
       initialized: this.initialized,
