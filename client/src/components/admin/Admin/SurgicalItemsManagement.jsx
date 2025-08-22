@@ -67,7 +67,7 @@ const SurgicalItemsManagement = () => {
     }, duration);
   };
 
-  // ✅ ADDED: Test email function
+  // ✅ FIXED: Test email function
   const handleTestEmail = async () => {
     try {
       setNotifications({ loading: true, message: 'Sending test email...', type: 'info' });
@@ -78,6 +78,11 @@ const SurgicalItemsManagement = () => {
           'Content-Type': 'application/json'
         }
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
 
       const data = await response.json();
       
@@ -92,22 +97,43 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // ✅ ADDED: Send low stock alert function
+  // ✅ FIXED: Send low stock alert function - Fixed logic and variable issues
   const handleSendLowStockAlert = async () => {
     try {
       setNotifications({ loading: true, message: 'Checking low stock items and sending alerts...', type: 'info' });
       
+      // Get all low stock items from current items state
+      const lowStockItems = items
+        .filter(item => item.quantity <= (item.minStockLevel || 0))
+        .map(item => ({
+          itemId: item._id,
+          itemName: item.name,
+          quantity: item.quantity,
+          minStockLevel: item.minStockLevel || 0,
+          isOutOfStock: item.quantity === 0,
+          categories: item.category,
+          supplier: item.supplier?.name || 'N/A'
+        }));
+
       const response = await fetch(`${API_BASE_URL}/notifications/check-low-stock`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ 
+          lowStockItems: lowStockItems
+        })
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
 
       const data = await response.json();
       
       if (data.success) {
-        const count = data.data.count || 0;
+        const count = data.data?.count || lowStockItems.length || 0;
         showNotification(`✅ Low stock alert sent successfully! Found ${count} items needing attention.`, 'success');
       } else {
         throw new Error(data.message || 'Failed to send low stock alert');
@@ -118,36 +144,100 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // ✅ ADDED: Manual notification for specific item
-  const handleSendItemNotification = async (item) => {
+  // ✅ FIXED: Manual notification for specific item - Fixed response handling
+  // ✅ FIXED: Individual item notification - Use correct endpoint name
+const handleSendItemNotification = async (item) => {
+  try {
+    const isLowStock = item.quantity <= (item.minStockLevel || 0);
+    const isOutOfStock = item.quantity === 0;
+    
+    if (!isLowStock && !isOutOfStock) {
+      showNotification(`ℹ️ ${item.name} is currently well-stocked (${item.quantity} units available)`, 'info');
+      return;
+    }
+
+    setNotifications({ loading: true, message: `Sending notification for ${item.name}...`, type: 'info' });
+    
+    // ✅ FIXED: Changed endpoint from 'send-item-notification' to 'send-item-alert'
+    const response = await fetch(`${API_BASE_URL}/notifications/send-item-alert`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        itemId: item._id,
+        itemName: item.name,
+        currentQuantity: item.quantity,
+        minStockLevel: item.minStockLevel || 0,
+        isOutOfStock: isOutOfStock,
+        category: item.category,
+        supplier: item.supplier?.name || 'N/A'
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.success) {
+      const status = isOutOfStock ? 'OUT OF STOCK' : 'LOW STOCK';
+      showNotification(`✅ ${status} alert sent for ${item.name}!`, 'success');
+    } else {
+      throw new Error(data.message || 'Failed to send item notification');
+    }
+  } catch (error) {
+    console.error('Item notification error:', error);
+    showNotification(`❌ Failed to send notification for ${item.name}: ${error.message}`, 'error');
+  }
+};
+
+
+  // ✅ FIXED: Second low stock alert function - Simplified and fixed
+  const handleSecondLowStockAlert = async () => {
     try {
-      const isLowStock = item.quantity <= (item.minStockLevel || 0);
-      const isOutOfStock = item.quantity === 0;
-      
-      if (!isLowStock && !isOutOfStock) {
-        showNotification(`ℹ️ ${item.name} is currently well-stocked (${item.quantity} units available)`, 'info');
-        return;
+      setNotifications({
+        loading: true,
+        message: 'Sending second low stock alert...',
+        type: 'info'
+      });
+
+      const lowStockItems = items
+        .filter(item => item.quantity <= (item.minStockLevel || 0) && item.quantity >= 0)
+        .map(item => ({
+          itemId: item._id,
+          itemName: item.name,
+          quantity: item.quantity,
+          minStockLevel: item.minStockLevel || 0,
+          categories: item.category,
+          supplier: item.supplier?.name || 'N/A'
+        }));
+
+      const response = await fetch(`${API_BASE_URL}/notifications/check-low-stock`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ lowStockItems: lowStockItems })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
 
-      setNotifications({ loading: true, message: `Sending notification for ${item.name}...`, type: 'info' });
-      
-      // Mock individual item notification - you can implement this endpoint
-      const notificationType = isOutOfStock ? 'out_of_stock' : 'low_stock';
-      const mockResponse = {
-        success: true,
-        data: { messageId: 'mock_' + Date.now() }
-      };
-
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (mockResponse.success) {
-        const status = isOutOfStock ? 'out of stock' : 'low stock';
-        showNotification(`✅ ${status.toUpperCase()} notification sent for ${item.name}!`, 'success');
+      const data = await response.json();
+      if (data.success) {
+        const count = data.data?.count || lowStockItems.length || 0;
+        showNotification(`✅ Second low stock alert sent successfully! Found ${count} items needing attention.`, 'success');
+      } else {
+        throw new Error(data.message || 'Failed to send second low stock alert');
       }
     } catch (error) {
-      console.error('Item notification error:', error);
-      showNotification(`❌ Failed to send notification for ${item.name}`, 'error');
+      console.error('Second low stock alert error:', error);
+      showNotification(`❌ Failed to send second low stock alert: ${error.message}`, 'error');
     }
   };
 
@@ -213,6 +303,11 @@ const SurgicalItemsManagement = () => {
     try {
       // Load all items for accurate stats calculation
       const response = await fetch(`${API_BASE_URL}/surgical-items?page=1&limit=1000`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
       if (data.success) {
@@ -229,6 +324,7 @@ const SurgicalItemsManagement = () => {
     }
   };
 
+  // Rest of your component code remains the same...
   const handleAddItem = () => {
     setSelectedItem(null);
     setShowAddModal(true);
@@ -250,16 +346,20 @@ const SurgicalItemsManagement = () => {
           method: 'DELETE'
         });
         
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
         if (data.success) {
-          alert('Item deleted successfully!');
+          showNotification('Item deleted successfully!', 'success');
           loadItems();
         } else {
           throw new Error(data.message);
         }
       } catch (error) {
         console.error('Error deleting item:', error);
-        alert('Failed to delete item: ' + error.message);
+        showNotification('Failed to delete item: ' + error.message, 'error');
       }
     }
   };
@@ -278,18 +378,25 @@ const SurgicalItemsManagement = () => {
         })
       });
       
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       if (data.success) {
-        alert(`Stock ${type} updated successfully!`);
+        showNotification(`Stock ${type} updated successfully!`, 'success');
         loadItems();
       } else {
         throw new Error(data.message);
       }
     } catch (error) {
       console.error('Error updating stock:', error);
-      alert('Failed to update stock: ' + error.message);
+      showNotification('Failed to update stock: ' + error.message, 'error');
     }
   };
+
+  // Rest of your component code continues exactly the same...
+  // (Include all the remaining functions and JSX as they were)
 
   // Custom input component for better user experience
   const CustomNumberInput = ({ value, onSubmit, placeholder, title }) => {
@@ -303,7 +410,7 @@ const SurgicalItemsManagement = () => {
         setInputValue('');
         setIsEditing(false);
       } else {
-        alert('Please enter a valid positive number');
+        showNotification('Please enter a valid positive number', 'error');
       }
     };
 
