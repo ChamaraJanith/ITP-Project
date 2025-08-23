@@ -4,7 +4,7 @@ import {
   adminLogout, 
   verifyAdmin, 
   getAdminProfile, 
-  updateAdminProfile 
+  updateAdminProfile
 } from '../controller/adminAuthController.js';
 import {
   getDashboardStats,
@@ -17,13 +17,15 @@ import {
   updateProfileStatus,
   getAllProfilesDetailed
 } from '../controller/adminDashboardController.js';
-import { authenticateAdmin, authorizeRoles } from '../middleware/adminAuthMiddleware.js';
+import { authenticateAdmin, authorizeRoles} from '../middleware/adminAuthMiddleware.js';
+
 
 const router = express.Router();
 
 // Public admin authentication routes
 router.post('/login', adminLogin);
 router.post('/logout', adminLogout);
+
 
 // Protected admin routes
 router.get('/verify', authenticateAdmin, verifyAdmin);

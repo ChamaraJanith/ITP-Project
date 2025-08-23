@@ -13,13 +13,13 @@ const seedAdminUsers = async () => {
 
     const adminUsers = [
       {
-        name: "Chamara Janith",
+        name: "Mr. Chamara Janith",
         email: "admin@healx.com",
         password: await bcrypt.hash("admin123", 12),
         role: "admin"
       },
       {
-        name: "Sarah Receptionist", 
+        name: " Madushi Rashmika", 
         email: "receptionist@healx.com",
         password: await bcrypt.hash("receptionist123", 12),
         role: "receptionist"

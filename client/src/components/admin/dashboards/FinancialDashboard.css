@@ -73,7 +73,8 @@
   gap: 6rem; /* more space between charts */
   margin-top: 2rem;
   justify-content: flex-end;
-  margin-left: auto; /* keep it on the right */
+  margin-bottom: 50px;
+  margin-right: 400px; /* keep it on the right */
 }
 
 .chart-card {
