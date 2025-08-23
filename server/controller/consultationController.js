@@ -7,14 +7,7 @@ class ConsultationController {
     try {
       const { doctor, date, time, reason, notes } = req.body;
 
-      const newConsultation = new Consultation({
-        doctor,
-        date,
-        time,
-        reason,
-        notes
-      });
-
+      const newConsultation = new Consultation({ doctor, date, time, reason, notes });
       await newConsultation.save();
 
       return res.status(201).json({
@@ -52,17 +45,14 @@ class ConsultationController {
     }
   }
 
-  // Optional: Get consultation by ID
+  // Get consultation by ID
   static async getConsultationById(req, res) {
     try {
       const { id } = req.params;
       const consultation = await Consultation.findById(id);
 
       if (!consultation) {
-        return res.status(404).json({
-          success: false,
-          message: 'Consultation not found'
-        });
+        return res.status(404).json({ success: false, message: 'Consultation not found' });
       }
 
       return res.status(200).json({
@@ -80,23 +70,17 @@ class ConsultationController {
     }
   }
 
-  // Optional: Delete consultation
+  // Delete consultation by ID
   static async deleteConsultation(req, res) {
     try {
       const { id } = req.params;
       const deleted = await Consultation.findByIdAndDelete(id);
 
       if (!deleted) {
-        return res.status(404).json({
-          success: false,
-          message: 'Consultation not found'
-        });
+        return res.status(404).json({ success: false, message: 'Consultation not found' });
       }
 
-      return res.status(200).json({
-        success: true,
-        message: 'Consultation deleted successfully'
-      });
+      return res.status(200).json({ success: true, message: 'Consultation deleted successfully' });
     } catch (error) {
       console.error("Error deleting consultation:", error);
       return res.status(500).json({
@@ -106,7 +90,6 @@ class ConsultationController {
       });
     }
   }
-
 }
 
 export default ConsultationController;
