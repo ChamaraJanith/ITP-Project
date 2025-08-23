@@ -45,7 +45,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// CORS configuration checked
+// CORS configuration
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -136,6 +136,8 @@ app.use('/api/inventory', inventoryRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
 
+
+app.use('/api/prescription', consultationRouter); // Mount consultation routes
 
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
