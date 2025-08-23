@@ -37,7 +37,7 @@ const ScheduleConsultation = () => {
         fetchConsultations();
     };
 
-    //fetch consultations from the server
+    //fetch consultations from the server aaa
     const fetchConsultations = async () => {
         const response = await fetch('http://localhost:7000/api/prescription/consultations');
         const data = await response.json();
