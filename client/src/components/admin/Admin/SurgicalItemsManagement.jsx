@@ -5,7 +5,7 @@ import AdminLayout from '../AdminLayout';
 import AdminErrorBoundary from '../AdminErrorBoundary';
 import SurgicalItemModal from '../Admin/SurgicalItemModal';
 import DisposeModal from './disposeModal.jsx';
-import '../Admin/styles/DisposeModal.css' // Fixed import
+import '../Admin/styles/DisposeModal.css'
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -34,7 +34,14 @@ const SurgicalItemsManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [stats, setStats] = useState({});
-  const [showDisposeModal, setShowDisposeModal] = useState(false); // Fixed: Moved inside component
+  const [showDisposeModal, setShowDisposeModal] = useState(false);
+  
+  // ✅ ADDED: Notification states
+  const [notifications, setNotifications] = useState({
+    loading: false,
+    message: '',
+    type: '' // 'success', 'error', 'info'
+  });
 
   const API_BASE_URL = 'http://localhost:7000/api/inventory';
 
@@ -51,6 +58,188 @@ const SurgicalItemsManagement = () => {
     'Sterilization Equipment',
     'Other'
   ];
+
+  // ✅ ADDED: Notification helper function
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotifications({ loading: false, message, type });
+    setTimeout(() => {
+      setNotifications({ loading: false, message: '', type: '' });
+    }, duration);
+  };
+
+  // ✅ FIXED: Test email function
+  const handleTestEmail = async () => {
+    try {
+      setNotifications({ loading: true, message: 'Sending test email...', type: 'info' });
+      
+      const response = await fetch(`${API_BASE_URL}/notifications/test-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        showNotification('✅ Test email sent successfully to chamarasweed44@gmail.com!', 'success');
+      } else {
+        throw new Error(data.message || 'Failed to send test email');
+      }
+    } catch (error) {
+      console.error('Test email error:', error);
+      showNotification(`❌ Failed to send test email: ${error.message}`, 'error');
+    }
+  };
+
+  // ✅ FIXED: Send low stock alert function - Fixed logic and variable issues
+  const handleSendLowStockAlert = async () => {
+    try {
+      setNotifications({ loading: true, message: 'Checking low stock items and sending alerts...', type: 'info' });
+      
+      // Get all low stock items from current items state
+      const lowStockItems = items
+        .filter(item => item.quantity <= (item.minStockLevel || 0))
+        .map(item => ({
+          itemId: item._id,
+          itemName: item.name,
+          quantity: item.quantity,
+          minStockLevel: item.minStockLevel || 0,
+          isOutOfStock: item.quantity === 0,
+          categories: item.category,
+          supplier: item.supplier?.name || 'N/A'
+        }));
+
+      const response = await fetch(`${API_BASE_URL}/notifications/check-low-stock`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          lowStockItems: lowStockItems
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        const count = data.data?.count || lowStockItems.length || 0;
+        showNotification(`✅ Low stock alert sent successfully! Found ${count} items needing attention.`, 'success');
+      } else {
+        throw new Error(data.message || 'Failed to send low stock alert');
+      }
+    } catch (error) {
+      console.error('Low stock alert error:', error);
+      showNotification(`❌ Failed to send low stock alert: ${error.message}`, 'error');
+    }
+  };
+
+  // ✅ FIXED: Manual notification for specific item - Fixed response handling
+  // ✅ FIXED: Individual item notification - Use correct endpoint name
+const handleSendItemNotification = async (item) => {
+  try {
+    const isLowStock = item.quantity <= (item.minStockLevel || 0);
+    const isOutOfStock = item.quantity === 0;
+    
+    if (!isLowStock && !isOutOfStock) {
+      showNotification(`ℹ️ ${item.name} is currently well-stocked (${item.quantity} units available)`, 'info');
+      return;
+    }
+
+    setNotifications({ loading: true, message: `Sending notification for ${item.name}...`, type: 'info' });
+    
+    // ✅ FIXED: Changed endpoint from 'send-item-notification' to 'send-item-alert'
+    const response = await fetch(`${API_BASE_URL}/notifications/send-item-alert`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        itemId: item._id,
+        itemName: item.name,
+        currentQuantity: item.quantity,
+        minStockLevel: item.minStockLevel || 0,
+        isOutOfStock: isOutOfStock,
+        category: item.category,
+        supplier: item.supplier?.name || 'N/A'
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.success) {
+      const status = isOutOfStock ? 'OUT OF STOCK' : 'LOW STOCK';
+      showNotification(`✅ ${status} alert sent for ${item.name}!`, 'success');
+    } else {
+      throw new Error(data.message || 'Failed to send item notification');
+    }
+  } catch (error) {
+    console.error('Item notification error:', error);
+    showNotification(`❌ Failed to send notification for ${item.name}: ${error.message}`, 'error');
+  }
+};
+
+
+  // ✅ FIXED: Second low stock alert function - Simplified and fixed
+  const handleSecondLowStockAlert = async () => {
+    try {
+      setNotifications({
+        loading: true,
+        message: 'Sending second low stock alert...',
+        type: 'info'
+      });
+
+      const lowStockItems = items
+        .filter(item => item.quantity <= (item.minStockLevel || 0) && item.quantity >= 0)
+        .map(item => ({
+          itemId: item._id,
+          itemName: item.name,
+          quantity: item.quantity,
+          minStockLevel: item.minStockLevel || 0,
+          categories: item.category,
+          supplier: item.supplier?.name || 'N/A'
+        }));
+
+      const response = await fetch(`${API_BASE_URL}/notifications/check-low-stock`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ lowStockItems: lowStockItems })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        const count = data.data?.count || lowStockItems.length || 0;
+        showNotification(`✅ Second low stock alert sent successfully! Found ${count} items needing attention.`, 'success');
+      } else {
+        throw new Error(data.message || 'Failed to send second low stock alert');
+      }
+    } catch (error) {
+      console.error('Second low stock alert error:', error);
+      showNotification(`❌ Failed to send second low stock alert: ${error.message}`, 'error');
+    }
+  };
 
   // Function to calculate totals from items array using min stock level
   const calculateStats = (itemsArray) => {
@@ -114,6 +303,11 @@ const SurgicalItemsManagement = () => {
     try {
       // Load all items for accurate stats calculation
       const response = await fetch(`${API_BASE_URL}/surgical-items?page=1&limit=1000`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
       if (data.success) {
@@ -130,6 +324,7 @@ const SurgicalItemsManagement = () => {
     }
   };
 
+  // Rest of your component code remains the same...
   const handleAddItem = () => {
     setSelectedItem(null);
     setShowAddModal(true);
@@ -151,16 +346,20 @@ const SurgicalItemsManagement = () => {
           method: 'DELETE'
         });
         
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
         if (data.success) {
-          alert('Item deleted successfully!');
+          showNotification('Item deleted successfully!', 'success');
           loadItems();
         } else {
           throw new Error(data.message);
         }
       } catch (error) {
         console.error('Error deleting item:', error);
-        alert('Failed to delete item: ' + error.message);
+        showNotification('Failed to delete item: ' + error.message, 'error');
       }
     }
   };
@@ -179,18 +378,25 @@ const SurgicalItemsManagement = () => {
         })
       });
       
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       if (data.success) {
-        alert(`Stock ${type} updated successfully!`);
+        showNotification(`Stock ${type} updated successfully!`, 'success');
         loadItems();
       } else {
         throw new Error(data.message);
       }
     } catch (error) {
       console.error('Error updating stock:', error);
-      alert('Failed to update stock: ' + error.message);
+      showNotification('Failed to update stock: ' + error.message, 'error');
     }
   };
+
+  // Rest of your component code continues exactly the same...
+  // (Include all the remaining functions and JSX as they were)
 
   // Custom input component for better user experience
   const CustomNumberInput = ({ value, onSubmit, placeholder, title }) => {
@@ -204,7 +410,7 @@ const SurgicalItemsManagement = () => {
         setInputValue('');
         setIsEditing(false);
       } else {
-        alert('Please enter a valid positive number');
+        showNotification('Please enter a valid positive number', 'error');
       }
     };
 
@@ -248,16 +454,14 @@ const SurgicalItemsManagement = () => {
 
   // Modified status functions based on min stock level
   const getStatusColor = (quantity, minStockLevel) => {
-    if (quantity <= (minStockLevel || 0)) {
-      return '#ffc107'; // Orange for Low Stock
-    }
+    if (quantity === 0) return '#dc3545'; // Red for Out of Stock
+    if (quantity <= (minStockLevel || 0)) return '#ffc107'; // Orange for Low Stock
     return '#28a745'; // Green for Available
   };
 
   const getStatusText = (quantity, minStockLevel) => {
-    if (quantity <= (minStockLevel || 0)) {
-      return 'Low Stock';
-    }
+    if (quantity === 0) return 'Out of Stock';
+    if (quantity <= (minStockLevel || 0)) return 'Low Stock';
     return 'Available';
   };
 
@@ -284,6 +488,7 @@ const SurgicalItemsManagement = () => {
   const ItemStockChart = ({ item }) => {
     const minStock = item.minStockLevel || 0;
     const isLowStock = item.quantity <= minStock;
+    const isOutOfStock = item.quantity === 0;
     
     const data = {
       labels: ['Stock Level'],
@@ -291,8 +496,8 @@ const SurgicalItemsManagement = () => {
         {
           label: 'Current Stock',
           data: [item.quantity],
-          backgroundColor: isLowStock ? '#ffc107' : '#28a745',
-          borderColor: isLowStock ? '#ffc107' : '#28a745',
+          backgroundColor: isOutOfStock ? '#dc3545' : isLowStock ? '#ffc107' : '#28a745',
+          borderColor: isOutOfStock ? '#dc3545' : isLowStock ? '#ffc107' : '#28a745',
           borderWidth: 1,
         },
         {
@@ -436,13 +641,147 @@ const SurgicalItemsManagement = () => {
                   ➕ Add New Item
                 </button>
                 <button onClick={handleDisposeItem} className="dispose-item-btn">
-                  Dispose Items
+                  🗑️ Dispose Items
                 </button>
               </div>
             </div>
             {error && (
               <div className="error-banner">
                 ⚠️ {error}
+              </div>
+            )}
+          </div>
+
+          {/* ✅ ADDED: Notification Section */}
+          <div className="notification-section" style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            padding: '20px',
+            borderRadius: '10px',
+            marginBottom: '20px',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+              <div>
+                <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>📧 HealX Notification Center</h3>
+                <p style={{ margin: 0, opacity: 0.9, fontSize: '14px' }}>
+                  Monitor inventory and send alerts to: <strong>chamarasweed44@gmail.com</strong>
+                </p>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={handleTestEmail}
+                  disabled={notifications.loading}
+                  style={{
+                    background: 'rgba(255,255,255,0.2)',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    color: 'white',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    cursor: notifications.loading ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    transition: 'all 0.3s ease',
+                    opacity: notifications.loading ? 0.7 : 1
+                  }}
+                  onMouseOver={(e) => {
+                    if (!notifications.loading) {
+                      e.target.style.background = 'rgba(255,255,255,0.3)';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (!notifications.loading) {
+                      e.target.style.background = 'rgba(255,255,255,0.2)';
+                    }
+                  }}
+                >
+                  📬 Test Email
+                </button>
+                
+                <button
+                  onClick={handleSendLowStockAlert}
+                  disabled={notifications.loading}
+                  style={{
+                    background: stats.lowStockItems > 0 ? '#ff4757' : 'rgba(255,255,255,0.2)',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    color: 'white',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    cursor: notifications.loading ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    transition: 'all 0.3s ease',
+                    opacity: notifications.loading ? 0.7 : 1,
+                    position: 'relative'
+                  }}
+                  onMouseOver={(e) => {
+                    if (!notifications.loading) {
+                      e.target.style.transform = 'translateY(-1px)';
+                      e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (!notifications.loading) {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }
+                  }}
+                >
+                  🚨 Send Low Stock Alert
+                  {stats.lowStockItems > 0 && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '-8px',
+                      right: '-8px',
+                      background: '#ffc107',
+                      color: '#000',
+                      borderRadius: '50%',
+                      width: '20px',
+                      height: '20px',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 'bold'
+                    }}>
+                      {stats.lowStockItems}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Notification Status */}
+            {notifications.message && (
+              <div style={{
+                marginTop: '15px',
+                padding: '10px 15px',
+                borderRadius: '6px',
+                background: notifications.type === 'success' ? 'rgba(40, 167, 69, 0.2)' :
+                           notifications.type === 'error' ? 'rgba(220, 53, 69, 0.2)' :
+                           'rgba(255, 255, 255, 0.1)',
+                border: `1px solid ${
+                  notifications.type === 'success' ? 'rgba(40, 167, 69, 0.3)' :
+                  notifications.type === 'error' ? 'rgba(220, 53, 69, 0.3)' :
+                  'rgba(255, 255, 255, 0.2)'
+                }`,
+                fontSize: '14px'
+              }}>
+                {notifications.loading && (
+                  <span style={{ marginRight: '8px' }}>
+                    <div style={{
+                      display: 'inline-block',
+                      width: '14px',
+                      height: '14px',
+                      border: '2px solid rgba(255,255,255,0.3)',
+                      borderRadius: '50%',
+                      borderTopColor: 'white',
+                      animation: 'spin 1s ease-in-out infinite'
+                    }}></div>
+                  </span>
+                )}
+                {notifications.message}
               </div>
             )}
           </div>
@@ -463,11 +802,18 @@ const SurgicalItemsManagement = () => {
                 <p>Total Quantity</p>
               </div>
             </div>
-            <div className="stat-card">
+            <div className="stat-card" style={{
+              background: stats.lowStockItems > 0 ? 'linear-gradient(135deg, #ff4757, #ff6b7a)' : undefined,
+              color: stats.lowStockItems > 0 ? 'white' : undefined,
+              animation: stats.lowStockItems > 0 ? 'pulse 2s infinite' : 'none'
+            }}>
               <div className="stat-icon">⚠️</div>
               <div className="stat-info">
                 <h3>{stats.lowStockItems || 0}</h3>
                 <p>Low Stock Items</p>
+                {stats.lowStockItems > 0 && (
+                  <small style={{ opacity: 0.9 }}>Needs attention!</small>
+                )}
               </div>
             </div>
             <div className="stat-card">
@@ -509,6 +855,7 @@ const SurgicalItemsManagement = () => {
                 <option value="all">All Status</option>
                 <option value="Available">Available</option>
                 <option value="Low Stock">Low Stock</option>
+                <option value="Out of Stock">Out of Stock</option>
               </select>
             </div>
           </div>
@@ -552,7 +899,7 @@ const SurgicalItemsManagement = () => {
                       <span 
                         style={{ 
                           fontWeight: 'bold',
-                          color: item.quantity <= (item.minStockLevel || 0) ? '#ffc107' : '#28a745'
+                          color: getStatusColor(item.quantity, item.minStockLevel)
                         }}
                       >
                         {item.quantity}
@@ -604,6 +951,28 @@ const SurgicalItemsManagement = () => {
                           title="Use Stock"
                           onSubmit={(quantity) => handleUpdateStock(item._id, quantity, 'usage')}
                         />
+                        
+                        {/* ✅ ADDED: Individual item notification button */}
+                        {(item.quantity <= (item.minStockLevel || 0)) && (
+                          <button
+                            onClick={() => handleSendItemNotification(item)}
+                            className="action-btn notify-btn"
+                            title={`Send notification for ${item.name}`}
+                            disabled={notifications.loading}
+                            style={{ 
+                              padding: '2px 4px', 
+                              fontSize: '10px',
+                              background: item.quantity === 0 ? '#dc3545' : '#ffc107',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '3px',
+                              cursor: notifications.loading ? 'not-allowed' : 'pointer',
+                              opacity: notifications.loading ? 0.7 : 1
+                            }}
+                          >
+                            📧 Alert
+                          </button>
+                        )}
                         
                         <button
                           onClick={() => handleDeleteItem(item._id)}
@@ -688,6 +1057,20 @@ const SurgicalItemsManagement = () => {
             />
           )}
         </div>
+
+        {/* ✅ ADDED: CSS Animation Styles */}
+        <style jsx>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          
+          @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+          }
+        `}</style>
       </AdminLayout>
     </AdminErrorBoundary>
   );
