@@ -20,6 +20,7 @@ import DoctorDashboard from './components/admin/dashboards/DoctorDashboard';
 import FinancialDashboard from './components/admin/dashboards/FinancialDashboard';
 import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute';
 import SurgicalItemsManagement from './components/admin/Admin/SurgicalItemsManagement';
+import ScheduleConsultation from './components/admin/Doctor/ScheduleConsultation';
 
 // ✅ Healthcare Service Components (create these as needed)
 
@@ -277,6 +278,13 @@ function App() {
           <Route
            path="/hospitals"
             element={<HospitalsPage />} />
+
+          {/* ✅ Admin Consultation Scheduling */}
+          <Route
+            path="/admin/doctor/s"
+            element={<ScheduleConsultation />} />
+
+          {/* ✅ Admin Surgical Items Management */}
           
 
           

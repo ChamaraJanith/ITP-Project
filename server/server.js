@@ -4,8 +4,7 @@ import { fileURLToPath } from 'url';
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import router from "./routes/auth.js";
-import authRouter from './routes/auth.js';
+
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -137,7 +136,7 @@ app.use('/api/chatbot', chatbotRouter);
 app.use("/api/auth", router);
 app.use("/api/auth", authRouter);
 
-// Static file serving
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
