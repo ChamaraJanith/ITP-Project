@@ -136,7 +136,7 @@ app.use('/api/inventory', inventoryRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
 
-app.use('/api/prescription', consultationRouter);
+
 
 
 
