@@ -133,6 +133,7 @@ surgicalItemSchema.pre('save', function(next) {
   next();
 });
 
-const SurgicalItem = mongoose.model('SurgicalItem', surgicalItemSchema);
+// ✅ CRITICAL FIX: Use this pattern to prevent OverwriteModelError
+const SurgicalItem = mongoose.models.SurgicalItem || mongoose.model('SurgicalItem', surgicalItemSchema);
 
 export default SurgicalItem;

@@ -49,7 +49,7 @@ const FinancialDashboard = () => {
     }
   };
 
-  // 🔹 Add scrollToChart function here
+  // Function to scroll to specific chart
   const scrollToChart = (chartId) => {
     const chartElement = document.getElementById(chartId);
     if (chartElement) {
@@ -257,7 +257,11 @@ const FinancialDashboard = () => {
               <h2>💼 Financial Features</h2>
               <div className="features-grid">
                 {dashboardData.features?.map((feature, index) => (
-                  <div key={index} className="feature-card">
+                  <div
+                    key={index}
+                    className="feature-card"
+                    onClick={() => handleFeatureClick(feature)}
+                  >
                     <h4>{feature.replace("_", " ").toUpperCase()}</h4>
                   </div>
                 ))}
@@ -283,3 +287,7 @@ const FinancialDashboard = () => {
 };
 
 export default FinancialDashboard;
+
+import './FinancialDashboard.css'; // adjust path to your CSS file
+
+/*hell00000000ooooo */
