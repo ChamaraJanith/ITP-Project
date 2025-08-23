@@ -137,7 +137,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
 
 
-app.use('/api/prescription', consultationRouter); // Mount consultation routes
+app.use('/api/prescription', consultationRouter);// Mount consultation routes
 
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
