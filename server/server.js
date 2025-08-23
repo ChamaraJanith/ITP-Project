@@ -133,8 +133,7 @@ app.use('/api/inventory', inventoryRouter);
 // Mount other API routes
 app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
-app.use("/api/auth", router);
-app.use("/api/auth", authRouter);
+
 
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
