@@ -245,7 +245,7 @@ function MedicalNavbar() {
   const navLinks = (
     <>
       <Link 
-        to="/login" 
+        to="/Login" 
         style={{
           textDecoration: "none", 
           color: "#4a5568", 
@@ -529,7 +529,7 @@ function MedicalNavbar() {
           borderRadius: 8,
           transition: "all 0.3s ease"
         }} 
-        onClick={() => navigate("/profile")}
+        onClick={() => navigate("/PatientProfile")}
         title="Profile"
         onMouseEnter={e => {
           e.target.style.backgroundColor = "#f3f4f6";
@@ -658,7 +658,7 @@ function MedicalNavbar() {
           </Link>
           
           <Link 
-            to="/profile" 
+            to="/PatientProfile" 
             onClick={() => setIsOpen(false)} 
             style={{
               textDecoration: "none", 

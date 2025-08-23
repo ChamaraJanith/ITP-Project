@@ -1132,7 +1132,7 @@ const Homepage = () => {
                     {EMOJIS.rocket} Start Private Healthcare Journey
                   </button>
                   <button 
-                    onClick={() => navigate('/login')}
+                    onClick={() => navigate('/Login')}
                     className="auth-btn secondary-advanced"
                   >
                     Sign In

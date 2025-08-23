@@ -55,8 +55,8 @@ export const getAllSurgicalItems = async (req, res) => {
     const totalItems = await SurgicalItem.countDocuments(filter);
     const totalPages = Math.ceil(totalItems / limitNum);
 
-    // Get summary statistics
-    const stats = await SurgicalItem.aggregate([
+    // Get summary statistics - Fixed aggregation
+    const statsResult = await SurgicalItem.aggregate([
       { $match: { isActive: true } },
       {
         $group: {
@@ -78,6 +78,14 @@ export const getAllSurgicalItems = async (req, res) => {
       }
     ]);
 
+    const stats = statsResult.length > 0 ? statsResult[0] : {
+      totalItems: 0,
+      totalQuantity: 0,
+      lowStockItems: 0,
+      outOfStockItems: 0,
+      totalValue: 0
+    };
+
     res.status(200).json({
       success: true,
       data: {
@@ -89,13 +97,7 @@ export const getAllSurgicalItems = async (req, res) => {
           hasNextPage: pageNum < totalPages,
           hasPrevPage: pageNum > 1
         },
-        stats: stats[0] || {
-          totalItems: 0,
-          totalQuantity: 0,
-          lowStockItems: 0,
-          outOfStockItems: 0,
-          totalValue: 0
-        }
+        stats
       }
     });
 
@@ -123,7 +125,8 @@ export const getSurgicalItem = async (req, res) => {
       });
     }
 
-    const item = await SurgicalItem.findById(id);
+    const item = await SurgicalItem.findById(id)
+      .populate('usageHistory.usedBy', 'name'); // Added populate for consistency
 
     if (!item || !item.isActive) {
       return res.status(404).json({
@@ -166,10 +169,18 @@ export const createSurgicalItem = async (req, res) => {
       serialNumber
     } = req.body;
 
+    // Basic validation
+    if (!name || !category || quantity === undefined || !price) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, category, quantity, and price are required fields'
+      });
+    }
+
     // Check if item with same name and supplier already exists
     const existingItem = await SurgicalItem.findOne({
       name: name,
-      'supplier.name': supplier.name,
+      'supplier.name': supplier?.name,
       isActive: true
     });
 
@@ -247,6 +258,7 @@ export const updateSurgicalItem = async (req, res) => {
     // Don't allow direct status updates - it should be calculated
     const updateData = { ...req.body };
     delete updateData.status;
+    delete updateData.isActive; // Prevent accidental deactivation
 
     const updatedItem = await SurgicalItem.findByIdAndUpdate(
       id,
@@ -342,7 +354,7 @@ export const updateStock = async (req, res) => {
     if (!quantityChange || !type || !['restock', 'usage'].includes(type)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid stock update data'
+        message: 'Invalid stock update data. Quantity change and type (restock/usage) are required.'
       });
     }
 
@@ -354,26 +366,28 @@ export const updateStock = async (req, res) => {
       });
     }
 
+    const previousQuantity = item.quantity;
+    const changeAmount = Math.abs(quantityChange);
+
     if (type === 'restock') {
-      item.quantity += Math.abs(quantityChange);
+      item.quantity += changeAmount;
       item.lastRestocked = new Date();
     } else if (type === 'usage') {
-      const usageQuantity = Math.abs(quantityChange);
-      
-      if (item.quantity < usageQuantity) {
+      if (item.quantity < changeAmount) {
         return res.status(400).json({
           success: false,
-          message: 'Insufficient stock for this usage'
+          message: `Insufficient stock for this usage. Available: ${item.quantity}, Requested: ${changeAmount}`
         });
       }
 
-      item.quantity -= usageQuantity;
+      item.quantity -= changeAmount;
       
       // Add to usage history
       item.usageHistory.push({
-        quantityUsed: usageQuantity,
+        quantityUsed: changeAmount,
         usedBy: usedBy || 'Unknown',
-        purpose: purpose || 'Not specified'
+        purpose: purpose || 'Not specified',
+        date: new Date()
       });
     }
 
@@ -384,10 +398,9 @@ export const updateStock = async (req, res) => {
       message: `Stock ${type} updated successfully`,
       data: {
         item: item,
-        previousQuantity: type === 'restock' 
-          ? item.quantity - quantityChange 
-          : item.quantity + quantityChange,
-        newQuantity: item.quantity
+        previousQuantity,
+        newQuantity: item.quantity,
+        changeAmount
       }
     });
 
@@ -406,8 +419,8 @@ export const updateStock = async (req, res) => {
 // @access  Private (Admin/Staff)
 export const getDashboardStats = async (req, res) => {
   try {
-    // Get comprehensive statistics
-    const stats = await SurgicalItem.aggregate([
+    // Get comprehensive statistics - FIXED AGGREGATION
+    const statsResult = await SurgicalItem.aggregate([
       { $match: { isActive: true } },
       {
         $facet: {
@@ -471,19 +484,22 @@ export const getDashboardStats = async (req, res) => {
       }
     ]);
 
+    // Fixed: Access the correct structure
+    const stats = statsResult[0];
+    
     res.status(200).json({
       success: true,
       data: {
-        overview: stats[0].overview || {
+        overview: stats.overview.length > 0 ? stats.overview : {
           totalItems: 0,
           totalQuantity: 0,
           totalValue: 0,
           lowStockItems: 0,
           outOfStockItems: 0
         },
-        categoryBreakdown: stats.categoryBreakdown,
-        recentUsage: stats.recentUsage,
-        expiringItems: stats.expiringItems
+        categoryBreakdown: stats.categoryBreakdown || [],
+        recentUsage: stats.recentUsage || [],
+        expiringItems: stats.expiringItems || []
       }
     });
 
