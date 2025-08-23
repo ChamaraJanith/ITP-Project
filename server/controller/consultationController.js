@@ -1,42 +1,112 @@
 import Consultation from '../model/Consultation.js';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-dotenv.config();
 
-//add a new consultation
-export const addConsultation = async (req, res) => {
+class ConsultationController {
+
+  // Create a new consultation
+  static async createConsultation(req, res) {
     try {
-        const newConsult = new Consult(req.body);
-        await newConsult.save();
-        res.status(201).json({
-            success: true, 
-            message: 'Consultation added successfully',
-            data: newConsult });
+      const { doctor, date, time, reason, notes } = req.body;
 
+      const newConsultation = new Consultation({
+        doctor,
+        date,
+        time,
+        reason,
+        notes
+      });
+
+      await newConsultation.save();
+
+      return res.status(201).json({
+        success: true,
+        message: 'Consultation added successfully',
+        data: newConsultation
+      });
     } catch (error) {
-        console.error('❌ Error adding consultation:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error adding consultation', 
-            error: error.message });
+      console.error("Error creating consultation:", error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error adding consultation',
+        error: error.message
+      });
     }
-};
+  }
 
-//get all consultations
-export const getAllConsultations = async (req, res) => {
+  // Get all consultations
+  static async getAllConsultations(req, res) {
     try {
-        const consultations = await Consultation.find();
-        res.status(200).json({
-            success: true,
-            message: 'Consultations retrieved successfully',
-            data: consultations
-        });
+      const consultations = await Consultation.find().sort({ createdAt: -1 });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Consultations fetched successfully',
+        data: consultations
+      });
     } catch (error) {
-        console.error('❌ Error retrieving consultations:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error retrieving consultations',
-            error: error.message
-        });
+      console.error("Error fetching consultations:", error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error fetching consultations',
+        error: error.message
+      });
     }
+  }
+
+  // Optional: Get consultation by ID
+  static async getConsultationById(req, res) {
+    try {
+      const { id } = req.params;
+      const consultation = await Consultation.findById(id);
+
+      if (!consultation) {
+        return res.status(404).json({
+          success: false,
+          message: 'Consultation not found'
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Consultation fetched successfully',
+        data: consultation
+      });
+    } catch (error) {
+      console.error("Error fetching consultation:", error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error fetching consultation',
+        error: error.message
+      });
+    }
+  }
+
+  // Optional: Delete consultation
+  static async deleteConsultation(req, res) {
+    try {
+      const { id } = req.params;
+      const deleted = await Consultation.findByIdAndDelete(id);
+
+      if (!deleted) {
+        return res.status(404).json({
+          success: false,
+          message: 'Consultation not found'
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Consultation deleted successfully'
+      });
+    } catch (error) {
+      console.error("Error deleting consultation:", error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error deleting consultation',
+        error: error.message
+      });
+    }
+  }
+
 }
+
+export default ConsultationController;
