@@ -89,7 +89,7 @@ const DoctorDashboard = () => {
                 </button>
                 <button
                   className="feature-card"
-                  onClick={() => Navigate("/api/consultations/")}
+                  onClick={() =>alert("Lab Reports clicked")}
                 >
                   PATIENT RECORDS
                 </button>

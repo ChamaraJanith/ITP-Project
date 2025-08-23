@@ -23,6 +23,8 @@ console.log('📧 SMTP_PORT:', process.env.SMTP_PORT);
 // ✅ NOW import modules that depend on environment variables
 import notificationRouter from './routes/notifications.js';
 import surgicalrouter from './routes/surgicalItems.js';
+import consultationRouter from './routes/consultationRoutes.js'; // Import consultation routes
+
 
 // Database connection
 const { default: connectDB } = await import("./config/mongodb.js");
@@ -133,6 +135,8 @@ app.use('/api/inventory', inventoryRouter);
 // Mount other API routes
 app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
+
+app.use('/api/prescription', consultationRouter);
 
 
 
