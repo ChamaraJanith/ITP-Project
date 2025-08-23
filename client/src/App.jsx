@@ -281,7 +281,7 @@ function App() {
 
           {/* ✅ Admin Consultation Scheduling */}
           <Route
-            path="/admin/doctor/s"
+            path="/admin/doctor/schedule-consultation"
             element={<ScheduleConsultation />} />
 
           {/* ✅ Admin Surgical Items Management */}
