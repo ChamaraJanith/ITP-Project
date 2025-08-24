@@ -423,6 +423,36 @@ export const adminDashboardApi = {
         message: error.message || 'Failed to fetch support tickets'
       };
     }
+  },
+  getAllProfilesDetailed: async (filters = {}) => {
+    try {
+      const queryParams = new URLSearchParams({
+        search: filters.search || '',
+        type: filters.type || 'all',
+        status: filters.status || 'all',
+        page: filters.page || 1,
+        limit: filters.limit || 10,
+        sortBy: filters.sortBy || 'createdAt',
+        sortOrder: filters.sortOrder || 'desc'
+      });
+
+      const response = await fetch(`${API_BASE_URL}/api/admin/profiles/detailed?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('getAllProfilesDetailed failed:', error);
+      return { success: false, message: error.message };
+    }
   }
 };
 
