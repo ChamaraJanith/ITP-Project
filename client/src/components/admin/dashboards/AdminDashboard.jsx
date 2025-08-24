@@ -44,6 +44,21 @@ const AdminDashboard = () => {
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
+  // ✅ NEW: All Users Management State
+  const [allUsers, setAllUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [showAllUsers, setShowAllUsers] = useState(false);
+  const [userFilters, setUserFilters] = useState({
+    page: 1,
+    limit: 10,
+    search: '',
+    type: 'all', // 'all', 'patients', 'staff'
+    status: 'all', // 'all', 'verified', 'pending', 'active', 'inactive'
+    sortBy: 'createdAt',
+    sortOrder: 'desc'
+  });
+  const [userPagination, setUserPagination] = useState({});
+
   useEffect(() => {
     initializeDashboard();
   }, [navigate]);
@@ -58,6 +73,13 @@ const AdminDashboard = () => {
     }
     return () => clearInterval(interval);
   }, [showProfiles]);
+
+  // ✅ NEW: Auto-reload users when filters change
+  useEffect(() => {
+    if (showAllUsers) {
+      loadAllUsers();
+    }
+  }, [userFilters]);
 
   const initializeDashboard = async () => {
     try {
@@ -193,6 +215,44 @@ const AdminDashboard = () => {
     }
   };
 
+  // ✅ NEW: Load all users function
+  const loadAllUsers = async () => {
+    try {
+      setUsersLoading(true);
+      const response = await adminDashboardApi.getAllProfilesDetailed(userFilters);
+      
+      if (response.success) {
+        setAllUsers(response.data.profiles);
+        setUserPagination(response.data.pagination);
+        console.log('✅ All users loaded:', response.data);
+      } else {
+        throw new Error(response.message || 'Failed to fetch users');
+      }
+    } catch (error) {
+      console.error('❌ Error loading all users:', error);
+      setError(error.message || 'Failed to load users');
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  // ✅ NEW: Toggle all users section
+  const toggleAllUsers = async () => {
+    if (!showAllUsers) {
+      await loadAllUsers();
+    }
+    setShowAllUsers(!showAllUsers);
+  };
+
+  // ✅ NEW: Handle user filter changes
+  const handleUserFilterChange = (key, value) => {
+    setUserFilters(prev => ({
+      ...prev,
+      [key]: value,
+      page: 1 // Reset to first page when filters change
+    }));
+  };
+
   const toggleRealTimeProfiles = async () => {
     if (!showProfiles) {
       await loadRealTimeProfiles();
@@ -204,6 +264,10 @@ const AdminDashboard = () => {
     await loadDashboardData();
     if (showProfiles) {
       await loadRealTimeProfiles();
+    }
+    // ✅ NEW: Refresh all users if visible
+    if (showAllUsers) {
+      await loadAllUsers();
     }
   };
 
@@ -221,6 +285,10 @@ const AdminDashboard = () => {
     // Refresh profiles after modal closes
     if (showProfiles) {
       loadRealTimeProfiles();
+    }
+    // ✅ NEW: Refresh all users after modal closes
+    if (showAllUsers) {
+      loadAllUsers();
     }
   };
 
@@ -904,6 +972,10 @@ ${admin?.name || 'Admin User'}`);
                 <button onClick={toggleRealTimeProfiles} className="profiles-btn">
                   {showProfiles ? '📋 Hide Profiles' : '📋 Real-Time Profiles'}
                 </button>
+                {/* ✅ NEW: All Users Button */}
+                <button onClick={toggleAllUsers} className="all-users-btn">
+                  {showAllUsers ? '👥 Hide All Users' : '👥 Show All Users'}
+                </button>
                 <button onClick={refreshData} className="refresh-btn">
                   🔄 Refresh
                 </button>
@@ -920,6 +992,233 @@ ${admin?.name || 'Admin User'}`);
               </div>
             )}
           </div>
+
+          {/* ✅ NEW: All Users Management Section */}
+          {showAllUsers && (
+            <div className="all-users-management-section">
+              <div className="section-header">
+                <h2>👥 Complete Users Database (Click to View Details)</h2>
+                <div className="section-actions">
+                  <button onClick={loadAllUsers} className="refresh-users-btn" disabled={usersLoading}>
+                    {usersLoading ? '⏳ Loading...' : '🔄 Refresh Users'}
+                  </button>
+                  <span className="users-count">
+                    Total: {userPagination.totalCount || allUsers.length} users
+                  </span>
+                </div>
+              </div>
+
+              {/* User Filters */}
+              <div className="user-filters">
+                <div className="filter-row">
+                  <div className="filter-group">
+                    <label>🔍 Search:</label>
+                    <input
+                      type="text"
+                      placeholder="Search by name or email..."
+                      value={userFilters.search}
+                      onChange={(e) => handleUserFilterChange('search', e.target.value)}
+                      className="search-input"
+                    />
+                  </div>
+                  
+                  <div className="filter-group">
+                    <label>👤 Type:</label>
+                    <select
+                      value={userFilters.type}
+                      onChange={(e) => handleUserFilterChange('type', e.target.value)}
+                      className="filter-select"
+                    >
+                      <option value="all">All Users</option>
+                      <option value="patients">Patients Only</option>
+                      <option value="staff">Staff Only</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label>✅ Status:</label>
+                    <select
+                      value={userFilters.status}
+                      onChange={(e) => handleUserFilterChange('status', e.target.value)}
+                      className="filter-select"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="verified">Verified/Active</option>
+                      <option value="pending">Pending/Inactive</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label>📊 Sort:</label>
+                    <select
+                      value={userFilters.sortBy}
+                      onChange={(e) => handleUserFilterChange('sortBy', e.target.value)}
+                      className="filter-select"
+                    >
+                      <option value="createdAt">Registration Date</option>
+                      <option value="name">Name</option>
+                      <option value="email">Email</option>
+                      <option value="lastActivity">Last Activity</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label>🔄 Order:</label>
+                    <select
+                      value={userFilters.sortOrder}
+                      onChange={(e) => handleUserFilterChange('sortOrder', e.target.value)}
+                      className="filter-select"
+                    >
+                      <option value="desc">Newest First</option>
+                      <option value="asc">Oldest First</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Users Table */}
+              <div className="users-table-container">
+                {usersLoading ? (
+                  <div className="table-loading">
+                    <div className="loading-spinner"></div>
+                    <p>Loading users...</p>
+                  </div>
+                ) : allUsers.length === 0 ? (
+                  <div className="no-users-message">
+                    <h3>No users found</h3>
+                    <p>Try adjusting your search filters</p>
+                  </div>
+                ) : (
+                  <table className="users-table">
+                    <thead>
+                      <tr>
+                        <th>👤 User</th>
+                        <th>📧 Email</th>
+                        <th>🏷️ Type</th>
+                        <th>✅ Status</th>
+                        <th>🏢 Department</th>
+                        <th>📅 Registered</th>
+                        <th>🕒 Last Activity</th>
+                        <th>🔧 Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allUsers.map((user, index) => (
+                        <tr key={user._id || index} className="user-row clickable-row">
+                          <td className="user-info">
+                            <div className="user-avatar">
+                              {user.type === 'patient' ? '👤' : 
+                               user.role === 'doctor' ? '👩‍⚕️' :
+                               user.role === 'receptionist' ? '👩‍💼' :
+                               user.role === 'admin' ? '👨‍💼' : '💰'}
+                            </div>
+                            <div className="user-details">
+                              <strong>{user.name}</strong>
+                              <small>ID: {user._id?.slice(-6)}</small>
+                              {user.employeeId && <small>EMP: {user.employeeId}</small>}
+                            </div>
+                          </td>
+                          <td>{user.email}</td>
+                          <td>
+                            <span className={`type-badge ${user.type}`}>
+                              {user.type === 'patient' ? 'Patient' : 'Staff'}
+                            </span>
+                            {user.role && user.role !== 'patient' && (
+                              <small className="role-subtitle">{user.role}</small>
+                            )}
+                          </td>
+                          <td>
+                            <span className={`status-badge ${user.status}`}>
+                              {user.status === 'verified' || user.status === 'active' ? '✅ Active' : '⏳ Pending'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="department-badge">
+                              {user.department || (user.type === 'patient' ? 'Patient Care' : 'General')}
+                            </span>
+                          </td>
+                          <td>
+                            {user.registrationDate 
+                              ? new Date(user.registrationDate).toLocaleDateString() 
+                              : 'N/A'}
+                          </td>
+                          <td>
+                            {user.lastActivity 
+                              ? new Date(user.lastActivity).toLocaleDateString()
+                              : 'Never'}
+                          </td>
+                          <td className="actions">
+                            <div className="action-buttons">
+                              <button
+                                onClick={() => handleProfileClick(user)}
+                                className="action-btn view-btn"
+                                title="View Details"
+                              >
+                                👁️
+                              </button>
+                              <button
+                                onClick={() => {
+                                  console.log('Edit user:', user);
+                                  // Add edit functionality here
+                                }}
+                                className="action-btn edit-btn"
+                                title="Edit User"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (user.type === 'patient') {
+                                    navigate(`/admin/patient/${user._id}`);
+                                  } else {
+                                    navigate(`/admin/staff/${user._id}`);
+                                  }
+                                }}
+                                className="action-btn manage-btn"
+                                title="Manage User"
+                              >
+                                🔧
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Pagination */}
+              {userPagination.totalPages > 1 && (
+                <div className="pagination">
+                  <div className="pagination-info">
+                    Showing {allUsers.length} of {userPagination.totalCount} users
+                  </div>
+                  <div className="pagination-controls">
+                    <button
+                      onClick={() => handleUserFilterChange('page', userPagination.currentPage - 1)}
+                      disabled={!userPagination.hasPrevPage}
+                      className="pagination-btn"
+                    >
+                      ← Previous
+                    </button>
+                    
+                    <span className="page-info">
+                      Page {userPagination.currentPage} of {userPagination.totalPages}
+                    </span>
+                    
+                    <button
+                      onClick={() => handleUserFilterChange('page', userPagination.currentPage + 1)}
+                      disabled={!userPagination.hasNextPage}
+                      className="pagination-btn"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Real-time Profiles Section - Clickable */}
           {showProfiles && (
@@ -1081,7 +1380,71 @@ ${admin?.name || 'Admin User'}`);
             </div>
           </div>
 
-          {/* ✅ NEW: Inventory Management Section */}
+          {/* User Management Section */}
+          <div className="user-management-section">
+            <h2>👥 User Management System</h2>
+            <div className="user-management-grid">
+              <button 
+                className="user-management-btn all-users-btn"
+                onClick={() => navigate('/admin/users')}
+              >
+                <div className="dashboard-icon">👥</div>
+                <div className="dashboard-info">
+                  <h4>All Users Management</h4>
+                  <p>View, search & manage all system users - patients and staff members</p>
+                  <div className="dashboard-stats">
+                    <small>
+                      Total Users: {systemStats.totalUsers} | 
+                      Patients: {systemStats.totalPatients} | 
+                      Staff: {systemStats.totalStaff} | 
+                      Verified: {systemStats.verifiedUsers}
+                    </small>
+                  </div>
+                </div>
+                <div className="access-indicator">✅</div>
+              </button>
+              
+              <button 
+                className="user-management-btn patients-only-btn"
+                onClick={() => navigate('/admin/patients')}
+              >
+                <div className="dashboard-icon">🏥</div>
+                <div className="dashboard-info">
+                  <h4>Patients Only</h4>
+                  <p>Dedicated patient management interface with medical records & appointments</p>
+                  <div className="dashboard-stats">
+                    <small>
+                      Active Patients: {systemStats.totalPatients} | 
+                      Recent: {systemStats.recentRegistrations} | 
+                      Growth: {systemStats.monthlyGrowth}
+                    </small>
+                  </div>
+                </div>
+                <div className="access-indicator">✅</div>
+              </button>
+
+              <button 
+                className="user-management-btn staff-only-btn"
+                onClick={() => navigate('/admin/staff')}
+              >
+                <div className="dashboard-icon">👨‍⚕️</div>
+                <div className="dashboard-info">
+                  <h4>Staff Management</h4>
+                  <p>Manage hospital staff, roles, permissions & department assignments</p>
+                  <div className="dashboard-stats">
+                    <small>
+                      Total Staff: {systemStats.totalStaff} | 
+                      Admins: {systemStats.staffBreakdown?.admin || 0} | 
+                      Doctors: {systemStats.staffBreakdown?.doctor || 0}
+                    </small>
+                  </div>
+                </div>
+                <div className="access-indicator">🔧</div>
+              </button>
+            </div>
+          </div>
+
+          {/* Inventory Management Section */}
           <div className="inventory-management-section">
             <h2>🏥 Inventory Management System</h2>
             <div className="inventory-dashboard-grid">
