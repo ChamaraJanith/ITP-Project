@@ -1,4 +1,5 @@
-
+// controller/adminDashboardController.js
+import UserModel from '../model/User.js'; // ✅ ADDED: Missing import
 import UnifiedUserModel from '../model/UnifiedUserModel.js';
 import mongoose from 'mongoose';
 
@@ -661,6 +662,7 @@ export const getAllPatients = async (req, res) => {
     });
   }
 };
+
 /**
  * Get All Profiles with Detailed Information - ADMIN ONLY
  */
@@ -831,14 +833,13 @@ export const getAllProfilesDetailed = async (req, res) => {
   }
 };
 
-
 async function getSystemHealth() {
   try {
     const dbState = mongoose.connection.readyState;
     const dbStatus = dbState === 1 ? 'connected' : 'disconnected';
     
-    const userCollectionExists = await UserModel.db.listCollections({ name: 'usermodels' }).hasNext();
-    const staffCollectionExists = await UnifiedUserModel.db.listCollections({ name: 'unifiedusermodels' }).hasNext();
+    const userCollectionExists = await UserModel.db.listCollections({ name: 'users' }).hasNext();
+    const staffCollectionExists = await UnifiedUserModel.db.listCollections({ name: 'unifiedusers' }).hasNext();
     
     const memUsage = process.memoryUsage();
     const memUsageMB = {
