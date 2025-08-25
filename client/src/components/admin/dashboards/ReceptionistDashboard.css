@@ -16,7 +16,7 @@
 }
 
 .stat-card {
-  background: #1a1f36;
+  background: #ffffff;
   padding: 20px;
   border-radius: 12px;
   text-align: center;
@@ -51,7 +51,7 @@
 }
 
 .feature-button:hover {
-  background: #1a1f36;
+  background: #ffffff;
   border-color: #00e5b0;
   transform: scale(1.05);
   cursor: pointer;
@@ -62,7 +62,7 @@
 }
 
 .activity-item {
-  background: #1a1f36;
+  background: #ffffff;
   padding: 12px;
   border-radius: 8px;
   margin-bottom: 10px;
