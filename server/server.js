@@ -6,8 +6,6 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import router from "./routes/auth.js";
 import authRouter from './routes/auth.js';
-import paymentRouter from './routes/financialPayRoutes.js';
-
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -26,14 +24,6 @@ console.log('📧 SMTP_PORT:', process.env.SMTP_PORT);
 // ✅ NOW import modules that depend on environment variables
 import notificationRouter from './routes/notifications.js';
 import surgicalrouter from './routes/surgicalItems.js';
-
-
-
-//meka sure na dammata senuja financial test route
-
-
-
-
 
 // Database connection
 const { default: connectDB } = await import("./config/mongodb.js");
@@ -147,10 +137,6 @@ app.use('/api/chatbot', chatbotRouter);
 app.use("/api/auth", router);
 app.use("/api/auth", authRouter);
 
-// Mount financial test routes mekath sure na  just testing financial routes
-app.use('/api/payments', paymentRouter);
-
-
 // Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
@@ -224,4 +210,7 @@ app.listen(PORT, () => {
   console.log('✅ Server ready to accept connections!');
 });
 
+//gayath
+//pjsshsns
 export default app;
+//chamara
