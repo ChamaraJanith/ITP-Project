@@ -1,0 +1,113 @@
+/* ===== Container ===== */
+.view-consultations {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 25px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 128, 96, 0.1); /* soft green shadow */
+  font-family: "Segoe UI", Roboto, sans-serif;
+}
+
+/* ===== Heading ===== */
+.view-consultations h2 {
+  text-align: center;
+  font-size: 1.9rem;
+  margin-bottom: 20px;
+  font-weight: 600;
+  color: #065f46; /* dark green */
+}
+
+.view-consultations h2::after {
+  content: '';
+  display: block;
+  width: 70px;
+  height: 3px;
+  margin: 8px auto 0;
+  background: #10b981; /* green accent */
+  border-radius: 4px;
+}
+
+/* ===== Table ===== */
+.view-consultations table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Table Header */
+.view-consultations th {
+  background: #10b981; /* primary green */
+  color: #fff;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  letter-spacing: 0.4px;
+}
+
+/* Table Data */
+.view-consultations td {
+  padding: 14px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 15px;
+  color: #374151; /* dark gray text */
+}
+
+/* Alternate row background */
+.view-consultations tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+/* Row Hover */
+.view-consultations tbody tr:hover {
+  background: #d1fae5; /* very light green */
+  transition: background 0.2s ease;
+  cursor: pointer;
+}
+
+/* Notes styling */
+.view-consultations td:last-child {
+  font-style: italic;
+  color: #6b7280;
+}
+
+/* ===== Responsive Mobile Design ===== */
+@media (max-width: 768px) {
+  .view-consultations table,
+  .view-consultations thead,
+  .view-consultations tbody,
+  .view-consultations th,
+  .view-consultations td,
+  .view-consultations tr {
+    display: block;
+  }
+
+  .view-consultations thead {
+    display: none;
+  }
+
+  .view-consultations tr {
+    margin-bottom: 15px;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    padding: 10px;
+  }
+
+  .view-consultations td {
+    padding: 10px;
+    text-align: right;
+    position: relative;
+    border-bottom: none;
+  }
+
+  .view-consultations td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 10px;
+    font-weight: 600;
+    color: #065f46;
+  }
+}
