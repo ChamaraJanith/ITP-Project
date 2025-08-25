@@ -941,16 +941,19 @@ const handleSendItemNotification = async (item) => {
                         </button>
                         
                         <CustomNumberInput
+                          className="stock-btn add-stock-btn"
                           placeholder="+ Stock"
                           title="Add Stock"
-                          onSubmit={(quantity) => handleUpdateStock(item._id, quantity, 'restock')}
-                        />
-                        
+                          onSubmit={(qty) => handleUpdateStock(item._id, qty, 'restock')}
+                            />
+
                         <CustomNumberInput
+                          className="stock-btn use-stock-btn"
                           placeholder="- Stock"
                           title="Use Stock"
-                          onSubmit={(quantity) => handleUpdateStock(item._id, quantity, 'usage')}
-                        />
+                          onSubmit={(qty) => handleUpdateStock(item._id, qty, 'usage')}
+                            />
+
                         
                         {/* ✅ ADDED: Individual item notification button */}
                         {(item.quantity <= (item.minStockLevel || 0)) && (
