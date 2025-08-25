@@ -83,7 +83,7 @@ const DoctorDashboard = () => {
               <div className="features-grid">
                 <button
                   className="feature-card"
-                  onClick={() => Navigate("/api/prescription/consultations")}
+                  onClick={() => navigate("/admin/doctor/schedule-consultation")}
                 >
                   SCHEDULE CONSULTATION
                 </button>
