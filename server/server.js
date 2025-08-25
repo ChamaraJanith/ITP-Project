@@ -4,7 +4,8 @@ import { fileURLToPath } from 'url';
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-//senuja gayath
+import router from "./routes/auth.js";
+import authRouter from './routes/auth.js';
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -23,8 +24,6 @@ console.log('📧 SMTP_PORT:', process.env.SMTP_PORT);
 // ✅ NOW import modules that depend on environment variables
 import notificationRouter from './routes/notifications.js';
 import surgicalrouter from './routes/surgicalItems.js';
-import consultationRouter from './routes/consultationRoutes.js'; // Import consultation routes
-
 
 // Database connection
 const { default: connectDB } = await import("./config/mongodb.js");
@@ -135,11 +134,10 @@ app.use('/api/inventory', inventoryRouter);
 // Mount other API routes
 app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
+app.use("/api/auth", router);
+app.use("/api/auth", authRouter);
 
-
-app.use('/api/prescription', consultationRouter);// Mount consultation routes
-
-
+// Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
