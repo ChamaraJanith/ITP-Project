@@ -12,10 +12,10 @@ const paymentRouter = express.Router();
 
 // --- CRUD routes ---
 paymentRouter.get("/", getAllNotes);
-paymentRouter.get("/:id", getNoteById);
-paymentRouter.post("/", createNote);
-paymentRouter.put("/:id", updateNote);
-paymentRouter.delete("/:id", deleteNote);
+paymentRouter.get("/payments/:id", getNoteById);
+paymentRouter.post("/payments", createNote);
+paymentRouter.put("/payments/:id", updateNote);
+paymentRouter.delete("/payments/:id", deleteNote);
 
 // --- Payments API (for frontend table) ---
 paymentRouter.get("/payments", async (req, res) => {
