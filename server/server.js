@@ -6,6 +6,9 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import router from "./routes/auth.js";
 import authRouter from './routes/auth.js';
+import financialPayRoutes from './routes/financialPayRoutes.js'; 
+import ScheduleConsultation from './components/admin/Doctor/ScheduleConsultation';
+import ViewConsultations from './components/admin/Doctor/ViewConsultations'; 
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -130,13 +133,14 @@ app.use('/api/inventory', surgicalrouter);
 
 // Mount other inventory routes
 app.use('/api/inventory', inventoryRouter);
+app.use('/api/prescription', consultationRouter);// Mount consultation routes
 
 // Mount other API routes
 app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
 app.use("/api/auth", router);
 app.use("/api/auth", authRouter);
-
+app.use("/api/payments", financialPayRoutes);  // Mount financial payment routes
 // Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
