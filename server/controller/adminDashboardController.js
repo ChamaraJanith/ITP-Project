@@ -835,29 +835,32 @@ export const getAllProfilesDetailed = async (req, res) => {
 
 async function getSystemHealth() {
   try {
-    const dbState = mongoose.connection.readyState;
+    const dbState  = mongoose.connection.readyState;            // 0-3
     const dbStatus = dbState === 1 ? 'connected' : 'disconnected';
-    
-    const userCollectionExists = await UserModel.db.listCollections({ name: 'users' }).hasNext();
-    const staffCollectionExists = await UnifiedUserModel.db.listCollections({ name: 'unifiedusers' }).hasNext();
-    
-    const memUsage = process.memoryUsage();
+
+    // use the active connection’s native driver
+    const db = mongoose.connection.db;
+
+    const userCollectionExists =
+      (await db.listCollections({ name: 'users' }).toArray()).length > 0;
+
+    const staffCollectionExists =
+      (await db.listCollections({ name: 'unifiedusers' }).toArray()).length > 0;
+
+    const mem = process.memoryUsage();
     const memUsageMB = {
-      rss: Math.round(memUsage.rss / 1024 / 1024),
-      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
-      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
-      external: Math.round(memUsage.external / 1024 / 1024)
+      rss:       Math.round(mem.rss       / 1024 / 1024),
+      heapUsed:  Math.round(mem.heapUsed  / 1024 / 1024),
+      heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
+      external:  Math.round(mem.external  / 1024 / 1024)
     };
 
     return {
       status: dbStatus === 'connected' && userCollectionExists ? 'healthy' : 'warning',
       database: dbStatus,
-      collections: {
-        users: userCollectionExists,
-        staff: staffCollectionExists
-      },
-      uptime: Math.round(process.uptime()),
-      memory: memUsageMB,
+      collections: { users: userCollectionExists, staff: staffCollectionExists },
+      uptime:   Math.round(process.uptime()),
+      memory:   memUsageMB,
       timestamp: new Date().toISOString()
     };
 
@@ -865,7 +868,7 @@ async function getSystemHealth() {
     console.error('System health check error:', error);
     return {
       status: 'error',
-      error: error.message,
+      error:  error.message,
       timestamp: new Date().toISOString()
     };
   }

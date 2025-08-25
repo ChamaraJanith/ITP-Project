@@ -980,10 +980,15 @@ ${admin?.name || 'Admin User'}`);
                   🔄 Refresh
                 </button>
                 {systemStats.lastUpdated && (
-                  <span className="last-updated">
-                    Last updated: {new Date(systemStats.lastUpdated).toLocaleTimeString()}
-                  </span>
-                )}
+  <span
+    className="last-updated"
+    style={{ color: '#fff' }}          /* ⬅️ makes text white */
+  >
+    Last updated:{' '}
+    {new Date(systemStats.lastUpdated).toLocaleTimeString()}
+  </span>
+)}
+
               </div>
             </div>
             {error && (

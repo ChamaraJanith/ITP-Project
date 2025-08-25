@@ -565,65 +565,24 @@
   font-size: 0.9rem;
 }
 
-/* Activity Section */
-.activity-section {
-  background: white;
-  padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  margin-bottom: 2rem;
-  border: 1px solid #e2e8f0;
-}
-
-.activity-section h2 {
-  margin: 0 0 1.5rem 0;
-  color: #1e293b;
-  font-size: 1.8rem;
-  font-weight: 700;
-  text-align: center;
-}
-
-.activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
+/* Force activity‐card rows to white */
 .activity-item {
+  background: #ffffff;        /* ← white */
+  border-left: 4px solid #667eea;
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: #f8fafc;
   border-radius: 8px;
-  border-left: 4px solid #667eea;
   transition: all 0.3s ease;
 }
 
+/* Optional: subtle hover tint */
 .activity-item:hover {
-  background: #f1f5f9;
+  background: #fafafa;        /* very light grey so glow is still visible */
   transform: translateX(5px);
 }
 
-.activity-icon {
-  font-size: 1.5rem;
-  background: rgba(102, 126, 234, 0.1);
-  padding: 0.5rem;
-  border-radius: 50%;
-  min-width: 50px;
-  text-align: center;
-}
-
-.activity-content p {
-  margin: 0 0 0.25rem 0;
-  font-weight: 500;
-  color: #1e293b;
-}
-
-.activity-content small {
-  color: #64748b;
-  font-size: 0.8rem;
-}
 
 /* Loading States */
 .admin-loading-container,
@@ -833,44 +792,10 @@
   }
 }
 
-/* Dark mode support (optional) */
-@media (prefers-color-scheme: dark) {
-  .admin-dashboard {
-    background: #0f172a;
-    color: #e2e8f0;
-  }
-  
-  .stats-grid .stat-card,
-  .realtime-profiles-section,
-  .dashboard-access-section,
-  .patient-profiles-section,
-  .analytics-section,
-  .activity-section {
-    background: #1e293b;
-    border-color: #334155;
-    color: #e2e8f0;
-  }
-}
 
+  
 /* Print styles */
-@media print {
-  .admin-dashboard {
-    background: white;
-    color: black;
-  }
-  
-  .dashboard-header,
-  .stat-card,
-  .role-dashboard-btn {
-    break-inside: avoid;
-    box-shadow: none;
-    border: 1px solid #ccc;
-  }
-  
-  .header-actions {
-    display: none;
-  }
-}
+
 
 /* Floating Action Buttons */
 .floating-action-buttons {
@@ -1447,13 +1372,6 @@
   }
 }
 
-/* Print styles - hide modals */
-@media print {
-  .summary-modal-overlay,
-  .support-modal-overlay {
-    display: none !important;
-  }
-}
 /* ✅ NEW: Inventory Management Section Styles */
 .inventory-management-section {
   margin: 2rem 0;
@@ -1627,7 +1545,14 @@
   display: flex;
   align-items: center;
   gap: 15px;
+}/* dashboardStats.css */
+.stat-card .stat-info,
+.stat-card .stat-info * {
+  color: #fff;           /* white text for h3, p, small, etc. */
 }
+
+
+
 
 .refresh-users-btn, .all-users-btn {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1956,4 +1881,122 @@
   .users-table {
     font-size: 0.7em;
   }
+}
+
+
+/* ─── User Management Section ───────────────────────────────────────── */
+
+/* Container */
+.user-management-section {
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  border: 1px solid #e2e8f0;
+}
+
+.user-management-section h2 {
+  margin: 0 0 1.5rem 0;
+  color: #1e293b;
+  font-size: 1.8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Grid */
+.user-management-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Base button */
+.user-management-btn {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  color: #ffffff;                 /* text always white */
+}
+
+.user-management-btn::before {    /* sheen on hover */
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent
+  );
+  transition: left 0.6s;
+}
+
+.user-management-btn:hover::before {
+  left: 100%;
+}
+
+.user-management-btn:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+}
+
+/* Individual colour themes */
+.all-users-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #60a5fa 100%);
+}
+
+.patients-only-btn {
+  background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
+}
+
+.staff-only-btn {
+  background: linear-gradient(135deg, #ff4d4f 0%, #ff7a45 100%);
+}
+
+/* Shared inner elements (reuse existing styles if already declared) */
+.dashboard-icon {
+  font-size: 3.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 1rem;
+  border-radius: 50%;
+  min-width: 90px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.dashboard-info {
+  flex: 1;
+}
+
+.dashboard-info h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.dashboard-info p {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.dashboard-stats small {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.access-indicator {
+  font-size: 1.5rem;
 }
