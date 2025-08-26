@@ -12,6 +12,9 @@ consultationRouter.get('/consultations', ConsultationController.getAllConsultati
 // GET - fetch consultation by ID
 consultationRouter.get('/consultations/:id', ConsultationController.getConsultationById);
 
+// PUT - update consultation by ID
+consultationRouter.put('/consultations/:id', ConsultationController.updateConsultation);
+
 // DELETE - delete consultation by ID
 consultationRouter.delete('/consultations/:id', ConsultationController.deleteConsultation);
 

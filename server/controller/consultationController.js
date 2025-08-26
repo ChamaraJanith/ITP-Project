@@ -90,6 +90,39 @@ class ConsultationController {
       });
     }
   }
+  // Update consultation by ID
+  static async updateConsultation(req, res) {
+    try {
+      const { id } = req.params;
+      const { doctor, date, time, reason, notes } = req.body;
+
+      const updatedConsultation = await Consultation.findByIdAndUpdate(
+        id,
+        { doctor, date, time, reason, notes },
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedConsultation) {
+        return res.status(404).json({ success: false, message: 'Consultation not found' });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Consultation updated successfully',
+        data: updatedConsultation
+      });
+    } catch (error) {
+      console.error("Error updating consultation:", error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating consultation',
+        error: error.message
+      });
+    }
+  }
+
+
+
 }
 
 export default ConsultationController;

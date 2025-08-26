@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ added
 import AdminLayout from "../AdminLayout";
 import { adminDashboardApi } from "../../../services/adminApi.js";
 import {
@@ -25,6 +26,9 @@ const FinancialDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showBilling, setShowBilling] = useState(false);
+
+  const navigate = useNavigate(); // ✅ navigation hook
 
   useEffect(() => {
     initializeDashboard();
@@ -57,6 +61,34 @@ const FinancialDashboard = () => {
     }
   };
 
+  // ✅ Handle feature button clicks with paths
+  const handleFeatureClick = (feature) => {
+    switch (feature) {
+      case "view_billing":
+        navigate("/billing");
+        break;
+
+      case "manage_payments":
+        navigate("/admin/financial/payments");
+        break;
+
+      case "generate_reports":
+        navigate("/reports");
+        break;
+
+      case "track_revenue":
+        navigate("/revenue");
+        break;
+
+      case "payment_processing":
+        navigate("/payment-processing");
+        break;
+
+      default:
+        console.log("Clicked feature:", feature);
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout admin={admin} title="Financial Dashboard">
@@ -68,18 +100,9 @@ const FinancialDashboard = () => {
   // Chart Data
   const pieData = dashboardData?.stats
     ? [
-        {
-          name: "Today's Revenue",
-          value: dashboardData.stats.todayRevenue || 0,
-        },
-        {
-          name: "Pending Payments",
-          value: dashboardData.stats.pendingPayments || 0,
-        },
-        {
-          name: "Monthly Target",
-          value: dashboardData.stats.monthlyTarget || 0,
-        },
+        { name: "Today's Revenue", value: dashboardData.stats.todayRevenue || 0 },
+        { name: "Pending Payments", value: dashboardData.stats.pendingPayments || 0 },
+        { name: "Monthly Target", value: dashboardData.stats.monthlyTarget || 0 },
       ]
     : [];
 
@@ -121,48 +144,28 @@ const FinancialDashboard = () => {
           <>
             {/* Stats */}
             <div className="stats-grid">
-              <div
-                className="stat-card"
-                onClick={() => scrollToChart("todaysRevenueChart")}
-              >
+              <div className="stat-card" onClick={() => scrollToChart("todaysRevenueChart")}>
                 <div className="stat-info">
-                  <h3>
-                    ${dashboardData.stats?.todayRevenue?.toLocaleString() || 0}
-                  </h3>
+                  <h3>${dashboardData.stats?.todayRevenue?.toLocaleString() || 0}</h3>
                   <p>Today's Revenue</p>
                 </div>
               </div>
 
-              <div
-                className="stat-card"
-                onClick={() => scrollToChart("monthlyRevenueChart")}
-              >
+              <div className="stat-card" onClick={() => scrollToChart("monthlyRevenueChart")}>
                 <div className="stat-info">
-                  <h3>
-                    $
-                    {dashboardData.stats?.pendingPayments?.toLocaleString() ||
-                      0}
-                  </h3>
+                  <h3>${dashboardData.stats?.pendingPayments?.toLocaleString() || 0}</h3>
                   <p>Pending Payments</p>
                 </div>
               </div>
 
-              <div
-                className="stat-card"
-                onClick={() => scrollToChart("pendingPaymentsChart")}
-              >
+              <div className="stat-card" onClick={() => scrollToChart("pendingPaymentsChart")}>
                 <div className="stat-info">
-                  <h3>
-                    ${dashboardData.stats?.monthlyTarget?.toLocaleString() || 0}
-                  </h3>
+                  <h3>${dashboardData.stats?.monthlyTarget?.toLocaleString() || 0}</h3>
                   <p>Monthly Target</p>
                 </div>
               </div>
 
-              <div
-                className="stat-card"
-                onClick={() => scrollToChart("overduePaymentsChart")}
-              >
+              <div className="stat-card" onClick={() => scrollToChart("overduePaymentsChart")}>
                 <div className="stat-info">
                   <h3>{dashboardData.stats?.collectionRate || 0}%</h3>
                   <p>Collection Rate</p>
@@ -170,25 +173,34 @@ const FinancialDashboard = () => {
               </div>
             </div>
 
+            {/* Billing Modal (kept) */}
+            {showBilling && (
+              <div className="billing-modal">
+                <div className="billing-content">
+                  <h2>🧾 Billing Information</h2>
+
+                  <div className="bill-card">
+                    <p><strong>Invoice #:</strong> 12345</p>
+                    <p><strong>Date:</strong> Aug 23, 2025</p>
+                    <p><strong>Amount:</strong> $250.00</p>
+                    <p><strong>Status:</strong> Paid ✅</p>
+                  </div>
+
+                  <button className="close-btn" onClick={() => setShowBilling(false)}>
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Charts */}
             <div className="charts-section">
-              {/* Pie Chart */}
               <div id="todaysRevenueChart" className="chart-card">
                 <h2>📊 Revenue Breakdown</h2>
                 <PieChart width={400} height={300}>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    dataKey="value"
-                    label
-                  >
+                  <Pie data={pieData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label>
                     {pieData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -196,7 +208,6 @@ const FinancialDashboard = () => {
                 </PieChart>
               </div>
 
-              {/* Bar Chart */}
               <div id="monthlyRevenueChart" className="chart-card">
                 <h2>📈 Revenue Comparison</h2>
                 <BarChart width={500} height={300} data={barData}>
@@ -209,7 +220,6 @@ const FinancialDashboard = () => {
                 </BarChart>
               </div>
 
-              {/* Line Chart */}
               <div id="pendingPaymentsChart" className="chart-card">
                 <h2>📉 Revenue Trend</h2>
                 <LineChart width={500} height={300} data={lineData}>
@@ -222,7 +232,6 @@ const FinancialDashboard = () => {
                 </LineChart>
               </div>
 
-              {/* Radial Bar Chart */}
               <div id="overduePaymentsChart" className="chart-card">
                 <h2>🎯 Collection Rate</h2>
                 <RadialBarChart
@@ -242,11 +251,7 @@ const FinancialDashboard = () => {
                     clockWise
                     dataKey="value"
                   />
-                  <Legend
-                    iconSize={10}
-                    layout="vertical"
-                    verticalAlign="middle"
-                  />
+                  <Legend iconSize={10} layout="vertical" verticalAlign="middle" />
                   <Tooltip />
                 </RadialBarChart>
               </div>
@@ -257,13 +262,13 @@ const FinancialDashboard = () => {
               <h2>💼 Financial Features</h2>
               <div className="features-grid">
                 {dashboardData.features?.map((feature, index) => (
-                  <div
+                  <button
                     key={index}
-                    className="feature-card"
+                    className="feature-button"
                     onClick={() => handleFeatureClick(feature)}
                   >
-                    <h4>{feature.replace("_", " ").toUpperCase()}</h4>
-                  </div>
+                    {feature.replace("_", " ").toUpperCase()}
+                  </button>
                 ))}
               </div>
             </div>
@@ -288,6 +293,4 @@ const FinancialDashboard = () => {
 
 export default FinancialDashboard;
 
-import './FinancialDashboard.css'; // adjust path to your CSS file
-
-/*hell00000000ooooo */
+import "./FinancialDashboard.css"; // adjust path
