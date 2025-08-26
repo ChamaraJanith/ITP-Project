@@ -193,3 +193,80 @@
 .financial-actions-section {
   margin-top: 2rem;
 }
+
+
+.feature-button {
+  background-color: #4f46e5; /* Indigo-600 */
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.feature-button:hover {
+  background-color: #4338ca; /* Indigo-700 */
+  transform: translateY(-2px);
+}
+
+.feature-button:active {
+  transform: translateY(0);
+}
+
+
+.billing-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.billing-content {
+  background: #fff;
+  padding: 20px 30px;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.bill-card {
+  background: #f9fafb;
+  padding: 15px;
+  border-radius: 12px;
+  margin: 15px 0;
+}
+
+.close-btn {
+  margin-top: 10px;
+  padding: 10px 16px;
+  background: #ef4444; /* red */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  background: #dc2626;
+}
+
+.activity-item p {
+  color: white; /* default text color */
+  transition: color 0.2s ease-in-out; /* smooth color change */
+  cursor: default;
+}
+
+.activity-item:hover p {
+  color: black; /* text color on hover */
+}
