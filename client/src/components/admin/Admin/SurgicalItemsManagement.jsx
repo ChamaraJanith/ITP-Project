@@ -363,6 +363,29 @@ const handleSendItemNotification = async (item) => {
       }
     }
   };
+  // Add this function in your SurgicalItemsManagement component
+const handleViewTotalValue = () => {
+  navigate('/admin/total-value', {
+    state: {
+      stats: stats,
+      items: items,
+      admin: admin
+    }
+  });
+};
+
+// Modify your total value stat card to be clickable:
+<div className="stat-card clickable-card" onClick={handleViewTotalValue} style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}>
+  <div className="stat-icon">💰</div>
+  <div className="stat-info">
+    <h3>${(stats.totalValue || 0).toLocaleString()}</h3>
+    <p>Total Value</p>
+    <small style={{ fontSize: '12px', opacity: 0.8, color: '#007bff' }}>
+      👆 Click for detailed analysis
+    </small>
+  </div>
+</div>
+
 
   // Enhanced stock update with free input
   const handleUpdateStock = async (itemId, quantityChange, type) => {

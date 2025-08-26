@@ -23,6 +23,7 @@ import SurgicalItemsManagement from './components/admin/Admin/SurgicalItemsManag
 import FinancialManagePayments from './components/admin/Financial_Manager/FinancialManagePayments';
 import ScheduleConsultation from './components/admin/Doctor/ScheduleConsultation';
 import ViewConsultations from './components/admin/Doctor/ViewConsultations';
+import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
 
 // ✅ Healthcare Service Components (create these as needed)
 
@@ -298,6 +299,11 @@ function App() {
           <Route
             path="/admin/doctor/view-consultations"
             element={<ViewConsultations />} />
+
+    
+          <Route
+           path="/admin/financial/payments/inventory-view"
+            element={<InventoryTotalView />} />
 
           {/* ✅ Admin Surgical Items Management */}  
 
