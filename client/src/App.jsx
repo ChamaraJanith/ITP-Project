@@ -20,7 +20,9 @@ import DoctorDashboard from './components/admin/dashboards/DoctorDashboard';
 import FinancialDashboard from './components/admin/dashboards/FinancialDashboard';
 import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute';
 import SurgicalItemsManagement from './components/admin/Admin/SurgicalItemsManagement';
+import FinancialManagePayments from './components/admin/Financial_Manager/FinancialManagePayments';
 import ScheduleConsultation from './components/admin/Doctor/ScheduleConsultation';
+import ViewConsultations from './components/admin/Doctor/ViewConsultations';
 
 // ✅ Healthcare Service Components (create these as needed)
 
@@ -279,15 +281,25 @@ function App() {
            path="/hospitals"
             element={<HospitalsPage />} />
 
-          {/* ✅ Admin Consultation Scheduling */}
+            <Route
+            path="/admin/financial"
+            element={<FinancialDashboard />} />
+
+            <Route
+            path="/admin/financial/payments"
+            element={<FinancialManagePayments />} />
+
+            {/* ✅ Admin Consultation Scheduling */}
           <Route
             path="/admin/doctor/schedule-consultation"
             element={<ScheduleConsultation />} />
 
-          {/* ✅ Admin Surgical Items Management */}
-          
+          {/* view consultations - to be implemented */}
+          <Route
+            path="/admin/doctor/view-consultations"
+            element={<ViewConsultations />} />
 
-          
+          {/* ✅ Admin Surgical Items Management */}  
 
           {/* ✅ 404 Fallback Route */}
           <Route path="*" element={<NotFoundPage />} />
