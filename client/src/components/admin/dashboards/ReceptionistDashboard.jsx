@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom"; // ✅ for navigation
 import AdminLayout from "../AdminLayout";
 import { adminDashboardApi } from "../../../services/adminApi.js";
 import "./ReceptionistDashboard.css";
+import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
 const ReceptionistDashboard = () => {
   const [admin, setAdmin] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     initializeDashboard();
@@ -73,27 +76,52 @@ const ReceptionistDashboard = () => {
               </div>
             </div>
 
-            {/* ✅ Features Section with Buttons */}
+            {/* ✅ Features Section - Styled like Medical Features */}
             <div className="features-section">
               <h2>🛠️ Available Features</h2>
               <div className="features-grid">
-  {dashboardData.features?.map((feature, index) => {
-    const route =
-      feature.toLowerCase() === "manage_appointments"
-        ? "/receptionist/manage_appointments"
-        : `/receptionist/${feature.toLowerCase()}`;
-
-    return (
-      <Link key={index} to={route} className="feature-button">
-        {feature.replace("_", " ").toUpperCase()}
-      </Link>
-    );
-  })}
-</div>
-
+                <button
+                  className="feature-card"
+                  onClick={() =>
+                    (window.location.href = "/receptionist/manage_appointments")
+                  }
+                >
+                  MANAGE APPOINTMENTS
+                </button>
+                <button
+                  className="feature-card"
+                  onClick={() =>
+                    (window.location.href = "/receptionist/view_patients")
+                  }
+                >
+                  VIEW PATIENTS
+                </button>
+                <button
+                  className="feature-card"
+                  onClick={() =>
+                    (window.location.href = "/receptionist/check_in_patients")
+                  }
+                >
+                  CHECK IN PATIENTS
+                </button>
+                <button
+                  className="feature-card"
+                  onClick={() =>navigate("/admin/doctor/view-consultations") }
+                >
+                  SCHEDULE APPOINTMENTS
+                </button>
+                <button
+                  className="feature-card"
+                  onClick={() =>
+                    (window.location.href = "/receptionist/patient_registration")
+                  }
+                >
+                  PATIENT REGISTRATION
+                </button>
+              </div>
             </div>
 
-            {/* ✅ Activities Section */}
+            {/* ✅ Recent Activities Section */}
             <div className="activity-section">
               <h2>📋 Recent Activities</h2>
               <div className="activity-list">
