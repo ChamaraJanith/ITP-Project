@@ -1,6 +1,6 @@
 .surgical-items-management {
   padding: 2rem;
-  max-width: 1400px;
+  max-width: 2400px;
   margin: 0 auto;
 }
 
@@ -39,6 +39,7 @@
 .back-btn {
   background: #6c757d;
   color: white;
+  margin-left: 1.5rem;
 }
 
 .add-item-btn {
@@ -138,13 +139,13 @@
 }
 
 /* Items Table */
-.items-table-container {
+/* .items-table-container {
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   overflow: hidden;
   margin-bottom: 2rem;
-}
+} */
 
 .items-table {
   width: 100%;
@@ -351,7 +352,7 @@
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 1000px) {
   .surgical-items-management {
     padding: 1rem;
   }
@@ -378,9 +379,9 @@
     overflow-x: auto;
   }
   
-  .items-table {
-    min-width: 800px;
-  }
+  /* .items-table {
+    min-width: 1000px;
+  } */
 }
 /* Dispose Items Button Styling */
 .dispose-item-btn {
@@ -415,4 +416,155 @@
 .dispose-item-btn:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.3);
+}
+
+/* ──  Inventory  ▸  Items Table  layout tweaks  ───────────────────── */
+
+/* container already has white card & shadow – just allow horizontal scroll if needed */
+.items-table-container {
+  width: 100%;
+  overflow-x: auto;               /* keeps page from blowing out on small screens */
+}
+
+/* table takes the full container width; will scroll if min-width is wider */
+.items-table {
+  width: 100%;
+  min-width: 1280px;              /* stretch; tweak if you need more/less */
+  border-collapse: collapse;
+  table-layout: fixed;            /* prevents jitter and keeps columns aligned */
+}
+
+/* general cell padding + centred content */
+.items-table th,
+.items-table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+  text-align: center;
+}
+
+/* left-align long text in first column */
+.items-table th:nth-child(1),
+.items-table td:nth-child(1) {
+  text-align: left;
+  min-width: 230px;               /* enough for name + description snippet */
+}
+
+/* give charts & numbers consistent space */
+.items-table th:nth-child(3),
+.items-table td:nth-child(3) {    /* stock chart */
+  width: 160px;
+}
+.items-table th:nth-child(8),
+.items-table td:nth-child(8) {    /* price trend sparkline */
+  width: 140px;
+}
+.items-table th:nth-child(9),
+.items-table td:nth-child(9) {    /* status badge */
+  width: 130px;
+}
+
+/* QUICK ACTIONS column – a narrow but fixed rail on the right */
+.items-table th:last-child,
+.items-table td:last-child {
+  width: 110px;                   /* adjust if buttons wrap */
+  min-width: 110px;
+  padding: 8px 6px;
+}
+
+/* stack the action buttons neatly */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.action-buttons button,
+.action-buttons .custom-number-input {   /* if CustomNumberInput renders an input */
+  width: 100%;
+}
+/* ──  Stock-change buttons  ───────────────────────────────────────── */
+
+/* base look shared by both */
+.stock-btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.12s ease;
+}
+
+/* + Stock  (restock) – green gradient */
+.add-stock-btn {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+.add-stock-btn:hover {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  transform: translateY(-1px);
+}
+
+/* – Stock  (usage) – orange-red gradient */
+.use-stock-btn {
+  background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+}
+.use-stock-btn:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-1px);
+}
+
+/* disabled state (CustomNumberInput or button sets `disabled`) */
+.stock-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+/*────────  + Stock / – Stock buttons  ─────────────────────*/
+
+/* shared base */
+.stock-btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;                  /* fills the quick-actions column */
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.12s ease;
+}
+
+/* + Stock  (restock) – emerald gradient */
+.add-stock-btn {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+.add-stock-btn:hover {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  transform: translateY(-1px);
+}
+
+/* − Stock  (usage) – orange-red gradient */
+.use-stock-btn {
+  background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+}
+.use-stock-btn:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-1px);
+}
+
+/* disabled state */
+.stock-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }

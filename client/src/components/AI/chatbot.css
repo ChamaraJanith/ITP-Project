@@ -1476,10 +1476,10 @@
 /* Quick Actions Section */
 .advanced-quick-actions {
   background: var(--bg-secondary);
-  padding: 20px 25px;
+  padding: 20px 50px;
   border-top: 1px solid var(--border-color);
   transition: var(--transition);
-  max-height: 125px;
+  max-height: 250px;
   overflow: hidden;
   flex-shrink: 0;
   position: relative;
@@ -1519,7 +1519,7 @@
 }
 
 .quick-actions-container {
-  max-height: 140px;
+  max-height: 280px;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 5px;
