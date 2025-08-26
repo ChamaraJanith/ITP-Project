@@ -9,10 +9,6 @@ import router from './routes/inventoryRoutes.js';
 import authRouter from './routes/auth.js'
 import financialPayRoutes from './routes/financialPayRoutes.js'
 
-import router from './routes/inventoryRoutes.js';
-import authRouter from './routes/auth.js'
-import financialPayRoutes from './routes/financialPayRoutes.js'
-
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
