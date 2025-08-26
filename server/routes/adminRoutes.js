@@ -58,7 +58,7 @@ router.get('/dashboard', authenticateAdmin, authorizeRoles(['admin']), (req, res
 
 router.get('/receptionist-dashboard', 
   authenticateAdmin, 
-  authorizeRoles(['receptionist', 'admin','doctor','financial_manager']), 
+  authorizeRoles(['receptionist', 'admin','financial_manager']), 
   (req, res) => {
     res.json({ 
       success: true,
