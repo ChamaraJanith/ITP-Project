@@ -5,7 +5,6 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
-//senuja gayath
 
 import router from './routes/inventoryRoutes.js';
 import authRouter from './routes/auth.js'
@@ -28,8 +27,7 @@ console.log('📧 SMTP_PORT:', process.env.SMTP_PORT);
 // ✅ NOW import modules that depend on environment variables
 import notificationRouter from './routes/notifications.js';
 import surgicalrouter from './routes/surgicalItems.js';
-import consultationRouter from './routes/consultationRoutes.js'; // Import consultation routes
-
+import consultationRouter from './routes/consultationRoutes.js';
 
 // Database connection
 const { default: connectDB } = await import("./config/mongodb.js");
@@ -137,14 +135,16 @@ app.use('/api/inventory', surgicalrouter);
 // Mount other inventory routes
 app.use('/api/inventory', inventoryRouter);
 
+
 // Mount other API routes
 app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
+app.use("/api/auth", router);
+app.use("/api/auth", authRouter);
+app.use("/api/payments", financialPayRoutes);  // Mount financial payment routes
+app.use("/api/prescription", consultationRouter);  // Mount consultation routes
 
-
-app.use('/api/prescription', consultationRouter);// Mount consultation routes
-
-
+// Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
@@ -217,5 +217,7 @@ app.listen(PORT, () => {
   console.log('✅ Server ready to accept connections!');
 });
 
+//gayath
+//pjsshsns
 export default app;
 //chamara
