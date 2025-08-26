@@ -83,7 +83,7 @@ const FinancialDashboard = () => {
       case "payment_processing":
         navigate("/payment-processing");
         break;
-
+        
       default:
         console.log("Clicked feature:", feature);
     }
