@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import './Login.css';
+
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -21,35 +23,35 @@ function Login() {
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
       setMsg(res.data.message);
-      navigate("/PatientProfile");
+      navigate("/");
     } catch (err) {
       setMsg(err.response?.data?.message || "Error logging in");
     }
   };
 
   return (
-    <div>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="Enter email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        /><br /><br />
-        <input
-          type="password"
-          placeholder="Enter password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        /><br /><br />
-        <button type="submit">Login</button>
-      </form>
-      <p>{msg}</p>
-    </div>
-  );
+  <div className="login-container">
+    <h2>Login</h2>
+    <form onSubmit={handleSubmit}>
+      <input
+        type="email"
+        placeholder="Enter email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+      /><br /><br />
+      <input
+        type="password"
+        placeholder="Enter password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      /><br /><br />
+      <button type="submit">Login</button>
+    </form>
+    <p>{msg}</p>
+  </div>
+);
 }
 
 export default Login;
