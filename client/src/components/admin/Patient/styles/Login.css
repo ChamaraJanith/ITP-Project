@@ -1,0 +1,67 @@
+/* Login.css - scoped only to Login component */
+.login-page {
+  background: #f9f9f9;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Arial', sans-serif;
+}
+
+.login-page .login-container {
+  background: #fff;
+  padding: 40px 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-page h2 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #007bff;
+}
+
+.login-page form {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-page input[type="email"],
+.login-page input[type="password"] {
+  padding: 12px 15px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  transition: 0.3s;
+}
+
+.login-page input[type="email"]:focus,
+.login-page input[type="password"]:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.login-page button {
+  padding: 12px 15px;
+  background-color: #007bff;
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.login-page button:hover {
+  background-color: #0056b3;
+}
+
+.login-page p {
+  text-align: center;
+  margin-top: 20px;
+  color: red;
+  font-weight: 500;
+}

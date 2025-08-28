@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import "./styles/Login.css";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -21,14 +22,15 @@ function Login() {
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
       setMsg(res.data.message);
-      navigate("/PatientProfile");
+      navigate("/");
     } catch (err) {
       setMsg(err.response?.data?.message || "Error logging in");
     }
   };
 
   return (
-    <div>
+  <div className="login-page">
+    <div className="login-container">
       <h2>Login</h2>
       <form onSubmit={handleSubmit}>
         <input
@@ -49,7 +51,9 @@ function Login() {
       </form>
       <p>{msg}</p>
     </div>
-  );
+  </div>
+);
+
 }
 
 export default Login;

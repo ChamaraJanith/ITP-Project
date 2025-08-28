@@ -8,9 +8,9 @@ import HospitalsPage from './components/HospitalPage';
 
 
 // ✅ Existing User Components
-import Register from './components/Register';
-import Login from './components/Login';
-import PatientProfile from './components/PatientProfile';
+import Register from './components/admin/Patient/Register';
+import Login from './components/admin/Patient/Login';
+import PatientProfile from './components/admin/Patient/PatientProfile';
 
 // ✅ Admin Components 
 import AdminLogin from './components/admin/AdminLogin';

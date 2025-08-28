@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; // ✅ import useNavigate
+import "./styles/Register.css";
 
 function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
+
+  const navigate = useNavigate(); // ✅ initialize navigate
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,14 +19,18 @@ function Register() {
         email,
         password,
       });
+
       setMsg(res.data.message);
+
+      // Navigate to homepage after successful registration
+      navigate("/"); // ✅ homepage route
     } catch (err) {
       setMsg(err.response?.data?.message || "Error registering user");
     }
   };
 
   return (
-    <div style={{ maxWidth: "400px", margin: "50px auto" }}>
+    <div className="register-container">
       <h2>Sign Up</h2>
       <form onSubmit={handleSubmit}>
         <input
