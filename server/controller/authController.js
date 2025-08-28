@@ -2,6 +2,33 @@ import User from "../model/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+//52
+
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+} from "../services/jwt.js";
+
+const setAuthCookies = (res, accessToken, refreshToken) => {
+  const isProd = process.env.NODE_ENV === "production";
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: isProd,
+    maxAge: 15 * 60 * 1000, // 15m
+  });
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: isProd,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+  });
+};
+
+
+
+
 // Register new user
 export const registerUser = async (req, res) => {
   try {
@@ -61,4 +88,35 @@ export const loginUser = async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
+};
+
+
+//52
+export const refresh = async (req, res, next) => {
+  try {
+    const rToken = req.cookies?.refreshToken;
+    if (!rToken) return res.status(401).json({ message: "Missing refresh token" });
+    const decoded = verifyRefreshToken(rToken);
+    const payload = { id: decoded.id, role: decoded.role };
+    res.cookie("accessToken", signAccessToken(payload), {
+      httpOnly: true, sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 15 * 60 * 1000
+    });
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+};
+
+
+export const me = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    res.json({ user });
+  } catch (e) { next(e); }
+};
+
+export const logout = async (_req, res) => {
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+  res.json({ message: "Logged out" });
 };

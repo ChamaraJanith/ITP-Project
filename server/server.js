@@ -9,6 +9,10 @@ import router from './routes/inventoryRoutes.js';
 import authRouter from './routes/auth.js'
 import financialPayRoutes from './routes/financialPayRoutes.js'
 
+//52
+import { errorHandler } from "./middleware/errorHandler.js";
+import { connectDB } from "./config/mongodb.js";
+
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -85,6 +89,21 @@ app.use((req, res, next) => {
   
   next();
 });
+
+//52
+app.get("/", (_req, res) => res.send("Healthcare API running"));
+app.use("/api/auth", authRoutes);
+app.use(errorHandler);
+
+const start = async () => {
+  await connectDB();
+  app.listen(process.env.PORT, () =>
+    console.log(`Server on http://localhost:${process.env.PORT}`)
+  );
+};
+
+start();
+
 
 // Health check route (before other routes)
 app.get('/health', (req, res) => {
