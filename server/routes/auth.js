@@ -1,6 +1,7 @@
 import express from "express";
 import User from "../model/User.js";
-import { registerUser, loginUser } from "../controller/authController.js";
+import { registerUser, loginUser, refresh, me, logout } from "../controller/authController.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const authRouter = express.Router(); // ✅ renamed router to authRouter
 
@@ -9,6 +10,13 @@ authRouter.post("/register", registerUser);
 
 // POST /api/auth/login
 authRouter.post("/login", loginUser);
+
+//52
+
+router.post("/refresh", refresh);
+router.get("/me", requireAuth, me);
+router.post("/logout", logout);
+
 
 // Get user by ID
 authRouter.get("/:id", async (req, res) => {
