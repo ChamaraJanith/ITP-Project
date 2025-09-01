@@ -193,9 +193,9 @@ const FinancialDashboard = () => {
               </div>
             )}
 
-            {/* Charts */}
+            {/* Charts - Updated with unique classes */}
             <div className="charts-section">
-              <div id="todaysRevenueChart" className="chart-card">
+              <div id="todaysRevenueChart" className="revenue-pie-chart">
                 <h2>📊 Revenue Breakdown</h2>
                 <PieChart width={400} height={300}>
                   <Pie data={pieData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label>
@@ -208,7 +208,7 @@ const FinancialDashboard = () => {
                 </PieChart>
               </div>
 
-              <div id="monthlyRevenueChart" className="chart-card">
+              <div id="monthlyRevenueChart" className="revenue-bar-chart">
                 <h2>📈 Revenue Comparison</h2>
                 <BarChart width={500} height={300} data={barData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -220,7 +220,7 @@ const FinancialDashboard = () => {
                 </BarChart>
               </div>
 
-              <div id="pendingPaymentsChart" className="chart-card">
+              <div id="pendingPaymentsChart" className="revenue-line-chart">
                 <h2>📉 Revenue Trend</h2>
                 <LineChart width={500} height={300} data={lineData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -232,7 +232,7 @@ const FinancialDashboard = () => {
                 </LineChart>
               </div>
 
-              <div id="overduePaymentsChart" className="chart-card">
+              <div id="overduePaymentsChart" className="collection-radial-chart">
                 <h2>🎯 Collection Rate</h2>
                 <RadialBarChart
                   width={300}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MdInventory, MdAnalytics } from "react-icons/md";
+import { MdInventory, MdAnalytics, MdHome } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import "../Financial_Manager/financialManagePayments.css";
 
@@ -184,6 +184,11 @@ function FinancialManagePayments() {
     }
   };
 
+  // ✅ UPDATED: Handle return home button click - redirect to financial dashboard
+  const handleReturnHome = () => {
+    navigate("/admin/financial"); // Navigate to financial manager dashboard
+  };
+
   const buildPayload = (src) => ({
     hospitalName: src.hospitalName.trim(),
     branchName: src.branchName?.trim() || "",
@@ -295,7 +300,7 @@ function FinancialManagePayments() {
       .catch((err) => setMessage("Error: " + err.message));
   };
 
-  // ✅ FIXED: Navigate to total-view as a child route
+  // Navigate to total-view as a child route
   const handleTotalValueClick = () => {
     const stats = calculatePaymentStats();
     navigate("total-view", {
@@ -313,6 +318,11 @@ function FinancialManagePayments() {
       <div className="financial-header">
         <h2 className="financial-title">Payment Management</h2>
         <div className="header-buttons-container">
+          {/* ✅ UPDATED: Return Home Button with correct navigation */}
+          <button className="return-home-btn" onClick={handleReturnHome}>
+            <MdHome size={18} />
+            <span style={{ marginLeft: 6 }}>Return Home</span>
+          </button>
           <button className="total-value-btn" onClick={handleTotalValueClick}>
             <MdAnalytics size={18} />
             <span style={{ marginLeft: 6 }}>Payment Analysis</span>
