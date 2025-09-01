@@ -463,7 +463,7 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   :root {
     --admin-light: #0f172a;
     --admin-dark: #f1f5f9;
@@ -472,16 +472,16 @@
     --admin-gray-500: #94a3b8;
     --admin-gray-700: #cbd5e1;
     --admin-gray-900: #f8fafc;
-  }
+  } */
   
-  .admin-layout {
+  /* .admin-layout {
     background: linear-gradient(135deg, var(--admin-gray-900) 0%, var(--admin-gray-100) 100%);
   }
   
   .admin-main {
     background: linear-gradient(135deg, var(--admin-gray-900) 0%, var(--admin-gray-100) 100%);
   }
-}
+} */
 
 /* High Contrast Mode */
 @media (prefers-contrast: high) {
