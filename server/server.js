@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import router from './routes/inventoryRoutes.js';
 import authRouter from './routes/auth.js'
 import financialPayRoutes from './routes/financialPayRoutes.js'
+import patrouter from './routes/pat.js';
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -101,7 +102,9 @@ app.get('/health', (req, res) => {
       user_management: '/api/user',
       chatbot: '/api/chatbot',
       subscription: '/api/subscription',
-      inventory: '/api/inventory'
+      inventory: '/api/inventory',
+      patient_registration: '/api/patients',
+      receptionist: '/receptionist'
     }
   });
 });
@@ -120,7 +123,12 @@ app.get("/", (req, res) => {
       'POST /api/inventory/surgical-items - Create surgical item',
       'GET /api/inventory/dashboard-stats - Inventory stats',
       'POST /api/inventory/notifications/test-email - Test email',
-      'POST /api/inventory/notifications/check-low-stock - Low stock alert'
+      'POST /api/inventory/notifications/check-low-stock - Low stock alert',
+      'POST /api/patients/register - Register new patient with QR code',
+      'GET /api/patients - Get all patients',
+      'GET /api/patients/:id - Get patient by ID',
+      'PUT /api/patients/:id - Update patient',
+      'DELETE /api/patients/:id - Delete patient'
     ]
   });
 });
@@ -135,6 +143,9 @@ app.use('/api/inventory', surgicalrouter);
 // Mount other inventory routes
 app.use('/api/inventory', inventoryRouter);
 
+// ✅ NEW: Mount patient routes for receptionist functionality
+console.log('👥 Mounting patient router at /api/patients');
+app.use('/api/patients', patrouter);
 
 // Mount other API routes
 app.use('/api/admin', adminRouter);
@@ -187,7 +198,6 @@ app.use((err, req, res, next) => {
 
 // ✅ CORRECT - Express 5 compatible
 
-
 // Graceful shutdown handling
 process.on('SIGTERM', () => {
   console.log('💤 SIGTERM received. Shutting down gracefully...');
@@ -216,6 +226,11 @@ app.listen(PORT, () => {
   console.log(`   📧 Test Email: POST http://localhost:${PORT}/api/inventory/notifications/test-email`);
   console.log(`   🚨 Low Stock Alert: POST http://localhost:${PORT}/api/inventory/notifications/check-low-stock`);
   console.log(`   📦 Surgical Items: GET http://localhost:${PORT}/api/inventory/surgical-items`);
+  console.log(`   👥 Patient Registration: POST http://localhost:${PORT}/api/patients/register`);
+  console.log(`   👥 Get All Patients: GET http://localhost:${PORT}/api/patients`);
+  console.log(`   👥 Get Patient by ID: GET http://localhost:${PORT}/api/patients/:id`);
+  console.log(`   👥 Update Patient: PUT http://localhost:${PORT}/api/patients/:id`);
+  console.log(`   👥 Delete Patient: DELETE http://localhost:${PORT}/api/patients/:id`);
   console.log('=====================================');
   console.log('✅ Server ready to accept connections!');
 });
@@ -223,4 +238,4 @@ app.listen(PORT, () => {
 //gayath
 //pjsshsns
 export default app;
-//chamara
+//chamaraupdate server.js with that part no removing anything
