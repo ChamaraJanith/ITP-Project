@@ -924,55 +924,6 @@ const AIFaqSection = () => {
   );
 };
 
-// Newsletter Component
-const AINewsletterSection = () => {
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleSubscribe = (e) => {
-    e.preventDefault();
-    if (email) {
-      setSubscribed(true);
-      setEmail('');
-    }
-  };
-
-  return (
-    <div className="ai-newsletter-section">
-      <div className="container">
-        {!subscribed ? (
-          <form className="newsletter-form" onSubmit={handleSubscribe}>
-            <h3>{EMOJIS.envelope} Stay Updated with Private Health Insights</h3>
-            <p>Get the latest AI health insights, medical breakthroughs, and personalized private health tips delivered to your inbox.</p>
-            
-            <div className="input-group">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
-                required
-              />
-              <button type="submit">
-                <FaPaperPlane />
-                Subscribe
-              </button>
-            </div>
-            
-            <p style={{ fontSize: '1.2rem', opacity: 0.8, marginTop: '15px' }}>
-              Join our exclusive private healthcare community. Unsubscribe anytime.
-            </p>
-          </form>
-        ) : (
-          <div className="success-message">
-            <FaCheckCircle />
-            <span>Thank you for subscribing! Check your email for confirmation.</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 // Features Showcase Component
 const FeaturesShowcase = () => {
@@ -1253,9 +1204,6 @@ const Homepage = () => {
 
       {/* FAQ Section */}
       <AIFaqSection />
-
-      {/* Newsletter Section */}
-      <AINewsletterSection />
 
       {/* Final CTA Section */}
       <FinalAdvancedCTA />
