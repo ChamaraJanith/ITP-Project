@@ -4,7 +4,7 @@ import Homepage from './components/Homepage';
 import MedicalNavbar from './components/NavBar';
 import EmergencyPage from './components/EmergencyPage';
 import HospitalsPage from './components/HospitalPage';
-//
+import Footer from './components/Footer';
 
 // ✅ Existing User Components
 import Register from './components/admin/Patient/Register';
@@ -31,13 +31,11 @@ import PatientRegistration from './components/admin/Reciptionist/PatientRegistra
 import PatientList from './components/admin/Reciptionist/PatientList';
 import PatientDetails from './components/admin/Reciptionist/PatientDetails';
 
-// ✅ Healthcare Service Components (create these as needed)
-
+// ✅ Healthcare Service Components
 const BookAppointmentPage = () => (
   <div style={{padding: '2rem'}}>
     <h2>📅 Book Appointment</h2>
     <p>Schedule your medical appointment online.</p>
-    {/* Add appointment booking functionality */}
   </div>
 );
 
@@ -45,7 +43,6 @@ const AppointmentsPage = () => (
   <div style={{padding: '2rem'}}>
     <h2>📋 My Appointments</h2>
     <p>View and manage your appointments.</p>
-    {/* Add appointments management functionality */}
   </div>
 );
 
@@ -53,7 +50,6 @@ const MedicalRecordsPage = () => (
   <div style={{padding: '2rem'}}>
     <h2>📄 Medical Records</h2>
     <p>Access your medical history and records.</p>
-    {/* Add medical records functionality */}
   </div>
 );
 
@@ -61,7 +57,6 @@ const DoctorsPage = () => (
   <div style={{padding: '2rem'}}>
     <h2>👨‍⚕️ Find Doctors</h2>
     <p>Browse our network of qualified healthcare professionals.</p>
-    {/* Add doctors directory functionality */}
   </div>
 );
 
@@ -69,7 +64,6 @@ const SpecialtyPage = () => (
   <div style={{padding: '2rem'}}>
     <h2>🩺 Medical Specialty</h2>
     <p>Specialized medical services and treatments.</p>
-    {/* Add specialty information functionality */}
   </div>
 );
 
@@ -77,7 +71,6 @@ const SearchPage = () => (
   <div style={{padding: '2rem'}}>
     <h2>🔍 Search Results</h2>
     <p>Find healthcare services, doctors, and facilities.</p>
-    {/* Add search functionality */}
   </div>
 );
 
@@ -184,200 +177,184 @@ function App() {
       <div className="App">
         <MedicalNavbar />
         
-        <Routes>
-          {/* ✅ Public User Routes */}
-          <Route path="/" element={<Homepage />} />
-          <Route path="/PatientProfile" element={<PatientProfile />} />
-          <Route path="/Login" element={<Login/>}/>
-          <Route path="/register" element={<Register/>}/>
+        <main className="main-content">
+          <Routes>
+            {/* ✅ Public User Routes */}
+            <Route path="/" element={<Homepage />} />
+            <Route path="/PatientProfile" element={<PatientProfile />} />
+            <Route path="/Login" element={<Login/>}/>
+            <Route path="/register" element={<Register/>}/>
 
-          {/* ✅ Healthcare Service Routes */}
-          <Route path="/hospitals" element={<HospitalsPage />} />
-          <Route path="/emergency" element={<EmergencyPage />} />
-          <Route path="/book-appointment" element={<BookAppointmentPage />} />
-          <Route path="/appointments" element={<AppointmentsPage />} />
-          <Route path="/medical-records" element={<MedicalRecordsPage />} />
-          <Route path="/doctors" element={<DoctorsPage />} />
-          <Route path="/specialty/:id" element={<SpecialtyPage />} />
-          <Route path="/search" element={<SearchPage />} />
+            {/* ✅ Healthcare Service Routes */}
+            <Route path="/hospitals" element={<HospitalsPage />} />
+            <Route path="/emergency" element={<EmergencyPage />} />
+            <Route path="/book-appointment" element={<BookAppointmentPage />} />
+            <Route path="/appointments" element={<AppointmentsPage />} />
+            <Route path="/medical-records" element={<MedicalRecordsPage />} />
+            <Route path="/doctors" element={<DoctorsPage />} />
+            <Route path="/specialty/:id" element={<SpecialtyPage />} />
+            <Route path="/search" element={<SearchPage />} />
 
-          {/* ✅ Admin Portal Routes - FIXED PATHS TO MATCH PREVIOUS CONVERSATION */}
-          
-          {/* Admin Login - Public Access */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          
-          {/* Admin Landing Page */}
-          <Route path="/admin" element={<AdminLandingPage />} />
-          
-          {/* Protected Admin Routes - CORRECTED PATHS */}
-          <Route 
-            path="/admin/dashboard" 
-            element={
-              <ProtectedAdminRoute allowedRoles={['admin']}>
-                <AdminDashboard />
-              </ProtectedAdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/receptionist-dashboard" 
-            element={
-              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
-                <ReceptionistDashboard />
-              </ProtectedAdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/doctor-dashboard" 
-            element={
-              <ProtectedAdminRoute allowedRoles={['doctor', 'admin']}>
-                <DoctorDashboard />
-              </ProtectedAdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/financial-dashboard" 
-            element={
-              <ProtectedAdminRoute allowedRoles={['financial_manager', 'admin']}>
-                <FinancialDashboard />
-              </ProtectedAdminRoute>
-            } 
-          />
+            {/* ✅ Admin Portal Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<AdminLandingPage />} />
+            
+            {/* Protected Admin Routes */}
+            <Route 
+              path="/admin/dashboard" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['admin']}>
+                  <AdminDashboard />
+                </ProtectedAdminRoute>
+              } 
+            />
+            
+            <Route 
+              path="/admin/receptionist-dashboard" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                  <ReceptionistDashboard />
+                </ProtectedAdminRoute>
+              } 
+            />
+            
+            <Route 
+              path="/admin/doctor-dashboard" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['doctor', 'admin']}>
+                  <DoctorDashboard />
+                </ProtectedAdminRoute>
+              } 
+            />
+            
+            <Route 
+              path="/admin/financial-dashboard" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['financial_manager', 'admin']}>
+                  <FinancialDashboard />
+                </ProtectedAdminRoute>
+              } 
+            />
 
-          {/* ✅ Alternative shorter routes for admin dashboards */}
-          <Route 
-            path="/admin/receptionist" 
-            element={
-              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
-                <ReceptionistDashboard />
-              </ProtectedAdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/doctor" 
-            element={
-              <ProtectedAdminRoute allowedRoles={['doctor', 'admin']}>
-                <DoctorDashboard />
-              </ProtectedAdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/financial" 
-            element={
-              <ProtectedAdminRoute allowedRoles={['financial_manager', 'admin']}>
-                <FinancialDashboard />
-              </ProtectedAdminRoute>
-            } 
-          />
+            {/* ✅ Alternative shorter routes for admin dashboards */}
+            <Route 
+              path="/admin/receptionist" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                  <ReceptionistDashboard />
+                </ProtectedAdminRoute>
+              } 
+            />
+            
+            <Route 
+              path="/admin/doctor" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['doctor', 'admin']}>
+                  <DoctorDashboard />
+                </ProtectedAdminRoute>
+              } 
+            />
+            
+            <Route 
+              path="/admin/financial" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['financial_manager', 'admin']}>
+                  <FinancialDashboard />
+                </ProtectedAdminRoute>
+              } 
+            />
 
-          {/* ✅ NEW: Patient Registration Routes for Receptionist */}
-          <Route 
-            path="/receptionist/patient_registration" 
-            element={
-              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
-                <PatientRegistration />
-              </ProtectedAdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/receptionist/patients" 
-            element={
-              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
-                <PatientList />
-              </ProtectedAdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/receptionist/patients/:id" 
-            element={
-              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
-                <PatientDetails />
-              </ProtectedAdminRoute>
-            } 
-          />
+            {/* ✅ Patient Registration Routes for Receptionist */}
+            <Route 
+              path="/receptionist/patient_registration" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                  <PatientRegistration />
+                </ProtectedAdminRoute>
+              } 
+            />
+            
+            <Route 
+              path="/receptionist/patients" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                  <PatientList />
+                </ProtectedAdminRoute>
+              } 
+            />
+            
+            <Route 
+              path="/receptionist/patients/:id" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                  <PatientDetails />
+                </ProtectedAdminRoute>
+              } 
+            />
 
-          {/* ✅ Alternative routes for patient management under admin */}
-          <Route 
-            path="/admin/receptionist/patient_registration" 
-            element={
-              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
-                <PatientRegistration />
-              </ProtectedAdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/receptionist/patients" 
-            element={
-              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
-                <PatientList />
-              </ProtectedAdminRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin/receptionist/patients/:id" 
-            element={
-              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
-                <PatientDetails />
-              </ProtectedAdminRoute>
-            } 
-          />
+            {/* ✅ Alternative routes for patient management under admin */}
+            <Route 
+              path="/admin/receptionist/patient_registration" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                  <PatientRegistration />
+                </ProtectedAdminRoute>
+              } 
+            />
+            
+            <Route 
+              path="/admin/receptionist/patients" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                  <PatientList />
+                </ProtectedAdminRoute>
+              } 
+            />
+            
+            <Route 
+              path="/admin/receptionist/patients/:id" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                  <PatientDetails />
+                </ProtectedAdminRoute>
+              } 
+            />
 
-          <Route 
-           path="/admin/surgical-items" 
-           element={<SurgicalItemsManagement />} />
-
-          <Route
-           path="/emergency"
-            element={<EmergencyPage />} />
-
-          <Route
-           path="/hospitals"
-            element={<HospitalsPage />} />
+            <Route 
+             path="/admin/surgical-items" 
+             element={<SurgicalItemsManagement />} />
 
             <Route
-            path="/admin/financial"
-            element={<FinancialDashboard />} />
-
-            <Route
-            path="/admin/financial/payments"
-            element={<FinancialManagePayments />} />
+             path="/admin/financial/payments"
+             element={<FinancialManagePayments />} />
 
             {/* ✅ Admin Consultation Scheduling */}
-          <Route
-            path="/admin/doctor/schedule-consultation"
-            element={<ScheduleConsultation />} />
-
-          {/* view consultations - to be implemented */}
-          <Route
-            path="/admin/doctor/view-consultations"
-            element={<ViewConsultations />} />
-
-            {/*prescription page - to be implemented */}
             <Route
-            path="/admin/doctor/prescriptions"
-            element={<PrescriptionPage />} />
+              path="/admin/doctor/schedule-consultation"
+              element={<ScheduleConsultation />} />
 
-          <Route
-           path="/admin/financial/payments/inventory-view"
-            element={<InventoryTotalView />} />
+            <Route
+              path="/admin/doctor/view-consultations"
+              element={<ViewConsultations />} />
 
-          <Route
-            path="/admin/financial/payments/total-view"
-            element={<PaymentTotalView />} />
+            <Route
+              path="/admin/doctor/prescriptions"
+              element={<PrescriptionPage />} />
 
-          {/* ✅ Admin Surgical Items Management */}  
+            <Route
+             path="/admin/financial/payments/inventory-view"
+              element={<InventoryTotalView />} />
 
-          {/* ✅ 404 Fallback Route */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+            <Route
+              path="/admin/financial/payments/total-view"
+              element={<PaymentTotalView />} />
+
+            {/* ✅ 404 Fallback Route */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </main>
+        
+        <Footer />
       </div>
     </Router>
   );
