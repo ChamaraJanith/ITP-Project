@@ -3,7 +3,6 @@ import AdminLayout from "../AdminLayout";
 import { adminDashboardApi } from "../../../services/adminApi.js";
 import "./ReceptionistDashboard.css";
 import { useNavigate } from "react-router-dom";
-import { Navigate } from "react-router-dom";
 
 const ReceptionistDashboard = () => {
   const [admin, setAdmin] = useState(null);
@@ -76,47 +75,87 @@ const ReceptionistDashboard = () => {
               </div>
             </div>
 
-            {/* ✅ Features Section - Styled like Medical Features */}
+            {/* ✅ Features Section - Updated with correct paths */}
             <div className="features-section">
               <h2>🛠️ Available Features</h2>
               <div className="features-grid">
                 <button
                   className="feature-card"
-                  onClick={() =>
-                    (window.location.href = "/receptionist/manage_appointments")
-                  }
+                  onClick={() => navigate("/receptionist/manage_appointments")}
                 >
                   MANAGE APPOINTMENTS
                 </button>
+                
+                {/* ✅ Updated: View Patients - Navigate to Patient List */}
                 <button
                   className="feature-card"
-                  onClick={() =>
-                    (window.location.href = "/receptionist/view_patients")
-                  }
+                  onClick={() => navigate("/receptionist/patients")}
                 >
                   VIEW PATIENTS
                 </button>
+                
                 <button
                   className="feature-card"
-                  onClick={() =>
-                    (window.location.href = "/receptionist/check_in_patients")
-                  }
+                  onClick={() => navigate("/receptionist/check_in_patients")}
                 >
                   CHECK IN PATIENTS
                 </button>
+                
                 <button
                   className="feature-card"
-                  onClick={() =>navigate("/admin/doctor/view-consultations") }
+                  onClick={() => navigate("/admin/doctor/view-consultations")}
                 >
                   SCHEDULE APPOINTMENTS
                 </button>
+                
+                {/* ✅ Updated: Patient Registration - Navigate to Registration Form */}
                 <button
-                  className="feature-card"
-                  onClick={() =>
-                    (window.location.href = "/receptionist/patient_registration")
-                  }
+                  className="feature-card patient-registration-card"
+                  onClick={() => navigate("/receptionist/patient_registration")}
                 >
-                  PATIENT REGISTRATION
+                  <div className="feature-icon">👥</div>
+                  <div className="feature-title">PATIENT REGISTRATION</div>
+                  <div className="feature-subtitle">Register new patients & generate QR codes</div>
+                </button>
+
+                {/* ✅ New: Quick Patient Search */}
+                <button
+                  className="feature-card patient-search-card"
+                  onClick={() => navigate("/receptionist/patients")}
+                >
+                  <div className="feature-icon">🔍</div>
+                  <div className="feature-title">PATIENT DATABASE</div>
+                  <div className="feature-subtitle">Search & manage patient records</div>
+                </button>
+              </div>
+            </div>
+
+            {/* ✅ Quick Actions Section - New Patient Management Tools */}
+            <div className="quick-actions-section">
+              <h2>⚡ Quick Actions</h2>
+              <div className="quick-actions-grid">
+                <button
+                  className="quick-action-btn register-patient"
+                  onClick={() => navigate("/receptionist/patient_registration")}
+                >
+                  <span className="action-icon">➕</span>
+                  <span className="action-text">Register New Patient</span>
+                </button>
+                
+                <button
+                  className="quick-action-btn view-patients"
+                  onClick={() => navigate("/receptionist/patients")}
+                >
+                  <span className="action-icon">📋</span>
+                  <span className="action-text">View All Patients</span>
+                </button>
+                
+                <button
+                  className="quick-action-btn emergency"
+                  onClick={() => navigate("/emergency")}
+                >
+                  <span className="action-icon">🚨</span>
+                  <span className="action-text">Emergency Registration</span>
                 </button>
               </div>
             </div>
@@ -125,11 +164,23 @@ const ReceptionistDashboard = () => {
             <div className="activity-section">
               <h2>📋 Recent Activities</h2>
               <div className="activity-list">
-                {dashboardData.recentActivities?.map((activity, index) => (
-                  <div key={index} className="activity-item">
-                    <p>{activity}</p>
+                {dashboardData.recentActivities?.length > 0 ? (
+                  dashboardData.recentActivities.map((activity, index) => (
+                    <div key={index} className="activity-item">
+                      <p>{activity}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="no-activities">
+                    <p>No recent activities to display</p>
+                    <button
+                      className="start-activity-btn"
+                      onClick={() => navigate("/receptionist/patient_registration")}
+                    >
+                      Start by registering a patient
+                    </button>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </>
