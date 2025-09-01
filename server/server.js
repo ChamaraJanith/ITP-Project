@@ -27,6 +27,7 @@ console.log('📧 SMTP_PORT:', process.env.SMTP_PORT);
 import notificationRouter from './routes/notifications.js';
 import surgicalrouter from './routes/surgicalItems.js';
 import consultationRouter from './routes/consultationRoutes.js';
+import prescriptionRouter from './routes/prescriptionRoutes.js';
 
 // Database connection
 const { default: connectDB } = await import("./config/mongodb.js");
@@ -142,6 +143,9 @@ app.use("/api/auth", router);
 app.use("/api/auth", authRouter);
 app.use("/api/payments", financialPayRoutes);  // Mount financial payment routes
 app.use("/api/prescription", consultationRouter);  // Mount consultation routes
+
+// Mount prescription routes
+app.use("/api/doctor/prescriptions", prescriptionRouter);  // Mount prescription routes
 
 // Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

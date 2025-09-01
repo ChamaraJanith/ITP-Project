@@ -89,7 +89,7 @@ const DoctorDashboard = () => {
                 </button>
                 <button
                   className="feature-card"
-                  onClick={() =>navigate("paka") }
+                  onClick={() => alert("Patient Records clicked")}
                 >
                   PATIENT RECORDS
                 </button>
@@ -101,12 +101,12 @@ const DoctorDashboard = () => {
                 </button>
                 <button
                   className="feature-card"
-                  onClick={() => alert("Prescriptions clicked")}
+                  onClick={() => navigate("/admin/doctor/prescriptions") }
                 >
                   PRESCRIPTIONS
                 </button>
                 <button
-                  className="feature-card"
+                  className="feature-card" 
                   onClick={() => alert("Emergency Alerts clicked")}
                 >
                   EMERGENCY ALERTS
