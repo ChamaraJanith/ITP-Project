@@ -24,7 +24,8 @@ import FinancialManagePayments from './components/admin/Financial_Manager/Financ
 import ScheduleConsultation from './components/admin/Doctor/ScheduleConsultation';
 import ViewConsultations from './components/admin/Doctor/ViewConsultations';
 import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
-
+import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
+import PaymentTotalView from './components/admin/Financial_Manager/PaymentTotalView';
 
 // ✅ Healthcare Service Components (create these as needed)
 
