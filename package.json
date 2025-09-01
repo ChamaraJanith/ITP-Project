@@ -14,5 +14,8 @@
     "@tailwindcss/vite": "^4.1.11",
     "concurrently": "^9.2.0",
     "nodemon": "^3.1.10"
+  },
+  "dependencies": {
+    "yup": "^1.7.0"
   }
 }
