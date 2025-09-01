@@ -15,12 +15,6 @@ const MedicineSchema = yup.object({
 
 // Prescription validation schema
 const PrescriptionSchema = yup.object({
-  patient: yup.object({
-    id: yup.string().required("Patient ID is required"),
-    name: yup.string().required("Patient name is required"),
-    age: yup.number().nullable(),
-    gender: yup.string().nullable(),
-  }),
   date: yup.date().required("Date is required"),
   diagnosis: yup.string().required("Diagnosis is required"),
   medicines: yup
@@ -31,18 +25,10 @@ const PrescriptionSchema = yup.object({
 });
 
 // Default form values
-const defaultValues = (Patient, doctor) => ({
-  patient: {
-    id: Patient?._id || "",
-    name: Patient?.name || "",
-    age: Patient?.age || null,
-    gender: Patient?.gender || "",
-  },
+const defaultValues = (doctor) => ({
   date: new Date().toISOString().slice(0, 10),
   diagnosis: "",
-  medicines: [
-    { name: "", dosage: "", frequency: "", duration: "", notes: "" },
-  ],
+  medicines: [{ name: "", dosage: "", frequency: "", duration: "", notes: "" }],
   notes: "",
   doctor: {
     id: doctor?._id || "",
@@ -51,7 +37,7 @@ const defaultValues = (Patient, doctor) => ({
   },
 });
 
-const PrescriptionForm = ({ Patient, doctor, ocrTextFromCanvas, onSaved }) => {
+const PrescriptionForm = ({ doctor, ocrTextFromCanvas, onSaved }) => {
   const {
     control,
     register,
@@ -61,7 +47,7 @@ const PrescriptionForm = ({ Patient, doctor, ocrTextFromCanvas, onSaved }) => {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(PrescriptionSchema),
-    defaultValues: defaultValues(Patient, doctor),
+    defaultValues: defaultValues(doctor),
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -69,57 +55,34 @@ const PrescriptionForm = ({ Patient, doctor, ocrTextFromCanvas, onSaved }) => {
     name: "medicines",
   });
 
-  // Track currently selected field
   const [activeField, setActiveField] = useState(null);
 
-  // Update patient info when prop changes
-  useEffect(() => {
-    if (Patient) {
-      setValue("patient.id", Patient._id);
-      setValue("patient.name", Patient.name);
-      setValue("patient.age", Patient.age);
-      setValue("patient.gender", Patient.gender);
-    }
-  }, [Patient, setValue]);
-
-  // Update doctor info when prop changes
-  useEffect(() => {
-    if (doctor) {
-      setValue("doctor.id", doctor._id);
-      setValue("doctor.name", doctor.name);
-      setValue("doctor.specialization", doctor.specialization || "");
-    }
-  }, [doctor, setValue]);
-
-  // Insert OCR text directly into the active field
+  // Insert OCR text into the active field
   useEffect(() => {
     if (!ocrTextFromCanvas || !activeField) return;
-
-    setValue(activeField, ocrTextFromCanvas); // put text only in selected field
-    // keep activeField so more canvas writes continue in same field
+    setValue(activeField, ocrTextFromCanvas);
   }, [ocrTextFromCanvas, activeField, setValue]);
 
   // Submit form
   const onSubmit = async (data) => {
     try {
-      if (!data.patient.id) return alert("Please select a patient.");
       const payload = {
-        patient: data.patient,
         date: data.date,
         diagnosis: data.diagnosis,
         medicines: data.medicines,
         notes: data.notes,
+        doctorId: data.doctor.id,
+        doctorName: data.doctor.name,
+        doctorSpecialization: data.doctor.specialization,
       };
 
       const res = await createPrescription(payload);
       alert("Prescription saved successfully.");
-
-      if (onSaved) onSaved(res.data.Prescription || res.data);
-      reset(defaultValues(Patient, doctor));
+      if (onSaved) onSaved(res.data?.data || res.data);
+      reset(defaultValues(doctor));
     } catch (err) {
       console.error(err);
-      const msg =
-        err?.response?.data?.message || "Failed to save prescription.";
+      const msg = err?.response?.data?.message || "Failed to save prescription.";
       alert(msg);
     }
   };
@@ -130,6 +93,7 @@ const PrescriptionForm = ({ Patient, doctor, ocrTextFromCanvas, onSaved }) => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} style={{ padding: 12 }}>
+      {/* Date */}
       <div style={{ marginBottom: 8 }}>
         <label>Date</label>
         <br />
@@ -138,11 +102,10 @@ const PrescriptionForm = ({ Patient, doctor, ocrTextFromCanvas, onSaved }) => {
           {...register("date")}
           onFocus={() => setActiveField("date")}
         />
-        {errors.date && (
-          <div style={{ color: "red" }}>{errors.date.message}</div>
-        )}
+        {errors.date && <div style={{ color: "red" }}>{errors.date.message}</div>}
       </div>
 
+      {/* Diagnosis */}
       <div style={{ marginBottom: 8 }}>
         <label>Diagnosis / Symptoms</label>
         <br />
@@ -157,6 +120,7 @@ const PrescriptionForm = ({ Patient, doctor, ocrTextFromCanvas, onSaved }) => {
         )}
       </div>
 
+      {/* Medicines */}
       <div style={{ marginBottom: 8 }}>
         <label>Medicines</label>
         {fields.map((f, i) => (
@@ -217,6 +181,7 @@ const PrescriptionForm = ({ Patient, doctor, ocrTextFromCanvas, onSaved }) => {
         )}
       </div>
 
+      {/* Additional Notes */}
       <div style={{ marginBottom: 8 }}>
         <label>Additional Notes</label>
         <br />
@@ -228,22 +193,29 @@ const PrescriptionForm = ({ Patient, doctor, ocrTextFromCanvas, onSaved }) => {
         />
       </div>
 
+      {/* Doctor Info */}
       <div style={{ marginBottom: 8 }}>
-        <label>Doctor (auto)</label>
-        <div>
-          <input value={doctor?.name || ""} readOnly />
-          <input value={doctor?.specialization || ""} readOnly />
+        <label>Doctor Info</label>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            {...register("doctor.name")}
+            placeholder="Doctor Name"
+            readOnly
+          />
+          <input
+            {...register("doctor.specialization")}
+            placeholder="Specialization"
+            readOnly
+          />
         </div>
       </div>
 
+      {/* Buttons */}
       <div style={{ display: "flex", gap: 8 }}>
         <button type="submit" disabled={isSubmitting}>
           Save Prescription
         </button>
-        <button
-          type="button"
-          onClick={() => reset(defaultValues(Patient, doctor))}
-        >
+        <button type="button" onClick={() => reset(defaultValues(doctor))}>
           Reset
         </button>
       </div>

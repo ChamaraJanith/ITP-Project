@@ -6,7 +6,7 @@ class PrescriptionController {
       const body = req.body;
       const doctor = req.user || {
         id: "TEMP_DOCTOR_ID",
-        name: "Dr. Demo",
+        name: "Dr. Gayath",
         specialization: "General",
       };
 
