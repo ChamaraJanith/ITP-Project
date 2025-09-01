@@ -194,7 +194,6 @@ const BMICalculator = () => {
   };
 
   return (
-    
     <div className="bmi-calculator">
       <div className="bmi-header">
         <h3>{EMOJIS.scale} BMI Calculator</h3>
@@ -641,27 +640,27 @@ const AdvancedDoctorAvailability = () => {
             </div>
 
             <div className="doctor-specializations">
-  <h5>Specializations:</h5>
-  <ul>
-    {doctor.specializations.map((spec, idx) => (
-      <li key={idx}>{spec}</li>
-    ))}
-  </ul>
-</div>
-<br/>
-<br/>
+              <h5>Specializations:</h5>
+              <ul>
+                {doctor.specializations.map((spec, idx) => (
+                  <li key={idx}>{spec}</li>
+                ))}
+              </ul>
+            </div>
+            <br/>
+            <br/>
             <div className="certifications">
               <h5>Certifications:</h5>
               <ul>
                 {doctor.certifications.map((cert, idx) => (
                   <li key={idx}>
-                     
                     {cert}
                   </li>
                 ))}
               </ul>
             </div>
-<br/><br/>            <div className="availability-info">
+            <br/><br/>
+            <div className="availability-info">
               <div className="next-slot">
                 <span className="slot-label">Next Available:</span>
                 <span className="slot-time">{doctor.nextSlot}</span>
@@ -1086,7 +1085,34 @@ const FinalAdvancedCTA = () => {
 // Main Homepage Component
 const Homepage = () => {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
+  const [loading, setLoading] = useState(false);
+
+  // Fetch current user data on component mount
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      if (storedUser && storedUser.id) {
+        setLoading(true);
+        try {
+          const response = await fetch(`/api/auth/${storedUser.id}`);
+          if (response.ok) {
+            const currentUser = await response.json();
+            setUser(currentUser);
+            // Update localStorage with fresh user data
+            localStorage.setItem('user', JSON.stringify(currentUser));
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
 
   return (
     <div className="advanced-homepage">
@@ -1100,6 +1126,7 @@ const Homepage = () => {
             {user.name ? (
               <div className="welcome-user-advanced">
                 <p>Welcome back, <strong>{user.name}</strong>! {EMOJIS.target}</p>
+                {loading && <span className="loading-indicator">Syncing your data...</span>}
                 <div className="user-health-summary">
                   <div className="health-metric">
                     <span className="metric-value">98%</span>
