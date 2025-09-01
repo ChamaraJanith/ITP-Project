@@ -107,7 +107,7 @@ const DoctorDashboard = () => {
                 </button>
                 <button
                   className="feature-card" 
-                  onClick={() => alert("Emergency Alerts clicked")}
+                  onClick={() => navigate("/admin/doctor/prescription-dashboard") }
                 >
                   EMERGENCY ALERTS
                 </button>
