@@ -8,9 +8,9 @@ import HospitalsPage from './components/HospitalPage';
 
 
 // ✅ Existing User Components
-import Register from './components/Register';
-import Login from './components/Login';
-import PatientProfile from './components/PatientProfile';
+import Register from './components/admin/Patient/Register';
+import Login from './components/admin/Patient/Login';
+import PatientProfile from './components/admin/Patient/PatientProfile';
 
 // ✅ Admin Components 
 import AdminLogin from './components/admin/AdminLogin';
@@ -24,7 +24,7 @@ import FinancialManagePayments from './components/admin/Financial_Manager/Financ
 import ScheduleConsultation from './components/admin/Doctor/ScheduleConsultation';
 import ViewConsultations from './components/admin/Doctor/ViewConsultations';
 import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
-import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
+
 
 // ✅ Healthcare Service Components (create these as needed)
 
@@ -310,6 +310,11 @@ function App() {
           <Route
            path="/admin/financial/payments/inventory-view"
             element={<InventoryTotalView />} />
+
+          <Route
+            path="/admin/financial/payments/total-view"
+            element={<PaymentTotalView />} />
+          
 
           {/* ✅ Admin Surgical Items Management */}  
 
