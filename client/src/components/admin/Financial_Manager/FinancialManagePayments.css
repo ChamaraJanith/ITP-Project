@@ -290,6 +290,41 @@
   }
 }
 
+/* ✅ NEW: Return Home Button Styling */
+.return-home-btn {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-right: 12px; /* Space between buttons */
+}
+
+.return-home-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.return-home-btn:active {
+  transform: translateY(0);
+}
+
+/* ✅ Ensure buttons container has proper spacing */
+.header-buttons-container {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* Consistent spacing between all buttons */
+}
+
+
 /* Loading animation */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
