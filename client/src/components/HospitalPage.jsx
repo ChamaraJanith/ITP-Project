@@ -315,7 +315,7 @@ const HospitalsPage = () => {
                   <h4>Features:</h4>
                   <div className="features">
                     {hospital.features.map((feature, index) => (
-                      <span key={index} className="feature-tag">{feature}</span>
+                      <span key={index} className="feature-taghos">{feature}</span>
                     ))}
                   </div>
                 </div>

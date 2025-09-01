@@ -603,8 +603,8 @@ section {
 
 /* Section backgrounds with gradients */
 .ai-assessment-section {
-  background: white;
-  position: relative;
+ background: rgb(207, 241, 251);
+  color: #1E1E2F; 
 }
 
 .ai-assessment-section::before {
@@ -621,7 +621,7 @@ section {
 }
 
 .live-status-section {
-  background: var(--bg-secondary);
+  background: rgb(207, 241, 251);
   position: relative;
 }
 
@@ -639,7 +639,7 @@ section {
 }
 
 .doctor-availability-section {
-  background: white;
+  background: rgb(207, 241, 251);
   position: relative;
 }
 
@@ -1566,7 +1566,7 @@ section h2 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 40px;
-  background: var(--bg-secondary);
+  background: linear-gradient(85deg, var(--bg-dark) 0%, #6b72d8 100%);
   padding: 25px 30px;
   border-radius: var(--border-radius-lg);
   border: 1px solid var(--border-color);
@@ -1574,9 +1574,13 @@ section h2 {
   gap: 20px;
 }
 
+.private-badge{
+
+  color: white;
+}
 .availability-header h3 {
   font-size: 1.8rem;
-  color: var(--text-primary);
+  color: white;
   font-weight: 700;
 }
 
@@ -1605,11 +1609,6 @@ section h2 {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
-
-
-
-
-
 
 
 .doctors-availability-grid {
@@ -2112,9 +2111,11 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 
 /* ===== ADVANCED SERVICES ===== */
 .advanced-services {
+  
   padding: 80px 0;
-  background: var(--bg-secondary);
+  background: rgb(207, 241, 251);
   position: relative;
+  color: white;
 }
 
 .advanced-services::before {
@@ -2138,6 +2139,7 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
   font-weight: 800;
   position: relative;
   z-index: 1;
+  color: rgb(0, 0, 0);
 }
 
 .advanced-services-grid {
@@ -2147,10 +2149,11 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
   margin-top: 60px;
   position: relative;
   z-index: 1;
+
 }
 
 .advanced-service-card {
-  background: white;
+  background: linear-gradient(85deg, var(--bg-dark) 0%, #6b72d8 100%);
   border-radius: var(--border-radius-xl);
   padding: 35px;
   box-shadow: var(--shadow-lg);
@@ -2209,14 +2212,17 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 }
 
 .advanced-service-card h3 {
-  font-size: 1.5rem;
-  color: var(--text-primary);
+  font-size: 1.85rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: white;
   font-weight: 700;
   margin-bottom: 15px;
 }
 
 .advanced-service-card p {
-  color: var(--text-muted);
+  color: black;
+  font-weight: 500;
+  font-size: 1.3rem;
   line-height: 1.6;
   margin-bottom: 20px;
 }
@@ -2227,17 +2233,29 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
   gap: 8px;
   margin-bottom: 25px;
   justify-content: center;
+  color: white;
 }
 
 .feature-tag {
-  background: rgba(139, 92, 246, 0.1);
-  color: var(--primary-color);
+   color: white;
+  background: rgba(255, 255, 255, 0.1);
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
   border: 1px solid rgba(139, 92, 246, 0.2);
+  transition: all 0.3s ease; /* smooth hover */
+  cursor: pointer;
 }
+
+.feature-tag:hover {
+  background: linear-gradient(85deg, #ffb347 0%, #ff8008 100%);
+  border: 1px solid rgba(255, 165, 0, 0.6);
+  box-shadow: 0 4px 12px rgba(255, 140, 0, 0.45);
+  color: #fff;
+}
+
+
 
 .service-btn-advanced {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
@@ -2312,7 +2330,7 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 /* ===== FEATURED DOCTORS ===== */
 .featured-doctors {
   padding: 80px 0;
-  background: white;
+  background: rgb(207, 241, 251);
   position: relative;
 }
 
@@ -2333,13 +2351,14 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
   text-align: center;
   font-size: 3rem;
   margin-bottom: 20px;
-  color: var(--text-primary);
+  color: rgb(2, 2, 2);
   font-weight: 800;
   position: relative;
   z-index: 1;
 }
 
 .doctors-grid {
+  color: white;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 30px;
@@ -2349,9 +2368,10 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 }
 
 .doctor-card {
-  background: white;
+  background: linear-gradient(85deg, var(--bg-dark) 0%, #6b72d8 100%);
   border-radius: var(--border-radius-xl);
   padding: 30px;
+  color: white;
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
   transition: var(--transition);
@@ -2409,20 +2429,21 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 }
 
 .doctor-card h3 {
-  font-size: 1.4rem;
-  color: var(--text-primary);
+  font-size: 1.8rem;
+  color: white;
   font-weight: 700;
   margin-bottom: 8px;
 }
 
 .specialty {
-  color: var(--text-muted);
-  font-size: 1rem;
+  color: black;
+  font-size: 1.3rem;
   margin-bottom: 15px;
 }
 
 .doctor-stats {
   display: flex;
+  color: white;
   justify-content: center;
   gap: 20px;
   margin-bottom: 15px;
@@ -2432,6 +2453,7 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 .experience {
   display: flex;
   align-items: center;
+  color: white;
   gap: 5px;
   font-size: 0.9rem;
   color: var(--text-muted);
@@ -2461,9 +2483,9 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 }
 
 .status-badge.online {
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(19, 212, 148, 0.504);
   color: var(--secondary-color);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  border: 3px solid rgba(19, 209, 120, 0.564);
 }
 
 .status-badge.busy {
@@ -2473,12 +2495,31 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 }
 
 .next-slot {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  font-size: 1rem;
+  color: black;
+}
+
+.patient-count{
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: rgb(252, 252, 252);
+}
+
+.rating{
+  font-size: 1rem;
+  color: rgb(255, 255, 255);
+  font-weight: 600;
+}
+
+.experience {
+  font-size: 1rem;
+  color: rgb(255, 255, 255);
+  font-weight: 600;
 }
 
 .achievements {
   display: flex;
+  font-size: 1.5rem;
   gap: 8px;
   margin-bottom: 20px;
   justify-content: center;
@@ -2486,13 +2527,20 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 }
 
 .achievement-badge {
-  background: rgba(139, 92, 246, 0.1);
-  color: var(--primary-color);
+  background: rgba(250, 250, 250, 0.1);
+  color: white;
   padding: 4px 8px;
   border-radius: 12px;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   font-weight: 600;
   border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.achievement-badge:hover{
+  background: linear-gradient(85deg, #ffb347 0%, #ff8008 100%);
+  border: 1px solid rgba(255, 165, 0, 0.6);
+  box-shadow: 0 4px 12px rgba(255, 140, 0, 0.45);
+  color: #fff;
 }
 
 .book-btn {
@@ -2569,7 +2617,7 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 /* ===== FEATURES SHOWCASE ===== */
 .features-showcase {
   padding: 80px 0;
-  background: var(--bg-secondary);
+  background: rgb(207, 241, 251);
   position: relative;
 }
 
@@ -2605,7 +2653,7 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 }
 
 .showcase-item {
-  background: white;
+   background: linear-gradient(85deg, var(--bg-dark) 0%, #6b72d8 100%);
   padding: 30px;
   border-radius: var(--border-radius-lg);
   text-align: center;
@@ -2650,22 +2698,37 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
   box-shadow: var(--shadow-md);
 }
 
+.showcase-icon:hover {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(85deg, #ffb347 0%, #ff8008 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  transform: translateY(-5px );
+  transition: all 0.4s ease;
+  justify-content: center;
+}
+
 .showcase-item h4 {
-  font-size: 1.3rem;
-  color: var(--text-primary);
+  font-size: 1.6rem;
+  color: white;
   font-weight: 700;
   margin-bottom: 15px;
 }
 
 .showcase-item p {
-  color: var(--text-muted);
+  font-size: 1.2rem;
+  color: black;
+  font-weight: 500;
   line-height: 1.6;
 }
 
 /* ===== FAQ SECTION ===== */
 .ai-faq-section {
   padding: 80px 0;
-  background: white;
+  background: rgb(207, 241, 251);
   position: relative;
 }
 
@@ -2706,7 +2769,7 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 }
 
 .faq-question {
-  background: white;
+  background: linear-gradient(85deg, var(--bg-dark) 0%, #6b72d8 100%);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border-color);
@@ -2736,7 +2799,7 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 }
 
 .faq-toggle:hover {
-  background: var(--bg-secondary);
+  background: white;
 }
 
 .faq-toggle span {
@@ -2745,20 +2808,23 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 }
 
 .faq-answer {
-  padding: 0 30px 25px;
-  color: var(--text-muted);
+  padding: 15px 30px 25px;
+  background: white;
+  color: black;
   line-height: 1.6;
   animation: fadeInUp 0.3s ease;
 }
 
 .faq-answer p {
+  margin-top: 25px;
+  color: rgb(0, 0, 0);
   margin: 0;
 }
 
 /* ===== NEWSLETTER SECTION ===== */
 .ai-newsletter-section {
   padding: 80px 0;
-  background: var(--bg-secondary);
+  background: rgb(207, 241, 251);
   position: relative;
 }
 
@@ -2779,7 +2845,7 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
   max-width: 600px;
   margin: 0 auto;
   text-align: center;
-  background: white;
+  background: linear-gradient(85deg, var(--bg-dark) 0%, #6b72d8 100%);
   padding: 40px;
   border-radius: var(--border-radius-xl);
   box-shadow: var(--shadow-lg);
@@ -2791,12 +2857,13 @@ border: 1px solid rgba(107, 114, 216, 0.35); /* border with purple tint */
 .newsletter-form h3 {
   font-size: 2rem;
   margin-bottom: 15px;
-  color: var(--text-primary);
+  color: white;
   font-weight: 700;
 }
 
 .newsletter-form p {
-  color: var(--text-muted);
+  color: white;
+  font-size: 1.1rem;
   margin-bottom: 30px;
   line-height: 1.6;
 }
