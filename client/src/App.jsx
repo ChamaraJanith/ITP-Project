@@ -6,7 +6,6 @@ import EmergencyPage from './components/EmergencyPage';
 import HospitalsPage from './components/HospitalPage';
 //
 
-
 // ✅ Existing User Components
 import Register from './components/admin/Patient/Register';
 import Login from './components/admin/Patient/Login';
@@ -26,6 +25,11 @@ import ViewConsultations from './components/admin/Doctor/ViewConsultations';
 import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
 import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
 import PaymentTotalView from './components/admin/Financial_Manager/PaymentTotalView';
+
+// ✅ NEW: Patient Registration Components for Receptionist
+import PatientRegistration from './components/admin/Reciptionist/PatientRegistration';
+import PatientList from './components/admin/Reciptionist/PatientList';
+import PatientDetails from './components/admin/Reciptionist/PatientDetails';
 
 // ✅ Healthcare Service Components (create these as needed)
 
@@ -176,9 +180,6 @@ const NotFoundPage = () => (
 
 function App() {
   return (
-  
-
-    
     <Router>
       <div className="App">
         <MedicalNavbar />
@@ -272,6 +273,63 @@ function App() {
               </ProtectedAdminRoute>
             } 
           />
+
+          {/* ✅ NEW: Patient Registration Routes for Receptionist */}
+          <Route 
+            path="/receptionist/patient_registration" 
+            element={
+              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                <PatientRegistration />
+              </ProtectedAdminRoute>
+            } 
+          />
+          
+          <Route 
+            path="/receptionist/patients" 
+            element={
+              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                <PatientList />
+              </ProtectedAdminRoute>
+            } 
+          />
+          
+          <Route 
+            path="/receptionist/patients/:id" 
+            element={
+              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                <PatientDetails />
+              </ProtectedAdminRoute>
+            } 
+          />
+
+          {/* ✅ Alternative routes for patient management under admin */}
+          <Route 
+            path="/admin/receptionist/patient_registration" 
+            element={
+              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                <PatientRegistration />
+              </ProtectedAdminRoute>
+            } 
+          />
+          
+          <Route 
+            path="/admin/receptionist/patients" 
+            element={
+              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                <PatientList />
+              </ProtectedAdminRoute>
+            } 
+          />
+          
+          <Route 
+            path="/admin/receptionist/patients/:id" 
+            element={
+              <ProtectedAdminRoute allowedRoles={['receptionist', 'admin']}>
+                <PatientDetails />
+              </ProtectedAdminRoute>
+            } 
+          />
+
           <Route 
            path="/admin/surgical-items" 
            element={<SurgicalItemsManagement />} />
@@ -307,7 +365,6 @@ function App() {
             path="/admin/doctor/prescriptions"
             element={<PrescriptionPage />} />
 
-    
           <Route
            path="/admin/financial/payments/inventory-view"
             element={<InventoryTotalView />} />
@@ -315,7 +372,6 @@ function App() {
           <Route
             path="/admin/financial/payments/total-view"
             element={<PaymentTotalView />} />
-          
 
           {/* ✅ Admin Surgical Items Management */}  
 
@@ -324,8 +380,6 @@ function App() {
         </Routes>
       </div>
     </Router>
-
-    
   );
 }
 
