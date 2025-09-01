@@ -190,7 +190,7 @@
   text-align: center;
   padding: 25px;
   border-radius: 15px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(248, 249, 249);
   backdrop-filter: blur(15px);
   margin-bottom: 25px;
   border: 3px solid rgba(255, 255, 255, 0.3);
@@ -217,6 +217,7 @@
 .bmi-value {
   font-size: 3.5rem;
   font-weight: 800;
+  background: rgb(248, 249, 249);
   margin: 0;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
   position: relative;
@@ -248,11 +249,13 @@
 
 .bmi-chart {
   margin-bottom: 25px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 15px;
+  background: rgb(255, 254, 254);
+  border-radius: 20px;
   padding: 20px;
   backdrop-filter: blur(10px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
+
 
 .bmi-ranges {
   display: grid;
@@ -302,19 +305,21 @@
   margin-bottom: 5px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: white;
+  color: rgb(11, 11, 11);
+
 }
 
 .range-value {
   font-size: 1.1rem;
   font-weight: 700;
   opacity: 0.9;
-  color: white;
+  color: rgb(23, 23, 23);
 }
 
 .bmi-recommendations {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgb(245, 243, 243);
   border-radius: 15px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
   padding: 20px;
   margin-bottom: 25px;
   backdrop-filter: blur(10px);
@@ -324,13 +329,14 @@
   margin: 0 0 15px 0;
   font-size: 1.2rem;
   font-weight: 600;
-  color: white;
+  color: rgb(22, 21, 21);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .bmi-recommendations ul {
   list-style: none;
+  color: rgb(22, 21, 21);
   padding: 0;
   margin: 0;
 }
@@ -342,7 +348,7 @@
   font-size: 1rem;
   line-height: 1.6;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.9);
+    color: rgb(22, 21, 21);
 }
 
 .bmi-recommendations li:last-child {
@@ -399,9 +405,11 @@
 }
 
 /* Section Container Styles - Updated with Custom Gradient */
+
+
 .bmi-calculator-section {
   padding: 80px 0;
-  background: linear-gradient(85deg, var(--bg-dark) 0%, #6b72d8 100%);
+  background: rgb(207, 241, 251);
   position: relative;
   overflow: hidden;
 }
@@ -417,11 +425,12 @@
   background-size: cover;
   opacity: 0.3;
 }
-
-.bmi-calculator-section .container {
-  max-width: 1200px;
+ .bmi-container {
+  background: linear-gradient(85deg, var(--bg-dark) 0%, #6b72d8 100%);
+  max-width: 900px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 10px 20px 40px;
+  border-radius: 20px;  
   position: relative;
   z-index: 1;
 }
