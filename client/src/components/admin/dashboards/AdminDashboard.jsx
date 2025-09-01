@@ -1472,7 +1472,7 @@ ${admin?.name || 'Admin User'}`);
               
               <button 
                 className="inventory-dashboard-btn reports-btn"
-                onClick={() => navigate('/admin/inventory-reports')}
+                onClick={() => navigate('/admin/documentations')}
               >
                 <div className="dashboard-icon">📊</div>
                 <div className="dashboard-info">
