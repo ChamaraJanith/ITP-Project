@@ -50,7 +50,7 @@ const EMOJIS = {
   broom: '🧹'
 };
 
-// ✅ COMPLETE: Enhanced Advanced Floating Chatbot with All Features
+// ✅ COMPLETE: Enhanced Advanced Floating Chatbot with All Features - CSS Isolated
 const AdvancedFloatingChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -695,7 +695,7 @@ const AdvancedFloatingChatbot = () => {
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\n\n/g, '<br/><br/>')
       .replace(/\n/g, '<br/>')
-      .replace(/(🔍|📅|👨‍⚕️|🚨|💊|📞|⚠️|✅|📋|🌟|🕒|📍|👋|💳|🤖|🎯|🔬|📱|💰|🎥|📊|🧹|🔄)/g, '<span class="emoji">$1</span>')
+      .replace(/(🔍|📅|👨‍⚕️|🚨|💊|📞|⚠️|✅|📋|🌟|🕒|📍|👋|💳|🤖|🎯|🔬|📱|💰|🎥|📊|🧹|🔄)/g, '<span class="healx-chatbot-emoji">$1</span>')
       .replace(/•\s/g, '<span style="color: #6366f1; font-weight: bold;">• </span>')
       .replace(/(\d+\.)\s/g, '<span style="color: #059669; font-weight: bold;">$1 </span>');
     
@@ -708,12 +708,12 @@ const AdvancedFloatingChatbot = () => {
   };
 
   const scrollToBottom = () => {
-    const messagesContainer = document.querySelector('.advanced-chat-messages');
+    const messagesContainer = document.querySelector('.healx-chatbot-messages');
     if (messagesContainer) {
-      messagesContainer.classList.add('auto-scroll');
+      messagesContainer.classList.add('healx-chatbot-auto-scroll');
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
       setTimeout(() => {
-        messagesContainer.classList.remove('auto-scroll');
+        messagesContainer.classList.remove('healx-chatbot-auto-scroll');
       }, 500);
     }
   };
@@ -737,30 +737,27 @@ const AdvancedFloatingChatbot = () => {
   }, [recognition, isListening, isAISpeaking]);
 
   return (
-    <div className="advanced-chatbot-widget">
+    <div className="healx-chatbot-widget">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`advanced-chat-toggle ${isOpen ? 'open' : ''} ${isAISpeaking ? 'speaking' : ''}`}
+        className={`healx-chatbot-toggle ${isOpen ? 'healx-chatbot-open' : ''} ${isAISpeaking ? 'healx-chatbot-speaking' : ''}`}
         title="Chat with ARIA - AI Healthcare Assistant"
       >
         {isOpen ? <FaTimes /> : <FaRobot />}
-        <div className="ai-pulse"></div>
-        <div className="status-indicator">
-          <span className="status-dot"></span>
-          {isAISpeaking ? 'Speaking' : isAutoAnalyzing ? 'Analyzing' : 'AI'}
-        </div>
+        <div className="healx-chatbot-ai-pulse"></div>
+        
       </button>
 
       {isOpen && (
-        <div className={`advanced-chat-window ${isExpanded ? 'expanded' : ''} ${isAISpeaking ? 'ai-speaking' : ''}`}>
-          <div className={`advanced-chat-header ${isAISpeaking ? 'ai-speaking-mode' : ''}`}>
-            <div className="chat-header-info">
-              <div className="ai-avatar">
+        <div className={`healx-chatbot-window ${isExpanded ? 'healx-chatbot-expanded' : ''} ${isAISpeaking ? 'healx-chatbot-ai-speaking' : ''}`}>
+          <div className={`healx-chatbot-header ${isAISpeaking ? 'healx-chatbot-ai-speaking-mode' : ''}`}>
+            <div className="healx-chatbot-header-info">
+              <div className="healx-chatbot-ai-avatar">
                 <FaRobot />
               </div>
-              <div className="ai-details">
+              <div className="healx-chatbot-ai-details">
                 <h4>{EMOJIS.robot} ARIA</h4>
-                <span className="ai-status">
+                <span className="healx-chatbot-ai-status">
                   AI Healthcare Assistant • {
                     isAISpeaking ? '🔊 Speaking...' : 
                     isAutoAnalyzing ? '🔍 Auto-Analyzing...' :
@@ -770,11 +767,11 @@ const AdvancedFloatingChatbot = () => {
                 </span>
               </div>
             </div>
-            <div className="chat-controls">
+            <div className="healx-chatbot-controls">
               {isAISpeaking && (
                 <button 
                   onClick={stopAISpeech}
-                  className="ai-speech-stop-btn expanded" 
+                  className="healx-chatbot-ai-speech-stop-btn healx-chatbot-expanded" 
                   title="Stop AI Speech Immediately"
                 >
                   <FaStop />
@@ -783,35 +780,35 @@ const AdvancedFloatingChatbot = () => {
               
               <button 
                 onClick={() => setIsMuted(!isMuted)} 
-                className="chat-control-btn" 
+                className="healx-chatbot-control-btn" 
                 title={isMuted ? "Unmute" : "Mute"}
               >
                 {isMuted ? <FaVolumeOff /> : <FaVolumeUp />}
               </button>
               <button 
                 onClick={() => setIsExpanded(!isExpanded)} 
-                className="chat-control-btn" 
+                className="healx-chatbot-control-btn" 
                 title={isExpanded ? "Minimize" : "Expand"}
               >
                 {isExpanded ? <FaCompress /> : <FaExpand />}
               </button>
               <button 
                 onClick={exportChat} 
-                className="chat-control-btn" 
+                className="healx-chatbot-control-btn" 
                 title="Export Chat"
               >
                 <FaDownload />
               </button>
               <button 
                 onClick={clearChatAdvanced} 
-                className="clear-chat-advanced" 
+                className="healx-chatbot-clear-advanced" 
                 title="Clear Chat (Saves to History)"
               >
                 <FaTrash />
               </button>
               <button 
                 onClick={() => setIsOpen(false)} 
-                className="close-chat-advanced" 
+                className="healx-chatbot-close-advanced" 
                 title="Close Chat"
               >
                 <FaTimes />
@@ -819,35 +816,35 @@ const AdvancedFloatingChatbot = () => {
             </div>
           </div>
 
-          <div className={`advanced-chat-messages ${isAISpeaking ? 'ai-speaking-mode' : ''}`}>
+          <div className={`healx-chatbot-messages ${isAISpeaking ? 'healx-chatbot-ai-speaking-mode' : ''}`}>
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`message ${message.sender === 'user' ? 'user-message' : 'bot-message'} ${message.type || ''}`}
+                className={`healx-chatbot-message ${message.sender === 'user' ? 'healx-chatbot-user-message' : 'healx-chatbot-bot-message'} ${message.type || ''}`}
               >
-                <div className="message-header">
-                  <span className="message-sender">
+                <div className="healx-chatbot-message-header">
+                  <span className="healx-chatbot-message-sender">
                     {message.sender === 'user' ? '👤 You' : `${EMOJIS.robot} ARIA`}
                     {message.type === 'auto-analysis' && ' (Auto)'}
                     {message.type === 'auto-analysis-result' && ' (Auto-Analysis)'}
                   </span>
-                  <span className="message-time">{message.timestamp}</span>
+                  <span className="healx-chatbot-message-time">{message.timestamp}</span>
                 </div>
                 <div 
-                  className="message-content"
+                  className="healx-chatbot-message-content"
                   dangerouslySetInnerHTML={message.sender === 'bot' ? formatMessage(message.text) : undefined}
                 >
                   {message.sender === 'user' ? message.text : null}
                 </div>
                 {message.sender === 'bot' && (
-                  <div className="message-actions">
-                    <button className="msg-action-btn" title="Copy">
+                  <div className="healx-chatbot-message-actions">
+                    <button className="healx-chatbot-msg-action-btn" title="Copy">
                       <FaCopy />
                     </button>
-                    <button className="msg-action-btn" title="Share">
+                    <button className="healx-chatbot-msg-action-btn" title="Share">
                       <FaShareAlt />
                     </button>
-                    <button className="msg-action-btn" title="Bookmark">
+                    <button className="healx-chatbot-msg-action-btn" title="Bookmark">
                       <FaBookmark />
                     </button>
                   </div>
@@ -856,17 +853,17 @@ const AdvancedFloatingChatbot = () => {
             ))}
             
             {(isTyping || isAutoAnalyzing) && (
-              <div className="message bot-message">
-                <div className="message-header">
-                  <span className="message-sender">{EMOJIS.robot} ARIA</span>
-                  <span className="message-time">{isAutoAnalyzing ? 'auto-analyzing...' : 'typing...'}</span>
+              <div className="healx-chatbot-message healx-chatbot-bot-message">
+                <div className="healx-chatbot-message-header">
+                  <span className="healx-chatbot-message-sender">{EMOJIS.robot} ARIA</span>
+                  <span className="healx-chatbot-message-time">{isAutoAnalyzing ? 'auto-analyzing...' : 'typing...'}</span>
                 </div>
-                <div className="message-content">
-                  <div className="advanced-typing-indicator">
-                    <div className="typing-text">
+                <div className="healx-chatbot-message-content">
+                  <div className="healx-chatbot-typing-indicator">
+                    <div className="healx-chatbot-typing-text">
                       {isAutoAnalyzing ? 'AI auto-analyzing symptoms...' : 'AI is processing...'}
                     </div>
-                    <div className="typing-dots">
+                    <div className="healx-chatbot-typing-dots">
                       <span></span>
                       <span></span>
                       <span></span>
@@ -877,12 +874,12 @@ const AdvancedFloatingChatbot = () => {
             )}
           </div>
 
-          <div className="advanced-chat-input">
-            <div className="input-controls">
-              <div className="voice-controls">
+          <div className="healx-chatbot-input">
+            <div className="healx-chatbot-input-controls">
+              <div className="healx-chatbot-voice-controls">
                 <button 
                   onClick={toggleVoiceMode} 
-                  className={`voice-btn ${isListening ? 'listening' : ''} ${voiceStatus === 'error' ? 'error' : ''}`}
+                  className={`healx-chatbot-voice-btn ${isListening ? 'healx-chatbot-listening' : ''} ${voiceStatus === 'error' ? 'healx-chatbot-error' : ''}`}
                   title={isListening ? "Voice is listening..." : voiceStatus === 'error' ? "Voice Error - Click to retry" : "Start Voice Input"}
                   disabled={voiceStatus === 'processing'}
                 >
@@ -893,7 +890,7 @@ const AdvancedFloatingChatbot = () => {
                 {isListening && (
                   <button 
                     onClick={stopVoiceRecognition}
-                    className="voice-stop-btn-enhanced"
+                    className="healx-chatbot-voice-stop-btn-enhanced"
                     title="Stop Voice Recognition Immediately"
                   >
                     <FaStopCircle />
@@ -912,42 +909,42 @@ const AdvancedFloatingChatbot = () => {
                   isListening ? "🎤 Listening... Speak now" : 
                   "Type your symptoms for instant analysis..."
                 }
-                className="advanced-message-input"
+                className="healx-chatbot-message-input"
                 disabled={isAISpeaking || isAutoAnalyzing}
               />
-              <button onClick={sendMessage} className="advanced-send-button" title="Send Message">
+              <button onClick={sendMessage} className="healx-chatbot-send-button" title="Send Message">
                 <FaPaperPlane />
               </button>
             </div>
             
             {isListening && (
-              <div className="voice-status-indicator enhanced">
-                <div className="listening-animation">
+              <div className="healx-chatbot-voice-status-indicator healx-chatbot-enhanced">
+                <div className="healx-chatbot-listening-animation">
                   <span></span>
                   <span></span>
                   <span></span>
                   <span></span>
                 </div>
-                <span className="voice-status-text">
+                <span className="healx-chatbot-voice-status-text">
                   {EMOJIS.phoneIcon} {voiceStatus === 'processing' ? 'Processing...' : 'Listening...'} 
                 </span>
               </div>
             )}
 
             {isAISpeaking && (
-              <div className={`ai-speaking-indicator ${isExpanded ? 'expanded-mode' : ''}`}>
-                <div className={`speaking-animation ${isExpanded ? 'expanded' : ''}`}>
+              <div className={`healx-chatbot-ai-speaking-indicator ${isExpanded ? 'healx-chatbot-expanded-mode' : ''}`}>
+                <div className={`healx-chatbot-speaking-animation ${isExpanded ? 'healx-chatbot-expanded' : ''}`}>
                   <span></span>
                   <span></span>
                   <span></span>
                   <span></span>
                 </div>
-                <span className={`ai-speaking-text ${isExpanded ? 'expanded' : ''}`}>
+                <span className={`healx-chatbot-ai-speaking-text ${isExpanded ? 'healx-chatbot-expanded' : ''}`}>
                   {EMOJIS.speaker} AI is speaking... Quick actions hidden
                 </span>
                 <button 
                   onClick={stopAISpeech}
-                  className={`inline-speech-stop-btn ${isExpanded ? 'expanded' : ''}`}
+                  className={`healx-chatbot-inline-speech-stop-btn ${isExpanded ? 'healx-chatbot-expanded' : ''}`}
                   title="Stop AI Speech"
                 >
                   <FaStop /> Stop Speech
@@ -956,14 +953,14 @@ const AdvancedFloatingChatbot = () => {
             )}
 
             {isAutoAnalyzing && (
-              <div className="auto-analyzing-indicator">
-                <div className="analyzing-animation">
+              <div className="healx-chatbot-auto-analyzing-indicator">
+                <div className="healx-chatbot-analyzing-animation">
                   <span></span>
                   <span></span>
                   <span></span>
                   <span></span>
                 </div>
-                <span className="auto-analyzing-text">
+                <span className="healx-chatbot-auto-analyzing-text">
                   {EMOJIS.magnifyingGlass} Auto-analyzing your symptoms... Quick actions hidden
                 </span>
               </div>
@@ -972,13 +969,13 @@ const AdvancedFloatingChatbot = () => {
 
           {/* Quick Actions - Only show when AI is NOT speaking and NOT auto-analyzing */}
           {!isAISpeaking && !isAutoAnalyzing && (
-            <div className="advanced-quick-actions">
-              <div className="quick-actions-header">
+            <div className="healx-chatbot-quick-actions">
+              <div className="healx-chatbot-quick-actions-header">
                 <span>Quick Actions Available:</span>
               </div>
               
-              <div className="quick-actions-container">
-                <div className="quick-actions-grid">
+              <div className="healx-chatbot-quick-actions-container">
+                <div className="healx-chatbot-quick-actions-grid">
                   {[
                     { icon: EMOJIS.magnifyingGlass, text: 'Manual Analysis', action: 'Analyze my symptoms manually' },
                     { icon: EMOJIS.calendar, text: 'Book Appointment', action: 'Book appointment now' },
@@ -999,19 +996,19 @@ const AdvancedFloatingChatbot = () => {
                   ].map((quickAction, index) => (
                     <button
                       key={index}
-                      className="advanced-quick-action-btn"
+                      className="healx-chatbot-quick-action-btn"
                       onClick={() => handleQuickAction(quickAction.action)}
                       title={quickAction.text}
                     >
-                      <span className="quick-action-icon">{quickAction.icon}</span>
-                      <span className="quick-action-text">{quickAction.text}</span>
+                      <span className="healx-chatbot-quick-action-icon">{quickAction.icon}</span>
+                      <span className="healx-chatbot-quick-action-text">{quickAction.text}</span>
                     </button>
                   ))}
                 </div>
               </div>
               
-              <div className="quick-actions-scroll-indicator">
-                <div className="scroll-indicator-text">
+              <div className="healx-chatbot-quick-actions-scroll-indicator">
+                <div className="healx-chatbot-scroll-indicator-text">
                   <span>↕️</span>
                   <span>Scroll for more actions</span>
                 </div>
@@ -1023,4 +1020,5 @@ const AdvancedFloatingChatbot = () => {
     </div>
   );
 };
+
 export default AdvancedFloatingChatbot;

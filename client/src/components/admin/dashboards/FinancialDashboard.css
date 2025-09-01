@@ -13,6 +13,12 @@
 .stat-card {
   display: flex;
   align-items: flex-start; /* keep text left aligned */
+  cursor: pointer;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out;
 }
 
 .stat-info {
@@ -25,6 +31,7 @@
   font-size: 1.75rem;
   margin: 0;
   line-height: 1.3;
+  color: #1f2937;
 }
 
 .stat-info p {
@@ -34,6 +41,7 @@
 
 .stat-card:hover {
   transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .stat-card.revenue .stat-icon {
@@ -66,32 +74,97 @@
   justify-content: center;
 }
 
-/* ✅ New: Charts Section Styling */
-.charts-section {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(2, 1fr));
-  gap: 6rem; /* more space between charts */
-  margin-top: 2rem;
-  justify-content: flex-end;
-  margin-bottom: 50px;
-  margin-right: 400px; /* keep it on the right */
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 2rem;
 }
 
-.chart-card {
+.dashboard-header h1 {
+  font-size: 2rem;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-header p {
+  color: #6b7280;
+  font-size: 1.1rem;
+}
+
+.error-banner {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+/* ✅ FIXED: Charts Section - True Vertical Layout */
+.charts-section {
+  display: block !important; /* Force block layout */
+  width: 100%;
+  margin: 3rem 0;
+}
+
+/* ✅ Individual chart containers - Stacked vertically */
+.revenue-pie-chart,
+.revenue-bar-chart,
+.revenue-line-chart,
+.collection-radial-chart {
   background: white;
-  padding: 1.5rem;
+  padding: 2rem;
   border-radius: 16px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 3rem; /* Space between charts */
+  width: 100%;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease-in-out;
 }
 
-.chart-card h2 {
-  margin-bottom: 1rem;
-  font-size: 1.25rem;
+/* ✅ Unique styling for each chart type */
+.revenue-pie-chart {
+  border-left: 4px solid #0088FE;
+}
+
+.revenue-bar-chart {
+  border-left: 4px solid #00C49F;
+}
+
+.revenue-line-chart {
+  border-left: 4px solid #FFBB28;
+}
+
+.collection-radial-chart {
+  border-left: 4px solid #FF8042;
+  margin-bottom: 2rem; /* Last chart doesn't need as much bottom margin */
+}
+
+/* ✅ Chart titles */
+.revenue-pie-chart h2,
+.revenue-bar-chart h2,
+.revenue-line-chart h2,
+.collection-radial-chart h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
   color: #1f2937;
   font-weight: 600;
+  text-align: center;
+  width: 100%;
+}
+
+/* ✅ Hover effects */
+.revenue-pie-chart:hover,
+.revenue-bar-chart:hover,
+.revenue-line-chart:hover,
+.collection-radial-chart:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 /* Keep Recharts tooltip readable */
@@ -99,20 +172,88 @@
   font-size: 0.875rem;
 }
 
-/* ✅ Make charts stack on small screens */
-@media (max-width: 768px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  charts-section {
-    grid-template-columns: 1fr;
-    max-width: 100%;
-    margin-left: 0;
-    justify-content: center;
-  }
-  .chart-card {
-    max-width: 100%;
-  }
+/* Features Section */
+.features-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.features-section h2 {
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.feature-button {
+  background-color: #4f46e5; /* Indigo-600 */
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.feature-button:hover {
+  background-color: #4338ca; /* Indigo-700 */
+  transform: translateY(-2px);
+}
+
+.feature-button:active {
+  transform: translateY(0);
+}
+
+/* Activity Section */
+.activity-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.activity-section h2 {
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.activity-item {
+  background: #f9fafb;
+  padding: 1rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.activity-item:hover {
+  background: #e5e7eb;
+}
+
+.activity-item p {
+  margin: 0;
+  color: #374151;
+  transition: color 0.2s ease-in-out;
+}
+
+.activity-item:hover p {
+  color: #1f2937;
 }
 
 /* Existing Action Buttons Section */
@@ -194,30 +335,7 @@
   margin-top: 2rem;
 }
 
-
-.feature-button {
-  background-color: #4f46e5; /* Indigo-600 */
-  color: white;
-  border: none;
-  border-radius: 12px;
-  padding: 12px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.feature-button:hover {
-  background-color: #4338ca; /* Indigo-700 */
-  transform: translateY(-2px);
-}
-
-.feature-button:active {
-  transform: translateY(0);
-}
-
-
+/* Billing Modal */
 .billing-modal {
   position: fixed;
   top: 0;
@@ -240,11 +358,21 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
+.billing-content h2 {
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
 .bill-card {
   background: #f9fafb;
   padding: 15px;
   border-radius: 12px;
   margin: 15px 0;
+}
+
+.bill-card p {
+  margin: 0.5rem 0;
+  color: #374151;
 }
 
 .close-btn {
@@ -255,18 +383,62 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
 }
 
 .close-btn:hover {
   background: #dc2626;
 }
 
-.activity-item p {
-  color: white; /* default text color */
-  transition: color 0.2s ease-in-out; /* smooth color change */
-  cursor: default;
+.loading {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #6b7280;
 }
 
-.activity-item:hover p {
-  color: black; /* text color on hover */
+/* ✅ Responsive design */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .charts-section {
+    margin: 2rem 0;
+    padding: 0 1rem;
+  }
+  
+  .revenue-pie-chart,
+  .revenue-bar-chart,
+  .revenue-line-chart,
+  .collection-radial-chart {
+    max-width: 100%;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .financial-dashboard {
+    padding: 1rem 0;
+  }
+  
+  .revenue-pie-chart,
+  .revenue-bar-chart,
+  .revenue-line-chart,
+  .collection-radial-chart {
+    padding: 1rem;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
 }

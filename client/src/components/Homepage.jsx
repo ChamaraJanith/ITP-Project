@@ -194,6 +194,7 @@ const BMICalculator = () => {
   };
 
   return (
+    
     <div className="bmi-calculator">
       <div className="bmi-header">
         <h3>{EMOJIS.scale} BMI Calculator</h3>
@@ -558,8 +559,8 @@ const AdvancedDoctorAvailability = () => {
       status: 'available',
       type: 'Private Practice',
       certifications: ['Board Certified Cardiologist', 'Private Practice License'],
-      languages: ['English', 'Spanish'],
-      specializations: ['Heart Surgery', 'Preventive Cardiology', 'Cardiac Rehabilitation']
+      languages: ['English ', ' Spanish'],
+      specializations: [' Heart Surgery ', ' Preventive Cardiology ', ' Cardiac Rehabilitation ']
     },
     {
       id: 2,
@@ -573,8 +574,8 @@ const AdvancedDoctorAvailability = () => {
       status: 'available',
       type: 'Private Practice',
       certifications: ['Board Certified Internal Medicine', 'Private Healthcare Provider'],
-      languages: ['English', 'Mandarin'],
-      specializations: ['Preventive Care', 'Chronic Disease Management', 'Health Screening']
+      languages: ['English ', ' Mandarin'],
+      specializations: [' Preventive Care ', ' Chronic Disease Management ', ' Health Screening ']
     }
   ];
 
@@ -640,27 +641,27 @@ const AdvancedDoctorAvailability = () => {
             </div>
 
             <div className="doctor-specializations">
-              <h5>Specializations:</h5>
-              <div className="specialization-tags">
-                {doctor.specializations.map((spec, idx) => (
-                  <span key={idx} className="specialization-tag">{spec}</span>
-                ))}
-              </div>
-            </div>
-
+  <h5>Specializations:</h5>
+  <ul>
+    {doctor.specializations.map((spec, idx) => (
+      <li key={idx}>{spec}</li>
+    ))}
+  </ul>
+</div>
+<br/>
+<br/>
             <div className="certifications">
               <h5>Certifications:</h5>
               <ul>
                 {doctor.certifications.map((cert, idx) => (
                   <li key={idx}>
-                    <FaCertificate />
+                     
                     {cert}
                   </li>
                 ))}
               </ul>
             </div>
-
-            <div className="availability-info">
+<br/><br/>            <div className="availability-info">
               <div className="next-slot">
                 <span className="slot-label">Next Available:</span>
                 <span className="slot-time">{doctor.nextSlot}</span>
