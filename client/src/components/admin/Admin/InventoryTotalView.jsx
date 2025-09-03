@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
+import jsPDF from 'jspdf'; // Add this import
 
 import './styles/InventoryTotalView.css'
 
@@ -38,6 +39,314 @@ const InventoryTotalView = () => {
   }
 
   const { inventoryItems, inventoryStats } = state;
+
+  // NEW: Comprehensive PDF Generation Function
+  const generatePDF = () => {
+    try {
+      const doc = new jsPDF();
+      const currentDate = new Date().toLocaleDateString();
+      let y = 20;
+
+      // Header
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text('Heal-x Healthcare Center', 105, y, { align: 'center' });
+      
+      y += 10;
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "normal");
+      doc.text('Comprehensive Inventory Analysis Report', 105, y, { align: 'center' });
+      
+      y += 8;
+      doc.setFontSize(12);
+      doc.text(`Report Generated: ${currentDate}`, 105, y, { align: 'center' });
+      
+      y += 15;
+
+      // Executive Summary Section
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text('EXECUTIVE SUMMARY', 20, y);
+      y += 8;
+
+      // Summary data
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      
+      const summaryData = [
+        ['Total Items', inventoryStats.totalItems.toString()],
+        ['Total Quantity', inventoryStats.totalQuantity.toLocaleString()],
+        ['Total Inventory Value', `$${inventoryStats.totalValue.toLocaleString()}`],
+        ['Average Item Value', `$${(inventoryStats.totalValue / inventoryStats.totalItems).toFixed(2)}`],
+        ['Low Stock Items', inventoryStats.lowStockCount.toString()],
+        ['Out of Stock Items', inventoryStats.outOfStockCount.toString()],
+        ['Stock Health Rating', `${((1 - (inventoryStats.lowStockCount / inventoryStats.totalItems)) * 100).toFixed(1)}%`],
+        ['Available Items', (inventoryStats.totalItems - inventoryStats.lowStockCount).toString()]
+      ];
+
+      // Draw summary table
+      summaryData.forEach(([label, value]) => {
+        doc.setFont("helvetica", "normal");
+        doc.text(label + ':', 30, y);
+        doc.setFont("helvetica", "bold");
+        doc.text(value, 120, y);
+        y += 6;
+      });
+
+      y += 10;
+
+      // Category Breakdown Section
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text('CATEGORY BREAKDOWN', 20, y);
+      y += 8;
+
+      // Category table header
+      doc.setFontSize(9);
+      doc.setDrawColor(200, 200, 200);
+      doc.setFillColor(240, 240, 240);
+      doc.rect(20, y, 170, 6, 'F');
+      doc.setFont("helvetica", "bold");
+      doc.text('Category', 25, y + 4);
+      doc.text('Items', 70, y + 4);
+      doc.text('Quantity', 95, y + 4);
+      doc.text('Total Value', 125, y + 4);
+      doc.text('Low Stock', 160, y + 4);
+      y += 6;
+
+      // Category data
+      doc.setFont("helvetica", "normal");
+      Object.entries(inventoryStats.categoryBreakdown)
+        .sort(([,a], [,b]) => b.totalValue - a.totalValue)
+        .forEach(([category, data]) => {
+          if (y > 270) {
+            doc.addPage();
+            y = 20;
+          }
+          
+          doc.rect(20, y, 170, 6, 'S');
+          doc.text(category, 25, y + 4);
+          doc.text(data.count.toString(), 70, y + 4);
+          doc.text(data.totalQuantity.toLocaleString(), 95, y + 4);
+          doc.text(`$${data.totalValue.toLocaleString()}`, 125, y + 4);
+          doc.text(data.lowStockCount.toString(), 160, y + 4);
+          y += 6;
+        });
+
+      y += 10;
+
+      // Supplier Breakdown Section
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text('SUPPLIER ANALYSIS', 20, y);
+      y += 8;
+
+      // Supplier table header
+      doc.setFontSize(8);
+      doc.setFillColor(240, 240, 240);
+      doc.rect(20, y, 170, 6, 'F');
+      doc.setFont("helvetica", "bold");
+      doc.text('Supplier', 25, y + 4);
+      doc.text('Items', 75, y + 4);
+      doc.text('Total Value', 105, y + 4);
+      doc.text('Avg Price', 135, y + 4);
+      doc.text('% of Total', 165, y + 4);
+      y += 6;
+
+      // Supplier data
+      doc.setFont("helvetica", "normal");
+      Object.entries(inventoryStats.supplierBreakdown)
+        .sort(([,a], [,b]) => b.totalValue - a.totalValue)
+        .slice(0, 15) // Top 15 suppliers
+        .forEach(([supplier, data]) => {
+          if (y > 270) {
+            doc.addPage();
+            y = 20;
+          }
+          
+          const percentage = ((data.totalValue / inventoryStats.totalValue) * 100).toFixed(1);
+          
+          doc.rect(20, y, 170, 6, 'S');
+          doc.text(supplier.substring(0, 20), 25, y + 4);
+          doc.text(data.count.toString(), 75, y + 4);
+          doc.text(`$${data.totalValue.toFixed(0)}`, 105, y + 4);
+          doc.text(`$${data.avgPrice.toFixed(2)}`, 135, y + 4);
+          doc.text(`${percentage}%`, 165, y + 4);
+          y += 6;
+        });
+
+      y += 10;
+
+      // Critical Items Section
+      if (inventoryStats.outOfStockItems.length > 0 || inventoryStats.lowStockItems.length > 0) {
+        if (y > 200) {
+          doc.addPage();
+          y = 20;
+        }
+
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text('CRITICAL - ITEMS REQUIRING ATTENTION', 20, y);
+        y += 8;
+
+        // Out of Stock Items
+        if (inventoryStats.outOfStockItems.length > 0) {
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text(`Out of Stock Items (${inventoryStats.outOfStockItems.length}):`, 30, y);
+          y += 6;
+
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "normal");
+          inventoryStats.outOfStockItems.slice(0, 20).forEach(item => {
+            if (y > 270) {
+              doc.addPage();
+              y = 20;
+            }
+            doc.text(`• ${item.name} (${item.category}) - OUT OF STOCK`, 35, y);
+            y += 4;
+          });
+          y += 5;
+        }
+
+        // Low Stock Items
+        const lowStockInStock = inventoryStats.lowStockItems.filter(item => item.quantity > 0);
+        if (lowStockInStock.length > 0) {
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text(`Low Stock Items (${lowStockInStock.length}):`, 30, y);
+          y += 6;
+
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "normal");
+          lowStockInStock.slice(0, 20).forEach(item => {
+            if (y > 270) {
+              doc.addPage();
+              y = 20;
+            }
+            doc.text(`• ${item.name} (${item.category}) - ${item.quantity} remaining`, 35, y);
+            y += 4;
+          });
+        }
+      }
+
+      // Inventory Health Analysis
+      if (y > 200) {
+        doc.addPage();
+        y = 20;
+      } else {
+        y += 15;
+      }
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text('INVENTORY HEALTH ANALYSIS', 20, y);
+      y += 10;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+
+      // Stock Health Metrics
+      const stockHealthPercentage = ((1 - (inventoryStats.lowStockCount / inventoryStats.totalItems)) * 100);
+      doc.text(`• Overall stock health: ${stockHealthPercentage.toFixed(1)}%`, 30, y);
+      y += 6;
+      
+      if (stockHealthPercentage < 80) {
+        doc.text(`• ALERT: Stock health below 80%. Immediate restocking recommended.`, 30, y);
+      } else if (stockHealthPercentage >= 95) {
+        doc.text(`• EXCELLENT: Stock health above 95%. Inventory well maintained.`, 30, y);
+      } else {
+        doc.text(`• GOOD: Stock health is acceptable but monitor critical items.`, 30, y);
+      }
+      y += 8;
+
+      // Top Category Analysis
+      const topCategory = Object.entries(inventoryStats.categoryBreakdown)
+        .sort(([,a], [,b]) => b.totalValue - a.totalValue)[0];
+      doc.text(`• Highest value category: ${topCategory[0]} ($${topCategory[1].totalValue.toLocaleString()})`, 30, y);
+      y += 8;
+
+      // Critical Alerts
+      if (inventoryStats.outOfStockCount > 0) {
+        doc.text(`• URGENT: ${inventoryStats.outOfStockCount} items completely out of stock`, 30, y);
+      } else if (inventoryStats.lowStockCount > inventoryStats.totalItems * 0.1) {
+        doc.text(`• WARNING: ${inventoryStats.lowStockCount} items have low stock levels`, 30, y);
+      } else {
+        doc.text(`• Stock levels are within acceptable ranges`, 30, y);
+      }
+      y += 15;
+
+      // Key Recommendations
+      doc.setFont("helvetica", "bold");
+      doc.text('KEY RECOMMENDATIONS', 20, y);
+      y += 8;
+
+      doc.setFont("helvetica", "normal");
+      const recommendations = [];
+      
+      if (inventoryStats.outOfStockCount > 0) {
+        recommendations.push(`• IMMEDIATE: Reorder ${inventoryStats.outOfStockCount} out-of-stock items`);
+      }
+      
+      if (inventoryStats.lowStockCount > 0) {
+        recommendations.push(`• PRIORITY: Review reorder points for ${inventoryStats.lowStockCount} low-stock items`);
+      }
+      
+      const topSupplier = Object.entries(inventoryStats.supplierBreakdown)
+        .sort(([,a], [,b]) => b.totalValue - a.totalValue)[0];
+      recommendations.push(`• Consider negotiating bulk discounts with top supplier: ${topSupplier[0]}`);
+      
+      if (stockHealthPercentage < 85) {
+        recommendations.push(`• Implement automated reorder system for critical items`);
+      }
+      
+      recommendations.push(`• Regular inventory audits recommended for categories with high values`);
+
+      recommendations.forEach(rec => {
+        doc.text(rec, 30, y);
+        y += 6;
+      });
+
+      // Add new page for summary
+      doc.addPage();
+      y = 30;
+
+      // Report Summary
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text('REPORT SUMMARY', 20, y);
+      y += 10;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`This report covers ${inventoryStats.totalItems} inventory items with a total value of $${inventoryStats.totalValue.toLocaleString()}.`, 30, y);
+      y += 6;
+      doc.text(`Current stock levels show ${inventoryStats.outOfStockCount} out-of-stock and ${inventoryStats.lowStockCount} low-stock items.`, 30, y);
+      y += 6;
+      doc.text(`Inventory health rating: ${stockHealthPercentage.toFixed(1)}% with ${inventoryStats.totalItems - inventoryStats.lowStockCount} items well-stocked.`, 30, y);
+      y += 6;
+      doc.text(`Immediate attention required for ${inventoryStats.outOfStockCount + inventoryStats.lowStockCount} items to maintain optimal stock levels.`, 30, y);
+
+      // Signature section
+      y += 30;
+      doc.text('Admin of Heal-x', 20, y);
+      y += 15;
+      doc.text('.'.repeat(50), 20, y);
+      y += 10;
+      doc.setFontSize(8);
+      doc.text(`Report generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 20, y);
+
+      // Save PDF
+      const fileName = `Heal-x_Inventory_Analysis_Report_${currentDate.replace(/\//g, '-')}.pdf`;
+      doc.save(fileName);
+
+      alert("Comprehensive inventory analysis report generated successfully!");
+
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Error generating PDF report: " + error.message);
+    }
+  };
 
   // Chart configurations
   const categoryChartData = {
@@ -94,18 +403,10 @@ const InventoryTotalView = () => {
               ← Back to Payments
             </button>
             <button onClick={() => window.print()} className="print-btn">
-              🖨️ Print Report
+              🖨️ Print Report SS
             </button>
-            <button onClick={() => {
-              const data = JSON.stringify({inventoryStats, inventoryItems}, null, 2);
-              const blob = new Blob([data], {type: 'application/json'});
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = 'inventory-analysis-report.json';
-              a.click();
-            }} className="export-btn">
-              📤 Export Data
+            <button onClick={generatePDF} className="export-btn">
+              📤 Export Report PDF
             </button>
           </div>
         </div>
