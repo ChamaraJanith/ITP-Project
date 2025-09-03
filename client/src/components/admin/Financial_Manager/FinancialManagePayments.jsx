@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { MdInventory, MdAnalytics, MdHome } from "react-icons/md";
+import { MdInventory, MdAnalytics, MdHome, MdDescription } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
+import jsPDF from 'jspdf';
 import "../Financial_Manager/financialManagePayments.css";
 
 const API_URL = "http://localhost:7000/api/payments";
@@ -24,8 +25,36 @@ function FinancialManagePayments() {
   // Added inventory state
   const [inventoryItems, setInventoryItems] = useState([]);
   const INVENTORY_API_URL = "http://localhost:7000/api/inventory/surgical-items";
-
   const navigate = useNavigate();
+
+  // Validation function for real-time input filtering
+  const validateAndFormatInput = (name, value) => {
+    switch (name) {
+      case 'invoiceNumber':
+        return value.replace(/[^0-9]/g, '');
+      case 'hospitalName':
+      case 'branchName':
+      case 'patientName':
+        return value.replace(/[^a-zA-Z\s]/g, '');
+      case 'doctorName':
+        let cleanValue = value.replace(/[^a-zA-Z\s]/g, '');
+        cleanValue = cleanValue.replace(/^(Dr\.?\s*)/i, '');
+        if (cleanValue.trim()) {
+          return `Dr. ${cleanValue}`;
+        }
+        return cleanValue;
+      case 'totalAmount':
+      case 'amountPaid':
+        const numericValue = value.replace(/[^0-9.]/g, '');
+        const parts = numericValue.split('.');
+        if (parts.length > 2) {
+          return parts[0] + '.' + parts.slice(1).join('');
+        }
+        return numericValue;
+      default:
+        return value;
+    }
+  };
 
   const fetchPayments = () => {
     setMessage("");
@@ -36,9 +65,7 @@ function FinancialManagePayments() {
           return JSON.parse(text);
         } catch {
           console.error("Raw response (should be JSON):", text);
-          throw new Error(
-            "Not valid JSON. Check console for raw response. Are you hitting the right endpoint? (Did the server respond with an error page?)"
-          );
+          throw new Error("Not valid JSON. Check console for raw response.");
         }
       })
       .then(setPayments)
@@ -58,11 +85,9 @@ function FinancialManagePayments() {
     const hospitalBreakdown = {};
     
     payments.forEach(payment => {
-      // Payment method breakdown
       const method = payment.paymentMethod || 'Unknown';
       paymentMethods[method] = (paymentMethods[method] || 0) + (payment.amountPaid || 0);
       
-      // Hospital breakdown
       const hospital = payment.hospitalName || 'Unknown';
       if (!hospitalBreakdown[hospital]) {
         hospitalBreakdown[hospital] = { totalDue: 0, totalPaid: 0, count: 0 };
@@ -82,7 +107,160 @@ function FinancialManagePayments() {
     };
   };
 
-  // Added inventory functions
+  // UPDATED: Generate Financial Report PDF with simplified format and payment method breakdown
+  const generateFinancialReport = () => {
+    try {
+      const stats = calculatePaymentStats();
+      const doc = new jsPDF();
+      const currentDate = new Date().toLocaleDateString();
+
+      // Header
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text('Heal-x', 105, 20, { align: 'center' });
+      
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "normal");
+      doc.text('Statement of Financial Position', 105, 30, { align: 'center' });
+      doc.setFontSize(12);
+      doc.text(`as at ${currentDate}`, 105, 38, { align: 'center' });
+
+      // Table setup - Updated to 3 columns (removed Comparative Year)
+      const startX = 20;
+      const startY = 55;
+      const rowHeight = 6;
+      let currentY = startY;
+
+      // Table headers
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      
+      // Header row background
+      doc.setFillColor(220, 220, 255);
+      doc.rect(startX, currentY, 170, rowHeight, 'F');
+      
+      // Header text - Updated column widths
+      doc.text('', startX + 2, currentY + 4);
+      doc.text('Notes', startX + 122, currentY + 4);
+      doc.text('Dollars', startX + 147, currentY + 4);
+      
+      currentY += rowHeight;
+
+      // UPDATED: Simplified table data
+      const tableRows = [
+        ['ASSETS', '', ''],
+        ['Current Assets', '', ''],
+        ['  Trade and Other Receivables', '1', `$${stats.totalPending.toFixed(2)}`],
+        ['  Cash and Cash Equivalents', '2', `$${stats.totalAmountPaid.toFixed(2)}`],
+        ['', '', ''],
+        ['TOTAL ASSETS', '', `$${stats.totalAmountDue.toFixed(2)}`],
+        ['', '', ''],
+        ['EQUITY AND LIABILITIES', '', ''],
+        ['Retained Earnings', '3', `$${(stats.totalAmountPaid * 0.15).toFixed(2)}`],
+        ['TOTAL EQUITY', '', `$${(stats.totalAmountPaid * 0.15).toFixed(2)}`],
+        ['', '', ''],
+        ['Current Liabilities', '', ''],
+        ['  Trade and Other Payables', '4', `$${stats.totalPending.toFixed(2)}`],
+        ['', '', ''],
+        ['Total Liabilities', '', `$${stats.totalPending.toFixed(2)}`],
+        ['TOTAL EQUITY AND LIABILITIES', '', `$${stats.totalAmountDue.toFixed(2)}`]
+      ];
+
+      // Draw table rows
+      tableRows.forEach((row, index) => {
+        const [description, notes, dollars] = row;
+        
+        // Set font style for main headers
+        if (description.includes('ASSETS') || description.includes('EQUITY') || description.includes('TOTAL')) {
+          doc.setFont("helvetica", "bold");
+          if (description.includes('TOTAL')) {
+            doc.setFillColor(240, 240, 240);
+            doc.rect(startX, currentY, 170, rowHeight, 'F');
+          }
+        } else {
+          doc.setFont("helvetica", "normal");
+        }
+
+        // Draw row border - Updated column widths
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(startX, currentY, 120, rowHeight, 'S'); // Description column (wider)
+        doc.rect(startX + 120, currentY, 25, rowHeight, 'S'); // Notes column
+        doc.rect(startX + 145, currentY, 25, rowHeight, 'S'); // Dollars column
+
+        // Add text
+        doc.setFontSize(9);
+        doc.text(description, startX + 2, currentY + 4);
+        doc.text(notes, startX + 132, currentY + 4, { align: 'center' });
+        doc.text(dollars, startX + 167, currentY + 4, { align: 'right' });
+        
+        currentY += rowHeight;
+      });
+
+      // NEW: Add Payment Method Breakdown Section
+      currentY += 15;
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text('Payment Method Breakdown', startX, currentY);
+      currentY += 10;
+
+      // Payment methods table header
+      doc.setFontSize(10);
+      doc.setFillColor(220, 220, 255);
+      doc.rect(startX, currentY, 170, rowHeight, 'F');
+      doc.text('Payment Method', startX + 2, currentY + 4);
+      doc.text('Amount Received', startX + 120, currentY + 4);
+      doc.text('Percentage', startX + 150, currentY + 4);
+      currentY += rowHeight;
+
+      // Payment methods data
+      Object.entries(stats.paymentMethods).forEach(([method, amount]) => {
+        const percentage = ((amount / stats.totalAmountPaid) * 100).toFixed(1);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(startX, currentY, 100, rowHeight, 'S');
+        doc.rect(startX + 100, currentY, 45, rowHeight, 'S');
+        doc.rect(startX + 145, currentY, 25, rowHeight, 'S');
+
+        doc.setFontSize(9);
+        doc.text(method, startX + 2, currentY + 4);
+        doc.text(`$${amount.toFixed(2)}`, startX + 142, currentY + 4, { align: 'right' });
+        doc.text(`${percentage}%`, startX + 167, currentY + 4, { align: 'right' });
+        
+        currentY += rowHeight;
+      });
+
+      // Total row for payment methods
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(240, 240, 240);
+      doc.rect(startX, currentY, 170, rowHeight, 'F');
+      doc.text('TOTAL PAYMENTS', startX + 2, currentY + 4);
+      doc.text(`$${stats.totalAmountPaid.toFixed(2)}`, startX + 142, currentY + 4, { align: 'right' });
+      doc.text('100.0%', startX + 167, currentY + 4, { align: 'right' });
+
+      // Add signature section
+      currentY += 25;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text('Financial Manager of Heal-x', startX, currentY);
+      
+      // Dotted signature line
+      currentY += 15;
+      const dots = '.'.repeat(50);
+      doc.text(dots, startX, currentY);
+
+      // Save the PDF
+      const fileName = `Heal-x_Financial_Report_${currentDate.replace(/\//g, '-')}.pdf`;
+      doc.save(fileName);
+      setMessage("Financial report with payment breakdown generated successfully!");
+      
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      setMessage("Error generating report: " + error.message);
+    }
+  };
+
+  // Rest of the functions remain the same...
   const fetchInventoryData = async () => {
     try {
       setMessage("Loading inventory data...");
@@ -115,7 +293,6 @@ function FinancialManagePayments() {
     const lowStockItems = items.filter(item => item.quantity <= (item.minStockLevel || 0));
     const outOfStockItems = items.filter(item => item.quantity === 0);
     
-    // Category breakdown
     const categoryBreakdown = {};
     items.forEach(item => {
       const category = item.category || 'Unknown';
@@ -135,7 +312,6 @@ function FinancialManagePayments() {
       }
     });
 
-    // Supplier breakdown
     const supplierBreakdown = {};
     items.forEach(item => {
       const supplier = item.supplier?.name || 'Unknown';
@@ -150,7 +326,6 @@ function FinancialManagePayments() {
       supplierBreakdown[supplier].totalValue += (item.price || 0) * (item.quantity || 0);
     });
 
-    // Calculate average prices
     Object.keys(supplierBreakdown).forEach(supplier => {
       const data = supplierBreakdown[supplier];
       data.avgPrice = data.totalValue / data.count;
@@ -184,9 +359,8 @@ function FinancialManagePayments() {
     }
   };
 
-  // ✅ UPDATED: Handle return home button click - redirect to financial dashboard
   const handleReturnHome = () => {
-    navigate("/admin/financial"); // Navigate to financial manager dashboard
+    navigate("/admin/financial");
   };
 
   const buildPayload = (src) => ({
@@ -203,12 +377,14 @@ function FinancialManagePayments() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const validatedValue = validateAndFormatInput(name, value);
+    setForm((prev) => ({ ...prev, [name]: validatedValue }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setMessage("");
+    
     if (
       !form.hospitalName.trim() ||
       !form.invoiceNumber.trim() ||
@@ -219,9 +395,14 @@ function FinancialManagePayments() {
       setMessage("Please fill all required fields.");
       return;
     }
+
     const method = editingId ? "PUT" : "POST";
     const url = editingId ? `${API_URL}/${editingId}` : API_URL;
-    const payload = buildPayload(form);
+    
+    const payload = {
+      ...buildPayload(form),
+      ...(editingId ? {} : { date: new Date().toISOString() })
+    };
 
     fetch(url, {
       method,
@@ -235,9 +416,7 @@ function FinancialManagePayments() {
           data = JSON.parse(text);
         } catch {
           console.error("Raw response (should be JSON):", text);
-          throw new Error(
-            "Not valid JSON response. Check console for raw response."
-          );
+          throw new Error("Not valid JSON response. Check console for raw response.");
         }
         if (!res.ok) throw new Error(data.message || "Server error");
         return data;
@@ -289,9 +468,7 @@ function FinancialManagePayments() {
           data = JSON.parse(text);
         } catch {
           console.error("Raw response (should be JSON):", text);
-          throw new Error(
-            "Not valid JSON response. Check console for raw response."
-          );
+          throw new Error("Not valid JSON response. Check console for raw response.");
         }
         if (!res.ok) throw new Error(data.message || "Server error");
         setMessage(data.message || "Deleted");
@@ -300,7 +477,6 @@ function FinancialManagePayments() {
       .catch((err) => setMessage("Error: " + err.message));
   };
 
-  // Navigate to total-view as a child route
   const handleTotalValueClick = () => {
     const stats = calculatePaymentStats();
     navigate("total-view", {
@@ -314,11 +490,10 @@ function FinancialManagePayments() {
 
   return (
     <div className="financial-container">
-      {/* Header with total value navigation button */}
+      {/* Header */}
       <div className="financial-header">
         <h2 className="financial-title">Payment Management</h2>
         <div className="header-buttons-container">
-          {/* ✅ UPDATED: Return Home Button with correct navigation */}
           <button className="return-home-btn" onClick={handleReturnHome}>
             <MdHome size={18} />
             <span style={{ marginLeft: 6 }}>Return Home</span>
@@ -331,6 +506,19 @@ function FinancialManagePayments() {
             <MdInventory size={18} />
             <span style={{ marginLeft: 6 }}>Inventory Analysis</span>
           </button>
+        </div>
+      </div>
+
+      {/* Floating Action Buttons */}
+      <div className="fab-container">
+        <div className="fab fab-purple" onClick={generateFinancialReport} title="Generate Financial Report">
+          <MdDescription size={24} />
+        </div>
+        <div className="fab fab-pink" onClick={handleTotalValueClick} title="Payment Analysis">
+          <MdAnalytics size={24} />
+        </div>
+        <div className="fab fab-green" onClick={handleInventoryAnalysisClick} title="Inventory Analysis">
+          <MdInventory size={24} />
         </div>
       </div>
 
@@ -389,62 +577,78 @@ function FinancialManagePayments() {
 
       <form onSubmit={handleSubmit} className="financial-form">
         <h3>{editingId ? "Edit Payment" : "New Payment"}</h3>
-        <input
-          name="hospitalName"
-          placeholder="Hospital Name*"
-          value={form.hospitalName}
-          onChange={handleChange}
-          required
-        />
-        <br />
-        <input
-          name="branchName"
-          placeholder="Branch Name"
-          value={form.branchName}
-          onChange={handleChange}
-        />
-        <br />
+        
         <input
           name="invoiceNumber"
-          placeholder="Invoice #*"
+          placeholder="Invoice Number* (numbers only)"
           value={form.invoiceNumber}
           onChange={handleChange}
           required
+          maxLength="10"
+          autoFocus
         />
         <br />
+        
+        <input
+          name="hospitalName"
+          placeholder="Hospital Name* (letters only)"
+          value={form.hospitalName}
+          onChange={handleChange}
+          required
+          maxLength="50"
+        />
+        <br />
+        
+        <input
+          name="branchName"
+          placeholder="Branch Name (letters only)"
+          value={form.branchName}
+          onChange={handleChange}
+          maxLength="30"
+        />
+        <br />
+        
         <input
           name="patientName"
-          placeholder="Patient Name*"
+          placeholder="Patient Name* (letters only)"
           value={form.patientName}
           onChange={handleChange}
           required
+          maxLength="50"
         />
         <br />
+        
         <input
           name="doctorName"
-          placeholder="Doctor Name"
+          placeholder="Doctor Name (letters only - Dr. will be added automatically)"
           value={form.doctorName}
           onChange={handleChange}
+          maxLength="50"
         />
         <br />
+        
         <input
           name="totalAmount"
-          type="number"
-          placeholder="Total Amount*"
+          placeholder="Total Amount* (numbers only)"
           value={form.totalAmount}
           onChange={handleChange}
           required
+          min="0"
+          step="0.01"
         />
         <br />
+        
         <input
           name="amountPaid"
-          type="number"
-          placeholder="Amount Paid*"
+          placeholder="Amount Paid* (numbers only)"
           value={form.amountPaid}
           onChange={handleChange}
           required
+          min="0"
+          step="0.01"
         />
         <br />
+        
         <select
           name="paymentMethod"
           value={form.paymentMethod}
@@ -457,13 +661,16 @@ function FinancialManagePayments() {
           <option value="Wallet">Wallet</option>
         </select>
         <br />
+        
         <input
           name="note"
           placeholder="Note"
           value={form.note}
           onChange={handleChange}
+          maxLength="200"
         />
         <br />
+        
         <button type="submit">{editingId ? "Update" : "Create"}</button>
         {editingId && (
           <button

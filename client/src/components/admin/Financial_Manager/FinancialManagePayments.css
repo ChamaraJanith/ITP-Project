@@ -53,7 +53,7 @@
 }
 
 .inventory-btn {
-  background: linear-gradient(135deg, #28a745, #20c997);
+  background: linear-gradient(135deg, #a75b28e7, #e1a013);
   border: none;
   color: white;
   padding: 12px 20px;
@@ -295,16 +295,18 @@
   display: flex;
   align-items: center;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
   border: none;
+  color: white;
+  padding: 12px 20px;
   border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-right: 12px; /* Space between buttons */
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  margin-right: 12px; 
 }
 
 .return-home-btn:hover {
@@ -346,3 +348,108 @@
 .inventory-btn:active {
   animation: pulse 0.3s ease-in-out;
 }
+
+.report-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 50px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+  margin-left: 8px;
+}
+
+.report-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.report-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4);
+}
+
+/* Floating Action Buttons Container */
+.fab-container {
+  position: fixed;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  z-index: 1000;
+}
+
+/* Base FAB Styling */
+.fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+  border: none;
+  outline: none;
+}
+
+/* FAB Hover Effects */
+.fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+/* FAB Color Variants */
+.fab-purple {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.fab-purple:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.fab-pink {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.fab-pink:hover {
+  background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+}
+
+.fab-green {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.fab-green:hover {
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .fab-container {
+    right: 20px;
+    gap: 12px;
+  }
+  
+  .fab {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+
