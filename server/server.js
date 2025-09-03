@@ -65,6 +65,12 @@ app.use(cors({
   exposedHeaders: ['Set-Cookie']
 }));
 
+app.use(cors({
+  origin: "http://localhost:5173", // your frontend port
+  methods: ["GET","POST","PUT","DELETE"],
+  credentials: true
+}));
+
 // Security headers
 app.use((req, res, next) => {
   res.header('X-Content-Type-Options', 'nosniff');
@@ -154,7 +160,7 @@ app.use("/api/auth", router);
 app.use("/api/auth", authRouter);
 app.use("/api/payments", financialPayRoutes);  // Mount financial payment routes
 app.use("/api/prescription", consultationRouter);  // Mount consultation routes
-
+app.use("/api/patients", patrouter);
 // Mount prescription routes
 app.use("/api/doctor/prescriptions", prescriptionRouter);  // Mount prescription routes
 
