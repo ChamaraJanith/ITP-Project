@@ -16,6 +16,8 @@
     "nodemon": "^3.1.10"
   },
   "dependencies": {
+    "jspdf": "^3.0.2",
+    "jspdf-autotable": "^5.0.2",
     "yup": "^1.7.0"
   }
 }
