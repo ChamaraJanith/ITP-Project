@@ -440,7 +440,7 @@ const AdvancedFloatingChatbot = () => {
 
     // Appointment booking
     if (input.includes('appointment') || input.includes('book') || input.includes('schedule')) {
-      return `${EMOJIS.calendar} **Smart Appointment Booking:**\n\n${EMOJIS.rocket} **Quick Book** (Next available):\n• Dr. Sarah Johnson (Cardiology) - Today 3:30 PM\n• Dr. Michael Chen (Neurology) - Tomorrow 10:15 AM\n• Dr. Emily Davis (Pediatrics) - Tomorrow 2:45 PM\n\n${EMOJIS.clock} **Live Availability:**\n• ${EMOJIS.checkMark} 15 doctors available now\n• ${EMOJIS.hourglass} 8 doctors available within 1 hour\n• ${EMOJIS.emergency} Emergency slots always open\n\nShall I book an appointment for you?`;
+      return `${EMOJIS.calendar} **Smart Appointment Booking:**\n\n${EMOJIS.rocket} **Quick Book** (Next available):\n• Dr Gayath Dahanayaka (Cardiology) - Today 3:30 PM\n• Dr. Anne Fonseka (Neurology) - Tomorrow 10:15 AM\n• Dr. Emily Davis (Pediatrics) - Tomorrow 2:45 PM\n\n${EMOJIS.clock} **Live Availability:**\n• ${EMOJIS.checkMark} 15 doctors available now\n• ${EMOJIS.hourglass} 8 doctors available within 1 hour\n• ${EMOJIS.emergency} Emergency slots always open\n\nShall I book an appointment for you?`;
     }
 
     // Emergency handling
