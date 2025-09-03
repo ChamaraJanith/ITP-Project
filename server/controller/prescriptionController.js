@@ -1,6 +1,7 @@
 import Prescriptions from "../model/Prescriptions.js";
 
 class PrescriptionController {
+  // Create new prescription
   static async createPrescription(req, res) {
     try {
       const body = req.body;
@@ -15,6 +16,17 @@ class PrescriptionController {
         diagnosis: body.diagnosis,
         medicines: body.medicines,
         notes: body.notes || "",
+
+        // ✅ Patient details
+        patientId: body.patientId,
+        patientName: body.patientName,
+        patientEmail: body.patientEmail,
+        patientPhone: body.patientPhone,
+        patientGender: body.patientGender,
+        patientBloodGroup: body.patientBloodGroup || "",
+        patientAllergies: body.patientAllergies || [],
+
+        // ✅ Doctor details
         doctorId: doctor.id,
         doctorName: doctor.name,
         doctorSpecialization: doctor.specialization || "",
@@ -37,6 +49,7 @@ class PrescriptionController {
     }
   }
 
+  // Get all prescriptions
   static async getAllPrescriptions(req, res) {
     try {
       const prescriptions = await Prescriptions.find().sort({ createdAt: -1 });
@@ -54,44 +67,88 @@ class PrescriptionController {
     }
   }
 
+  // Get prescription by ID
   static async getPrescriptionById(req, res) {
     try {
       const { id } = req.params;
       const prescription = await Prescriptions.findById(id);
-      if (!prescription) return res.status(404).json({ success: false, message: "Prescription not found" });
-      return res.status(200).json({ success: true, message: "Prescription fetched successfully", data: prescription });
+      if (!prescription) {
+        return res.status(404).json({ success: false, message: "Prescription not found" });
+      }
+      return res.status(200).json({
+        success: true,
+        message: "Prescription fetched successfully",
+        data: prescription,
+      });
     } catch (error) {
-      return res.status(500).json({ success: false, message: "Error fetching prescription", error: error.message });
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching prescription",
+        error: error.message,
+      });
     }
   }
 
+  // Update prescription
   static async updatePrescription(req, res) {
     try {
       const { id } = req.params;
-      const { date, diagnosis, medicines, notes } = req.body;
+      const body = req.body;
 
       const updatedPrescription = await Prescriptions.findByIdAndUpdate(
         id,
-        { date, diagnosis, medicines, notes },
+        {
+          date: body.date,
+          diagnosis: body.diagnosis,
+          medicines: body.medicines,
+          notes: body.notes,
+          patientId: body.patientId,
+          patientName: body.patientName,
+          patientEmail: body.patientEmail,
+          patientPhone: body.patientPhone,
+          patientGender: body.patientGender,
+          patientBloodGroup: body.patientBloodGroup,
+          patientAllergies: body.patientAllergies,
+        },
         { new: true, runValidators: true }
       );
 
-      if (!updatedPrescription) return res.status(404).json({ success: false, message: "Prescription not found" });
+      if (!updatedPrescription) {
+        return res.status(404).json({ success: false, message: "Prescription not found" });
+      }
 
-      return res.status(200).json({ success: true, message: "Prescription updated successfully", data: updatedPrescription });
+      return res.status(200).json({
+        success: true,
+        message: "Prescription updated successfully",
+        data: updatedPrescription,
+      });
     } catch (error) {
-      return res.status(500).json({ success: false, message: "Error updating prescription", error: error.message });
+      return res.status(500).json({
+        success: false,
+        message: "Error updating prescription",
+        error: error.message,
+      });
     }
   }
 
+  // Delete prescription
   static async deletePrescription(req, res) {
     try {
       const { id } = req.params;
       const deleted = await Prescriptions.findByIdAndDelete(id);
-      if (!deleted) return res.status(404).json({ success: false, message: "Prescription not found" });
-      return res.status(200).json({ success: true, message: "Prescription deleted successfully" });
+      if (!deleted) {
+        return res.status(404).json({ success: false, message: "Prescription not found" });
+      }
+      return res.status(200).json({
+        success: true,
+        message: "Prescription deleted successfully",
+      });
     } catch (error) {
-      return res.status(500).json({ success: false, message: "Error deleting prescription", error: error.message });
+      return res.status(500).json({
+        success: false,
+        message: "Error deleting prescription",
+        error: error.message,
+      });
     }
   }
 }

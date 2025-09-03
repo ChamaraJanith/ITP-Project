@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+// Medicine schema
 const MedicineSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   dosage: { type: String, required: true, trim: true },
@@ -8,12 +9,24 @@ const MedicineSchema = new mongoose.Schema({
   notes: { type: String, trim: true, default: "" },
 });
 
+// Prescription schema
 const PrescriptionSchema = new mongoose.Schema(
   {
     date: { type: Date, required: true, default: Date.now },
     diagnosis: { type: String, required: true, trim: true },
     medicines: { type: [MedicineSchema], default: [] },
     notes: { type: String, trim: true, default: "" },
+
+    // ✅ Patient details
+    patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient", required: true },
+    patientName: { type: String, required: true },
+    patientEmail: { type: String },
+    patientPhone: { type: String },
+    patientGender: { type: String },
+    patientBloodGroup: { type: String },
+    patientAllergies: { type: [String], default: [] },
+
+    // ✅ Doctor details
     doctorId: { type: String, required: true },
     doctorName: { type: String, required: true },
     doctorSpecialization: { type: String, default: "" },
