@@ -22,7 +22,7 @@ import {
 import { RiRocketLine as FaRocket } from 'react-icons/ri';
 
 // Import additional icons if needed
-import { FaHeartPulse } from 'react-icons/fa6';
+import { FaHeartPulse, FaQuestion } from 'react-icons/fa6';
 
 import AdvancedFloatingChatbot from './AI/chatbot.jsx';
 import './AI/chatbot.css';
@@ -548,32 +548,32 @@ const AdvancedDoctorAvailability = () => {
   const doctors = [
     {
       id: 1,
-      name: 'Dr. Sarah Johnson',
+      name: 'Dr. Gayath Dahanayake',
       specialty: 'Cardiology',
       rating: 4.9,
       experience: '15 years',
       nextSlot: 'Today 3:30 PM',
       consultationFee: '$250',
-      avatar: '👩‍⚕️',
+      avatar: '👨‍⚕️',
       status: 'available',
       type: 'Private Practice',
       certifications: ['Board Certified Cardiologist', 'Private Practice License'],
-      languages: ['English ', ' Spanish'],
+      languages: [' English ', ' Spanish'],
       specializations: [' Heart Surgery ', ' Preventive Cardiology ', ' Cardiac Rehabilitation ']
     },
     {
       id: 2,
-      name: 'Dr. Michael Chen',
+      name: 'Dr. Anne Fonseka',
       specialty: 'General Medicine',
       rating: 4.8,
       experience: '12 years',
       nextSlot: 'Tomorrow 10:15 AM',
       consultationFee: '$200',
-      avatar: '👨‍⚕️',
+      avatar: '👩‍⚕️',
       status: 'available',
       type: 'Private Practice',
       certifications: ['Board Certified Internal Medicine', 'Private Healthcare Provider'],
-      languages: ['English ', ' Mandarin'],
+      languages: [' English ', ' Mandarin'],
       specializations: [' Preventive Care ', ' Chronic Disease Management ', ' Health Screening ']
     }
   ];
@@ -588,7 +588,7 @@ const AdvancedDoctorAvailability = () => {
         <h3>{EMOJIS.stethoscope} Private Doctor Availability</h3>
         <div className="private-badge">
           <FaShieldAlt />
-          <span>Exclusive Private Healthcare</span>
+          <span>  Exclusive Private Healthcare</span>
         </div>
         <div className="availability-filters">
           <input
@@ -614,7 +614,9 @@ const AdvancedDoctorAvailability = () => {
           <div key={doctor.id} className="doctor-availability-card private-doctor">
             <div className="private-indicator">
               <FaShieldAlt />
-              <span>{doctor.type}</span>
+              <span style={{ fontSize: "20px", fontWeight: "bold", marginLeft: "10px" }}>
+  {doctor.type}
+</span>
             </div>
             
             <div className="doctor-header">
@@ -633,8 +635,7 @@ const AdvancedDoctorAvailability = () => {
                   <span>{doctor.rating} • {doctor.experience}</span>
                 </div>
                 <div className="languages">
-                  <FaLanguage />
-                  <span>{doctor.languages.join(', ')}</span>
+                  
                 </div>
               </div>
             </div>
@@ -740,7 +741,7 @@ const AdvancedServices = () => {
       <div className="container">
         <h2>{EMOJIS.sparkles} Private Healthcare Services</h2>
         <p className="section-subtitle">
-          Exclusive AI-powered private healthcare solutions designed for premium care
+          Exclusive AI-po       wered private healthcare solutions designed for premium care
         </p>
         
         <div className="advanced-services-grid">
@@ -772,11 +773,11 @@ const FeaturedDoctors = () => {
   const doctors = [
     {
       id: 1,
-      name: 'Dr. Sarah Johnson',
+      name: 'Dr. Gayath Dahanayaka',
       specialty: 'Private Cardiology',
       rating: 4.9,
       experience: '15 years',
-      avatar: '👩‍⚕️',
+      avatar: '👨‍⚕️',
       status: 'online',
       nextSlot: 'Today 3:30 PM',
       patients: '2,500+',
@@ -784,11 +785,11 @@ const FeaturedDoctors = () => {
     },
     {
       id: 2,
-      name: 'Dr. Michael Chen',
+      name: 'Dr. Anne Fonseka',
       specialty: 'Private General Medicine',
       rating: 4.8,
       experience: '12 years',
-      avatar: '👨‍⚕️',
+      avatar: '👩‍⚕️',
       status: 'online',
       nextSlot: 'Tomorrow 10:15 AM',
       patients: '1,800+',
@@ -808,8 +809,8 @@ const FeaturedDoctors = () => {
           {doctors.map(doctor => (
             <div key={doctor.id} className="doctor-card private-doctor-card">
               <div className="private-badge">
-                <FaShieldAlt />
-                <span>Private Practice</span>
+                <FaShieldAlt />   
+                <span>   Private Practice</span>
               </div>
               <div className="doctor-avatar">
                 {doctor.avatar}
@@ -836,7 +837,7 @@ const FeaturedDoctors = () => {
               
               <div className="patient-count">
                 <FaUsers />
-                <span>{doctor.patients} Private Patients</span>
+                <span>{doctor.patients}  Private Patients</span>
               </div>
               
               <div className="achievements">
@@ -893,7 +894,7 @@ const AIFaqSection = () => {
   return (
     <div className="ai-faq-section">
       <div className="container">
-        <h2>{EMOJIS.questionCircle} Frequently Asked Questions</h2>
+        <h2>  Frequently Asked Questions <FaQuestionCircle/></h2>
         <p className="section-subtitle">
           Get answers to common questions about our private AI-powered healthcare platform
         </p>
@@ -922,6 +923,7 @@ const AIFaqSection = () => {
     </div>
   );
 };
+
 
 // Features Showcase Component
 const FeaturesShowcase = () => {
@@ -1157,7 +1159,7 @@ const Homepage = () => {
 
       {/* BMI Calculator Section */}
       <section className="bmi-calculator-section">
-        <div className="container">
+        <div className="bmi-container">
           <h2>{EMOJIS.scale} BMI Health Assessment</h2>
           <p className="section-subtitle">Calculate your BMI and get personalized health recommendations</p>
           <BMICalculator />
