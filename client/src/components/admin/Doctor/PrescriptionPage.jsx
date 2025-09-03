@@ -4,7 +4,6 @@ import PrescriptionForm from "./PrescriptionForm";
 import { DoctorContext } from "../../../context/DoctorContext";
 import Tesseract from "tesseract.js";
 
-// patientFromParent: patient object (passed from parent selection/QR flow)
 const PrescriptionPage = ({ patientFromParent }) => {
   const { doctor } = useContext(DoctorContext);
   const [patient, setPatient] = useState(patientFromParent || null);
@@ -12,20 +11,18 @@ const PrescriptionPage = ({ patientFromParent }) => {
   const [ocrText, setOcrText] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  // ✅ Fixed OCR using v4 API (no createWorker needed)
   const handleConvert = async () => {
     try {
       const dataURL = canvasRef.current.toDataURL("image/png");
       setProcessing(true);
 
       const { data } = await Tesseract.recognize(dataURL, "eng", {
-        logger: (m) => console.log(m), // shows progress updates
+        logger: (m) => console.log(m),
       });
 
-      const text = data.text || "";
-      setOcrText(text);
+      setOcrText(data.text || "");
     } catch (error) {
-      console.error("Error during OCR processing:", error);
+      console.error("OCR Error:", error);
       alert("OCR failed. Try writing neater or use manual entry.");
     } finally {
       setProcessing(false);
@@ -41,36 +38,20 @@ const PrescriptionPage = ({ patientFromParent }) => {
     <div style={{ maxWidth: 1200, margin: "20px auto", padding: 12 }}>
       <h1>Create Prescription</h1>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "400px 1fr",
-          gap: 20,
-        }}
-      >
+      <div style={{ display: "grid", gridTemplateColumns: "400px 1fr", gap: 20 }}>
         {/* Left side: Patient info + Canvas */}
         <div>
           <div style={{ marginBottom: 8 }}>
             <strong>Patient</strong>
-            <div
-              style={{ padding: 8, background: "#f6f6f6", borderRadius: 6 }}
-            >
+            <div style={{ padding: 8, background: "#f6f6f6", borderRadius: 6 }}>
               {patient ? (
                 <>
-                  <div>
-                    <b>Name:</b> {patient.name}
-                  </div>
-                  <div>
-                    <b>Age:</b> {patient.age}
-                  </div>
-                  <div>
-                    <b>Gender:</b> {patient.gender}
-                  </div>
+                  <div><b>Name:</b> {patient.firstName} {patient.lastName}</div>
+                  <div><b>Age:</b> {patient.age || "N/A"}</div>
+                  <div><b>Gender:</b> {patient.gender}</div>
                 </>
               ) : (
-                <div style={{ color: "#b00" }}>
-                  No patient selected. Use QR or patient search first.
-                </div>
+                <div style={{ color: "#b00" }}>No patient selected. Use search first.</div>
               )}
             </div>
           </div>
@@ -104,10 +85,7 @@ const PrescriptionPage = ({ patientFromParent }) => {
             patient={patient}
             doctor={doctor}
             ocrTextFromCanvas={ocrText}
-            onSaved={(pres) => {
-              console.log("Saved", pres);
-              // you can show toast or redirect here
-            }}
+            onSaved={(pres) => console.log("Saved", pres)}
           />
         </div>
       </div>
