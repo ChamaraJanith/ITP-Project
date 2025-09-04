@@ -5,55 +5,48 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
-import router from './routes/inventoryRoutes.js';
-import authRouter from './routes/auth.js'
-import financialPayRoutes from './routes/financialPayRoutes.js'
-import patrouter from './routes/pat.js';
-import RestockRouter from './routes/autoRestockRoutes.js';
-import RestockScheduler from './services/restockScheduler.js'
-
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ CRITICAL: Load environment variables FIRST - before any other imports
+// Load environment variables FIRST
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-// ✅ Debug environment variables IMMEDIATELY after loading
-console.log('🔍 Environment Variables Debug:');
-console.log('📧 EMAIL_USER:', process.env.EMAIL_USER);
-console.log('📧 EMAIL_PASS exists:', !!process.env.EMAIL_PASS);
-console.log('📧 SMTP_HOST:', process.env.SMTP_HOST);
-console.log('📧 SMTP_PORT:', process.env.SMTP_PORT);
+const app = express();
 
-// ✅ NOW import modules that depend on environment variables
+// Import your existing routes
+import router from './routes/inventoryRoutes.js';
+import authRouter from './routes/auth.js';
+import financialPayRoutes from './routes/financialPayRoutes.js';
+import patrouter from './routes/pat.js';
+import RestockRouter from './routes/autoRestockRoutes.js';
+import RestockScheduler from './services/restockScheduler.js';
 import notificationRouter from './routes/notifications.js';
 import surgicalrouter from './routes/surgicalItems.js';
 import consultationRouter from './routes/consultationRoutes.js';
 import prescriptionRouter from './routes/prescriptionRoutes.js';
 
+// ✅ NEW: Import procurement routes
+import supplierRoutes from './routes/suppliers.js';
+import purchaseOrderRoutes from './routes/purchaseOrders.js';
 
-// Database connection
+// Database imports
 const { default: connectDB } = await import("./config/mongodb.js");
-
-// Route imports
 const { default: chatbotRouter } = await import("./routes/chatbot.js");
 const { default: adminRouter } = await import("./routes/adminRoutes.js");
 const { default: inventoryRouter } = await import("./routes/inventoryRoutes.js");
 
-
-const app = express();
-const PORT = process.env.PORT || 7000;
-
 // Connect to database
 connectDB();
+
+const PORT = 7000; // ✅ Set to port 7000
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// CORS configuration
+// CORS configuration for port 7000
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -69,12 +62,6 @@ app.use(cors({
   exposedHeaders: ['Set-Cookie']
 }));
 
-app.use(cors({
-  origin: "http://localhost:5173", // your frontend port
-  methods: ["GET","POST","PUT","DELETE"],
-  credentials: true
-}));
-
 // Security headers
 app.use((req, res, next) => {
   res.header('X-Content-Type-Options', 'nosniff');
@@ -87,34 +74,23 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
   console.log(`${timestamp} - ${req.method} ${req.path} 💻`);
-  
-  // Log request body for debugging (remove in production)
-  if (req.method === 'POST' && req.body && Object.keys(req.body).length > 0) {
-    const sanitizedBody = { ...req.body };
-    if (sanitizedBody.password) sanitizedBody.password = '***';
-    console.log('📝 Request Body:', sanitizedBody);
-  }
-  
   next();
 });
 
-// Health check route (before other routes)
+// Health check route
 app.get('/health', (req, res) => {
   res.json({ 
     success: true, 
-    message: 'HealX Healthcare Server is running',
+    message: 'HealX Healthcare Server is running on port 7000',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    memory: process.memoryUsage(),
     endpoints: {
-      user_auth: '/api/auth',
+      suppliers: '/api/suppliers',
+      purchase_orders: '/api/purchase-orders',
       admin_auth: '/api/admin',
-      user_management: '/api/user',
       chatbot: '/api/chatbot',
-      subscription: '/api/subscription',
       inventory: '/api/inventory',
-      patient_registration: '/api/patients',
-      receptionist: '/receptionist'
+      patients: '/api/patients'
     }
   });
 });
@@ -122,39 +98,34 @@ app.get('/health', (req, res) => {
 // Root route
 app.get("/", (req, res) => {
   res.json({ 
-    message: "🏥 HealX Healthcare Server is running!",
+    message: "🏥 HealX Healthcare Server is running on port 7000!",
     version: "1.0.0",
     timestamp: new Date().toISOString(),
-    endpoints: [
-      'GET /health - Health check',
-      'POST /api/admin/login - Admin login',
-      'POST /api/chatbot/message - Chatbot interaction',
-      'GET /api/inventory/surgical-items - Get surgical items',
-      'POST /api/inventory/surgical-items - Create surgical item',
-      'GET /api/inventory/dashboard-stats - Inventory stats',
-      'POST /api/inventory/notifications/test-email - Test email',
-      'POST /api/inventory/notifications/check-low-stock - Low stock alert',
-      'POST /api/patients/register - Register new patient with QR code',
-      'GET /api/patients - Get all patients',
-      'GET /api/patients/:id - Get patient by ID',
-      'PUT /api/patients/:id - Update patient',
-      'DELETE /api/patients/:id - Delete patient'
-    ]
+    port: PORT,
+    procurement: {
+      suppliers: '/api/suppliers',
+      orders: '/api/purchase-orders'
+    }
   });
 });
 
-// ✅ CRITICAL: Mount notification routes FIRST (most specific)
+// Mount notification routes FIRST
 console.log('📧 Mounting notification router at /api/inventory/notifications');
-app.use('/api/inventory/notifications', notificationRouter);-
+app.use('/api/inventory/notifications', notificationRouter);
 
 console.log('📦 Mounting surgical items router at /api/inventory');
 app.use('/api/inventory', surgicalrouter);
 app.use('/api/restock-orders', RestockRouter);
 app.use('/api/inventory/auto-restock', RestockRouter);
-// Mount other inventory routes
 app.use('/api/inventory', inventoryRouter);
 
-// ✅ NEW: Mount patient routes for receptionist functionality
+// ✅ NEW: Mount supplier and purchase order routes
+console.log('🏢 Mounting supplier routes at /api/suppliers');
+app.use('/api/suppliers', supplierRoutes);
+console.log('📋 Mounting purchase order routes at /api/purchase-orders');
+app.use('/api/purchase-orders', purchaseOrderRoutes);
+
+// Mount patient routes
 console.log('👥 Mounting patient router at /api/patients');
 app.use('/api/patients', patrouter);
 
@@ -163,21 +134,35 @@ app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
 app.use("/api/auth", router);
 app.use("/api/auth", authRouter);
-app.use("/api/payments", financialPayRoutes);  // Mount financial payment routes
-app.use("/api/prescription", consultationRouter);  // Mount consultation routes
-app.use("/api/patients", patrouter);
-// Mount prescription routes
-app.use("/api/doctor/prescriptions", prescriptionRouter);  // Mount prescription routes
+app.use("/api/payments", financialPayRoutes);
+app.use("/api/prescription", consultationRouter);
+app.use("/api/doctor/prescriptions", prescriptionRouter);
 
 // Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
+// 404 handler - MUST be after all routes
+app.use((req, res, next) => {
+  console.log(`❌ 404 - Route not found: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.method} ${req.originalUrl} not found`,
+    availableRoutes: [
+      'GET /api/suppliers',
+      'POST /api/suppliers',
+      'PUT /api/suppliers/:id',
+      'DELETE /api/suppliers/:id',
+      'GET /api/purchase-orders',
+      'POST /api/purchase-orders'
+    ]
+  });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('❌ Server Error:', err);
   
-  // Handle specific error types
   if (err.name === 'ValidationError') {
     return res.status(400).json({
       success: false,
@@ -206,8 +191,9 @@ app.use((err, req, res, next) => {
     error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
   });
 });
+
+// Start restock scheduler
 RestockScheduler.start();
-// ✅ CORRECT - Express 5 compatible
 
 // Graceful shutdown handling
 process.on('SIGTERM', () => {
@@ -220,7 +206,7 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// Start server
+// Start server on port 7000
 app.listen(PORT, () => {
   console.log('🚀 HealX Healthcare Server Started Successfully!');
   console.log('=====================================');
@@ -228,25 +214,16 @@ app.listen(PORT, () => {
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Base URL: http://localhost:${PORT}`);
   console.log('=====================================');
-  console.log('📋 Available Endpoints:');
-  console.log(`   👤 User Login: POST http://localhost:${PORT}/api/auth/Login`);
-  console.log(`   👤 User Register: POST http://localhost:${PORT}/api/auth/register`);
-  console.log(`   👨‍💼 Admin Login: POST http://localhost:${PORT}/api/admin/login`);
+  console.log('📋 Procurement & Suppliers Endpoints:');
+  console.log(`   🏢 Get Suppliers: GET http://localhost:${PORT}/api/suppliers`);
+  console.log(`   🏢 Create Supplier: POST http://localhost:${PORT}/api/suppliers`);
+  console.log(`   🏢 Update Supplier: PUT http://localhost:${PORT}/api/suppliers/:id`);
+  console.log(`   🏢 Delete Supplier: DELETE http://localhost:${PORT}/api/suppliers/:id`);
+  console.log(`   📋 Get Purchase Orders: GET http://localhost:${PORT}/api/purchase-orders`);
+  console.log(`   📋 Create Purchase Order: POST http://localhost:${PORT}/api/purchase-orders`);
   console.log(`   💊 Health Check: GET http://localhost:${PORT}/health`);
-  console.log(`   🤖 Chatbot: POST http://localhost:${PORT}/api/chatbot/message`);
-  console.log(`   📧 Test Email: POST http://localhost:${PORT}/api/inventory/notifications/test-email`);
-  console.log(`   🚨 Low Stock Alert: POST http://localhost:${PORT}/api/inventory/notifications/check-low-stock`);
-  console.log(`   📦 Surgical Items: GET http://localhost:${PORT}/api/inventory/surgical-items`);
-  console.log(`   👥 Patient Registration: POST http://localhost:${PORT}/api/patients/register`);
-  console.log(`   👥 Get All Patients: GET http://localhost:${PORT}/api/patients`);
-  console.log(`   👥 Get Patient by ID: GET http://localhost:${PORT}/api/patients/:id`);
-  console.log(`   👥 Update Patient: PUT http://localhost:${PORT}/api/patients/:id`);
-  console.log(`   👥 Delete Patient: DELETE http://localhost:${PORT}/api/patients/:id`);
   console.log('=====================================');
   console.log('✅ Server ready to accept connections!');
 });
 
-//gayath
-//pjsshsns
 export default app;
-//chamaraupdate server.js with that part no removing anything
