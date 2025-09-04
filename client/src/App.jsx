@@ -25,10 +25,14 @@ import ViewConsultations from './components/admin/Doctor/ViewConsultations';
 import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
 import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
 import PaymentTotalView from './components/admin/Financial_Manager/PaymentTotalView';
+
 // ✅ NEW: Patient Registration Components for Receptionist
 import PatientRegistration from './components/admin/Reciptionist/PatientRegistration';
 import PatientList from './components/admin/Reciptionist/PatientList';
 import PatientDetails from './components/admin/Reciptionist/PatientDetails';
+
+// ✅ NEW: Procurement & Suppliers Component
+import SupplierManagement from './components/admin/Admin/SupplierManagement';
 
 // ✅ Healthcare Service Components
 const BookAppointmentPage = () => (
@@ -263,6 +267,16 @@ function App() {
               } 
             />
 
+            {/* ✅ NEW: Procurement & Suppliers Route */}
+            <Route 
+              path="/admin/procurement" 
+              element={
+                <ProtectedAdminRoute allowedRoles={['admin']}>
+                  <SupplierManagement />
+                </ProtectedAdminRoute>
+              } 
+            />
+
             {/* ✅ Patient Registration Routes for Receptionist */}
             <Route 
               path="/receptionist/patient_registration" 
@@ -347,6 +361,15 @@ function App() {
             <Route
               path="/admin/financial/payments/total-view"
               element={<PaymentTotalView />} />
+
+              <Route 
+  path="/admin/procurement" 
+  element={
+    <ProtectedAdminRoute allowedRoles={['admin']}>
+      <SupplierManagement />
+    </ProtectedAdminRoute>
+  } 
+/>
 
             {/* ✅ 404 Fallback Route */}
             <Route path="*" element={<NotFoundPage />} />
