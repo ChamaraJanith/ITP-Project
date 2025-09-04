@@ -47,7 +47,7 @@ class EmailService {
     }
 
     try {
-      // ✅ FIXED: Changed from createTransporter to createTransport
+      // ✅ FIXED: Use createTransport (not createTransporter)
       this.transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT),
@@ -278,6 +278,269 @@ class EmailService {
     return result;
   }
 
+  // ✅ NEW: Enhanced Auto-Restock Supplier Email Function
+  async sendSupplierRestockOrder(item, restockQuantity, orderDetails = {}) {
+    console.log(`📧 sendSupplierRestockOrder called for ${item.name}`);
+    
+    try {
+      await this.ensureInitialized();
+    } catch (error) {
+      console.error('❌ Failed to initialize EmailService:', error.message);
+      throw new Error(`Email system not ready: ${error.message}`);
+    }
+
+    try {
+      const supplierEmail = item.autoRestock?.supplier?.contactEmail || item.supplier?.email;
+      
+      // ✅ For testing, use fallback email if supplier email is missing
+      const emailToSend = supplierEmail || 'chamarasweed44@gmail.com'; // Fallback for testing
+      
+      console.log(`📧 Preparing supplier email for ${item.name} to ${emailToSend}`);
+
+      const orderNumber = `ORD-${Date.now()}-${item._id.toString().slice(-6)}`;
+      const estimatedCost = (parseFloat(item.price) || 0) * restockQuantity;
+      const urgencyLevel = orderDetails.urgency === 'immediate' ? 'IMMEDIATE' : 'HIGH PRIORITY';
+      
+      const subject = `🚨 ${urgencyLevel} AUTO-RESTOCK ORDER: ${item.name} - Order #${orderNumber}`;
+      
+      const htmlMessage = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 700px; margin: 0 auto; background: white; }
+            .header { background: linear-gradient(135deg, #dc3545, #ff6b7a); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .urgent { background: #fff3cd; border: 3px solid #ffc107; padding: 25px; margin: 20px 0; border-radius: 10px; text-align: center; }
+            .content { background: white; padding: 30px; border: 1px solid #ddd; }
+            .footer { background: #333; color: white; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; }
+            .highlight { background: #28a745; color: white; padding: 8px 15px; border-radius: 6px; font-weight: bold; display: inline-block; }
+            .order-table { width: 100%; border-collapse: collapse; margin: 20px 0; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+            .order-table th, .order-table td { padding: 15px; text-align: left; border-bottom: 1px solid #ddd; }
+            .order-table th { background: #f8f9fa; font-weight: bold; }
+            .action-required { background: #d1ecf1; border: 2px solid #bee5eb; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0; font-size: 32px;">🚨 ${urgencyLevel} RESTOCK ORDER</h1>
+              <p style="margin: 10px 0; font-size: 18px;">HealX Healthcare Center</p>
+              <p class="highlight">Order #${orderNumber}</p>
+              <p style="margin: 15px 0 0 0; font-size: 16px;">Generated Every Minute by Auto-Restock System</p>
+            </div>
+            
+            <div class="urgent">
+              <h2 style="margin: 0; color: #856404; font-size: 24px;">⚠️ AUTO-GENERATED URGENT ORDER</h2>
+              <p style="margin: 15px 0 0 0; font-size: 18px; font-weight: bold; color: #856404;">
+                This order was automatically triggered by critically low inventory levels detected at ${new Date().toLocaleTimeString()}
+              </p>
+            </div>
+            
+            <div class="content">
+              <h2 style="color: #dc3545; margin: 0 0 25px 0;">📦 CRITICAL ITEM SHORTAGE</h2>
+              
+              <div style="background: #f8d7da; padding: 25px; border-radius: 10px; border-left: 5px solid #dc3545; margin: 20px 0;">
+                <table class="order-table">
+                  <thead>
+                    <tr style="background: #dc3545; color: white;">
+                      <th>Item Details</th>
+                      <th>Quantity Information</th>
+                      <th>Cost Information</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <strong style="font-size: 18px; color: #dc3545;">${item.name}</strong><br>
+                        <span style="color: #666;">Category: ${item.category || 'Medical Supply'}</span><br>
+                        <span style="color: #666;">Item ID: ${item._id.toString().slice(-8)}</span>
+                      </td>
+                      <td>
+                        <span style="color: #dc3545; font-weight: bold; font-size: 16px;">Current: ${item.quantity} units</span><br>
+                        <span style="color: #ffc107; font-weight: bold;">Min Required: ${item.minStockLevel} units</span><br>
+                        <span style="color: #28a745; font-weight: bold; font-size: 18px;">ORDER: ${restockQuantity} units</span>
+                      </td>
+                      <td>
+                        <span style="color: #666;">Unit Price: $${(parseFloat(item.price) || 0).toFixed(2)}</span><br>
+                        <strong style="font-size: 20px; color: #dc3545;">Total: $${estimatedCost.toFixed(2)}</strong><br>
+                        <span style="color: #28a745; font-size: 12px;">✓ Pre-approved amount</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div style="background: #d4edda; padding: 25px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #28a745;">
+                <h3 style="margin: 0 0 20px 0; color: #155724;">🏥 DELIVERY INFORMATION</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                  <div>
+                    <p style="margin: 5px 0;"><strong>Hospital:</strong> HealX Healthcare Center</p>
+                    <p style="margin: 5px 0;"><strong>Department:</strong> Medical Supplies & Equipment</p>
+                    <p style="margin: 5px 0;"><strong>Loading Dock:</strong> Emergency Supplies Bay</p>
+                    <p style="margin: 5px 0;"><strong>Hours:</strong> 24/7 Emergency Receiving</p>
+                  </div>
+                  <div>
+                    <p style="margin: 5px 0;"><strong>Contact:</strong> Medical Supplies Manager</p>
+                    <p style="margin: 5px 0;"><strong>Phone:</strong> +1-555-MEDICAL (24hr)</p>
+                    <p style="margin: 5px 0;"><strong>Email:</strong> supplies@healx-healthcare.com</p>
+                    <p style="margin: 5px 0;"><strong>Required Delivery:</strong> <span style="color: #dc3545; font-weight: bold;">Within ${item.autoRestock?.supplier?.leadTimeDays || 1} Day(s)</span></p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="action-required">
+                <h3 style="margin: 0 0 20px 0; color: #0c5460; font-size: 20px;">🚨 IMMEDIATE ACTION REQUIRED</h3>
+                <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #bee5eb;">
+                  <ol style="margin: 0; padding-left: 25px; line-height: 2;">
+                    <li><strong style="color: #dc3545;">RESPOND WITHIN 30 MINUTES</strong> - Confirm order receipt and processing status</li>
+                    <li><strong style="color: #dc3545;">PRIORITY SHIPPING REQUIRED</strong> - This is critical medical equipment for patient care</li>
+                    <li><strong>Emergency Phone:</strong> +1-555-MEDICAL for immediate order processing</li>
+                    <li><strong>Email Confirmation:</strong> supplies@healx-healthcare.com with tracking details</li>
+                    <li><strong>Invoice Processing:</strong> Send to accounts@healx-healthcare.com for expedited payment</li>
+                  </ol>
+                </div>
+                
+                <div style="background: #721c24; color: white; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                  <p style="margin: 0; font-size: 16px; font-weight: bold;">
+                    🚨 THIS IS A CRITICAL MEDICAL SUPPLY - PATIENT CARE MAY BE IMPACTED 🚨
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="footer">
+              <p style="margin: 0 0 10px 0; font-size: 16px; font-weight: bold;">
+                🤖 AUTOMATED SYSTEM ALERT - RESTOCK MONITORING EVERY 1 MINUTE
+              </p>
+              <p style="margin: 0; font-size: 14px;">
+                Generated: ${new Date().toLocaleString()} | Order: ${orderNumber} | System: HealX Auto-Restock
+              </p>
+              <p style="margin: 10px 0 0 0; font-size: 16px; color: #ff6b7a; font-weight: bold;">
+                CRITICAL MEDICAL SUPPLY ORDER - IMMEDIATE PROCESSING REQUIRED
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      console.log('📧 Sending urgent supplier order email...');
+      const result = await this.transporter.sendMail({
+        from: `"HealX Healthcare Emergency System" <${process.env.EMAIL_USER}>`,
+        to: emailToSend,
+        cc: 'supplies@healx-healthcare.com', // Copy hospital supplies department
+        subject: subject,
+        html: htmlMessage,
+        priority: 'high',
+        headers: {
+          'X-Priority': '1',
+          'X-MSMail-Priority': 'High',
+          'Importance': 'high'
+        }
+      });
+
+      console.log(`✅ Supplier order email sent successfully! MessageId: ${result.messageId}`);
+      
+      return {
+        success: true,
+        messageId: result.messageId,
+        supplierEmail: emailToSend,
+        orderNumber: orderNumber,
+        estimatedCost: estimatedCost
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to send supplier email:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // ✅ NEW: Send confirmation email to hospital admin
+  async sendRestockConfirmationToAdmin(item, restockQuantity, supplierEmailResult) {
+    console.log('📧 Sending admin confirmation for auto-restock');
+    
+    try {
+      await this.ensureInitialized();
+      
+      const adminEmail = 'chamarasweed44@gmail.com';
+      const subject = `✅ Auto-Restock Completed: ${item.name}`;
+      
+      const htmlMessage = `
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; border: 2px solid #28a745; border-radius: 10px;">
+          <div style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">✅ Auto-Restock Completed</h1>
+            <p style="margin: 15px 0 0 0; font-size: 16px;">HealX Healthcare Management System</p>
+          </div>
+          
+          <div style="padding: 30px; background: white;">
+            <h2 style="color: #28a745; margin: 0 0 25px 0;">📦 Restock Operation Summary</h2>
+            
+            <div style="background: #d4edda; padding: 20px; border-radius: 10px; border-left: 5px solid #28a745; margin: 20px 0;">
+              <h3 style="margin: 0 0 15px 0; color: #155724;">Item Details:</h3>
+              <p style="margin: 5px 0;"><strong>Item:</strong> ${item.name}</p>
+              <p style="margin: 5px 0;"><strong>Category:</strong> ${item.category || 'N/A'}</p>
+              <p style="margin: 5px 0;"><strong>Previous Stock:</strong> ${item.quantity} units</p>
+              <p style="margin: 5px 0;"><strong>Restocked Amount:</strong> <span style="color: #28a745; font-weight: bold;">+${restockQuantity} units</span></p>
+              <p style="margin: 5px 0;"><strong>New Stock Level:</strong> <span style="color: #28a745; font-weight: bold;">${item.quantity + restockQuantity} units</span></p>
+              <p style="margin: 5px 0;"><strong>Restock Time:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+
+            ${supplierEmailResult.success ? `
+              <div style="background: #d1ecf1; padding: 20px; border-radius: 10px; border-left: 5px solid #17a2b8; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #0c5460;">📧 Supplier Notification Status</h3>
+                <p style="margin: 5px 0;"><strong>✅ Order sent to supplier:</strong> ${supplierEmailResult.supplierEmail}</p>
+                <p style="margin: 5px 0;"><strong>Order Number:</strong> ${supplierEmailResult.orderNumber}</p>
+                <p style="margin: 5px 0;"><strong>Estimated Cost:</strong> $${supplierEmailResult.estimatedCost.toFixed(2)}</p>
+                <p style="margin: 5px 0;"><strong>Message ID:</strong> ${supplierEmailResult.messageId}</p>
+                <p style="margin: 5px 0; color: #28a745; font-weight: bold;">✅ Supplier has been notified and should respond within 30 minutes</p>
+              </div>
+            ` : `
+              <div style="background: #f8d7da; padding: 20px; border-radius: 10px; border-left: 5px solid #dc3545; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #721c24;">⚠️ Supplier Notification Issue</h3>
+                <p style="margin: 5px 0;"><strong>❌ Could not send order to supplier:</strong> ${supplierEmailResult.error}</p>
+                <p style="margin: 5px 0;"><strong>Action Required:</strong> Manual supplier contact needed</p>
+                <p style="margin: 5px 0; color: #dc3545; font-weight: bold;">🚨 Please contact supplier manually for this urgent order</p>
+              </div>
+            `}
+
+            <div style="background: #e2e3e5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+              <h3 style="margin: 0 0 15px 0; color: #383d41;">🔄 Auto-Restock Settings</h3>
+              <p style="margin: 5px 0;"><strong>Method:</strong> ${item.autoRestock?.restockMethod || 'to_max'}</p>
+              <p style="margin: 5px 0;"><strong>Max Stock Level:</strong> ${item.autoRestock?.maxStockLevel || 'Not set'}</p>
+              <p style="margin: 5px 0;"><strong>Monitoring:</strong> Every 1 minute (automated)</p>
+              <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">✅ Active</span></p>
+            </div>
+          </div>
+          
+          <div style="background: #343a40; color: white; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
+            <p style="margin: 0; font-size: 14px;">
+              Auto-Restock System | ${new Date().toLocaleString()} | HealX Healthcare Management
+            </p>
+            <p style="margin: 10px 0 0 0; font-size: 12px; opacity: 0.8;">
+              This system monitors inventory every minute and automatically restocks items when needed
+            </p>
+          </div>
+        </div>
+      `;
+
+      await this.transporter.sendMail({
+        from: `HealX Healthcare System <${process.env.EMAIL_USER}>`,
+        to: adminEmail,
+        subject: subject,
+        html: htmlMessage
+      });
+
+      console.log(`✅ Admin confirmation email sent for ${item.name} restock`);
+
+    } catch (error) {
+      console.error('❌ Failed to send admin confirmation:', error);
+    }
+  }
+
   isReady() {
     return this.initialized && this.transporter !== null;
   }
@@ -291,6 +554,87 @@ class EmailService {
   }
 }
 
-// Export singleton instance
+// Create singleton instance
 const emailService = new EmailService();
+
+// ✅ UTILITY FUNCTIONS - These work with the singleton instance
+export async function sendCriticalStockAlert(criticalItems) {
+  try {
+    await emailService.ensureInitialized();
+    
+    const subject = `🚨 CRITICAL STOCK ALERT - Immediate Action Required`;
+    
+    const itemsList = criticalItems.map(item => 
+      `• ${item.item} - Current: ${item.currentStock}, Min: ${item.minLevel}, Supplier: ${item.supplier}`
+    ).join('\n');
+
+    const html = `
+      <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 20px; border-radius: 8px;">
+        <h2 style="color: #856404;">🚨 CRITICAL STOCK ALERT</h2>
+        <p><strong>The following items have reached critically low stock levels:</strong></p>
+        <div style="background: white; padding: 15px; margin: 10px 0; border-radius: 4px;">
+          <pre style="font-family: Arial, sans-serif; margin: 0;">${itemsList}</pre>
+        </div>
+        <p style="color: #721c24; font-weight: bold;">
+          ⚠️ Immediate action required to prevent stockouts!
+        </p>
+        <p>Please review and approve restock orders immediately.</p>
+      </div>
+    `;
+
+    const mailOptions = {
+      from: `HealX Healthcare <${process.env.EMAIL_USER}>`,
+      to: ['admin@hospital.com', 'inventory@hospital.com', 'chamarasweed44@gmail.com'],
+      subject: subject,
+      html: html
+    };
+
+    const result = await emailService.transporter.sendMail(mailOptions);
+    console.log('📧 Critical stock alert sent successfully!');
+    return result;
+  } catch (error) {
+    console.error('❌ Error sending critical stock alert:', error);
+    throw error;
+  }
+}
+
+export async function sendRestockSummary(items) {
+  try {
+    await emailService.ensureInitialized();
+    
+    const subject = `📦 Daily Inventory Restock Summary - ${new Date().toLocaleDateString()}`;
+    
+    const itemsList = items.map(item => 
+      `• ${item.item} (${item.urgency}) - Current: ${item.currentStock}, Reorder: ${item.reorderQuantity}`
+    ).join('\n');
+
+    const html = `
+      <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+        <h2 style="color: #495057;">📦 Restock Summary</h2>
+        <p>The following items need restocking:</p>
+        <div style="background: white; padding: 15px; margin: 10px 0; border-radius: 4px;">
+          <pre style="font-family: Arial, sans-serif; margin: 0;">${itemsList}</pre>
+        </div>
+        <p>Total items requiring restock: <strong>${items.length}</strong></p>
+        <p>Please review the restock orders in the admin dashboard.</p>
+      </div>
+    `;
+
+    const mailOptions = {
+      from: `HealX Healthcare <${process.env.EMAIL_USER}>`,
+      to: ['procurement@hospital.com', 'chamarasweed44@gmail.com'],
+      subject: subject,
+      html: html
+    };
+
+    const result = await emailService.transporter.sendMail(mailOptions);
+    console.log('📧 Restock summary sent successfully!');
+    return result;
+  } catch (error) {
+    console.error('❌ Error sending restock summary:', error);
+    throw error;
+  }
+}
+
+// ✅ DEFAULT EXPORT - The singleton instance
 export default emailService;
