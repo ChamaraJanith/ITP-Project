@@ -9,6 +9,8 @@ import router from './routes/inventoryRoutes.js';
 import authRouter from './routes/auth.js'
 import financialPayRoutes from './routes/financialPayRoutes.js'
 import patrouter from './routes/pat.js';
+import RestockRouter from './routes/autoRestockRoutes.js';
+import RestockScheduler from './services/restockScheduler.js'
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -30,6 +32,7 @@ import surgicalrouter from './routes/surgicalItems.js';
 import consultationRouter from './routes/consultationRoutes.js';
 import prescriptionRouter from './routes/prescriptionRoutes.js';
 
+
 // Database connection
 const { default: connectDB } = await import("./config/mongodb.js");
 
@@ -37,6 +40,7 @@ const { default: connectDB } = await import("./config/mongodb.js");
 const { default: chatbotRouter } = await import("./routes/chatbot.js");
 const { default: adminRouter } = await import("./routes/adminRoutes.js");
 const { default: inventoryRouter } = await import("./routes/inventoryRoutes.js");
+
 
 const app = express();
 const PORT = process.env.PORT || 7000;
@@ -135,11 +139,12 @@ app.get("/", (req, res) => {
 
 // ✅ CRITICAL: Mount notification routes FIRST (most specific)
 console.log('📧 Mounting notification router at /api/inventory/notifications');
-app.use('/api/inventory/notifications', notificationRouter);
+app.use('/api/inventory/notifications', notificationRouter);-
 
 console.log('📦 Mounting surgical items router at /api/inventory');
 app.use('/api/inventory', surgicalrouter);
-
+app.use('/api/restock-orders', RestockRouter);
+app.use('/api/inventory/auto-restock', RestockRouter);
 // Mount other inventory routes
 app.use('/api/inventory', inventoryRouter);
 
@@ -195,7 +200,7 @@ app.use((err, req, res, next) => {
     error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
   });
 });
-
+RestockScheduler.start();
 // ✅ CORRECT - Express 5 compatible
 
 // Graceful shutdown handling
