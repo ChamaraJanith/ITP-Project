@@ -155,20 +155,6 @@ const NotFoundPage = () => (
         >
           🏠 Go Home
         </a>
-        <a 
-          href="/admin" 
-          style={{
-            background: '#f3f4f6',
-            color: '#374151',
-            padding: '10px 20px',
-            borderRadius: '8px',
-            textDecoration: 'none',
-            fontWeight: '500',
-            border: '1px solid #d1d5db'
-          }}
-        >
-          👑 Admin Portal
-        </a>
       </div>
     </div>
   </div>
