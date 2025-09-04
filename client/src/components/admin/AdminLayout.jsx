@@ -56,18 +56,6 @@ const AdminLayout = ({ admin, title, children }) => {
           
           <div className="admin-nav">
 
-            <div className="admin-nav">
-  <Link to="/admin/dashboard" className="nav-link">
-    📊 Dashboard
-  </Link>
-  <Link to="/admin/procurement" className="nav-link">
-    📦 Procurement
-  </Link>
-  <Link to="/admin/receptionist-dashboard" className="nav-link">
-    👩‍💼 Receptionist
-  </Link>
-  {/* ... other nav links */}
-</div>
 
             <Link to="/admin/dashboard" className="nav-link">
               📊 Dashboard
