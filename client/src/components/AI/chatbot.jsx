@@ -991,8 +991,10 @@ const AdvancedFloatingChatbot = () => {
                     { icon: EMOJIS.target, text: 'Capabilities', action: 'What can you do?' },
                     { icon: EMOJIS.stethoscope, text: 'Vital Signs', action: 'Track my vital signs' },
                     { icon: EMOJIS.ambulance, text: 'Urgent Care', action: 'Find urgent care near me' },
-                    { icon: EMOJIS.microscope, text: 'Lab Results', action: 'Show my lab results' },
-                    { icon: EMOJIS.trophy, text: 'Health Goals', action: 'View my health goals' }
+                    { icon: EMOJIS.broom, text: 'empty', action:'' },
+                    { icon: EMOJIS.checkMark, text: 'empty', action:'' },
+                    { icon: EMOJIS.rocket, text: 'empty', action:'' },
+                    { icon: EMOJIS.warning, text: 'empty', action:'' },
                   ].map((quickAction, index) => (
                     <button
                       key={index}

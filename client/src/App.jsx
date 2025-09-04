@@ -25,7 +25,6 @@ import ViewConsultations from './components/admin/Doctor/ViewConsultations';
 import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
 import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
 import PaymentTotalView from './components/admin/Financial_Manager/PaymentTotalView';
-
 // ✅ NEW: Patient Registration Components for Receptionist
 import PatientRegistration from './components/admin/Reciptionist/PatientRegistration';
 import PatientList from './components/admin/Reciptionist/PatientList';
