@@ -76,8 +76,8 @@
 
 .healx-chatbot-ai-pulse {
   position: absolute;
-  width: 100%;
-  height: 100%;
+  width: 80%;
+  height: 80%;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   animation: aiPulse 2s infinite;
@@ -113,8 +113,8 @@
   position: absolute;
   bottom: 90px;
   right: 0;
-  width: 500px;
-  height: 550px;
+  width: 800px;
+  height: 580px;
   background: white;
   border-radius: var(--border-radius-xl);
   box-shadow: var(--shadow-2xl), 0 0 0 1px rgba(255, 255, 255, 0.1);
@@ -129,19 +129,20 @@
 
 /* Dynamic Width States */
 .healx-chatbot-window.healx-chatbot-ai-speaking {
-  width: 650px;
+  width: 800px;
+  height: 580px;
   box-shadow: var(--shadow-2xl), 0 0 50px rgba(139, 92, 246, 0.3);
   border: 2px solid rgba(139, 92, 246, 0.4);
   transform: translateX(-75px);
 }
 
 .healx-chatbot-window.healx-chatbot-expanded {
-  width: 600px;
-  height: 850px;
+  width: 800px;
+  height: 580px;
 }
 
 .healx-chatbot-window.healx-chatbot-expanded.healx-chatbot-ai-speaking {
-  width: 750px;
+  width: 800px;
   transform: translateX(-75px);
 }
 
@@ -907,7 +908,27 @@
   padding: 5px;
   flex-shrink: 0;
   backdrop-filter: blur(20px);
-  position: relative;
+  display: flex;
+  position: fixed;
+  width: 790px;
+
+  /* X (Horizontal), Y (Vertical), Z (Layer) */
+  /* X → Moves it horizontally */
+  top: 370px;  /* Y → Moves it vertically */
+  z-index: 999; /* Z → Controls stack order */
+
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition: all 0.3s ease;
+}
+
+.healx-chatbot-ai-speaking .healx-chatbot-input,
+.healx-chatbot-window.healx-chatbot-ai-speaking .healx-chatbot-input {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
 }
 
 .healx-chatbot-input::before {
@@ -957,6 +978,8 @@
   position: relative;
   flex-shrink: 0;
   backdrop-filter: blur(10px);
+  margin-right: 20px;
+  margin-right: 40px;
 }
 
 .healx-chatbot-voice-btn::before {
@@ -1110,6 +1133,7 @@
   transition: var(--transition);
   background: var(--bg-secondary);
   min-height: 50px;
+  width: 550px;
   resize: none;
   font-family: inherit;
   font-weight: 500;
@@ -1153,6 +1177,7 @@
   justify-content: center;
   box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
   flex-shrink: 0;
+  margin-left: 50px;
   position: relative;
   overflow: hidden;
 }
@@ -1459,10 +1484,10 @@
 /* Quick Actions Section */
 .healx-chatbot-quick-actions {
   background: var(--bg-secondary);
-  padding: 20px 50px;
+  padding: 30px 50px;
   border-top: 1px solid var(--border-color);
   transition: var(--transition);
-  max-height: 250px;
+  max-height: 180px;
   overflow: hidden;
   flex-shrink: 0;
   position: relative;
@@ -1490,15 +1515,11 @@
 }
 
 .healx-chatbot-quick-actions-header {
-  font-size: 1rem;
+  font-size: 15px;
+  margin-left: -35px;
   font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 15px;
-  position: sticky;
-  top: 0;
-  background: inherit;
-  z-index: 10;
-  padding-bottom: 5px;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 
 .healx-chatbot-quick-actions-container {
@@ -1512,7 +1533,8 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  padding-bottom: 5px;
+  margin-top: 5px;
+  padding-bottom: 35px;
 }
 
 .healx-chatbot-quick-action-btn {
