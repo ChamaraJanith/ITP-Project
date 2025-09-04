@@ -24,12 +24,12 @@ const InventoryTotalView = () => {
 
   if (!state || !state.inventoryItems) {
     return (
-      <div className="inventory-total-view">
-        <div className="error-container">
-          <div className="error-content">
+      <div className="itv-unique-inventory-total-view">
+        <div className="itv-unique-error-container">
+          <div className="itv-unique-error-content">
             <h2>⚠️ No Inventory Data Available</h2>
             <p>Please navigate from the Payment Management page to view the inventory analysis.</p>
-            <button onClick={() => navigate("/admin/financial/payments")} className="back-btn">
+            <button onClick={() => navigate("/admin/financial/payments")} className="itv-unique-back-btn">
               ← Back to Payments
             </button>
           </div>
@@ -393,19 +393,19 @@ const InventoryTotalView = () => {
   };
 
   return (
-    <div className="inventory-total-view">
+    <div className="itv-unique-inventory-total-view">
       {/* Header */}
-      <div className="page-header">
-        <div className="header-content">
+      <div className="itv-unique-page-header">
+        <div className="itv-unique-header-content">
           <h1>📦 Inventory Analysis & Reports</h1>
-          <div className="header-actions">
-            <button onClick={() => navigate("/admin/financial/payments")} className="back-btn">
+          <div className="itv-unique-header-actions">
+            <button onClick={() => navigate("/admin/financial/payments")} className="itv-unique-back-btn">
               ← Back to Payments
             </button>
-            <button onClick={() => window.print()} className="print-btn">
+            <button onClick={() => window.print()} className="itv-unique-print-btn">
               🖨️ Print Report SS
             </button>
-            <button onClick={generatePDF} className="export-btn">
+            <button onClick={generatePDF} className="itv-unique-export-btn">
               📤 Export Report PDF
             </button>
           </div>
@@ -413,57 +413,57 @@ const InventoryTotalView = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="summary-grid">
-        <div className="summary-card primary-card">
-          <div className="card-icon">📦</div>
-          <div className="card-content">
+      <div className="itv-unique-summary-grid">
+        <div className="itv-unique-summary-card itv-unique-primary-card">
+          <div className="itv-unique-card-icon">📦</div>
+          <div className="itv-unique-card-content">
             <h2>{inventoryStats.totalItems}</h2>
             <p>Total Items</p>
-            <div className="card-trend">
-              <span className="trend-info">🏷️ Unique Products</span>
+            <div className="itv-unique-card-trend">
+              <span className="itv-unique-trend-info">🏷️ Unique Products</span>
             </div>
           </div>
         </div>
         
-        <div className="summary-card success-card">
-          <div className="card-icon">📊</div>
-          <div className="card-content">
+        <div className="itv-unique-summary-card itv-unique-success-card">
+          <div className="itv-unique-card-icon">📊</div>
+          <div className="itv-unique-card-content">
             <h3>{inventoryStats.totalQuantity.toLocaleString()}</h3>
             <p>Total Quantity</p>
             <small>All items combined</small>
           </div>
         </div>
         
-        <div className="summary-card primary-card">
-          <div className="card-icon">💰</div>
-          <div className="card-content">
+        <div className="itv-unique-summary-card itv-unique-primary-card">
+          <div className="itv-unique-card-icon">💰</div>
+          <div className="itv-unique-card-content">
             <h3>${inventoryStats.totalValue.toLocaleString()}</h3>
             <p>Total Inventory Value</p>
             <small>Current market value</small>
           </div>
         </div>
         
-        <div className="summary-card warning-card">
-          <div className="card-icon">⚠️</div>
-          <div className="card-content">
+        <div className="itv-unique-summary-card itv-unique-warning-card">
+          <div className="itv-unique-card-icon">⚠️</div>
+          <div className="itv-unique-card-content">
             <h3>{inventoryStats.lowStockCount}</h3>
             <p>Low Stock Items</p>
             <small>{((inventoryStats.lowStockCount / inventoryStats.totalItems) * 100).toFixed(1)}% of total</small>
           </div>
         </div>
         
-        <div className="summary-card danger-card">
-          <div className="card-icon">🚫</div>
-          <div className="card-content">
+        <div className="itv-unique-summary-card itv-unique-danger-card">
+          <div className="itv-unique-card-icon">🚫</div>
+          <div className="itv-unique-card-content">
             <h3>{inventoryStats.outOfStockCount}</h3>
             <p>Out of Stock</p>
             <small>Immediate attention needed</small>
           </div>
         </div>
         
-        <div className="summary-card">
-          <div className="card-icon">📈</div>
-          <div className="card-content">
+        <div className="itv-unique-summary-card">
+          <div className="itv-unique-card-icon">📈</div>
+          <div className="itv-unique-card-content">
             <h3>${(inventoryStats.totalValue / inventoryStats.totalItems).toFixed(2)}</h3>
             <p>Avg Item Value</p>
             <small>Per product</small>
@@ -472,14 +472,14 @@ const InventoryTotalView = () => {
       </div>
 
       {/* Charts Section */}
-      <div className="charts-section">
+      <div className="itv-unique-charts-section">
         {/* Stock Status */}
-        <div className="chart-container">
-          <div className="chart-header">
+        <div className="itv-unique-chart-container">
+          <div className="itv-unique-chart-header">
             <h3>📊 Stock Status Overview</h3>
             <p>Distribution of inventory by availability</p>
           </div>
-          <div className="chart-wrapper">
+          <div className="itv-unique-chart-wrapper">
             <Doughnut data={stockStatusData} options={{
               responsive: true,
               maintainAspectRatio: false,
@@ -501,12 +501,12 @@ const InventoryTotalView = () => {
         </div>
 
         {/* Category Breakdown */}
-        <div className="chart-container">
-          <div className="chart-header">
+        <div className="itv-unique-chart-container">
+          <div className="itv-unique-chart-header">
             <h3>🏷️ Category Value Breakdown</h3>
             <p>Inventory value by category</p>
           </div>
-          <div className="chart-wrapper">
+          <div className="itv-unique-chart-wrapper">
             <Pie data={categoryChartData} options={{
               responsive: true,
               maintainAspectRatio: false,
@@ -528,12 +528,12 @@ const InventoryTotalView = () => {
       </div>
 
       {/* Supplier Analysis */}
-      <div className="chart-container full-width">
-        <div className="chart-header">
+      <div className="itv-unique-chart-container itv-unique-full-width">
+        <div className="itv-unique-chart-header">
           <h3>🏭 Supplier Analysis</h3>
           <p>Items count and value by supplier</p>
         </div>
-        <div className="chart-wrapper large">
+        <div className="itv-unique-chart-wrapper itv-unique-large">
           <Bar data={supplierChartData} options={{
             responsive: true,
             maintainAspectRatio: false,
@@ -562,13 +562,13 @@ const InventoryTotalView = () => {
       </div>
 
       {/* Detailed Analysis Tables */}
-      <div className="analysis-section">
-        <div className="analysis-grid">
+      <div className="itv-unique-analysis-section">
+        <div className="itv-unique-analysis-grid">
           {/* Category Analysis Table */}
-          <div className="analysis-card">
+          <div className="itv-unique-analysis-card">
             <h3>🏷️ Category Analysis</h3>
-            <div className="analysis-table-container">
-              <table className="analysis-table">
+            <div className="itv-unique-analysis-table-container">
+              <table className="itv-unique-analysis-table">
                 <thead>
                   <tr>
                     <th>Category</th>
@@ -605,10 +605,10 @@ const InventoryTotalView = () => {
           </div>
 
           {/* Supplier Analysis */}
-          <div className="analysis-card">
+          <div className="itv-unique-analysis-card">
             <h3>🏭 Supplier Analysis</h3>
-            <div className="analysis-table-container">
-              <table className="analysis-table">
+            <div className="itv-unique-analysis-table-container">
+              <table className="itv-unique-analysis-table">
                 <thead>
                   <tr>
                     <th>Supplier</th>
@@ -642,18 +642,18 @@ const InventoryTotalView = () => {
 
       {/* Critical Items - Low Stock & Out of Stock */}
       {(inventoryStats.lowStockItems.length > 0 || inventoryStats.outOfStockItems.length > 0) && (
-        <div className="critical-items-section">
+        <div className="itv-unique-critical-items-section">
           <h3>🚨 Critical Items Requiring Attention</h3>
           
           {inventoryStats.outOfStockItems.length > 0 && (
-            <div className="critical-card danger-card">
+            <div className="itv-unique-critical-card itv-unique-danger-card">
               <h4>🚫 Out of Stock Items ({inventoryStats.outOfStockItems.length})</h4>
-              <div className="critical-items-grid">
+              <div className="itv-unique-critical-items-grid">
                 {inventoryStats.outOfStockItems.map(item => (
-                  <div key={item._id} className="critical-item">
+                  <div key={item._id} className="itv-unique-critical-item">
                     <strong>{item.name}</strong>
                     <small>{item.category}</small>
-                    <span className="critical-status out-of-stock">OUT OF STOCK</span>
+                    <span className="itv-unique-critical-status itv-unique-out-of-stock">OUT OF STOCK</span>
                   </div>
                 ))}
               </div>
@@ -661,15 +661,15 @@ const InventoryTotalView = () => {
           )}
 
           {inventoryStats.lowStockItems.filter(item => item.quantity > 0).length > 0 && (
-            <div className="critical-card warning-card">
+            <div className="itv-unique-critical-card itv-unique-warning-card">
               <h4>⚠️ Low Stock Items ({inventoryStats.lowStockItems.filter(item => item.quantity > 0).length})</h4>
-              <div className="critical-items-grid">
+              <div className="itv-unique-critical-items-grid">
                 {inventoryStats.lowStockItems.filter(item => item.quantity > 0).map(item => (
-                  <div key={item._id} className="critical-item">
+                  <div key={item._id} className="itv-unique-critical-item">
                     <strong>{item.name}</strong>
                     <small>{item.category}</small>
-                    <span className="critical-quantity">{item.quantity} remaining</span>
-                    <span className="critical-status low-stock">LOW STOCK</span>
+                    <span className="itv-unique-critical-quantity">{item.quantity} remaining</span>
+                    <span className="itv-unique-critical-status itv-unique-low-stock">LOW STOCK</span>
                   </div>
                 ))}
               </div>
@@ -679,10 +679,10 @@ const InventoryTotalView = () => {
       )}
 
       {/* Executive Summary */}
-      <div className="summary-report">
+      <div className="itv-unique-summary-report">
         <h3>📋 Executive Inventory Summary</h3>
-        <div className="report-grid">
-          <div className="report-section">
+        <div className="itv-unique-report-grid">
+          <div className="itv-unique-report-section">
             <h4>📊 Inventory Overview</h4>
             <ul>
               <li><strong>Total Items:</strong> {inventoryStats.totalItems}</li>
@@ -692,7 +692,7 @@ const InventoryTotalView = () => {
             </ul>
           </div>
           
-          <div className="report-section">
+          <div className="itv-unique-report-section">
             <h4>🏷️ Top Category</h4>
             {(() => {
               const topCategory = Object.entries(inventoryStats.categoryBreakdown)
@@ -709,7 +709,7 @@ const InventoryTotalView = () => {
             })()}
           </div>
           
-          <div className="report-section">
+          <div className="itv-unique-report-section">
             <h4>🚨 Stock Alerts</h4>
             <ul>
               <li><strong>Low Stock Items:</strong> {inventoryStats.lowStockCount}</li>
