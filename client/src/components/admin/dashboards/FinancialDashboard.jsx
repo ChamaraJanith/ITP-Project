@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ added
+import { useNavigate } from "react-router-dom";
 import AdminLayout from "../AdminLayout";
 import { adminDashboardApi } from "../../../services/adminApi.js";
 import {
@@ -18,6 +18,7 @@ import {
   RadialBarChart,
   RadialBar,
 } from "recharts";
+import "./FinancialDashboard.css";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
@@ -27,8 +28,9 @@ const FinancialDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showBilling, setShowBilling] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
 
-  const navigate = useNavigate(); // ✅ navigation hook
+  const navigate = useNavigate();
 
   useEffect(() => {
     initializeDashboard();
@@ -61,7 +63,7 @@ const FinancialDashboard = () => {
     }
   };
 
-  // ✅ Handle feature button clicks with paths
+  // Handle feature button clicks
   const handleFeatureClick = (feature) => {
     switch (feature) {
       case "view_billing":
@@ -72,8 +74,8 @@ const FinancialDashboard = () => {
         navigate("/admin/financial/payments");
         break;
 
-      case "generate_reports":
-        navigate("/reports");
+      case "Real time analytics":
+         navigate("/admin/financial/payments");
         break;
 
       case "track_revenue":
@@ -86,6 +88,17 @@ const FinancialDashboard = () => {
         
       default:
         console.log("Clicked feature:", feature);
+    }
+  };
+
+  // Handle analytics selection - matches your existing route patterns
+  const handleAnalyticsSelection = (analyticsType) => {
+    setShowAnalyticsModal(false);
+    
+    if (analyticsType === "financial") {
+      navigate("admin/financial/payments/total-view"); // Matches your existing route from FinancialManagePayments
+    } else if (analyticsType === "inventory") {
+      navigate("inventory-view"); // Matches your existing route from FinancialManagePayments
     }
   };
 
@@ -142,7 +155,7 @@ const FinancialDashboard = () => {
 
         {dashboardData && (
           <>
-            {/* Stats */}
+            {/* Stats Grid */}
             <div className="stats-grid">
               <div className="stat-card" onClick={() => scrollToChart("todaysRevenueChart")}>
                 <div className="stat-info">
@@ -173,19 +186,17 @@ const FinancialDashboard = () => {
               </div>
             </div>
 
-            {/* Billing Modal (kept) */}
+            {/* Billing Modal */}
             {showBilling && (
               <div className="billing-modal">
                 <div className="billing-content">
                   <h2>🧾 Billing Information</h2>
-
                   <div className="bill-card">
                     <p><strong>Invoice #:</strong> 12345</p>
                     <p><strong>Date:</strong> Aug 23, 2025</p>
                     <p><strong>Amount:</strong> $250.00</p>
                     <p><strong>Status:</strong> Paid ✅</p>
                   </div>
-
                   <button className="close-btn" onClick={() => setShowBilling(false)}>
                     Close
                   </button>
@@ -193,7 +204,48 @@ const FinancialDashboard = () => {
               </div>
             )}
 
-            {/* Charts - Updated with unique classes */}
+            {/* Analytics Selection Modal */}
+            {showAnalyticsModal && (
+              <div className="analytics-modal">
+                <div className="analytics-modal-content">
+                  <h2>📊 Select Analytics Type</h2>
+                  <p>Choose the type of analytics you want to view:</p>
+                  
+                  <div className="analytics-options">
+                    <button 
+                      className="analytics-option financial"
+                      onClick={() => handleAnalyticsSelection("financial")}
+                    >
+                      <div className="option-icon">💰</div>
+                      <div className="option-details">
+                        <h3>Financial Analytics</h3>
+                        <p>View payment trends, revenue data, and financial insights</p>
+                      </div>
+                    </button>
+
+                    <button 
+                      className="analytics-option inventory"
+                      onClick={() => handleAnalyticsSelection("inventory")}
+                    >
+                      <div className="option-icon">📦</div>
+                      <div className="option-details">
+                        <h3>Inventory Analytics</h3>
+                        <p>View stock levels, inventory trends, and supply metrics</p>
+                      </div>
+                    </button>
+                  </div>
+
+                  <button 
+                    className="analytics-close-btn" 
+                    onClick={() => setShowAnalyticsModal(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Charts Section */}
             <div className="charts-section">
               <div id="todaysRevenueChart" className="revenue-pie-chart">
                 <h2>📊 Revenue Breakdown</h2>
@@ -257,19 +309,44 @@ const FinancialDashboard = () => {
               </div>
             </div>
 
-            {/* Features */}
+            {/* Features Section */}
             <div className="features-section">
               <h2>💼 Financial Features</h2>
               <div className="features-grid">
-                {dashboardData.features?.map((feature, index) => (
-                  <button
-                    key={index}
-                    className="feature-button"
-                    onClick={() => handleFeatureClick(feature)}
-                  >
-                    {feature.replace("_", " ").toUpperCase()}
-                  </button>
-                ))}
+                <button
+                  className="feature-button"
+                  onClick={() => handleFeatureClick("view_billing")}
+                >
+                  VIEW BILLING
+                </button>
+
+                <button
+                  className="feature-button"
+                  onClick={() => handleFeatureClick("manage_payments")}
+                >
+                  MANAGE PAYMENTS
+                </button>
+
+                <button
+                  className="feature-button"
+                  onClick={() => handleFeatureClick("Real time analytics")}
+                >
+                  REAL TIME ANALYTICS
+                </button>
+
+                <button
+                  className="feature-button"
+                  onClick={() => handleFeatureClick("track_revenue")}
+                >
+                  TRACK REVENUE
+                </button>
+
+                <button
+                  className="feature-button"
+                  onClick={() => handleFeatureClick("payment_processing")}
+                >
+                  PAYMENT PROCESSING
+                </button>
               </div>
             </div>
 
@@ -292,5 +369,3 @@ const FinancialDashboard = () => {
 };
 
 export default FinancialDashboard;
-
-import "./FinancialDashboard.css"; // adjust path
