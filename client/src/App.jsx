@@ -25,6 +25,7 @@ import ViewConsultations from './components/admin/Doctor/ViewConsultations';
 import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
 import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
 import PaymentTotalView from './components/admin/Financial_Manager/PaymentTotalView';
+import FinancialPayroll from './components/admin/Financial_Manager/FinancialPayroll';
 
 // ✅ NEW: Patient Registration Components for Receptionist
 import PatientRegistration from './components/admin/Reciptionist/PatientRegistration';
@@ -347,6 +348,12 @@ function App() {
             <Route
               path="/admin/financial/payments/total-view"
               element={<PaymentTotalView />} />
+
+            
+           <Route
+          path="/admin/financial/payrolls"
+          element={<FinancialPayroll />} 
+        />
 
               <Route 
   path="/admin/procurement" 

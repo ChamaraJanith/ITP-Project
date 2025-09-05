@@ -20,7 +20,7 @@ import {
 } from "recharts";
 import "./FinancialDashboard.css";
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+const FINANCIAL_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
 const FinancialDashboard = () => {
   const [admin, setAdmin] = useState(null);
@@ -56,7 +56,7 @@ const FinancialDashboard = () => {
   };
 
   // Function to scroll to specific chart
-  const scrollToChart = (chartId) => {
+  const scrollToFinancialChart = (chartId) => {
     const chartElement = document.getElementById(chartId);
     if (chartElement) {
       chartElement.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -64,7 +64,7 @@ const FinancialDashboard = () => {
   };
 
   // Handle feature button clicks
-  const handleFeatureClick = (feature) => {
+  const handleFinancialFeatureClick = (feature) => {
     switch (feature) {
       case "view_billing":
         navigate("/billing");
@@ -82,8 +82,8 @@ const FinancialDashboard = () => {
         navigate("/revenue");
         break;
 
-      case "payment_processing":
-        navigate("/payment-processing");
+      case "payroll_processing":
+        navigate("/admin/financial/payrolls");
         break;
         
       default:
@@ -91,21 +91,21 @@ const FinancialDashboard = () => {
     }
   };
 
-  // Handle analytics selection - matches your existing route patterns
-  const handleAnalyticsSelection = (analyticsType) => {
+  // Handle analytics selection
+  const handleFinancialAnalyticsSelection = (analyticsType) => {
     setShowAnalyticsModal(false);
     
     if (analyticsType === "financial") {
-      navigate("admin/financial/payments/total-view"); // Matches your existing route from FinancialManagePayments
+      navigate("admin/financial/payments/total-view");
     } else if (analyticsType === "inventory") {
-      navigate("inventory-view"); // Matches your existing route from FinancialManagePayments
+      navigate("inventory-view");
     }
   };
 
   if (loading) {
     return (
       <AdminLayout admin={admin} title="Financial Dashboard">
-        <div className="loading">Loading financial dashboard...</div>
+        <div className="fd-loading">Loading financial dashboard...</div>
       </AdminLayout>
     );
   }
@@ -145,41 +145,41 @@ const FinancialDashboard = () => {
 
   return (
     <AdminLayout admin={admin} title="Financial Dashboard">
-      <div className="financial-dashboard">
-        <div className="dashboard-header">
+      <div className="fd-container">
+        <div className="fd-header">
           <h1>💰 Financial Manager Dashboard</h1>
           <p>Billing, payments & financial reports</p>
         </div>
 
-        {error && <div className="error-banner">⚠️ {error}</div>}
+        {error && <div className="fd-error-banner">⚠️ {error}</div>}
 
         {dashboardData && (
           <>
             {/* Stats Grid */}
-            <div className="stats-grid">
-              <div className="stat-card" onClick={() => scrollToChart("todaysRevenueChart")}>
-                <div className="stat-info">
+            <div className="fd-stats-grid">
+              <div className="fd-stat-card" onClick={() => scrollToFinancialChart("fd-todays-revenue-chart")}>
+                <div className="fd-stat-info">
                   <h3>${dashboardData.stats?.todayRevenue?.toLocaleString() || 0}</h3>
                   <p>Today's Revenue</p>
                 </div>
               </div>
 
-              <div className="stat-card" onClick={() => scrollToChart("monthlyRevenueChart")}>
-                <div className="stat-info">
+              <div className="fd-stat-card" onClick={() => scrollToFinancialChart("fd-monthly-revenue-chart")}>
+                <div className="fd-stat-info">
                   <h3>${dashboardData.stats?.pendingPayments?.toLocaleString() || 0}</h3>
                   <p>Pending Payments</p>
                 </div>
               </div>
 
-              <div className="stat-card" onClick={() => scrollToChart("pendingPaymentsChart")}>
-                <div className="stat-info">
+              <div className="fd-stat-card" onClick={() => scrollToFinancialChart("fd-pending-payments-chart")}>
+                <div className="fd-stat-info">
                   <h3>${dashboardData.stats?.monthlyTarget?.toLocaleString() || 0}</h3>
                   <p>Monthly Target</p>
                 </div>
               </div>
 
-              <div className="stat-card" onClick={() => scrollToChart("overduePaymentsChart")}>
-                <div className="stat-info">
+              <div className="fd-stat-card" onClick={() => scrollToFinancialChart("fd-overdue-payments-chart")}>
+                <div className="fd-stat-info">
                   <h3>{dashboardData.stats?.collectionRate || 0}%</h3>
                   <p>Collection Rate</p>
                 </div>
@@ -188,16 +188,16 @@ const FinancialDashboard = () => {
 
             {/* Billing Modal */}
             {showBilling && (
-              <div className="billing-modal">
-                <div className="billing-content">
+              <div className="fd-billing-modal">
+                <div className="fd-billing-content">
                   <h2>🧾 Billing Information</h2>
-                  <div className="bill-card">
+                  <div className="fd-bill-card">
                     <p><strong>Invoice #:</strong> 12345</p>
                     <p><strong>Date:</strong> Aug 23, 2025</p>
                     <p><strong>Amount:</strong> $250.00</p>
                     <p><strong>Status:</strong> Paid ✅</p>
                   </div>
-                  <button className="close-btn" onClick={() => setShowBilling(false)}>
+                  <button className="fd-close-btn" onClick={() => setShowBilling(false)}>
                     Close
                   </button>
                 </div>
@@ -206,29 +206,29 @@ const FinancialDashboard = () => {
 
             {/* Analytics Selection Modal */}
             {showAnalyticsModal && (
-              <div className="analytics-modal">
-                <div className="analytics-modal-content">
+              <div className="fd-analytics-modal">
+                <div className="fd-analytics-modal-content">
                   <h2>📊 Select Analytics Type</h2>
                   <p>Choose the type of analytics you want to view:</p>
                   
-                  <div className="analytics-options">
+                  <div className="fd-analytics-options">
                     <button 
-                      className="analytics-option financial"
-                      onClick={() => handleAnalyticsSelection("financial")}
+                      className="fd-analytics-option fd-financial"
+                      onClick={() => handleFinancialAnalyticsSelection("financial")}
                     >
-                      <div className="option-icon">💰</div>
-                      <div className="option-details">
+                      <div className="fd-option-icon">💰</div>
+                      <div className="fd-option-details">
                         <h3>Financial Analytics</h3>
                         <p>View payment trends, revenue data, and financial insights</p>
                       </div>
                     </button>
 
                     <button 
-                      className="analytics-option inventory"
-                      onClick={() => handleAnalyticsSelection("inventory")}
+                      className="fd-analytics-option fd-inventory"
+                      onClick={() => handleFinancialAnalyticsSelection("inventory")}
                     >
-                      <div className="option-icon">📦</div>
-                      <div className="option-details">
+                      <div className="fd-option-icon">📦</div>
+                      <div className="fd-option-details">
                         <h3>Inventory Analytics</h3>
                         <p>View stock levels, inventory trends, and supply metrics</p>
                       </div>
@@ -236,7 +236,7 @@ const FinancialDashboard = () => {
                   </div>
 
                   <button 
-                    className="analytics-close-btn" 
+                    className="fd-analytics-close-btn" 
                     onClick={() => setShowAnalyticsModal(false)}
                   >
                     Cancel
@@ -246,13 +246,13 @@ const FinancialDashboard = () => {
             )}
 
             {/* Charts Section */}
-            <div className="charts-section">
-              <div id="todaysRevenueChart" className="revenue-pie-chart">
+            <div className="fd-charts-section">
+              <div id="fd-todays-revenue-chart" className="fd-revenue-pie-chart">
                 <h2>📊 Revenue Breakdown</h2>
                 <PieChart width={400} height={300}>
                   <Pie data={pieData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label>
                     {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={FINANCIAL_COLORS[index % FINANCIAL_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -260,7 +260,7 @@ const FinancialDashboard = () => {
                 </PieChart>
               </div>
 
-              <div id="monthlyRevenueChart" className="revenue-bar-chart">
+              <div id="fd-monthly-revenue-chart" className="fd-revenue-bar-chart">
                 <h2>📈 Revenue Comparison</h2>
                 <BarChart width={500} height={300} data={barData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -272,7 +272,7 @@ const FinancialDashboard = () => {
                 </BarChart>
               </div>
 
-              <div id="pendingPaymentsChart" className="revenue-line-chart">
+              <div id="fd-pending-payments-chart" className="fd-revenue-line-chart">
                 <h2>📉 Revenue Trend</h2>
                 <LineChart width={500} height={300} data={lineData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -284,7 +284,7 @@ const FinancialDashboard = () => {
                 </LineChart>
               </div>
 
-              <div id="overduePaymentsChart" className="collection-radial-chart">
+              <div id="fd-overdue-payments-chart" className="fd-collection-radial-chart">
                 <h2>🎯 Collection Rate</h2>
                 <RadialBarChart
                   width={300}
@@ -310,52 +310,52 @@ const FinancialDashboard = () => {
             </div>
 
             {/* Features Section */}
-            <div className="features-section">
+            <div className="fd-features-section">
               <h2>💼 Financial Features</h2>
-              <div className="features-grid">
+              <div className="fd-features-grid">
                 <button
-                  className="feature-button"
-                  onClick={() => handleFeatureClick("view_billing")}
+                  className="fd-feature-button"
+                  onClick={() => handleFinancialFeatureClick("view_billing")}
                 >
                   VIEW BILLING
                 </button>
 
                 <button
-                  className="feature-button"
-                  onClick={() => handleFeatureClick("manage_payments")}
+                  className="fd-feature-button"
+                  onClick={() => handleFinancialFeatureClick("manage_payments")}
                 >
                   MANAGE PAYMENTS
                 </button>
 
                 <button
-                  className="feature-button"
-                  onClick={() => handleFeatureClick("Real time analytics")}
+                  className="fd-feature-button"
+                  onClick={() => handleFinancialFeatureClick("Real time analytics")}
                 >
                   REAL TIME ANALYTICS
                 </button>
 
                 <button
-                  className="feature-button"
-                  onClick={() => handleFeatureClick("track_revenue")}
+                  className="fd-feature-button"
+                  onClick={() => handleFinancialFeatureClick("track_revenue")}
                 >
                   TRACK REVENUE
                 </button>
 
                 <button
-                  className="feature-button"
-                  onClick={() => handleFeatureClick("payment_processing")}
+                  className="fd-feature-button"
+                  onClick={() => handleFinancialFeatureClick("payroll_processing")}
                 >
-                  PAYMENT PROCESSING
+                  PAYROLL PROCESSING
                 </button>
               </div>
             </div>
 
             {/* Recent Activities */}
-            <div className="activity-section">
+            <div className="fd-activity-section">
               <h2>📋 Recent Financial Activities</h2>
-              <div className="activity-list">
+              <div className="fd-activity-list">
                 {dashboardData.recentActivities?.map((activity, index) => (
-                  <div key={index} className="activity-item">
+                  <div key={index} className="fd-activity-item">
                     <p>{activity}</p>
                   </div>
                 ))}
