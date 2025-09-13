@@ -26,7 +26,7 @@ import ViewConsultations from './components/admin/Doctor/ViewConsultations';
 import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
 import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
 import PaymentTotalView from './components/admin/Financial_Manager/PaymentTotalView';
-import DoctorItemRequestModal from "./components/admin/Doctor/DoctorInventoryPage"; // keep modal import [21]
+
 
 // ✅ NEW: Patient Registration Components for Receptionist
 import PatientRegistration from './components/admin/Reciptionist/PatientRegistration';
@@ -361,19 +361,7 @@ function App() {
 
             {/* ✅ Doctor Item Request (kept as modal, now forced open via props) */}
             <Route
-              path="/admin/doctor/inventory"
-              element={
-                <ProtectedAdminRoute allowedRoles={['doctor', 'admin']}>
-                  <DoctorInventoryPage
-                    isOpen={true}
-                    onClose={() => window.history.back()}
-                    apiBaseUrl={import.meta.env.VITE_API_BASE_URL}
-                  />
-                </ProtectedAdminRoute>
-              }
-            />
-
-            {/* ✅ 404 Fallback Route */}
+           {/* ✅ 404 Fallback Route */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </main>
