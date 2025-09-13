@@ -1,9 +1,10 @@
+// src/components/admin/dashboards/DoctorDashboard.jsx
 import React, { useState, useEffect } from "react";
 import AdminLayout from "../AdminLayout";
 import { adminDashboardApi } from "../../../services/adminApi.js";
-import ScheduleConsultation from "../Doctor/ScheduleConsultation.jsx";
-import { Navigate } from "react-router-dom";
-import './DoctorDashboard.css'; // Assuming you have a CSS file for styling
+import ScheduleConsultation from "../Doctor/ScheduleConsultation.jsx"; // kept
+import { Navigate } from "react-router-dom"; // kept
+import './DoctorDashboard.css';
 import { useNavigate } from "react-router-dom";
 
 const DoctorDashboard = () => {
@@ -110,6 +111,13 @@ const DoctorDashboard = () => {
                   onClick={() => navigate("/admin/doctor/prescription-dashboard") }
                 >
                   EMERGENCY ALERTS
+                </button>
+
+                <button
+                  className="feature-card"
+                  onClick={() => navigate("/admin/doctor/inventory") }
+                >
+                  ITEM REQUESTS
                 </button>
               </div>
             </div>
