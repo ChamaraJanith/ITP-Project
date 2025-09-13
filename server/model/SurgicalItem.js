@@ -103,13 +103,13 @@ const surgicalItemSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  
-  // ✅ NEW: Auto-restock configuration (added while keeping everything else)
+
+  // Auto-restock configuration
   autoRestock: {
     enabled: { 
       type: Boolean, 
       default: false,
-      index: true // Index for efficient queries
+      index: true // path-level single-field index kept
     },
     maxStockLevel: { 
       type: Number, 
@@ -117,7 +117,6 @@ const surgicalItemSchema = new mongoose.Schema({
       min: [0, 'Maximum stock level cannot be negative'],
       validate: {
         validator: function(val) {
-          // Max stock should be greater than or equal to min stock
           return !this.minStockLevel || val >= this.minStockLevel;
         },
         message: 'Maximum stock level must be greater than or equal to minimum stock level'
@@ -134,7 +133,6 @@ const surgicalItemSchema = new mongoose.Schema({
       default: 'to_max',
       validate: {
         validator: function(method) {
-          // If method is fixed_quantity, reorderQuantity must be > 0
           if (method === 'fixed_quantity') {
             return this.autoRestock.reorderQuantity > 0;
           }
@@ -163,7 +161,7 @@ const surgicalItemSchema = new mongoose.Schema({
     },
     lastAutoRestock: {
       type: Date,
-      index: true // Index for efficient queries on recent restocks
+      index: true // keep path-level single-field index; remove schema-level duplicate
     },
     autoRestockCount: { 
       type: Number, 
@@ -177,7 +175,7 @@ const surgicalItemSchema = new mongoose.Schema({
     },
     nextScheduledCheck: {
       type: Date,
-      index: true // Index for scheduler queries
+      index: true // keep path-level single-field index; remove schema-level duplicate
     },
     restockHistory: [{
       date: {
@@ -233,43 +231,36 @@ const surgicalItemSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Virtual for stock status (your existing virtual)
+// Virtuals
 surgicalItemSchema.virtual('stockStatus').get(function() {
   if (this.quantity === 0) return 'Out of Stock';
   if (this.quantity <= this.minStockLevel) return 'Low Stock';
   return 'Available';
 });
 
-// ✅ NEW: Virtual for auto-restock status
 surgicalItemSchema.virtual('autoRestockStatus').get(function() {
   if (!this.autoRestock.enabled) return 'Disabled';
-  
   const needsRestock = this.quantity <= this.minStockLevel;
   const hasRecentRestock = this.autoRestock.lastAutoRestock && 
     (Date.now() - this.autoRestock.lastAutoRestock.getTime()) < (this.autoRestock.settings.minimumRestockInterval * 60 * 60 * 1000);
-  
   if (needsRestock && hasRecentRestock) return 'Recently Restocked';
   if (needsRestock) return 'Needs Restock';
   return 'Active';
 });
 
-// ✅ NEW: Virtual for restock recommendation
 surgicalItemSchema.virtual('restockRecommendation').get(function() {
   if (!this.autoRestock.enabled || this.quantity > this.minStockLevel) {
     return null;
   }
-  
   const currentStock = this.quantity;
   const minStock = this.minStockLevel;
   const maxStock = this.autoRestock.maxStockLevel || (minStock * 3);
-  
   let recommendedQuantity;
   if (this.autoRestock.restockMethod === 'fixed_quantity') {
     recommendedQuantity = this.autoRestock.reorderQuantity;
   } else {
     recommendedQuantity = maxStock - currentStock;
   }
-  
   return {
     currentStock,
     minStock,
@@ -281,21 +272,22 @@ surgicalItemSchema.virtual('restockRecommendation').get(function() {
   };
 });
 
-// Index for efficient searching (your existing indexes)
+// Indexes
 surgicalItemSchema.index({ name: 'text', description: 'text', category: 'text' });
 surgicalItemSchema.index({ category: 1, status: 1 });
 surgicalItemSchema.index({ quantity: 1 });
 
-// ✅ NEW: Additional indexes for auto-restock functionality
+// Additional indexes for auto-restock functionality
 surgicalItemSchema.index({ 'autoRestock.enabled': 1, quantity: 1, minStockLevel: 1 });
-surgicalItemSchema.index({ 'autoRestock.lastAutoRestock': 1 });
-surgicalItemSchema.index({ 'autoRestock.nextScheduledCheck': 1 });
+// Removed duplicates of single-field indexes below; path-level index:true is retained
+// surgicalItemSchema.index({ 'autoRestock.lastAutoRestock': 1 });
+// surgicalItemSchema.index({ 'autoRestock.nextScheduledCheck': 1 });
 surgicalItemSchema.index({ 
   'autoRestock.enabled': 1, 
   'autoRestock.settings.minimumRestockInterval': 1 
 });
 
-// Middleware to update status based on quantity (your existing middleware)
+// Middleware
 surgicalItemSchema.pre('save', function(next) {
   if (this.quantity === 0) {
     this.status = 'Out of Stock';
@@ -307,71 +299,51 @@ surgicalItemSchema.pre('save', function(next) {
   next();
 });
 
-// ✅ NEW: Additional middleware for auto-restock logic
 surgicalItemSchema.pre('save', function(next) {
-  // Auto-configure max stock level if not set and auto-restock is enabled
   if (this.autoRestock.enabled && !this.autoRestock.maxStockLevel) {
     this.autoRestock.maxStockLevel = this.minStockLevel * 3;
   }
-  
-  // Auto-configure reorder quantity if not set and using fixed method
   if (this.autoRestock.enabled && 
       this.autoRestock.restockMethod === 'fixed_quantity' && 
       !this.autoRestock.reorderQuantity) {
     this.autoRestock.reorderQuantity = this.minStockLevel * 2;
   }
-  
-  // Set next scheduled check if auto-restock is enabled
   if (this.autoRestock.enabled && !this.autoRestock.nextScheduledCheck) {
-    this.autoRestock.nextScheduledCheck = new Date(Date.now() + (30 * 60 * 1000)); // 30 minutes from now
+    this.autoRestock.nextScheduledCheck = new Date(Date.now() + (30 * 60 * 1000));
   }
-  
   next();
 });
 
-// ✅ NEW: Method to check if item needs auto-restock
+// Methods
 surgicalItemSchema.methods.needsAutoRestock = function() {
   if (!this.autoRestock.enabled) return false;
   if (this.quantity > this.minStockLevel) return false;
-  
-  // Check if minimum interval has passed since last restock
   if (this.autoRestock.lastAutoRestock) {
     const timeSinceLastRestock = Date.now() - this.autoRestock.lastAutoRestock.getTime();
-    const minimumInterval = this.autoRestock.settings.minimumRestockInterval * 60 * 60 * 1000; // Convert hours to ms
-    
+    const minimumInterval = this.autoRestock.settings.minimumRestockInterval * 60 * 60 * 1000;
     if (timeSinceLastRestock < minimumInterval) {
       return false;
     }
   }
-  
   return true;
 };
 
-// ✅ NEW: Method to calculate restock amount
 surgicalItemSchema.methods.calculateRestockAmount = function() {
   if (!this.needsAutoRestock()) return 0;
-  
   const currentStock = this.quantity;
   const maxStock = this.autoRestock.maxStockLevel || (this.minStockLevel * 3);
-  
   if (this.autoRestock.restockMethod === 'fixed_quantity') {
     return this.autoRestock.reorderQuantity || this.minStockLevel;
   } else {
-    // Restock to maximum level
     return Math.max(0, maxStock - currentStock);
   }
 };
 
-// ✅ NEW: Method to perform auto-restock
 surgicalItemSchema.methods.performAutoRestock = function() {
   const restockAmount = this.calculateRestockAmount();
-  
   if (restockAmount <= 0) return false;
-  
   const previousStock = this.quantity;
   this.quantity += restockAmount;
-  
-  // Add to restock history
   this.autoRestock.restockHistory.push({
     date: new Date(),
     quantityAdded: restockAmount,
@@ -381,14 +353,11 @@ surgicalItemSchema.methods.performAutoRestock = function() {
     triggeredBy: 'system',
     reason: `Auto-restock triggered: quantity (${previousStock}) <= minStock (${this.minStockLevel})`
   });
-  
-  // Update auto-restock tracking
   this.autoRestock.lastAutoRestock = new Date();
   this.autoRestock.autoRestockCount += 1;
   this.autoRestock.lastAutoRestockQuantity = restockAmount;
-  this.autoRestock.nextScheduledCheck = new Date(Date.now() + (30 * 60 * 1000)); // Next check in 30 minutes
+  this.autoRestock.nextScheduledCheck = new Date(Date.now() + (30 * 60 * 1000));
   this.lastRestocked = new Date();
-  
   return {
     success: true,
     previousStock,
@@ -398,7 +367,7 @@ surgicalItemSchema.methods.performAutoRestock = function() {
   };
 };
 
-// ✅ NEW: Static method to find items needing auto-restock
+// Statics
 surgicalItemSchema.statics.findItemsNeedingAutoRestock = function() {
   return this.find({
     'autoRestock.enabled': true,
@@ -412,7 +381,6 @@ surgicalItemSchema.statics.findItemsNeedingAutoRestock = function() {
   });
 };
 
-// ✅ NEW: Static method to get auto-restock statistics
 surgicalItemSchema.statics.getAutoRestockStats = async function() {
   const totalAutoRestockEnabled = await this.countDocuments({ 'autoRestock.enabled': true, isActive: true });
   const itemsNeedingRestock = await this.countDocuments({
@@ -425,13 +393,11 @@ surgicalItemSchema.statics.getAutoRestockStats = async function() {
       ]
     }
   });
-  
   const recentRestocks = await this.countDocuments({
     'autoRestock.lastAutoRestock': {
-      $gte: new Date(Date.now() - (24 * 60 * 60 * 1000)) // Last 24 hours
+      $gte: new Date(Date.now() - (24 * 60 * 60 * 1000))
     }
   });
-  
   return {
     totalAutoRestockEnabled,
     itemsNeedingRestock,
@@ -441,7 +407,12 @@ surgicalItemSchema.statics.getAutoRestockStats = async function() {
   };
 };
 
-// ✅ CRITICAL FIX: Use this pattern to prevent OverwriteModelError (your existing pattern)
-const SurgicalItem = mongoose.models.SurgicalItem || mongoose.model('SurgicalItem', surgicalItemSchema);
+// Dev-safe export to prevent OverwriteModelError and duplicate model compilation during HMR
+const MODEL_NAME = 'SurgicalItem';
+if (process.env.NODE_ENV !== 'production') {
+  try { mongoose.deleteModel(MODEL_NAME); } catch (_) {}
+}
+const SurgicalItem =
+  mongoose.models[MODEL_NAME] || mongoose.model(MODEL_NAME, surgicalItemSchema);
 
 export default SurgicalItem;
