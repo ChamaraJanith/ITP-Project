@@ -1319,28 +1319,28 @@ const SurgicalItemsManagement = () => {
             )}
           </div>
 
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon">📦</div>
-              <div className="stat-info">
+          <div className="supplier-stats-grid">
+            <div className="supplier-stat-card">
+              <div className="supplier-stat-icon">📦</div>
+              <div className="supplier-stat-info">
                 <h3>{stats.totalItems || 0}</h3>
                 <p>Total Items</p>
               </div>
             </div>
-            <div className="stat-card">
-              <div className="stat-icon">📊</div>
-              <div className="stat-info">
+            <div className="supplier-stat-card">
+              <div className="supplier-stat-icon">📊</div>
+              <div className="supplier-stat-info">
                 <h3>{(stats.totalQuantity || 0).toLocaleString()}</h3>
                 <p>Total Quantity</p>
               </div>
             </div>
-            <div className="stat-card" style={{
+            <div className="supplier-stat-card" style={{
               background: stats.lowStockItems > 0 ? 'linear-gradient(135deg, #ff4757, #ff6b7a)' : undefined,
               color: stats.lowStockItems > 0 ? 'white' : undefined,
               animation: stats.lowStockItems > 0 ? 'pulse 2s infinite' : 'none'
             }}>
-              <div className="stat-icon">⚠️</div>
-              <div className="stat-info">
+              <div className="supplier-stat-icon">⚠️</div>
+              <div className="supplier-stat-info">
                 <h3>{stats.lowStockItems || 0}</h3>
                 <p>Low Stock Items</p>
                 {stats.lowStockItems > 0 && (
@@ -1348,9 +1348,9 @@ const SurgicalItemsManagement = () => {
                 )}
               </div>
             </div>
-            <div className="stat-card" style={{ cursor: 'pointer' }} onClick={handleViewTotalValue}>
-              <div className="stat-icon">💰</div>
-              <div className="stat-info">
+            <div className="supplier-stat-card" style={{ cursor: 'pointer' }} onClick={handleViewTotalValue}>
+              <div className="supplier-stat-icon">💰</div>
+              <div className="supplier-stat-info">
                 <h3>${(stats.totalValue || 0).toLocaleString()}</h3>
                 <p>Total Value</p>
                 <small style={{ fontSize: '12px', opacity: 0.8, color: '#007bff' }}>
