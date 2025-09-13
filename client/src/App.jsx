@@ -27,6 +27,10 @@ import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
 import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
 import PaymentTotalView from './components/admin/Financial_Manager/PaymentTotalView';
 
+import DoctorItemRequestModal from "./components/admin/Doctor/DoctorInventoryPage"; // keep modal import [21]
+
+import FinancialPayroll from './components/admin/Financial_Manager/FinancialPayroll';
+
 
 // ✅ NEW: Patient Registration Components for Receptionist
 import PatientRegistration from './components/admin/Reciptionist/PatientRegistration';
@@ -361,7 +365,47 @@ function App() {
 
             {/* ✅ Doctor Item Request (kept as modal, now forced open via props) */}
             <Route
-           {/* ✅ 404 Fallback Route */}
+
+              path="/admin/doctor/inventory"
+              element={
+                <ProtectedAdminRoute allowedRoles={['doctor', 'admin']}>
+                  <DoctorInventoryPage
+                    isOpen={true}
+                    onClose={() => window.history.back()}
+                    apiBaseUrl={import.meta.env.VITE_API_BASE_URL}
+                  />
+                </ProtectedAdminRoute>
+              }
+            />
+          <Route
+              path="/admin/doctor/prescriptions"
+              element={<PrescriptionPage />} />
+
+            <Route
+             path="/admin/financial/payments/inventory-view"
+              element={<InventoryTotalView />} />
+
+            <Route
+              path="/admin/financial/payments/total-view"
+              element={<PaymentTotalView />} />
+
+            
+           <Route
+          path="/admin/financial/payrolls"
+          element={<FinancialPayroll />} 
+        />
+
+              <Route 
+  path="/admin/procurement" 
+  element={
+    <ProtectedAdminRoute allowedRoles={['admin']}>
+      <SupplierManagement />
+    </ProtectedAdminRoute>
+  } 
+/>
+
+
+            {/* ✅ 404 Fallback Route */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </main>
