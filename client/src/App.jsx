@@ -1,5 +1,6 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// src/App.jsx
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Homepage from './components/Homepage';
 import MedicalNavbar from './components/NavBar';
 import EmergencyPage from './components/EmergencyPage';
@@ -25,6 +26,7 @@ import ViewConsultations from './components/admin/Doctor/ViewConsultations';
 import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
 import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
 import PaymentTotalView from './components/admin/Financial_Manager/PaymentTotalView';
+import DoctorItemRequestModal from "./components/admin/Doctor/DoctorInventoryPage"; // keep modal import [21]
 
 // ✅ NEW: Patient Registration Components for Receptionist
 import PatientRegistration from './components/admin/Reciptionist/PatientRegistration';
@@ -33,8 +35,19 @@ import PatientDetails from './components/admin/Reciptionist/PatientDetails';
 
 // ✅ NEW: Procurement & Suppliers Component
 import SupplierManagement from './components/admin/Admin/SupplierManagement';
+import DoctorInventoryPage from './components/admin/Doctor/DoctorInventoryPage';
 
-// ✅ Healthcare Service Components
+// ---- NEW: Force scroll top on route change ----
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    // Instant jump to top on every route change
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+// -----------------------------------------------
+
 const BookAppointmentPage = () => (
   <div style={{padding: '2rem'}}>
     <h2>📅 Book Appointment</h2>
@@ -161,8 +174,19 @@ const NotFoundPage = () => (
 );
 
 function App() {
+  // ---- NEW: Disable browser scroll restoration on refresh ----
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
+  // ------------------------------------------------------------
+
   return (
     <Router>
+      {/* NEW: Ensure top-of-page on every route change */}
+      <ScrollToTop />
+
       <div className="App">
         <MedicalNavbar />
         
@@ -319,43 +343,35 @@ function App() {
               } 
             />
 
-            <Route 
-             path="/admin/surgical-items" 
-             element={<SurgicalItemsManagement />} />
+            {/* Inventory management */}
+            <Route path="/admin/surgical-items" element={<SurgicalItemsManagement />} />
 
-            <Route
-             path="/admin/financial/payments"
-             element={<FinancialManagePayments />} />
+            {/* Financial routes */}
+            <Route path="/admin/financial/payments" element={<FinancialManagePayments />} />
+            <Route path="/admin/financial/payments/inventory-view" element={<InventoryTotalView />} />
+            <Route path="/admin/financial/payments/total-view" element={<PaymentTotalView />} />
 
             {/* ✅ Admin Consultation Scheduling */}
-            <Route
-              path="/admin/doctor/schedule-consultation"
-              element={<ScheduleConsultation />} />
+            <Route path="/admin/doctor/schedule-consultation" element={<ScheduleConsultation />} />
+            <Route path="/admin/doctor/view-consultations" element={<ViewConsultations />} />
+            <Route path="/admin/doctor/prescriptions" element={<PrescriptionPage />} />
 
-            <Route
-              path="/admin/doctor/view-consultations"
-              element={<ViewConsultations />} />
+            {/* Alias route so EMERGENCY ALERTS button works without removing it */}
+            <Route path="/admin/doctor/prescription-dashboard" element={<PrescriptionPage />} />
 
+            {/* ✅ Doctor Item Request (kept as modal, now forced open via props) */}
             <Route
-              path="/admin/doctor/prescriptions"
-              element={<PrescriptionPage />} />
-
-            <Route
-             path="/admin/financial/payments/inventory-view"
-              element={<InventoryTotalView />} />
-
-            <Route
-              path="/admin/financial/payments/total-view"
-              element={<PaymentTotalView />} />
-
-              <Route 
-  path="/admin/procurement" 
-  element={
-    <ProtectedAdminRoute allowedRoles={['admin']}>
-      <SupplierManagement />
-    </ProtectedAdminRoute>
-  } 
-/>
+              path="/admin/doctor/inventory"
+              element={
+                <ProtectedAdminRoute allowedRoles={['doctor', 'admin']}>
+                  <DoctorInventoryPage
+                    isOpen={true}
+                    onClose={() => window.history.back()}
+                    apiBaseUrl={import.meta.env.VITE_API_BASE_URL}
+                  />
+                </ProtectedAdminRoute>
+              }
+            />
 
             {/* ✅ 404 Fallback Route */}
             <Route path="*" element={<NotFoundPage />} />
