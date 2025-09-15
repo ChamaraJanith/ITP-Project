@@ -8,6 +8,7 @@ const PatientRegistration = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [registeredPatient, setRegisteredPatient] = useState(null);
   const [qrCodeData, setQrCodeData] = useState('');
+  const [qrCodeError, setQrCodeError] = useState(false);
 
   const {
     register,
@@ -16,8 +17,21 @@ const PatientRegistration = () => {
     formState: { errors }
   } = useForm();
 
+  // Validate QR code format
+  const validateQRCode = (qrData) => {
+    if (!qrData) return false;
+    return (
+      qrData.startsWith('data:image/') || 
+      qrData.startsWith('http://') || 
+      qrData.startsWith('https://') ||
+      qrData.startsWith('/') // For relative URLs
+    );
+  };
+
   const onSubmit = async (data) => {
     setIsLoading(true);
+    setQrCodeError(false);
+    
     try {
       // Convert date string to Date object
       data.dateOfBirth = new Date(data.dateOfBirth);
@@ -26,17 +40,80 @@ const PatientRegistration = () => {
       data.allergies = data.allergies ? data.allergies.split(',').map(item => item.trim()) : [];
       data.medicalHistory = data.medicalHistory ? data.medicalHistory.split(',').map(item => item.trim()) : [];
 
+      console.log('Sending registration data:', data);
+
       const response = await axios.post('http://localhost:7000/api/patients/register', data);
       
+      // Debug logging
+      console.log('Full API Response:', response);
+      console.log('Response Data:', response.data);
+      console.log('Response Success:', response.data.success);
+      console.log('Response Structure:', {
+        hasData: !!response.data.data,
+        hasPatient: !!response.data.data?.patient,
+        hasQRCode: !!response.data.data?.qrCode,
+        directPatient: !!response.data.patient,
+        directQRCode: !!response.data.qrCode
+      });
+      
       if (response.data.success) {
-        setRegisteredPatient(response.data.data.patient);
-        setQrCodeData(response.data.data.qrCode);
-        toast.success('Patient registered successfully!');
-        reset();
+        // Handle multiple possible response structures
+        let patientData = null;
+        let qrCodeData = null;
+
+        // Try different response structures
+        if (response.data.data) {
+          patientData = response.data.data.patient || response.data.data;
+          qrCodeData = response.data.data.qrCode || response.data.data.qrCodeData;
+        } else {
+          patientData = response.data.patient;
+          qrCodeData = response.data.qrCode || response.data.qrCodeData;
+        }
+
+        console.log('Extracted Patient Data:', patientData);
+        console.log('Extracted QR Code Data:', qrCodeData);
+        console.log('QR Code Type:', typeof qrCodeData);
+        console.log('QR Code Length:', qrCodeData?.length);
+
+        if (patientData) {
+          setRegisteredPatient(patientData);
+          
+          // Validate and set QR code
+          if (validateQRCode(qrCodeData)) {
+            setQrCodeData(qrCodeData);
+            console.log('QR Code set successfully');
+          } else {
+            console.error('Invalid or missing QR code:', qrCodeData);
+            setQrCodeError(true);
+            
+            // Try to generate a fallback QR code or show error
+            if (patientData.patientId) {
+              console.log('Patient ID available for QR generation:', patientData.patientId);
+              // You could call a separate QR generation endpoint here
+            }
+          }
+          
+          toast.success('Patient registered successfully!');
+          reset();
+        } else {
+          console.error('No patient data in response');
+          toast.error('Registration failed - no patient data received');
+        }
+      } else {
+        console.error('API returned success: false');
+        toast.error(response.data.message || 'Registration failed');
       }
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error(error.response?.data?.message || 'Registration failed');
+      console.error('Error response:', error.response?.data);
+      
+      if (error.response?.status === 400) {
+        toast.error('Invalid data provided');
+      } else if (error.response?.status === 500) {
+        toast.error('Server error - please try again');
+      } else {
+        toast.error(error.response?.data?.message || 'Registration failed');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -45,6 +122,24 @@ const PatientRegistration = () => {
   const handleNewRegistration = () => {
     setRegisteredPatient(null);
     setQrCodeData('');
+    setQrCodeError(false);
+  };
+
+  // QR Code regeneration function
+  const handleRegenerateQR = async () => {
+    if (!registeredPatient?.patientId) return;
+    
+    try {
+      const response = await axios.post(`http://localhost:7000/api/patients/${registeredPatient._id}/generate-qr`);
+      if (response.data.success && response.data.qrCode) {
+        setQrCodeData(response.data.qrCode);
+        setQrCodeError(false);
+        toast.success('QR Code regenerated successfully!');
+      }
+    } catch (error) {
+      console.error('QR regeneration failed:', error);
+      toast.error('Failed to regenerate QR code');
+    }
   };
 
   if (registeredPatient) {
@@ -90,7 +185,7 @@ const PatientRegistration = () => {
               </div>
               <div>
                 <span className="font-medium">Registration Date:</span>
-                <span className="ml-2">{new Date(registeredPatient.registrationDate).toLocaleDateString()}</span>
+                <span className="ml-2">{new Date(registeredPatient.registrationDate || Date.now()).toLocaleDateString()}</span>
               </div>
             </div>
           </div>
@@ -102,17 +197,59 @@ const PatientRegistration = () => {
               Patient QR Code
             </h3>
             <div className="bg-white p-4 rounded-lg inline-block">
-              <img src={qrCodeData} alt="Patient QR Code" className="w-48 h-48" />
+              {qrCodeData && !qrCodeError ? (
+                <img 
+                  src={qrCodeData} 
+                  alt="Patient QR Code" 
+                  className="w-48 h-48"
+                  onError={() => {
+                    console.error('QR Code image failed to load');
+                    setQrCodeError(true);
+                  }}
+                />
+              ) : (
+                <div className="w-48 h-48 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
+                  <div className="text-center">
+                    <span className="text-4xl mb-2 block">
+                      {qrCodeError ? '❌' : '⏳'}
+                    </span>
+                    <p className="text-sm">
+                      {qrCodeError ? 'QR Code generation failed' : 'Generating QR Code...'}
+                    </p>
+                    {qrCodeError && (
+                      <button
+                        onClick={handleRegenerateQR}
+                        className="mt-2 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                      >
+                        Retry
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="mt-4">
-              <a
-                href={qrCodeData}
-                download={`patient_${registeredPatient.patientId}_qr.png`}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <span className="mr-2">💾</span>
-                Download QR Code
-              </a>
+            
+            <div className="mt-4 space-y-2">
+              {qrCodeData && !qrCodeError && (
+                <a
+                  href={qrCodeData}
+                  download={`patient_${registeredPatient.patientId}_qr.png`}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <span className="mr-2">💾</span>
+                  Download QR Code
+                </a>
+              )}
+              
+              {qrCodeError && (
+                <button
+                  onClick={handleRegenerateQR}
+                  className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                >
+                  <span className="mr-2">🔄</span>
+                  Regenerate QR Code
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -125,6 +262,23 @@ const PatientRegistration = () => {
             Register Another Patient
           </button>
         </div>
+
+        {/* Debug Information (Remove in production) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-6 p-4 bg-gray-100 rounded-lg text-xs">
+            <details>
+              <summary className="cursor-pointer font-medium">Debug Info (Dev Only)</summary>
+              <div className="mt-2 space-y-1">
+                <p><strong>Patient ID:</strong> {registeredPatient.patientId}</p>
+                <p><strong>QR Code Available:</strong> {qrCodeData ? 'Yes' : 'No'}</p>
+                <p><strong>QR Code Error:</strong> {qrCodeError ? 'Yes' : 'No'}</p>
+                <p><strong>QR Code Type:</strong> {typeof qrCodeData}</p>
+                <p><strong>QR Code Length:</strong> {qrCodeData?.length || 0}</p>
+                <p><strong>QR Code Preview:</strong> {qrCodeData?.substring(0, 50)}...</p>
+              </div>
+            </details>
+          </div>
+        )}
       </div>
     );
   }
@@ -361,5 +515,6 @@ const PatientRegistration = () => {
     </div>
   );
 };
+
 
 export default PatientRegistration;
