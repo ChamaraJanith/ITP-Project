@@ -3482,3 +3482,28 @@ body {
 .inventory-management-section small {
   overflow-wrap: anywhere;
 }
+
+/* Apply accent colors to default state */
+.inventory-management-section .inventory-dashboard-btn.surgical-items-btn {
+  --im-accent: var(--im-accent-surgical);
+  background: linear-gradient(135deg, #0ea5a4 0%, #14b8a6 100%);
+  color: white;
+}
+
+.inventory-management-section .inventory-dashboard-btn.reports-btn {
+  --im-accent: var(--im-accent-reports);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+}
+
+.inventory-management-section .inventory-dashboard-btn.procurement-btn {
+  --im-accent: var(--im-accent-procure);
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  color: white;
+}
+
+/* Update icon colors for contrast */
+.inventory-management-section .inventory-dashboard-btn .dashboard-icon {
+  color: white !important;
+  background: rgba(255, 255, 255, 0.2);
+}
