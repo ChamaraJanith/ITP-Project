@@ -21,16 +21,30 @@ const PrescriptionPage = ({ patientFromParent }) => {
   const [prescriptions, setPrescriptions] = useState([]);
   const [editingPrescription, setEditingPrescription] = useState(null);
 
-  // Fetch all prescriptions
-  const fetchPrescriptions = async () => {
-    try {
-      const res = await getAllPrescriptions();
-      setPrescriptions(res.data?.data || []);
-    } catch (err) {
-      console.error("Failed to fetch prescriptions", err);
-      setPrescriptions([]);
-    }
-  };
+  // Fetch all prescriptions and filter today's only
+const fetchPrescriptions = async () => {
+  try {
+    const res = await getAllPrescriptions();
+    const allPrescriptions = res.data?.data || [];
+
+    const today = new Date();
+    // Normalize today's date to midnight
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+
+    // Filter prescriptions where date is >= todayStart and < todayEnd
+    const todaysPrescriptions = allPrescriptions.filter((p) => {
+      if (!p.date) return false;
+      const presDate = new Date(p.date);
+      return presDate >= todayStart && presDate < todayEnd;
+    });
+
+    setPrescriptions(todaysPrescriptions);
+  } catch (err) {
+    console.error("Failed to fetch prescriptions", err);
+    setPrescriptions([]);
+  }
+};
 
   useEffect(() => {
     fetchPrescriptions();
@@ -185,7 +199,7 @@ const PrescriptionPage = ({ patientFromParent }) => {
 
       {/* Prescriptions list */}
       <div style={{ marginTop: 40 }}>
-        <h2>All Prescriptions</h2>
+        <h2>Today Patient History</h2>
         {prescriptions.length === 0 ? (
           <div>No prescriptions found.</div>
         ) : (
