@@ -25,6 +25,9 @@ import notificationRouter from './routes/notifications.js';
 import surgicalrouter from './routes/surgicalItems.js';
 import consultationRouter from './routes/consultationRoutes.js';
 import prescriptionRouter from './routes/prescriptionRoutes.js';
+import payrollrouter from './routes/FinancialPayrollRoutes.js';  
+
+
 
 // ✅ NEW: Import procurement routes
 import supplierRoutes from './routes/suppliers.js';
@@ -137,6 +140,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/payments", financialPayRoutes);
 app.use("/api/prescription", consultationRouter);
 app.use("/api/doctor/prescriptions", prescriptionRouter);
+app.use("/api/payrolls", payrollrouter);
 
 // Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
