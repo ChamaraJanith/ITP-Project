@@ -80,4 +80,23 @@ patrouter.get("/", async (req, res) => {
   }
 });
 
+// adjust path to your Patient model
+
+// Existing routes (search, create, etc.) here...
+
+// ✅ Add this route to get patient by ID
+patrouter.get("/:id", async (req, res) => {
+  try {
+    const patient = await Patient.findById(req.params.id);
+    if (!patient) return res.status(404).json({ success: false, message: "Patient not found" });
+
+    res.json({ success: true, patient });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+
+
 export default patrouter;
