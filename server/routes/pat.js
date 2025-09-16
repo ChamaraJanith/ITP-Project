@@ -58,22 +58,41 @@ patrouter.post('/register', async (req, res) => {
 // 🔹 FIXED: Search patients
 patrouter.get("/", async (req, res) => {
   try {
-    const search = req.query.search || "";
+    const search = req.query.search?.trim() || "";
 
     if (!search) {
-      return res.json([]); // return empty array if no search term
+      return res.json([]);
     }
 
-    const regex = new RegExp(search, "i"); // case-insensitive
-    const patients = await Patient.find({
-      $or: [
-        { firstName: regex },
-        { lastName: regex },
-        { patientId: regex },
-      ]
-    }).limit(10);
+    // Split words by spaces
+    const words = search.split(/\s+/);
 
-    res.json(patients); // ✅ array of matching patients
+    let query;
+
+    if (words.length >= 2) {
+      // If two words given: search firstName + lastName
+      const [first, last] = words;
+      query = {
+        $and: [
+          { firstName: new RegExp(first, "i") },
+          { lastName: new RegExp(last, "i") }
+        ]
+      };
+    } else {
+      // Single word: match firstName OR lastName OR patientId
+      const regex = new RegExp(search, "i");
+      query = {
+        $or: [
+          { firstName: regex },
+          { lastName: regex },
+          { patientId: regex }
+        ]
+      };
+    }
+
+    const patients = await Patient.find(query).limit(10);
+
+    res.json(patients);
   } catch (error) {
     console.error("Patient search failed:", error);
     res.status(500).json({ message: "Server error" });
