@@ -174,6 +174,7 @@ const PrescriptionForm = ({
   onSaved,
   editingPrescription,
   prescriptions,
+  scannedPatientId,
 }) => {
   const {
     control,
@@ -207,6 +208,72 @@ const PrescriptionForm = ({
     if (!prescriptions) return [];
     return filterTodaysPrescriptions(prescriptions);
   }, [prescriptions]);
+
+
+  // Add this useEffect to handle scanned patient ID
+useEffect(() => {
+  if (!scannedPatientId || selectedPatient) return;
+
+  const fetchScannedPatient = async () => {
+    try {
+      setSearchError("");
+      
+      // Try to fetch patient by ID directly
+      const res = await fetch(`http://localhost:7000/api/patients/${scannedPatientId}`);
+      
+      if (res.ok) {
+        const data = await res.json();
+        const patient = data.patient || data;
+        
+        if (patient) {
+          handleSelectPatient({
+            _id: patient._id || patient.patientId,
+            patientId: patient.patientId || patient._id,
+            firstName: patient.firstName,
+            lastName: patient.lastName,
+            email: patient.email,
+            phone: patient.phone,
+            gender: patient.gender,
+            dateOfBirth: patient.dateOfBirth,
+            bloodGroup: patient.bloodGroup,
+            allergies: patient.allergies || []
+          });
+          return;
+        }
+      }
+      
+      // If direct fetch fails, try searching by patient ID
+      const searchRes = await fetch(`http://localhost:7000/api/patients?search=${encodeURIComponent(scannedPatientId)}`);
+      
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        
+        if (Array.isArray(searchData) && searchData.length > 0) {
+          // Find exact match first, otherwise take first result
+          const exactMatch = searchData.find(p => 
+            p._id === scannedPatientId || 
+            p.patientId === scannedPatientId
+          );
+          
+          const patientToSelect = exactMatch || searchData[0];
+          handleSelectPatient(patientToSelect);
+        } else {
+          setSearchError(`No patient found with ID: ${scannedPatientId}`);
+        }
+      } else {
+        setSearchError("Failed to search for scanned patient");
+      }
+      
+    } catch (err) {
+      console.error("Failed to fetch scanned patient:", err);
+      setSearchError("Failed to load scanned patient data");
+    }
+  };
+
+  fetchScannedPatient();
+}, [scannedPatientId, selectedPatient]);
+
+
 
   // Prefill form for editing
 // Effect to handle editing prescription and fetch full patient data
@@ -247,7 +314,7 @@ useEffect(() => {
         bloodGroup: patient.bloodGroup,
         allergies: patient.allergies || []
       });
-      setSearch(`${patient.firstName} ${patient.lastName}`);
+      setSearch(`${patient.firstName} ${patient.lastName} ${patient.patientId || patient._id}`);
     })
     .catch(err => console.error("Failed to fetch patient for editing:", err));
 }, [editingPrescription, reset]);
@@ -301,7 +368,7 @@ useEffect(() => {
 
     setSelectedPatient(patient);
     setValue("patientId", patient._id || patient.patientId);
-    setSearch(`${patient.firstName} ${patient.lastName}`);
+    setSearch(`${patient.firstName} ${patient.lastName} (${patient.patientId || patient._id})`);
     setPatientsList([]);
     setSearchError("");
     trigger("patientId"); // Trigger validation

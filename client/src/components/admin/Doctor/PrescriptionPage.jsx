@@ -9,6 +9,7 @@ import {
   getPrescriptionById,
   updatePrescription,
 } from "../../../services/prescriptionService";
+import { QrReader } from "react-qr-reader";
 
 const PrescriptionPage = ({ patientFromParent }) => {
   const { doctor } = useContext(DoctorContext);
@@ -17,34 +18,39 @@ const PrescriptionPage = ({ patientFromParent }) => {
   const [ocrText, setOcrText] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  // Prescriptions list
   const [prescriptions, setPrescriptions] = useState([]);
   const [editingPrescription, setEditingPrescription] = useState(null);
 
+  const [scannedPatientId, setScannedPatientId] = useState(null);
+  const [scanning, setScanning] = useState(false);
+
   // Fetch all prescriptions and filter today's only
-const fetchPrescriptions = async () => {
-  try {
-    const res = await getAllPrescriptions();
-    const allPrescriptions = res.data?.data || [];
-
-    const today = new Date();
-    // Normalize today's date to midnight
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-
-    // Filter prescriptions where date is >= todayStart and < todayEnd
-    const todaysPrescriptions = allPrescriptions.filter((p) => {
-      if (!p.date) return false;
-      const presDate = new Date(p.date);
-      return presDate >= todayStart && presDate < todayEnd;
-    });
-
-    setPrescriptions(todaysPrescriptions);
-  } catch (err) {
-    console.error("Failed to fetch prescriptions", err);
-    setPrescriptions([]);
-  }
-};
+  const fetchPrescriptions = async () => {
+    try {
+      const res = await getAllPrescriptions();
+      const allPrescriptions = res.data?.data || [];
+      const today = new Date();
+      const todayStart = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate()
+      );
+      const todayEnd = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() + 1
+      );
+      const todaysPrescriptions = allPrescriptions.filter((p) => {
+        if (!p.date) return false;
+        const presDate = new Date(p.date);
+        return presDate >= todayStart && presDate < todayEnd;
+      });
+      setPrescriptions(todaysPrescriptions);
+    } catch (err) {
+      console.error("Failed to fetch prescriptions", err);
+      setPrescriptions([]);
+    }
+  };
 
   useEffect(() => {
     fetchPrescriptions();
@@ -75,7 +81,8 @@ const fetchPrescriptions = async () => {
 
   // Delete prescription
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this prescription?")) return;
+    if (!window.confirm("Are you sure you want to delete this prescription?"))
+      return;
     try {
       await deletePrescription(id);
       alert("Prescription deleted successfully");
@@ -93,7 +100,6 @@ const fetchPrescriptions = async () => {
       const pres = res.data?.data;
       if (!pres) return alert("Prescription not found");
       setEditingPrescription(pres);
-      // Set patient from prescription
       setPatient({
         _id: pres.patientId,
         firstName: pres.patientName.split(" ")[0] || "",
@@ -102,9 +108,7 @@ const fetchPrescriptions = async () => {
         email: pres.patientEmail,
         phone: pres.patientPhone,
       });
-      // Set OCR text if available (optional)
       setOcrText("");
-      // Scroll to form
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       console.error(err);
@@ -112,7 +116,7 @@ const fetchPrescriptions = async () => {
     }
   };
 
-  // Handle save (create or update)
+  // Handle save
   const handleSaved = async (presData) => {
     try {
       if (editingPrescription) {
@@ -124,6 +128,7 @@ const fetchPrescriptions = async () => {
       setEditingPrescription(null);
       setPatient(null);
       setOcrText("");
+      setScannedPatientId(null);
       fetchPrescriptions();
     } catch (err) {
       console.error(err);
@@ -131,14 +136,120 @@ const fetchPrescriptions = async () => {
     }
   };
 
-  return (
-    <div style={{ maxWidth: 1200, margin: "20px auto", padding: 12 }}>
-      <h1>{editingPrescription ? "Edit Prescription" : "Create Prescription"}</h1>
+  // QR code scan handler
+  const handleScan = (result, error) => {
+    if (!!result) {
+      let patientId = null;
+      try {
+        const parsed = JSON.parse(result?.text || result);
+        patientId = parsed.patientId || parsed.id || parsed._id || null;
+      } catch {
+        patientId = result?.text || result;
+      }
+      if (patientId) {
+        setScannedPatientId(patientId);
+        setScanning(false);
+      }
+    }
+  };
 
-      <div style={{ display: "grid", gridTemplateColumns: "400px 1fr", gap: 20 }}>
-        {/* Left side: Patient info + Canvas */}
-        <div>
-          <div style={{ marginBottom: 8 }}>
+  return (
+    <div
+      style={{
+        maxWidth: 1200,
+        margin: "20px auto",
+        padding: 12,
+        fontFamily: "sans-serif",
+      }}
+    >
+      <h1 style={{ fontSize: "28px", marginBottom: "16px" }}>
+        {editingPrescription ? "Edit Prescription" : "Create Prescription"}
+      </h1>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "400px 1fr",
+          gap: 20,
+          alignItems: "start",
+        }}
+      >
+        {/* LEFT SIDE */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* QR section only if creating */}
+          {!editingPrescription && (
+            <div
+              style={{
+                background: "#fafafa",
+                border: "1px solid #ddd",
+                borderRadius: 12,
+                padding: 20,
+                boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+              }}
+            >
+              <h2 style={{ fontSize: "20px", marginBottom: 12, color: "#333" }}>
+                Scan Patient QR Code
+              </h2>
+
+              <button
+                onClick={() => setScanning((prev) => !prev)}
+                style={{
+                  display: "inline-block",
+                  marginBottom: 14,
+                  padding: "10px 18px",
+                  background: scanning ? "#f44336" : "#4caf50",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  fontSize: "15px",
+                  transition: "background 0.2s ease",
+                }}
+                onMouseOver={(e) => (e.target.style.opacity = 0.9)}
+                onMouseOut={(e) => (e.target.style.opacity = 1)}
+              >
+                {scanning ? "Stop Scanning" : "Start Scanning"}
+              </button>
+
+              {scanning && (
+                <div
+                  style={{
+                    width: "100%",
+                    height: 250,
+                    border: "1px solid #ccc",
+                    borderRadius: 8,
+                    overflow: "hidden",
+                    background: "#000",
+                  }}
+                >
+                  <QrReader
+                    constraints={{ facingMode: "environment" }}
+                    onResult={handleScan}
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                </div>
+              )}
+
+              {scannedPatientId && (
+                <div
+                  style={{
+                    marginTop: 15,
+                    color: "#2e7d32",
+                    fontWeight: "bold",
+                    fontSize: "16px",
+                    background: "#e8f5e9",
+                    padding: "8px 12px",
+                    borderRadius: 6,
+                  }}
+                >
+                  ✅ Scanned Patient ID: {scannedPatientId}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Patient Info */}
+          <div>
             <strong>Patient</strong>
             <div style={{ padding: 8, background: "#f6f6f6", borderRadius: 6 }}>
               {patient ? (
@@ -157,12 +268,15 @@ const fetchPrescriptions = async () => {
                   </div>
                 </>
               ) : (
-                <div style={{ color: "#b00" }}>No patient selected. Use search first.</div>
+                <div style={{ color: "#b00" }}>
+                  No patient selected. Use search or scan QR.
+                </div>
               )}
             </div>
           </div>
 
-          <div style={{ marginBottom: 12 }}>
+          {/* Canvas + OCR */}
+          <div>
             <strong>Write on Canvas</strong>
             <div style={{ margin: "8px 0" }}>
               <CanvasPad ref={canvasRef} width={380} height={220} lineWidth={3} />
@@ -185,7 +299,7 @@ const fetchPrescriptions = async () => {
           </div>
         </div>
 
-        {/* Right side: Prescription Form */}
+        {/* RIGHT SIDE */}
         <div>
           <PrescriptionForm
             doctor={doctor}
@@ -193,6 +307,7 @@ const fetchPrescriptions = async () => {
             ocrTextFromCanvas={ocrText}
             onSaved={handleSaved}
             editingPrescription={editingPrescription}
+            scannedPatientId={scannedPatientId}
           />
         </div>
       </div>
@@ -219,21 +334,40 @@ const fetchPrescriptions = async () => {
                   <td style={{ border: "1px solid #ccc", padding: 8 }}>
                     {new Date(p.date).toLocaleDateString()}
                   </td>
-                  <td style={{ border: "1px solid #ccc", padding: 8 }}>{p.patientName}</td>
-                  <td style={{ border: "1px solid #ccc", padding: 8 }}>{p.diagnosis}</td>
+                  <td style={{ border: "1px solid #ccc", padding: 8 }}>
+                    {p.patientName}
+                  </td>
+                  <td style={{ border: "1px solid #ccc", padding: 8 }}>
+                    {p.diagnosis}
+                  </td>
                   <td style={{ border: "1px solid #ccc", padding: 8 }}>
                     {p.doctorName} ({p.doctorSpecialization})
                   </td>
                   <td style={{ border: "1px solid #ccc", padding: 8 }}>
                     <button
                       onClick={() => handleEdit(p._id)}
-                      style={{ marginRight: 8, background: "#2196F3", color: "#fff", border: "none", padding: "4px 8px", borderRadius: 4 }}
+                      style={{
+                        marginRight: 8,
+                        background: "#2196F3",
+                        color: "#fff",
+                        border: "none",
+                        padding: "4px 8px",
+                        borderRadius: 4,
+                        cursor: "pointer",
+                      }}
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(p._id)}
-                      style={{ background: "#f44336", color: "#fff", border: "none", padding: "4px 8px", borderRadius: 4 }}
+                      style={{
+                        background: "#f44336",
+                        color: "#fff",
+                        border: "none",
+                        padding: "4px 8px",
+                        borderRadius: 4,
+                        cursor: "pointer",
+                      }}
                     >
                       Delete
                     </button>
