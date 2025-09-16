@@ -9,12 +9,40 @@ import './AdminDashboard.css';
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [admin, setAdmin] = useState(null);
+  
+  // ✅ ENHANCED: systemStats with all necessary fields for real data
   const [systemStats, setSystemStats] = useState({
     totalUsers: 0,
     totalStaff: 0,
     totalPatients: 0,
-    systemHealth: 'loading'
+    systemHealth: 'loading',
+    verifiedUsers: 0,
+    unverifiedUsers: 0,
+    recentRegistrations: 0,
+    monthlyGrowth: 0,
+    staffBreakdown: {},
+    lastUpdated: null,
+    // ✅ FIXED: Add all financial and operational fields for REAL data
+    totalRevenue: null,
+    totalExpenses: null,
+    netProfit: null,
+    appointmentRevenue: null,
+    activePatients: null,
+    newPatients: null,
+    totalAppointments: null,
+    completedAppointments: null,
+    cancelledAppointments: null,
+    pendingAppointments: null,
+    totalBilled: null,
+    totalCollected: null,
+    outstandingAmount: null,
+    averagePayment: null,
+    patientGrowth: null,
+    revenueGrowth: null,
+    appointmentGrowth: null,
+    satisfactionScore: null
   });
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [growthAnalytics, setGrowthAnalytics] = useState(null);
@@ -44,7 +72,7 @@ const AdminDashboard = () => {
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
-  // ✅ NEW: All Users Management State
+  // All Users Management State
   const [allUsers, setAllUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [showAllUsers, setShowAllUsers] = useState(false);
@@ -52,8 +80,8 @@ const AdminDashboard = () => {
     page: 1,
     limit: 10,
     search: '',
-    type: 'all', // 'all', 'patients', 'staff'
-    status: 'all', // 'all', 'verified', 'pending', 'active', 'inactive'
+    type: 'all',
+    status: 'all',
     sortBy: 'createdAt',
     sortOrder: 'desc'
   });
@@ -74,7 +102,7 @@ const AdminDashboard = () => {
     return () => clearInterval(interval);
   }, [showProfiles]);
 
-  // ✅ NEW: Auto-reload users when filters change
+  // Auto-reload users when filters change
   useEffect(() => {
     if (showAllUsers) {
       loadAllUsers();
@@ -147,28 +175,51 @@ const AdminDashboard = () => {
       setLoading(true);
       setError('');
 
-      // Fetch dashboard statistics
+      // ✅ ENHANCED: Fetch comprehensive dashboard statistics with all data fields
       const statsResponse = await adminDashboardApi.getDashboardStats();
       
       if (statsResponse.success) {
         const data = statsResponse.data;
+        
+        // ✅ FIXED: Set ALL required fields with real data or null (no random numbers)
         setSystemStats({
-          totalUsers: data.totalUsers,
-          totalStaff: data.totalStaff,
-          totalPatients: data.totalPatients,
-          verifiedUsers: data.verifiedUsers,
-          unverifiedUsers: data.unverifiedUsers,
-          recentRegistrations: data.recentRegistrations,
-          monthlyGrowth: data.monthlyGrowth,
-          staffBreakdown: data.staffBreakdown,
-          systemHealth: data.systemHealth.status,
-          lastUpdated: data.lastUpdated
+          totalUsers: data.totalUsers || 0,
+          totalStaff: data.totalStaff || 0,
+          totalPatients: data.totalPatients || 0,
+          verifiedUsers: data.verifiedUsers || 0,
+          unverifiedUsers: data.unverifiedUsers || 0,
+          recentRegistrations: data.recentRegistrations || 0,
+          monthlyGrowth: data.monthlyGrowth || 0,
+          staffBreakdown: data.staffBreakdown || {},
+          systemHealth: data.systemHealth?.status || 'loading',
+          lastUpdated: data.lastUpdated || null,
+          
+          // ✅ ENHANCED: Real financial and operational data (no random generation)
+          totalRevenue: data.totalRevenue || null,
+          totalExpenses: data.totalExpenses || null,
+          netProfit: data.netProfit || null,
+          appointmentRevenue: data.appointmentRevenue || null,
+          activePatients: data.activePatients || data.totalPatients || null,
+          newPatients: data.newPatients || data.recentRegistrations || null,
+          totalAppointments: data.totalAppointments || null,
+          completedAppointments: data.completedAppointments || null,
+          cancelledAppointments: data.cancelledAppointments || null,
+          pendingAppointments: data.pendingAppointments || null,
+          totalBilled: data.totalBilled || null,
+          totalCollected: data.totalCollected || null,
+          outstandingAmount: data.outstandingAmount || null,
+          averagePayment: data.averagePayment || null,
+          patientGrowth: data.patientGrowth || data.monthlyGrowth || null,
+          revenueGrowth: data.revenueGrowth || null,
+          appointmentGrowth: data.appointmentGrowth || null,
+          satisfactionScore: data.satisfactionScore || null
         });
 
         // Set recent patients for the buttons
         setRecentPatients(data.recentPatients || []);
 
-        console.log('✅ Dashboard stats loaded:', data);
+        console.log('✅ Dashboard stats loaded with REAL data:', data);
+        console.log('📊 Patient numbers - Total:', data.totalPatients, 'Active:', data.activePatients, 'New:', data.newPatients);
       } else {
         throw new Error(statsResponse.message || 'Failed to fetch dashboard stats');
       }
@@ -177,12 +228,22 @@ const AdminDashboard = () => {
       const analyticsResponse = await adminDashboardApi.getUserGrowthAnalytics(7);
       if (analyticsResponse.success) {
         setGrowthAnalytics(analyticsResponse.data);
+        
+        // ✅ ENHANCED: Update systemStats with analytics data if available
+        setSystemStats(prev => ({
+          ...prev,
+          patientGrowth: analyticsResponse.data.patientGrowth || prev.patientGrowth,
+          revenueGrowth: analyticsResponse.data.revenueGrowth || prev.revenueGrowth,
+          appointmentGrowth: analyticsResponse.data.appointmentGrowth || prev.appointmentGrowth,
+          satisfactionScore: analyticsResponse.data.satisfactionScore || prev.satisfactionScore,
+          newPatients: analyticsResponse.data.newPatients || prev.newPatients
+        }));
       }
 
       // Fetch activity logs
       const logsResponse = await adminDashboardApi.getSystemActivityLogs(10);
       if (logsResponse.success) {
-        setActivityLogs(logsResponse.data.activityLogs);
+        setActivityLogs(logsResponse.data.activityLogs || []);
       }
 
       // Fetch dashboard role access
@@ -215,7 +276,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // ✅ NEW: Load all users function
+  // Load all users function
   const loadAllUsers = async () => {
     try {
       setUsersLoading(true);
@@ -236,7 +297,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // ✅ NEW: Toggle all users section
+  // Toggle all users section
   const toggleAllUsers = async () => {
     if (!showAllUsers) {
       await loadAllUsers();
@@ -244,7 +305,7 @@ const AdminDashboard = () => {
     setShowAllUsers(!showAllUsers);
   };
 
-  // ✅ NEW: Handle user filter changes
+  // Handle user filter changes
   const handleUserFilterChange = (key, value) => {
     setUserFilters(prev => ({
       ...prev,
@@ -265,7 +326,6 @@ const AdminDashboard = () => {
     if (showProfiles) {
       await loadRealTimeProfiles();
     }
-    // ✅ NEW: Refresh all users if visible
     if (showAllUsers) {
       await loadAllUsers();
     }
@@ -286,7 +346,7 @@ const AdminDashboard = () => {
     if (showProfiles) {
       loadRealTimeProfiles();
     }
-    // ✅ NEW: Refresh all users after modal closes
+    // Refresh all users after modal closes
     if (showAllUsers) {
       loadAllUsers();
     }
@@ -381,57 +441,48 @@ ${admin?.name || 'Admin User'}`);
     }));
   };
 
-  // Frontend fallback report generation functions
+  // ✅ FIXED: Helper function to format values or show "No data entered"
+  const getValueOrNoData = (value) => {
+    if (value === null || value === undefined || (typeof value === 'number' && isNaN(value))) {
+      return 'No data entered';
+    }
+    if (typeof value === 'number') {
+      return value.toLocaleString();
+    }
+    return value;
+  };
+
+  // ✅ FIXED: Helper function to format currency values
+  const getCurrencyOrNoData = (value) => {
+    if (value === null || value === undefined || (typeof value === 'number' && isNaN(value))) {
+      return 'No data entered';
+    }
+    if (typeof value === 'number') {
+      return `$${value.toLocaleString()}`;
+    }
+    return value;
+  };
+
+  // ✅ COMPLETELY FIXED: Generate report with 100% REAL DATA (no mockData, no Math.random())
   const generateFrontendHTMLReport = () => {
     const monthNames = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     
-    const mockData = {
-      financials: summaryFormData.includeFinancials ? {
-        totalRevenue: Math.floor(Math.random() * 100000) + 50000,
-        totalExpenses: Math.floor(Math.random() * 60000) + 30000,
-        netProfit: Math.floor(Math.random() * 40000) + 20000,
-        appointmentRevenue: Math.floor(Math.random() * 30000) + 15000
-      } : null,
-      patients: summaryFormData.includePatients ? {
-        total: systemStats.totalPatients || Math.floor(Math.random() * 500) + 200,
-        newPatients: Math.floor(Math.random() * 50) + 20,
-        activePatients: Math.floor(Math.random() * 300) + 150,
-        appointmentsCompleted: Math.floor(Math.random() * 400) + 200
-      } : null,
-      staff: summaryFormData.includeStaff ? {
-        totalStaff: systemStats.totalStaff || Math.floor(Math.random() * 20) + 10,
-        doctors: systemStats.staffBreakdown?.doctor || Math.floor(Math.random() * 8) + 3,
-        nurses: Math.floor(Math.random() * 15) + 5,
-        receptionists: Math.floor(Math.random() * 5) + 2
-      } : null,
-      appointments: summaryFormData.includeAppointments ? {
-        totalAppointments: Math.floor(Math.random() * 500) + 200,
-        completedAppointments: Math.floor(Math.random() * 400) + 180,
-        cancelledAppointments: Math.floor(Math.random() * 50) + 10,
-        pendingAppointments: Math.floor(Math.random() * 100) + 30
-      } : null,
-      billing: summaryFormData.includeBilling ? {
-        totalBilled: Math.floor(Math.random() * 150000) + 80000,
-        totalCollected: Math.floor(Math.random() * 120000) + 70000,
-        outstandingAmount: Math.floor(Math.random() * 30000) + 10000,
-        averagePayment: Math.floor(Math.random() * 500) + 200
-      } : null,
-      analytics: summaryFormData.includeAnalytics ? {
-        patientGrowth: Math.floor(Math.random() * 20) + 5,
-        revenueGrowth: Math.floor(Math.random() * 15) + 8,
-        appointmentGrowth: Math.floor(Math.random() * 25) + 10,
-        satisfactionScore: Math.floor(Math.random() * 20) + 80
-      } : null
-    };
+    console.log('📊 Generating HTML report with REAL DATA:', {
+      totalPatients: systemStats.totalPatients,
+      activePatients: systemStats.activePatients,
+      newPatients: systemStats.newPatients,
+      totalRevenue: systemStats.totalRevenue,
+      completedAppointments: systemStats.completedAppointments
+    });
 
     let html = `
       <!DOCTYPE html>
       <html>
       <head>
-          <title>Monthly Report - ${monthNames[summaryFormData.month - 1]} ${summaryFormData.year}</title>
+          <title>Hospital Report - ${monthNames[summaryFormData.month - 1]} ${summaryFormData.year}</title>
           <style>
               body { 
                   font-family: 'Segoe UI', Arial, sans-serif; 
@@ -479,6 +530,11 @@ ${admin?.name || 'Admin User'}`);
                   font-weight: bold; 
                   color: #007bff; 
                   margin-bottom: 8px;
+              }
+              .metric-value.no-data {
+                  color: #dc3545;
+                  font-size: 1.2em;
+                  font-style: italic;
               }
               .metric-label { 
                   color: #6c757d; 
@@ -537,25 +593,26 @@ ${admin?.name || 'Admin User'}`);
               </div>
     `;
 
-    if (mockData.financials) {
+    // ✅ FIXED: Financial Summary with REAL DATA ONLY
+    if (summaryFormData.includeFinancials) {
       html += `
           <div class="section">
               <h2>💰 Financial Summary</h2>
               <div class="metrics-grid">
                   <div class="metric">
-                      <div class="metric-value">$${mockData.financials.totalRevenue.toLocaleString()}</div>
+                      <div class="metric-value ${systemStats.totalRevenue === null ? 'no-data' : ''}">${getCurrencyOrNoData(systemStats.totalRevenue)}</div>
                       <div class="metric-label">Total Revenue</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">$${mockData.financials.totalExpenses.toLocaleString()}</div>
+                      <div class="metric-value ${systemStats.totalExpenses === null ? 'no-data' : ''}">${getCurrencyOrNoData(systemStats.totalExpenses)}</div>
                       <div class="metric-label">Total Expenses</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">$${mockData.financials.netProfit.toLocaleString()}</div>
+                      <div class="metric-value ${systemStats.netProfit === null ? 'no-data' : ''}">${getCurrencyOrNoData(systemStats.netProfit)}</div>
                       <div class="metric-label">Net Profit</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">$${mockData.financials.appointmentRevenue.toLocaleString()}</div>
+                      <div class="metric-value ${systemStats.appointmentRevenue === null ? 'no-data' : ''}">${getCurrencyOrNoData(systemStats.appointmentRevenue)}</div>
                       <div class="metric-label">Appointment Revenue</div>
                   </div>
               </div>
@@ -563,25 +620,26 @@ ${admin?.name || 'Admin User'}`);
       `;
     }
 
-    if (mockData.patients) {
+    // ✅ FIXED: Patient Statistics with REAL NUMBERS ONLY
+    if (summaryFormData.includePatients) {
       html += `
           <div class="section">
               <h2>👥 Patient Statistics</h2>
               <div class="metrics-grid">
                   <div class="metric">
-                      <div class="metric-value">${mockData.patients.total.toLocaleString()}</div>
+                      <div class="metric-value">${getValueOrNoData(systemStats.totalPatients)}</div>
                       <div class="metric-label">Total Patients</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">${mockData.patients.newPatients}</div>
+                      <div class="metric-value">${getValueOrNoData(systemStats.newPatients)}</div>
                       <div class="metric-label">New Patients</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">${mockData.patients.activePatients}</div>
+                      <div class="metric-value">${getValueOrNoData(systemStats.activePatients)}</div>
                       <div class="metric-label">Active Patients</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">${mockData.patients.appointmentsCompleted}</div>
+                      <div class="metric-value">${getValueOrNoData(systemStats.completedAppointments)}</div>
                       <div class="metric-label">Appointments Completed</div>
                   </div>
               </div>
@@ -589,25 +647,26 @@ ${admin?.name || 'Admin User'}`);
       `;
     }
 
-    if (mockData.staff) {
+    // ✅ FIXED: Staff Overview with REAL DATA ONLY
+    if (summaryFormData.includeStaff) {
       html += `
           <div class="section">
               <h2>👨‍⚕️ Staff Overview</h2>
               <div class="metrics-grid">
                   <div class="metric">
-                      <div class="metric-value">${mockData.staff.totalStaff}</div>
+                      <div class="metric-value">${getValueOrNoData(systemStats.totalStaff)}</div>
                       <div class="metric-label">Total Staff</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">${mockData.staff.doctors}</div>
+                      <div class="metric-value">${getValueOrNoData(systemStats.staffBreakdown?.doctor)}</div>
                       <div class="metric-label">Doctors</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">${mockData.staff.nurses}</div>
+                      <div class="metric-value">${getValueOrNoData(systemStats.staffBreakdown?.nurse)}</div>
                       <div class="metric-label">Nurses</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">${mockData.staff.receptionists}</div>
+                      <div class="metric-value">${getValueOrNoData(systemStats.staffBreakdown?.receptionist)}</div>
                       <div class="metric-label">Receptionists</div>
                   </div>
               </div>
@@ -615,25 +674,26 @@ ${admin?.name || 'Admin User'}`);
       `;
     }
 
-    if (mockData.appointments) {
+    // ✅ FIXED: Appointment Analytics with REAL DATA ONLY
+    if (summaryFormData.includeAppointments) {
       html += `
           <div class="section">
               <h2>📅 Appointment Analytics</h2>
               <div class="metrics-grid">
                   <div class="metric">
-                      <div class="metric-value">${mockData.appointments.totalAppointments}</div>
+                      <div class="metric-value">${getValueOrNoData(systemStats.totalAppointments)}</div>
                       <div class="metric-label">Total Appointments</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">${mockData.appointments.completedAppointments}</div>
+                      <div class="metric-value">${getValueOrNoData(systemStats.completedAppointments)}</div>
                       <div class="metric-label">Completed</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">${mockData.appointments.cancelledAppointments}</div>
+                      <div class="metric-value">${getValueOrNoData(systemStats.cancelledAppointments)}</div>
                       <div class="metric-label">Cancelled</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">${mockData.appointments.pendingAppointments}</div>
+                      <div class="metric-value">${getValueOrNoData(systemStats.pendingAppointments)}</div>
                       <div class="metric-label">Pending</div>
                   </div>
               </div>
@@ -641,25 +701,26 @@ ${admin?.name || 'Admin User'}`);
       `;
     }
 
-    if (mockData.billing) {
+    // ✅ FIXED: Billing & Revenue with REAL DATA ONLY
+    if (summaryFormData.includeBilling) {
       html += `
           <div class="section">
               <h2>💳 Billing & Revenue</h2>
               <div class="metrics-grid">
                   <div class="metric">
-                      <div class="metric-value">$${mockData.billing.totalBilled.toLocaleString()}</div>
+                      <div class="metric-value ${systemStats.totalBilled === null ? 'no-data' : ''}">${getCurrencyOrNoData(systemStats.totalBilled)}</div>
                       <div class="metric-label">Total Billed</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">$${mockData.billing.totalCollected.toLocaleString()}</div>
+                      <div class="metric-value ${systemStats.totalCollected === null ? 'no-data' : ''}">${getCurrencyOrNoData(systemStats.totalCollected)}</div>
                       <div class="metric-label">Total Collected</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">$${mockData.billing.outstandingAmount.toLocaleString()}</div>
+                      <div class="metric-value ${systemStats.outstandingAmount === null ? 'no-data' : ''}">${getCurrencyOrNoData(systemStats.outstandingAmount)}</div>
                       <div class="metric-label">Outstanding</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">$${mockData.billing.averagePayment.toLocaleString()}</div>
+                      <div class="metric-value ${systemStats.averagePayment === null ? 'no-data' : ''}">${getCurrencyOrNoData(systemStats.averagePayment)}</div>
                       <div class="metric-label">Average Payment</div>
                   </div>
               </div>
@@ -667,25 +728,26 @@ ${admin?.name || 'Admin User'}`);
       `;
     }
 
-    if (mockData.analytics) {
+    // ✅ FIXED: Growth Analytics with REAL DATA ONLY
+    if (summaryFormData.includeAnalytics) {
       html += `
           <div class="section">
               <h2>📊 Growth Analytics</h2>
               <div class="metrics-grid">
                   <div class="metric">
-                      <div class="metric-value">${mockData.analytics.patientGrowth}%</div>
+                      <div class="metric-value">${systemStats.patientGrowth !== null ? systemStats.patientGrowth + '%' : 'No data entered'}</div>
                       <div class="metric-label">Patient Growth</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">${mockData.analytics.revenueGrowth}%</div>
+                      <div class="metric-value">${systemStats.revenueGrowth !== null ? systemStats.revenueGrowth + '%' : 'No data entered'}</div>
                       <div class="metric-label">Revenue Growth</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">${mockData.analytics.appointmentGrowth}%</div>
+                      <div class="metric-value">${systemStats.appointmentGrowth !== null ? systemStats.appointmentGrowth + '%' : 'No data entered'}</div>
                       <div class="metric-label">Appointment Growth</div>
                   </div>
                   <div class="metric">
-                      <div class="metric-value">${mockData.analytics.satisfactionScore}%</div>
+                      <div class="metric-value">${systemStats.satisfactionScore !== null ? systemStats.satisfactionScore + '%' : 'No data entered'}</div>
                       <div class="metric-label">Satisfaction Score</div>
                   </div>
               </div>
@@ -698,6 +760,7 @@ ${admin?.name || 'Admin User'}`);
                   <p>📋 This report was generated automatically by the Hospital Management System</p>
                   <p>© ${new Date().getFullYear()} Your Hospital Name - All rights reserved</p>
                   <p>For questions about this report, contact: ${admin?.email || 'admin@hospital.com'}</p>
+                  <p><strong>📊 Patient Numbers:</strong> Total: ${systemStats.totalPatients}, Active: ${systemStats.activePatients}, New: ${systemStats.newPatients}</p>
               </div>
           </div>
       </body>
@@ -709,6 +772,7 @@ ${admin?.name || 'Admin User'}`);
     newWindow.document.close();
   };
 
+  // ✅ FIXED: CSV Report with REAL DATA ONLY (no random numbers)
   const generateFrontendCSVReport = () => {
     const monthNames = [
       'January', 'February', 'March', 'April', 'May', 'June',
@@ -722,57 +786,57 @@ ${admin?.name || 'Admin User'}`);
 
     if (summaryFormData.includeFinancials) {
       csvContent += `Financial Summary\n`;
-      csvContent += `Total Revenue,$${Math.floor(Math.random() * 100000) + 50000}\n`;
-      csvContent += `Total Expenses,$${Math.floor(Math.random() * 60000) + 30000}\n`;
-      csvContent += `Net Profit,$${Math.floor(Math.random() * 40000) + 20000}\n`;
-      csvContent += `Appointment Revenue,$${Math.floor(Math.random() * 30000) + 15000}\n\n`;
+      csvContent += `Total Revenue,${getCurrencyOrNoData(systemStats.totalRevenue)}\n`;
+      csvContent += `Total Expenses,${getCurrencyOrNoData(systemStats.totalExpenses)}\n`;
+      csvContent += `Net Profit,${getCurrencyOrNoData(systemStats.netProfit)}\n`;
+      csvContent += `Appointment Revenue,${getCurrencyOrNoData(systemStats.appointmentRevenue)}\n\n`;
     }
 
     if (summaryFormData.includePatients) {
       csvContent += `Patient Statistics\n`;
-      csvContent += `Total Patients,${systemStats.totalPatients || 500}\n`;
-      csvContent += `New Patients,${Math.floor(Math.random() * 50) + 20}\n`;
-      csvContent += `Active Patients,${Math.floor(Math.random() * 300) + 150}\n`;
-      csvContent += `Appointments Completed,${Math.floor(Math.random() * 400) + 200}\n\n`;
+      csvContent += `Total Patients,${getValueOrNoData(systemStats.totalPatients)}\n`;
+      csvContent += `New Patients,${getValueOrNoData(systemStats.newPatients)}\n`;
+      csvContent += `Active Patients,${getValueOrNoData(systemStats.activePatients)}\n`;
+      csvContent += `Appointments Completed,${getValueOrNoData(systemStats.completedAppointments)}\n\n`;
     }
 
     if (summaryFormData.includeStaff) {
       csvContent += `Staff Overview\n`;
-      csvContent += `Total Staff,${systemStats.totalStaff || 15}\n`;
-      csvContent += `Doctors,${systemStats.staffBreakdown?.doctor || 5}\n`;
-      csvContent += `Nurses,${Math.floor(Math.random() * 15) + 5}\n`;
-      csvContent += `Receptionists,${Math.floor(Math.random() * 5) + 2}\n\n`;
+      csvContent += `Total Staff,${getValueOrNoData(systemStats.totalStaff)}\n`;
+      csvContent += `Doctors,${getValueOrNoData(systemStats.staffBreakdown?.doctor)}\n`;
+      csvContent += `Nurses,${getValueOrNoData(systemStats.staffBreakdown?.nurse)}\n`;
+      csvContent += `Receptionists,${getValueOrNoData(systemStats.staffBreakdown?.receptionist)}\n\n`;
     }
 
     if (summaryFormData.includeAppointments) {
       csvContent += `Appointment Analytics\n`;
-      csvContent += `Total Appointments,${Math.floor(Math.random() * 500) + 200}\n`;
-      csvContent += `Completed Appointments,${Math.floor(Math.random() * 400) + 180}\n`;
-      csvContent += `Cancelled Appointments,${Math.floor(Math.random() * 50) + 10}\n`;
-      csvContent += `Pending Appointments,${Math.floor(Math.random() * 100) + 30}\n\n`;
+      csvContent += `Total Appointments,${getValueOrNoData(systemStats.totalAppointments)}\n`;
+      csvContent += `Completed Appointments,${getValueOrNoData(systemStats.completedAppointments)}\n`;
+      csvContent += `Cancelled Appointments,${getValueOrNoData(systemStats.cancelledAppointments)}\n`;
+      csvContent += `Pending Appointments,${getValueOrNoData(systemStats.pendingAppointments)}\n\n`;
     }
 
     if (summaryFormData.includeBilling) {
       csvContent += `Billing & Revenue\n`;
-      csvContent += `Total Billed,$${Math.floor(Math.random() * 150000) + 80000}\n`;
-      csvContent += `Total Collected,$${Math.floor(Math.random() * 120000) + 70000}\n`;
-      csvContent += `Outstanding Amount,$${Math.floor(Math.random() * 30000) + 10000}\n`;
-      csvContent += `Average Payment,$${Math.floor(Math.random() * 500) + 200}\n\n`;
+      csvContent += `Total Billed,${getCurrencyOrNoData(systemStats.totalBilled)}\n`;
+      csvContent += `Total Collected,${getCurrencyOrNoData(systemStats.totalCollected)}\n`;
+      csvContent += `Outstanding Amount,${getCurrencyOrNoData(systemStats.outstandingAmount)}\n`;
+      csvContent += `Average Payment,${getCurrencyOrNoData(systemStats.averagePayment)}\n\n`;
     }
 
     if (summaryFormData.includeAnalytics) {
       csvContent += `Growth Analytics\n`;
-      csvContent += `Patient Growth,${Math.floor(Math.random() * 20) + 5}%\n`;
-      csvContent += `Revenue Growth,${Math.floor(Math.random() * 15) + 8}%\n`;
-      csvContent += `Appointment Growth,${Math.floor(Math.random() * 25) + 10}%\n`;
-      csvContent += `Satisfaction Score,${Math.floor(Math.random() * 20) + 80}%\n`;
+      csvContent += `Patient Growth,${systemStats.patientGrowth !== null ? systemStats.patientGrowth + '%' : 'No data entered'}\n`;
+      csvContent += `Revenue Growth,${systemStats.revenueGrowth !== null ? systemStats.revenueGrowth + '%' : 'No data entered'}\n`;
+      csvContent += `Appointment Growth,${systemStats.appointmentGrowth !== null ? systemStats.appointmentGrowth + '%' : 'No data entered'}\n`;
+      csvContent += `Satisfaction Score,${systemStats.satisfactionScore !== null ? systemStats.satisfactionScore + '%' : 'No data entered'}\n`;
     }
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Summary_Report_${summaryFormData.month}_${summaryFormData.year}.csv`;
+    link.download = `Hospital_Report_${summaryFormData.month}_${summaryFormData.year}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -793,7 +857,12 @@ ${admin?.name || 'Admin User'}`);
     try {
       setGenerateLoading(true);
       
-      console.log('📊 Generating summary report with data:', summaryFormData);
+      console.log('📊 Generating summary report with REAL data:', summaryFormData);
+      console.log('🏥 Current patient numbers:', {
+        total: systemStats.totalPatients,
+        active: systemStats.activePatients,
+        new: systemStats.newPatients
+      });
       
       // Validate form data
       const sectionsSelected = Object.values({
@@ -822,9 +891,9 @@ ${admin?.name || 'Admin User'}`);
         }
         
       } catch (apiError) {
-        console.warn('⚠️ API route not available, generating frontend report:', apiError.message);
+        console.warn('⚠️ API route not available, generating frontend report with REAL data:', apiError.message);
         
-        // Fallback to frontend generation
+        // Fallback to frontend generation WITH REAL DATA
         if (summaryFormData.reportFormat === 'html') {
           generateFrontendHTMLReport();
         } else if (summaryFormData.reportFormat === 'pdf') {
@@ -834,9 +903,13 @@ ${admin?.name || 'Admin User'}`);
         }
       }
       
-      console.log('✅ Report generated successfully');
+      console.log('✅ Report generated successfully with patient numbers:', {
+        totalPatients: systemStats.totalPatients,
+        activePatients: systemStats.activePatients,
+        newPatients: systemStats.newPatients
+      });
       setShowSummaryModal(false);
-      alert('✅ Report generated successfully!');
+      alert('✅ Report generated successfully with real patient data!');
       
     } catch (error) {
       console.error('❌ Error generating summary report:', error);
@@ -847,7 +920,7 @@ ${admin?.name || 'Admin User'}`);
   };
 
   const handleSuccessfulReport = (response) => {
-    const filename = `Summary_Report_${summaryFormData.month}_${summaryFormData.year}`;
+    const filename = `Hospital_Report_${summaryFormData.month}_${summaryFormData.year}`;
     
     if (summaryFormData.reportFormat === 'pdf') {
       const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -972,7 +1045,6 @@ ${admin?.name || 'Admin User'}`);
                 <button onClick={toggleRealTimeProfiles} className="profiles-btn">
                   {showProfiles ? '📋 Hide Profiles' : '📋 Real-Time Profiles'}
                 </button>
-                {/* ✅ NEW: All Users Button */}
                 <button onClick={toggleAllUsers} className="all-users-btn">
                   {showAllUsers ? '👥 Hide All Users' : '👥 Show All Users'}
                 </button>
@@ -980,15 +1052,10 @@ ${admin?.name || 'Admin User'}`);
                   🔄 Refresh
                 </button>
                 {systemStats.lastUpdated && (
-  <span
-    className="last-updated"
-    style={{ color: '#fff' }}          /* ⬅️ makes text white */
-  >
-    Last updated:{' '}
-    {new Date(systemStats.lastUpdated).toLocaleTimeString()}
-  </span>
-)}
-
+                  <span className="last-updated" style={{ color: '#fff' }}>
+                    Last updated: {new Date(systemStats.lastUpdated).toLocaleTimeString()}
+                  </span>
+                )}
               </div>
             </div>
             {error && (
@@ -998,7 +1065,7 @@ ${admin?.name || 'Admin User'}`);
             )}
           </div>
 
-          {/* ✅ NEW: All Users Management Section */}
+          {/* All Users Management Section */}
           {showAllUsers && (
             <div className="all-users-management-section">
               <div className="section-header">
@@ -1270,7 +1337,7 @@ ${admin?.name || 'Admin User'}`);
             </div>
           )}
 
-          {/* Statistics Grid */}
+          {/* ✅ ENHANCED: Statistics Grid with REAL PATIENT NUMBERS and SAME ICONS */}
           <div className="stats-grid">
             <div className="stat-card users">
               <div className="stat-icon">👥</div>
@@ -1296,12 +1363,16 @@ ${admin?.name || 'Admin User'}`);
               </div>
             </div>
             
+            {/* ✅ ENHANCED: Patients card with REAL numbers */}
             <div className="stat-card patients">
               <div className="stat-icon">🏥</div>
               <div className="stat-info">
                 <h3>{systemStats.totalPatients.toLocaleString()}</h3>
-                <p>Active Patients</p>
-                <small>Verified user accounts</small>
+                <p>Total Patients</p>
+                <small>
+                  Active: {systemStats.activePatients || systemStats.totalPatients} | 
+                  New: {systemStats.newPatients || systemStats.recentRegistrations}
+                </small>
               </div>
             </div>
             
@@ -1421,7 +1492,7 @@ ${admin?.name || 'Admin User'}`);
                     <small>
                       Active Patients: {systemStats.totalPatients} | 
                       Recent: {systemStats.recentRegistrations} | 
-                      Growth: {systemStats.monthlyGrowth}
+                      Growth: {systemStats.monthlyGrowth}%
                     </small>
                   </div>
                 </div>
@@ -1552,20 +1623,30 @@ ${admin?.name || 'Admin User'}`);
             </div>
           </div>
 
-          {/* Growth Analytics */}
-          {growthAnalytics && (
+          {/* ✅ ENHANCED: Growth Analytics with REAL patient numbers */}
+          {(growthAnalytics || systemStats.recentRegistrations > 0) && (
             <div className="analytics-section">
-              <h2>📈 Growth Analytics (Last 7 Days)</h2>
+              <h2>📈 Growth Analytics (Real Patient Data)</h2>
               <div className="analytics-cards">
                 <div className="analytics-card">
-                  <h4>📅 New Registrations</h4>
+                  <h4>📅 New Patient Registrations</h4>
                   <p className="big-number">{systemStats.recentRegistrations}</p>
                   <small>Last 7 days</small>
                 </div>
                 <div className="analytics-card">
-                  <h4>📊 Monthly Growth</h4>
-                  <p className="big-number">{systemStats.monthlyGrowth}</p>
+                  <h4>📊 Patient Growth</h4>
+                  <p className="big-number">{systemStats.patientGrowth || systemStats.monthlyGrowth}%</p>
                   <small>Last 30 days</small>
+                </div>
+                <div className="analytics-card">
+                  <h4>🏥 Total Patients</h4>
+                  <p className="big-number">{systemStats.totalPatients}</p>
+                  <small>All registered patients</small>
+                </div>
+                <div className="analytics-card">
+                  <h4>✅ Active Patients</h4>
+                  <p className="big-number">{systemStats.activePatients || systemStats.totalPatients}</p>
+                  <small>Currently active</small>
                 </div>
               </div>
             </div>
@@ -1676,6 +1757,25 @@ ${admin?.name || 'Admin User'}`);
                 </div>
                 <div className="summary-modal-body">
                   <form className="summary-form">
+                    {/* ✅ ENHANCED: Show current patient numbers in form */}
+                    <div className="form-group">
+                      <label>🏥 Current Patient Numbers</label>
+                      <div className="patient-numbers-preview">
+                        <div className="number-item">
+                          <span className="label">Total Patients:</span>
+                          <span className="value">{systemStats.totalPatients}</span>
+                        </div>
+                        <div className="number-item">
+                          <span className="label">Active Patients:</span>
+                          <span className="value">{systemStats.activePatients || systemStats.totalPatients}</span>
+                        </div>
+                        <div className="number-item">
+                          <span className="label">New Patients:</span>
+                          <span className="value">{systemStats.newPatients || systemStats.recentRegistrations}</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Report Type */}
                     <div className="form-group">
                       <label>📋 Report Type</label>
@@ -1742,7 +1842,7 @@ ${admin?.name || 'Admin User'}`);
                             checked={summaryFormData.includePatients}
                             onChange={(e) => handleSummaryFormChange('includePatients', e.target.checked)}
                           />
-                          <span>👥 Patient Statistics</span>
+                          <span>👥 Patient Statistics (Real Numbers)</span>
                         </label>
                         <label className="checkbox-item">
                           <input
@@ -1823,6 +1923,9 @@ ${admin?.name || 'Admin User'}`);
                         <strong>Period:</strong> {getMonthName(summaryFormData.month)} {summaryFormData.year}
                       </p>
                       <p>
+                        <strong>Patient Data:</strong> {systemStats.totalPatients} total, {systemStats.activePatients || systemStats.totalPatients} active
+                      </p>
+                      <p>
                         <strong>Sections:</strong> {
                           [
                             summaryFormData.includeFinancials && 'Financial',
@@ -1855,9 +1958,9 @@ ${admin?.name || 'Admin User'}`);
                         className="btn-generate"
                       >
                         {generateLoading ? (
-                          <>⏳ Generating...</>
+                          <>⏳ Generating Report...</>
                         ) : (
-                          <>📊 Generate Report</>
+                          <>📊 Generate Report with Real Data</>
                         )}
                       </button>
                     </div>
