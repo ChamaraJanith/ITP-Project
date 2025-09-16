@@ -1,11 +1,11 @@
 import express from 'express';
 import QRCode from 'qrcode';
-import Patient from '../model/patientmodel.js'; // correct path
+import Patient from '../model/patientmodel.js'; // your existing path
 import { generatePatientId } from '../utils/generatePatientId.js';
 
 const patrouter = express.Router();
 
-// Register new patient
+// Register new patient (your existing code)
 patrouter.post('/register', async (req, res) => {
   try {
     const { firstName, lastName, email, phone, dateOfBirth, gender, address, emergencyContact, bloodGroup, allergies, medicalHistory } = req.body;
@@ -55,7 +55,7 @@ patrouter.post('/register', async (req, res) => {
   }
 });
 
-// 🔹 FIXED: Search patients
+// Search patients (your existing code)
 patrouter.get("/", async (req, res) => {
   try {
     const search = req.query.search?.trim() || "";
@@ -64,33 +64,7 @@ patrouter.get("/", async (req, res) => {
       return res.json([]);
     }
 
-    // Split words by spaces
-    const words = search.split(/\s+/);
 
-    let query;
-
-    if (words.length >= 2) {
-      // If two words given: search firstName + lastName
-      const [first, last] = words;
-      query = {
-        $and: [
-          { firstName: new RegExp(first, "i") },
-          { lastName: new RegExp(last, "i") }
-        ]
-      };
-    } else {
-      // Single word: match firstName OR lastName OR patientId
-      const regex = new RegExp(search, "i");
-      query = {
-        $or: [
-          { firstName: regex },
-          { lastName: regex },
-          { patientId: regex }
-        ]
-      };
-    }
-
-    const patients = await Patient.find(query).limit(10);
 
     res.json(patients);
   } catch (error) {
@@ -99,11 +73,7 @@ patrouter.get("/", async (req, res) => {
   }
 });
 
-// adjust path to your Patient model
-
-// Existing routes (search, create, etc.) here...
-
-// ✅ Add this route to get patient by ID
+// Get patient by ID (your existing code)
 patrouter.get("/:id", async (req, res) => {
   try {
     const patient = await Patient.findById(req.params.id);
@@ -116,6 +86,155 @@ patrouter.get("/:id", async (req, res) => {
   }
 });
 
+// =============================
+// NEW: Patient Count Routes
+// =============================
 
+// GET simple patient count
+patrouter.get('/count', async (req, res) => {
+  try {
+    const totalPatients = await Patient.countDocuments();
+    
+    return res.status(200).json({
+      success: true,
+      message: "Patient count fetched successfully",
+      data: {
+        totalPatients,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching patient count:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching patient count",
+      error: error.message,
+    });
+  }
+});
+
+// GET detailed patient counts
+patrouter.get('/count/detailed', async (req, res) => {
+  try {
+    // Total patients
+    const totalPatients = await Patient.countDocuments();
+
+    // Count by gender
+    const genderCounts = await Patient.aggregate([
+      { $group: { _id: "$gender", count: { $sum: 1 } } }
+    ]);
+
+    // Count by blood group
+    const bloodGroupCounts = await Patient.aggregate([
+      { $match: { bloodGroup: { $exists: true, $ne: null, $ne: "" } } },
+      { $group: { _id: "$bloodGroup", count: { $sum: 1 } } }
+    ]);
+
+    // Count this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const thisMonthPatients = await Patient.countDocuments({
+      registrationDate: { $gte: startOfMonth }
+    });
+
+    // Count today
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const todayPatients = await Patient.countDocuments({
+      registrationDate: { $gte: startOfToday }
+    });
+
+    // Age groups
+    const ageGroupCounts = await Patient.aggregate([
+      { $match: { dateOfBirth: { $exists: true, $ne: null } } },
+      {
+        $addFields: {
+          age: {
+            $floor: {
+              $divide: [
+                { $subtract: [new Date(), "$dateOfBirth"] },
+                365.25 * 24 * 60 * 60 * 1000
+              ]
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $switch: {
+              branches: [
+                { case: { $lt: ["$age", 18] }, then: "Under 18" },
+                { case: { $lt: ["$age", 30] }, then: "18-29" },
+                { case: { $lt: ["$age", 50] }, then: "30-49" },
+                { case: { $lt: ["$age", 65] }, then: "50-64" }
+              ],
+              default: "65+"
+            }
+          },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Detailed patient counts fetched successfully",
+      data: {
+        totalPatients,
+        thisMonthPatients,
+        todayPatients,
+        genderCounts,
+        bloodGroupCounts,
+        ageGroupCounts,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching detailed patient counts:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching detailed patient counts",
+      error: error.message,
+    });
+  }
+});
+
+// GET all patients with filtering
+patrouter.get('/all', async (req, res) => {
+  try {
+    const { page = 1, limit = 50 } = req.query;
+    
+    const patients = await Patient.find({})
+      .select('-qrCodeData -__v')
+      .sort({ registrationDate: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    const totalCount = await Patient.countDocuments();
+
+    return res.status(200).json({
+      success: true,
+      message: "Patients fetched successfully",
+      data: patients,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalCount / parseInt(limit)),
+        totalPatients: totalCount,
+        patientsPerPage: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching patients:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching patients",
+      error: error.message,
+    });
+  }
+});
 
 export default patrouter;
