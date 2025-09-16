@@ -58,20 +58,13 @@ patrouter.post('/register', async (req, res) => {
 // Search patients (your existing code)
 patrouter.get("/", async (req, res) => {
   try {
-    const search = req.query.search || "";
+    const search = req.query.search?.trim() || "";
 
     if (!search) {
       return res.json([]);
     }
 
-    const regex = new RegExp(search, "i");
-    const patients = await Patient.find({
-      $or: [
-        { firstName: regex },
-        { lastName: regex },
-        { patientId: regex },
-      ]
-    }).limit(10);
+
 
     res.json(patients);
   } catch (error) {
