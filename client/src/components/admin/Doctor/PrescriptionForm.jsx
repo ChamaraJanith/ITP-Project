@@ -754,8 +754,8 @@ const generateProfessionalPDF = (selectedPatient, diagnosis, medicines, addition
           type="date" 
           {...register("date")} 
           onFocus={() => setActiveField("date")} 
-          // max={new Date().toISOString().split('T')[0]}
-          // min={new Date().toISOString().split('T')[0]}
+           max={new Date().toISOString().split('T')[0]}
+           min={new Date().toISOString().split('T')[0]}
           style={{ 
             padding: 8, 
             borderRadius: 4, 
