@@ -159,6 +159,10 @@ const validateNameInput = (value) => {
   return value.replace(/[^a-zA-Z\s\-'.]/g, '');
 };
 
+const validateNameNumberInput = (value) => {
+  return value.replace(/[^a-zA-Z0-9\s\-'.]/g, '');
+};
+
 const validateNumberInput = (value) => {
   return value.replace(/[^0-9.]/g, '');
 };
@@ -262,10 +266,10 @@ useEffect(() => {
       return;
     }
 
-    if (!/^[a-zA-Z\s\-'.]+$/.test(search.trim())) {
-      setSearchError("Search can only contain letters, spaces, hyphens, apostrophes, and periods");
-      return;
-    }
+    // if (!/^[a-zA-Z\s\-'.]+$/.test(search.trim())) {
+    //   setSearchError("Search can only contain letters, spaces, hyphens, apostrophes, and periods");
+    //   return;
+    // }
 
     try {
       const res = await fetch(`http://localhost:7000/api/patients?search=${encodeURIComponent(search)}`);
@@ -305,7 +309,7 @@ useEffect(() => {
 
   // Handle search input changes with validation
   const handleSearchChange = (e) => {
-    const value = validateNameInput(e.target.value);
+    const value = validateNameNumberInput(e.target.value);
     setSearch(value);
     setSearchError("");
     
@@ -680,7 +684,7 @@ const generateProfessionalPDF = (selectedPatient, diagnosis, medicines, addition
         <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
           <input
             type="text"
-            placeholder="Enter patient name (letters only)..."
+            placeholder="Enter patient name or patient id..."
             value={search}
             onChange={handleSearchChange}
             style={{ 
@@ -754,8 +758,8 @@ const generateProfessionalPDF = (selectedPatient, diagnosis, medicines, addition
           type="date" 
           {...register("date")} 
           onFocus={() => setActiveField("date")} 
-          // max={new Date().toISOString().split('T')[0]}
-          // min={new Date().toISOString().split('T')[0]}
+           max={new Date().toISOString().split('T')[0]}
+           min={new Date().toISOString().split('T')[0]}
           style={{ 
             padding: 8, 
             borderRadius: 4, 
