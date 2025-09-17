@@ -1,33 +1,29 @@
 /* src/components/admin/dashboards/FinancialDashboard.css */
 
 .financial-dashboard {
-padding: 2rem 0;
- max-width: 1400px;
-margin: 0 auto;
+  padding: 2rem 0;
+  max-width: 1400px;
+  margin: 0 auto;
 }
-
 
 /* Dashboard Header */
 .dashboard-header {
- text-align: center;
- margin-bottom: 3rem;
+  text-align: center;
+  margin-bottom: 3rem;
 }
-
 
 .dashboard-header h1 {
- font-size: 2.5rem;
- color: #1f2937;
- margin-bottom: 0.5rem;
- font-weight: 700;
+  font-size: 2.5rem;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
 }
-
 
 .dashboard-header p {
   color: #6b7280;
   font-size: 1.1rem;
   margin: 0;
 }
-
 
 /* ===== FINANCIAL DASHBOARD SCOPED STYLES ===== */
 .fd-container {
@@ -36,10 +32,14 @@ margin: 0 auto;
   margin: 0 auto;
 }
 
-/* Dashboard Header */
+/* Dashboard Header - Enhanced */
 .fd-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   margin-bottom: 3rem;
+  position: relative;
 }
 
 .fd-header h1 {
@@ -52,21 +52,58 @@ margin: 0 auto;
 .fd-header p {
   color: #6b7280;
   font-size: 1.1rem;
-  margin: 0;
+  margin: 0 0 1rem 0;
+}
+
+/* NEW: Refresh Button */
+.fd-refresh-btn {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.fd-refresh-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.fd-refresh-btn:disabled {
+  background: #6B7280;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.fd-refresh-btn:active {
+  transform: translateY(0);
 }
 
 /* Error Banner */
 .fd-error-banner {
-  background: #fee2e2;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   color: #dc2626;
-  padding: 1rem;
-  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
   margin-bottom: 2rem;
   text-align: center;
   border: 1px solid #fecaca;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
 }
 
-/* Stats Grid */
+/* Stats Grid - Enhanced */
 .fd-stats-grid {
   background-color: transparent;
   color: black;
@@ -76,22 +113,57 @@ margin: 0 auto;
   margin-bottom: 3rem;
 }
 
+/* Enhanced Stat Cards */
 .fd-stat-card {
   display: flex;
   align-items: center;
   cursor: pointer;
-  background: linear-gradient(85deg, #1f2937 0%, #6b72d8 100%);
+  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
   padding: 2rem;
   border-radius: 16px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease-in-out;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
   border: 1px solid #e5e7eb;
+  position: relative;
+  overflow: hidden;
+}
+
+.fd-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: #6b72d8;
+  transition: all 0.3s ease;
 }
 
 .fd-stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+  transform: translateY(-6px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
   border-color: #d1d5db;
+}
+
+.fd-stat-card:hover::before {
+  width: 6px;
+}
+
+/* NEW: Individual Card Color Coding */
+.fd-today-revenue::before {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+}
+
+.fd-pending-payments::before {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+}
+
+.fd-collection-rate::before {
+  background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+}
+
+.fd-monthly-target::before {
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
 }
 
 .fd-stat-info {
@@ -103,18 +175,27 @@ margin: 0 auto;
 }
 
 .fd-stat-info h3 {
-  font-size: 2rem;
+  font-size: 2.2rem;
   margin: 0 0 0.5rem 0;
   line-height: 1.2;
   color: #ffffff;
   font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .fd-stat-info p {
-  margin: 0;
+  margin: 0 0 0.25rem 0;
   color: #e5e7eb;
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* NEW: Small text for additional info */
+.fd-stat-info small {
+  color: #d1d5db;
+  font-size: 0.8rem;
+  font-weight: 400;
+  margin-top: 0.25rem;
 }
 
 /* Charts Section */
@@ -131,7 +212,7 @@ margin: 0 auto;
   background: white;
   padding: 2.5rem;
   border-radius: 20px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
   margin-bottom: 3rem;
   width: 100%;
   max-width: 800px;
@@ -141,25 +222,38 @@ margin: 0 auto;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease-in-out;
+  transition: all 0.3s ease;
   border: 1px solid #f3f4f6;
+  position: relative;
 }
 
-.fd-revenue-pie-chart {
-  border-left: 5px solid #0088FE;
+.fd-revenue-pie-chart::before,
+.fd-revenue-bar-chart::before,
+.fd-revenue-line-chart::before,
+.fd-collection-radial-chart::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  border-radius: 20px 20px 0 0;
 }
 
-.fd-revenue-bar-chart {
-  border-left: 5px solid #00C49F;
+.fd-revenue-pie-chart::before {
+  background: linear-gradient(90deg, #0088FE 0%, #00C49F 100%);
 }
 
-.fd-revenue-line-chart {
-  border-left: 5px solid #FFBB28;
+.fd-revenue-bar-chart::before {
+  background: linear-gradient(90deg, #00C49F 0%, #FFBB28 100%);
 }
 
-.fd-collection-radial-chart {
-  border-left: 5px solid #FF8042;
-  margin-bottom: 2rem;
+.fd-revenue-line-chart::before {
+  background: linear-gradient(90deg, #FFBB28 0%, #FF8042 100%);
+}
+
+.fd-collection-radial-chart::before {
+  background: linear-gradient(90deg, #FF8042 0%, #8B5CF6 100%);
 }
 
 .fd-revenue-pie-chart h2,
@@ -178,8 +272,8 @@ margin: 0 auto;
 .fd-revenue-bar-chart:hover,
 .fd-revenue-line-chart:hover,
 .fd-collection-radial-chart:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  transform: translateY(-8px);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.12);
 }
 
 /* Features Section */
@@ -187,7 +281,7 @@ margin: 0 auto;
   background: white;
   padding: 2.5rem;
   border-radius: 20px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
   margin-bottom: 3rem;
   border: 1px solid #f3f4f6;
 }
@@ -211,24 +305,41 @@ margin: 0 auto;
   color: white;
   border: none;
   border-radius: 12px;
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease-in-out;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.fd-feature-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.fd-feature-button:hover::before {
+  left: 100%;
 }
 
 .fd-feature-button:hover {
   background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4);
 }
 
 .fd-feature-button:active {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 /* Activity Section */
@@ -236,7 +347,7 @@ margin: 0 auto;
   background: white;
   padding: 2.5rem;
   border-radius: 20px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
   margin-bottom: 2rem;
   border: 1px solid #f3f4f6;
 }
@@ -255,31 +366,50 @@ margin: 0 auto;
 }
 
 .fd-activity-item {
-  background: #f9fafb;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
   padding: 1.25rem;
   border-radius: 12px;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s ease;
   border: 1px solid #e5e7eb;
+  position: relative;
+  overflow: hidden;
+}
+
+.fd-activity-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  transition: width 0.3s ease;
 }
 
 .fd-activity-item:hover {
-  background: #f3f4f6;
-  transform: translateX(5px);
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  transform: translateX(8px);
   border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.fd-activity-item:hover::before {
+  width: 5px;
 }
 
 .fd-activity-item p {
   margin: 0;
   color: #374151;
-  transition: color 0.2s ease-in-out;
+  transition: color 0.3s ease;
   font-weight: 500;
+  line-height: 1.5;
 }
 
 .fd-activity-item:hover p {
   color: #1f2937;
 }
 
-/* Billing Modal */
+/* Billing Modal - Enhanced */
 .fd-billing-modal {
   position: fixed;
   top: 0;
@@ -291,17 +421,31 @@ margin: 0 auto;
   justify-content: center;
   align-items: center;
   z-index: 999;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .fd-billing-content {
   background: white;
   padding: 2.5rem;
   border-radius: 20px;
-  max-width: 500px;
+  max-width: 600px;
   width: 90%;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
   border: 1px solid #e5e7eb;
+  animation: slideIn 0.3s ease;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .fd-billing-content h2 {
@@ -309,20 +453,28 @@ margin: 0 auto;
   margin-bottom: 1.5rem;
   font-size: 1.5rem;
   font-weight: 600;
+  text-align: center;
 }
 
 .fd-bill-card {
-  background: #f9fafb;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
   padding: 1.5rem;
   border-radius: 12px;
-  margin: 1.5rem 0;
+  margin: 1rem 0;
   border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.fd-bill-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
 }
 
 .fd-bill-card p {
   margin: 0.75rem 0;
   color: #374151;
   font-weight: 500;
+  line-height: 1.4;
 }
 
 .fd-close-btn {
@@ -333,9 +485,10 @@ margin: 0 auto;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s ease;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+  width: 100%;
 }
 
 .fd-close-btn:hover {
@@ -343,7 +496,7 @@ margin: 0 auto;
   transform: translateY(-2px);
 }
 
-/* Analytics Modal */
+/* Analytics Modal - Enhanced */
 .fd-analytics-modal {
   position: fixed;
   top: 0;
@@ -355,17 +508,19 @@ margin: 0 auto;
   justify-content: center;
   align-items: center;
   z-index: 999;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.3s ease;
 }
 
 .fd-analytics-modal-content {
   background: white;
   padding: 2.5rem;
   border-radius: 20px;
-  max-width: 600px;
+  max-width: 700px;
   width: 90%;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
   border: 1px solid #e5e7eb;
+  animation: slideIn 0.3s ease;
 }
 
 .fd-analytics-modal-content h2 {
@@ -386,83 +541,156 @@ margin: 0 auto;
 .fd-analytics-options {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
   margin-bottom: 2rem;
 }
 
 .fd-analytics-option {
   display: flex;
   align-items: center;
-  padding: 1.5rem;
+  padding: 1.75rem;
   border: 2px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 15px;
   background: white;
   cursor: pointer;
-  transition: all 0.3s ease-in-out;
+  transition: all 0.3s ease;
   text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.fd-analytics-option::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.05), transparent);
+  transition: left 0.5s;
+}
+
+.fd-analytics-option:hover::before {
+  left: 100%;
 }
 
 .fd-analytics-option:hover {
   border-color: #4f46e5;
   background: #f8fafc;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.15);
 }
 
 .fd-analytics-option.fd-financial:hover {
   border-color: #059669;
+  box-shadow: 0 12px 30px rgba(5, 150, 105, 0.15);
 }
 
 .fd-analytics-option.fd-inventory:hover {
   border-color: #d97706;
+  box-shadow: 0 12px 30px rgba(217, 119, 6, 0.15);
 }
 
 .fd-option-icon {
-  font-size: 2rem;
-  margin-right: 1rem;
+  font-size: 2.5rem;
+  margin-right: 1.25rem;
   flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.fd-analytics-option:hover .fd-option-icon {
+  transform: scale(1.1);
 }
 
 .fd-option-details h3 {
   margin: 0 0 0.5rem 0;
   color: #1f2937;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 600;
 }
 
 .fd-option-details p {
-  margin: 0;
+  margin: 0 0 0.25rem 0;
   color: #6b7280;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   text-align: left;
+  line-height: 1.4;
+}
+
+/* NEW: Small text for option details */
+.fd-option-details small {
+  color: #9ca3af;
+  font-size: 0.8rem;
+  font-style: italic;
 }
 
 .fd-analytics-close-btn {
   width: 100%;
-  padding: 12px 20px;
+  padding: 14px 20px;
   background: #6b7280;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s ease;
   font-weight: 600;
+  font-size: 1rem;
 }
 
 .fd-analytics-close-btn:hover {
   background: #4b5563;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
+/* Loading States */
 .fd-loading {
   text-align: center;
   padding: 4rem;
   font-size: 1.2rem;
   color: #6b7280;
   font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
 
-/* Responsive Design */
+/* NEW: Loading Spinner */
+.fd-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #4f46e5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Recharts Tooltip Styling */
+.recharts-tooltip-wrapper {
+  font-size: 0.875rem;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  border: none !important;
+  background: white !important;
+}
+
+.recharts-default-tooltip {
+  border-radius: 12px !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Smooth scrolling for chart navigation */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Responsive Design - Enhanced */
 @media (max-width: 1024px) {
   .fd-stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -473,13 +701,21 @@ margin: 0 auto;
   }
   
   .fd-analytics-options {
-    gap: 0.75rem;
+    gap: 1rem;
+  }
+
+  .fd-stat-info h3 {
+    font-size: 2rem;
   }
 }
 
 @media (max-width: 768px) {
   .fd-container {
-    padding: 1rem 0;
+    padding: 1rem;
+  }
+  
+  .fd-header {
+    margin-bottom: 2rem;
   }
   
   .fd-header h1 {
@@ -501,7 +737,7 @@ margin: 0 auto;
   
   .fd-charts-section {
     margin: 2rem 0;
-    padding: 0 1rem;
+    padding: 0;
   }
   
   .fd-revenue-pie-chart,
@@ -522,8 +758,10 @@ margin: 0 auto;
     padding: 2rem;
   }
   
-  .fd-analytics-modal-content {
+  .fd-analytics-modal-content,
+  .fd-billing-content {
     padding: 2rem;
+    margin: 1rem;
   }
   
   .fd-analytics-options {
@@ -536,6 +774,10 @@ margin: 0 auto;
 }
 
 @media (max-width: 480px) {
+  .fd-container {
+    padding: 0.5rem;
+  }
+  
   .fd-header h1 {
     font-size: 1.75rem;
   }
@@ -562,7 +804,7 @@ margin: 0 auto;
   
   .fd-billing-content,
   .fd-analytics-modal-content {
-    padding: 2rem;
+    padding: 1.5rem;
     width: 95%;
   }
   
@@ -575,6 +817,7 @@ margin: 0 auto;
   .fd-option-icon {
     margin-right: 0;
     margin-bottom: 0.5rem;
+    font-size: 2rem;
   }
   
   .fd-option-details h3 {
@@ -584,16 +827,64 @@ margin: 0 auto;
   .fd-option-details p {
     font-size: 0.85rem;
   }
+
+  .fd-refresh-btn {
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+
+  .fd-feature-button {
+    padding: 1rem 1.25rem;
+    font-size: 0.85rem;
+  }
 }
 
-/* Recharts Tooltip Styling */
-.recharts-tooltip-wrapper {
-  font-size: 0.875rem;
-  border-radius: 8px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+/* Additional Enhancements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
-/* Smooth scrolling for chart navigation */
-html {
-  scroll-behavior: smooth;
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .fd-stat-card {
+    border: 2px solid #000;
+  }
+  
+  .fd-feature-button {
+    border: 2px solid #fff;
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .fd-error-banner {
+    background: #7f1d1d;
+    color: #fca5a5;
+    border-color: #991b1b;
+  }
+}
+
+/* Print styles */
+@media print {
+  .fd-refresh-btn,
+  .fd-feature-button,
+  .fd-billing-modal,
+  .fd-analytics-modal {
+    display: none;
+  }
+  
+  .fd-container {
+    max-width: none;
+    padding: 0;
+  }
+  
+  .fd-stat-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
 }
