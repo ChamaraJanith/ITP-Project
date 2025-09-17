@@ -463,12 +463,12 @@ const FinancialPayroll = () => {
               <th>Payroll ID</th>
               <th>Employee Name</th>
               <th>Employee ID</th>
-              <th>Gross Salary (LKR)</th>
-              <th>Deductions (LKR)</th>
-              <th>Bonuses (LKR)</th>
-              <th>EPF 8% (LKR)</th>
-              <th>ETF 3% (LKR)</th>
-              <th>Net Salary (LKR)</th>
+              <th>Gross Salary ($)</th>
+              <th>Deductions ($)</th>
+              <th>Bonuses ($)</th>
+              <th>EPF 8% ($)</th>
+              <th>ETF 3% ($)</th>
+              <th>Net Salary ($)</th>
               <th>Status</th>
               <th>Period</th>
             </tr>
@@ -530,7 +530,7 @@ const FinancialPayroll = () => {
         <!-- ✅ NEW: Report Footer -->
         <div class="report-footer">
           <p><strong>This is a system-generated report from Heal-x Healthcare Management System</strong></p>
-          <p>Report generated on ${new Date().toLocaleString()} | All amounts are in Sri Lankan Rupees (LKR)</p>
+          <p>Report generated on ${new Date().toLocaleString()} | All amounts are in Sri Lankan Rupees ($)</p>
           <p>For queries regarding this report, contact the Financial Department at Heal-x Healthcare</p>
         </div>
 
@@ -561,9 +561,9 @@ const FinancialPayroll = () => {
     }
 
     const headers = [
-      'Payroll ID', 'Employee Name', 'Employee ID', 'Gross Salary (LKR)',
-      'Deductions (LKR)', 'Bonuses (LKR)', 'EPF 8% (LKR)', 'ETF 3% (LKR)',
-      'Net Salary (LKR)', 'Status', 'Month', 'Year', 'Created Date', 'Last Updated'
+      'Payroll ID', 'Employee Name', 'Employee ID', 'Gross Salary ($)',
+      'Deductions ($)', 'Bonuses ($)', 'EPF 8% ($)', 'ETF 3% ($)',
+      'Net Salary ($)', 'Status', 'Month', 'Year', 'Created Date', 'Last Updated'
     ];
 
     const csvData = payrolls.map(payroll => [
@@ -854,7 +854,7 @@ const FinancialPayroll = () => {
 
             <div className="fp-form-row">
               <div className="fp-form-group">
-                <label>Gross Salary (LKR): <span className="fp-required">*</span></label>
+                <label>Gross Salary ($): <span className="fp-required">*</span></label>
                 <input
                   type="text"
                   value={formData.grossSalary}
@@ -871,7 +871,7 @@ const FinancialPayroll = () => {
               </div>
               
               <div className="fp-form-group">
-                <label>Deductions (LKR):</label>
+                <label>Deductions ($):</label>
                 <input
                   type="text"
                   value={formData.deductions}
@@ -887,7 +887,7 @@ const FinancialPayroll = () => {
               </div>
               
               <div className="fp-form-group">
-                <label>Bonuses (LKR):</label>
+                <label>Bonuses ($):</label>
                 <input
                   type="text"
                   value={formData.bonuses}
@@ -938,9 +938,9 @@ const FinancialPayroll = () => {
               <div className="fp-form-group">
                 <label>Automatic Calculations:</label>
                 <div className="fp-calculation-preview">
-                  <div>EPF (8%): <strong>LKR {preview.epf.toLocaleString()}</strong></div>
-                  <div>ETF (3%): <strong>LKR {preview.etf.toLocaleString()}</strong></div>
-                  <div className="fp-net-preview">Net Salary: <strong>LKR {preview.netSalary.toLocaleString()}</strong></div>
+                  <div>EPF (8%): <strong>$ {preview.epf.toLocaleString()}</strong></div>
+                  <div>ETF (3%): <strong>$ {preview.etf.toLocaleString()}</strong></div>
+                  <div className="fp-net-preview">Net Salary: <strong>$ {preview.netSalary.toLocaleString()}</strong></div>
                 </div>
               </div>
             </div>
@@ -983,15 +983,15 @@ const FinancialPayroll = () => {
           </div>
           <div className="fp-stat-card">
             <h4>💰 Total Gross Salary</h4>
-            <p>LKR {payrolls.reduce((sum, p) => sum + (p.grossSalary || 0), 0).toLocaleString()}</p>
+            <p>$ {payrolls.reduce((sum, p) => sum + (p.grossSalary || 0), 0).toLocaleString()}</p>
           </div>
           <div className="fp-stat-card">
             <h4>💵 Total Net Salary</h4>
-            <p>LKR {payrolls.reduce((sum, p) => sum + (p.netSalary || 0), 0).toLocaleString()}</p>
+            <p>$ {payrolls.reduce((sum, p) => sum + (p.netSalary || 0), 0).toLocaleString()}</p>
           </div>
           <div className="fp-stat-card">
             <h4>🏛️ Total EPF</h4>
-            <p>LKR {payrolls.reduce((sum, p) => sum + (p.epf || 0), 0).toLocaleString()}</p>
+            <p>$ {payrolls.reduce((sum, p) => sum + (p.epf || 0), 0).toLocaleString()}</p>
           </div>
         </div>
       )}
@@ -1032,12 +1032,12 @@ const FinancialPayroll = () => {
                   <td><strong>{payroll.payrollId}</strong></td>
                   <td>{payroll.employeeName}</td>
                   <td>{payroll.employeeId}</td>
-                  <td className="fp-currency">LKR {(payroll.grossSalary || 0).toLocaleString()}</td>
-                  <td className="fp-currency">LKR {(payroll.deductions || 0).toLocaleString()}</td>
-                  <td className="fp-currency">LKR {(payroll.bonuses || 0).toLocaleString()}</td>
-                  <td className="fp-currency fp-epf">LKR {(payroll.epf || 0).toLocaleString()}</td>
-                  <td className="fp-currency fp-etf">LKR {(payroll.etf || 0).toLocaleString()}</td>
-                  <td className="fp-currency fp-net-salary">LKR {(payroll.netSalary || 0).toLocaleString()}</td>
+                  <td className="fp-currency">$ {(payroll.grossSalary || 0).toLocaleString()}</td>
+                  <td className="fp-currency">$ {(payroll.deductions || 0).toLocaleString()}</td>
+                  <td className="fp-currency">$ {(payroll.bonuses || 0).toLocaleString()}</td>
+                  <td className="fp-currency fp-epf">$ {(payroll.epf || 0).toLocaleString()}</td>
+                  <td className="fp-currency fp-etf">$ {(payroll.etf || 0).toLocaleString()}</td>
+                  <td className="fp-currency fp-net-salary">$ {(payroll.netSalary || 0).toLocaleString()}</td>
                   <td>
                     <select
                       value={payroll.status || 'Pending'}
