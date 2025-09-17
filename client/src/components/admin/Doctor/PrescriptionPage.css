@@ -1,0 +1,294 @@
+/* PrescriptionPage.css */
+
+/* ===== General Page Styling ===== */
+.prescription-page {
+  font-family: "Inter", "Segoe UI", sans-serif;
+  background: #f4f6fa;
+  padding: 30px;
+  color: #1f2937;
+}
+
+.prescription-page h1 {
+  font-size: 34px;
+  margin-bottom: 30px;
+  font-weight: 700;
+  color: #111827;
+  border-left: 6px solid #3b82f6;
+  padding-left: 12px;
+}
+
+/* ===== Layout Grid ===== */
+.prescription-grid {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+/* ===== LEFT PANEL ===== */
+.left-panel {
+  flex: 1 1 450px; /* increased width */
+  background: linear-gradient(145deg, #ffffff, #f0f3f8);
+  padding: 25px;
+  border-radius: 22px;
+  box-shadow: 0 18px 28px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.left-panel:hover {
+  transform: translateY(-5px);
+}
+
+/* ===== QR Section ===== */
+.qr-section h2 {
+  font-size: 18px;
+  margin-bottom: 14px;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.qr-button {
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  color: #fff;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+}
+
+.qr-button.stop {
+  background: linear-gradient(90deg, #ef4444, #b91c1c);
+  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+}
+
+.qr-button:hover {
+  transform: scale(1.05);
+}
+
+/* QR Reader Container */
+.qr-reader-container {
+  margin-top: 18px;
+  border: 3px dashed #3b82f6;
+  border-radius: 18px;
+  overflow: hidden;
+  position: relative;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e0f2fe;
+  transition: all 0.3s ease;
+  animation: pulseBorder 2s infinite;
+}
+
+@keyframes pulseBorder {
+  0%, 100% { border-color: #3b82f6; }
+  50% { border-color: #2563eb; }
+}
+
+.qr-result {
+  margin-top: 12px;
+  padding: 10px 16px;
+  background: #d1fae5;
+  color: #065f46;
+  font-weight: 600;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+
+/* ===== Patient Info ===== */
+.patient-info strong {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: #111827;
+}
+
+.patient-details {
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 15px;
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.patient-details div {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+/* ===== Canvas Section ===== */
+.canvas-section strong {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 14px;
+  color: #111827;
+}
+
+canvas {
+  border-radius: 15px;
+  border: 2px solid #d1d5db;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.07);
+  transition: all 0.3s ease;
+  width: 100%; /* full width of container */
+   /* new max width */
+  height: 220px;
+}
+
+canvas:hover {
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  transform: scale(1.02);
+  border-color: #3b82f6;
+}
+
+.canvas-buttons {
+  display: flex;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.canvas-buttons button {
+  padding: 10px 20px;
+  border-radius: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.canvas-buttons button:first-child {
+  background: linear-gradient(90deg, #10b981, #059669);
+  color: #fff;
+  box-shadow: 0 5px 15px rgba(16,185,129,0.3);
+}
+
+.canvas-buttons button:last-child {
+  background: linear-gradient(90deg, #ef4444, #b91c1c);
+  color: #fff;
+  box-shadow: 0 5px 15px rgba(239,68,68,0.3);
+}
+
+.canvas-buttons button:hover {
+  transform: scale(1.05);
+}
+
+textarea {
+  width: 100%;
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  resize: vertical;
+  box-shadow: inset 0 3px 6px rgba(0,0,0,0.05);
+}
+
+/* ===== RIGHT PANEL ===== */
+.right-panel {
+  flex: 1 1 550px; /* wider panel */
+  background: linear-gradient(145deg, #ffffff, #f0f3f8);
+  padding: 28px;
+  border-radius: 22px;
+  box-shadow: 0 18px 28px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+
+.right-panel:hover {
+  transform: translateY(-5px);
+}
+
+/* ===== Prescription List ===== */
+.prescription-list {
+  margin-top: 40px;
+  background: linear-gradient(145deg, #ffffff, #f0f3f8);
+  padding: 28px;
+  border-radius: 22px;
+  box-shadow: 0 18px 28px rgba(0,0,0,0.08);
+}
+
+.prescription-list h2 {
+  font-size: 22px;
+  margin-bottom: 22px;
+  color: #3b82f6;
+}
+
+.prescription-list table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.prescription-list th,
+.prescription-list td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.prescription-list th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+  color: #111827;
+}
+
+.prescription-list tr {
+  transition: all 0.3s ease;
+}
+
+.prescription-list tr:hover {
+  background-color: #f9fafb;
+  transform: scale(1.01);
+}
+
+/* Color-coded prescription badges */
+.prescription-list td.diagnosis {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.prescription-list td.doctor {
+  font-weight: 600;
+  color: #10b981;
+}
+
+/* Buttons in list */
+.edit-btn,
+.delete-btn {
+  padding: 8px 16px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.edit-btn {
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  color: #fff;
+  margin-right: 6px;
+}
+
+.delete-btn {
+  background: linear-gradient(90deg, #ef4444, #b91c1c);
+  color: #fff;
+}
+
+.edit-btn:hover,
+.delete-btn:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1200px) {
+  .prescription-grid {
+    flex-direction: column;
+  }
+  .left-panel, .right-panel {
+    width: 100%;
+  }
+}

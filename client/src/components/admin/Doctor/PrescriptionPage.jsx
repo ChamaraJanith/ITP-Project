@@ -11,6 +11,8 @@ import {
 } from "../../../services/prescriptionService";
 import { QrReader } from "react-qr-reader";
 
+import "./PrescriptionPage.css";
+
 const PrescriptionPage = ({ patientFromParent }) => {
   const { doctor } = useContext(DoctorContext);
   const [patient, setPatient] = useState(patientFromParent || null);
@@ -30,16 +32,8 @@ const PrescriptionPage = ({ patientFromParent }) => {
       const res = await getAllPrescriptions();
       const allPrescriptions = res.data?.data || [];
       const today = new Date();
-      const todayStart = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate()
-      );
-      const todayEnd = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate() + 1
-      );
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
       const todaysPrescriptions = allPrescriptions.filter((p) => {
         if (!p.date) return false;
         const presDate = new Date(p.date);
@@ -81,8 +75,7 @@ const PrescriptionPage = ({ patientFromParent }) => {
 
   // Delete prescription
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this prescription?"))
-      return;
+    if (!window.confirm("Are you sure you want to delete this prescription?")) return;
     try {
       await deletePrescription(id);
       alert("Prescription deleted successfully");
@@ -154,104 +147,43 @@ const PrescriptionPage = ({ patientFromParent }) => {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 1200,
-        margin: "20px auto",
-        padding: 12,
-        fontFamily: "sans-serif",
-      }}
-    >
-      <h1 style={{ fontSize: "28px", marginBottom: "16px" }}>
-        {editingPrescription ? "Edit Prescription" : "Create Prescription"}
-      </h1>
+    <div className="prescription-page">
+      <h1>{editingPrescription ? "Edit Prescription" : "Create Prescription"}</h1>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "400px 1fr",
-          gap: 20,
-          alignItems: "start",
-        }}
-      >
+      <div className="prescription-grid">
         {/* LEFT SIDE */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="left-panel">
           {/* QR section only if creating */}
           {!editingPrescription && (
-            <div
-              style={{
-                background: "#fafafa",
-                border: "1px solid #ddd",
-                borderRadius: 12,
-                padding: 20,
-                boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-              }}
-            >
-              <h2 style={{ fontSize: "20px", marginBottom: 12, color: "#333" }}>
-                Scan Patient QR Code
-              </h2>
-
+            <div className="qr-section">
+              <h2>Scan Patient QR Code</h2>
               <button
                 onClick={() => setScanning((prev) => !prev)}
-                style={{
-                  display: "inline-block",
-                  marginBottom: 14,
-                  padding: "10px 18px",
-                  background: scanning ? "#f44336" : "#4caf50",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 6,
-                  cursor: "pointer",
-                  fontSize: "15px",
-                  transition: "background 0.2s ease",
-                }}
-                onMouseOver={(e) => (e.target.style.opacity = 0.9)}
-                onMouseOut={(e) => (e.target.style.opacity = 1)}
+                className={`qr-button ${scanning ? "stop" : "start"}`}
               >
                 {scanning ? "Stop Scanning" : "Start Scanning"}
               </button>
 
               {scanning && (
-                <div
-                  style={{
-                    width: "100%",
-                    height: 250,
-                    border: "1px solid #ccc",
-                    borderRadius: 8,
-                    overflow: "hidden",
-                    background: "#000",
-                  }}
-                >
+                <div className="qr-reader-container">
                   <QrReader
                     constraints={{ facingMode: "environment" }}
                     onResult={handleScan}
-                    style={{ width: "100%", height: "100%" }}
+                    className="qr-reader"
                   />
                 </div>
               )}
 
               {scannedPatientId && (
-                <div
-                  style={{
-                    marginTop: 15,
-                    color: "#2e7d32",
-                    fontWeight: "bold",
-                    fontSize: "16px",
-                    background: "#e8f5e9",
-                    padding: "8px 12px",
-                    borderRadius: 6,
-                  }}
-                >
-                  ✅ Scanned Patient ID: {scannedPatientId}
-                </div>
+                <div className="qr-result">✅ Scanned Patient ID: {scannedPatientId}</div>
               )}
             </div>
           )}
 
           {/* Patient Info */}
-          <div>
+          <div className="patient-info">
             <strong>Patient</strong>
-            <div style={{ padding: 8, background: "#f6f6f6", borderRadius: 6 }}>
+            <div className="patient-details">
               {patient ? (
                 <>
                   <div>
@@ -268,39 +200,32 @@ const PrescriptionPage = ({ patientFromParent }) => {
                   </div>
                 </>
               ) : (
-                <div style={{ color: "#b00" }}>
-                  No patient selected. Use search or scan QR.
-                </div>
+                <div className="no-patient">No patient selected. Use search or scan QR.</div>
               )}
             </div>
           </div>
 
           {/* Canvas + OCR */}
-          <div>
+          <div className="canvas-section">
             <strong>Write on Canvas</strong>
-            <div style={{ margin: "8px 0" }}>
-              <CanvasPad ref={canvasRef} width={380} height={220} lineWidth={3} />
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
+            <CanvasPad ref={canvasRef} width={380} height={220} lineWidth={3} />
+            <div className="canvas-buttons">
               <button onClick={handleConvert} disabled={processing}>
                 {processing ? "Converting..." : "Convert to Text"}
               </button>
               <button onClick={handleClearCanvas}>Clear</button>
             </div>
-            <div style={{ marginTop: 8 }}>
-              <label>OCR Output (editable preview)</label>
-              <textarea
-                value={ocrText}
-                onChange={(e) => setOcrText(e.target.value)}
-                rows={6}
-                style={{ width: "100%" }}
-              />
-            </div>
+            <textarea
+              value={ocrText}
+              onChange={(e) => setOcrText(e.target.value)}
+              rows={6}
+              placeholder="OCR Output (editable)"
+            />
           </div>
         </div>
 
         {/* RIGHT SIDE */}
-        <div>
+        <div className="right-panel">
           <PrescriptionForm
             doctor={doctor}
             parentPatient={patient}
@@ -313,62 +238,35 @@ const PrescriptionPage = ({ patientFromParent }) => {
       </div>
 
       {/* Prescriptions list */}
-      <div style={{ marginTop: 40 }}>
+      <div className="prescription-list">
         <h2>Today Patient History</h2>
         {prescriptions.length === 0 ? (
           <div>No prescriptions found.</div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table>
             <thead>
-              <tr style={{ background: "#f0f0f0" }}>
-                <th style={{ border: "1px solid #ccc", padding: 8 }}>Date</th>
-                <th style={{ border: "1px solid #ccc", padding: 8 }}>Patient</th>
-                <th style={{ border: "1px solid #ccc", padding: 8 }}>Diagnosis</th>
-                <th style={{ border: "1px solid #ccc", padding: 8 }}>Doctor</th>
-                <th style={{ border: "1px solid #ccc", padding: 8 }}>Actions</th>
+              <tr>
+                <th>Date</th>
+                <th>Patient</th>
+                <th>Diagnosis</th>
+                <th>Doctor</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {prescriptions.map((p) => (
                 <tr key={p._id}>
-                  <td style={{ border: "1px solid #ccc", padding: 8 }}>
-                    {new Date(p.date).toLocaleDateString()}
-                  </td>
-                  <td style={{ border: "1px solid #ccc", padding: 8 }}>
-                    {p.patientName}
-                  </td>
-                  <td style={{ border: "1px solid #ccc", padding: 8 }}>
-                    {p.diagnosis}
-                  </td>
-                  <td style={{ border: "1px solid #ccc", padding: 8 }}>
+                  <td>{new Date(p.date).toLocaleDateString()}</td>
+                  <td>{p.patientName}</td>
+                  <td>{p.diagnosis}</td>
+                  <td>
                     {p.doctorName} ({p.doctorSpecialization})
                   </td>
-                  <td style={{ border: "1px solid #ccc", padding: 8 }}>
-                    <button
-                      onClick={() => handleEdit(p._id)}
-                      style={{
-                        marginRight: 8,
-                        background: "#2196F3",
-                        color: "#fff",
-                        border: "none",
-                        padding: "4px 8px",
-                        borderRadius: 4,
-                        cursor: "pointer",
-                      }}
-                    >
+                  <td>
+                    <button className="edit-btn" onClick={() => handleEdit(p._id)}>
                       Edit
                     </button>
-                    <button
-                      onClick={() => handleDelete(p._id)}
-                      style={{
-                        background: "#f44336",
-                        color: "#fff",
-                        border: "none",
-                        padding: "4px 8px",
-                        borderRadius: 4,
-                        cursor: "pointer",
-                      }}
-                    >
+                    <button className="delete-btn" onClick={() => handleDelete(p._id)}>
                       Delete
                     </button>
                   </td>
