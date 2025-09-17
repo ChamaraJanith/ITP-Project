@@ -31,6 +31,7 @@ import PatientDetailsWithCharts from './components/admin/Admin/PatientDetailsWit
 import DoctorItemRequestModal from "./components/admin/Doctor/DoctorInventoryPage"; // keep modal import [21]
 
 import FinancialPayroll from './components/admin/Financial_Manager/FinancialPayroll';
+import TotalPayrollView from './components/admin/Financial_Manager/TotalPayrollView';
 
 
 // ✅ NEW: Patient Registration Components for Receptionist
@@ -401,9 +402,14 @@ function App() {
 
             
            <Route
-          path="/admin/financial/payrolls"
-          element={<FinancialPayroll />} 
+              path="/admin/financial/payrolls"
+              element={<FinancialPayroll />} 
         />
+
+        <Route 
+              path="/admin/financial/payrolls/total-view" 
+              element={<TotalPayrollView />}
+         />
 
               <Route 
   path="/admin/procurement" 
