@@ -1,0 +1,358 @@
+/* TotalPayrollView.css */
+.tpv-container {
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.tpv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  margin-bottom: 25px;
+}
+
+.tpv-header-content h1 {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 2.2em;
+  font-weight: 700;
+}
+
+.tpv-header-content p {
+  color: #6c757d;
+  margin: 5px 0 0 0;
+  font-size: 1.1em;
+}
+
+.tpv-header-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.tpv-refresh-btn, .tpv-back-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.tpv-refresh-btn {
+  background: #28a745;
+  color: white;
+}
+
+.tpv-refresh-btn:hover {
+  background: #218838;
+  transform: translateY(-2px);
+}
+
+.tpv-back-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.tpv-back-btn:hover {
+  background: #545b62;
+  transform: translateY(-2px);
+}
+
+.tpv-error-banner {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #dc3545;
+}
+
+.tpv-filters {
+  display: flex;
+  gap: 15px;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  margin-bottom: 25px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tpv-filter-select {
+  padding: 10px 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  min-width: 150px;
+  transition: border-color 0.3s ease;
+}
+
+.tpv-filter-select:focus {
+  outline: none;
+  border-color: #0088FE;
+  box-shadow: 0 0 0 3px rgba(0,136,254,0.1);
+}
+
+.tpv-view-tabs {
+  display: flex;
+  gap: 5px;
+  margin-left: auto;
+}
+
+.tpv-tab {
+  padding: 10px 20px;
+  border: none;
+  background: #f8f9fa;
+  color: #6c757d;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.tpv-tab.active {
+  background: #0088FE;
+  color: white;
+}
+
+.tpv-tab:hover:not(.active) {
+  background: #e9ecef;
+}
+
+.tpv-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.tpv-stat-card {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+.tpv-stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.15);
+}
+
+.tpv-stat-icon {
+  font-size: 2.5em;
+  padding: 15px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.tpv-stat-info h3 {
+  font-size: 2em;
+  font-weight: 700;
+  margin: 0;
+  color: #2c3e50;
+}
+
+.tpv-stat-info p {
+  font-size: 1.1em;
+  color: #6c757d;
+  margin: 5px 0;
+  font-weight: 500;
+}
+
+.tpv-stat-info small {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.tpv-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  width: 100%;
+
+  gap: 25px;
+  margin-bottom: 30px;
+}
+
+.tpv-chart-card {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.tpv-chart-card.tpv-full-width {
+  grid-column: 1 / 3;
+}
+
+.tpv-chart-card h3 {
+  color: #2c3e50;
+  margin: 0 0 20px 0;
+  font-size: 1.3em;
+  font-weight: 600;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+.tpv-employee-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  margin-bottom: 30px;
+}
+
+.tpv-employee-table {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.tpv-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.tpv-table th {
+  background: #f8f9fa;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #2c3e50;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.tpv-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #dee2e6;
+  color: #495057;
+}
+
+.tpv-table tr:hover {
+  background: #f8f9fa;
+}
+
+.tpv-quick-actions {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.tpv-quick-actions h3 {
+  color: #2c3e50;
+  margin: 0 0 20px 0;
+  font-size: 1.3em;
+  font-weight: 600;
+}
+
+.tpv-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.tpv-action-btn {
+  padding: 15px 20px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  text-align: center;
+}
+
+.tpv-action-btn.tpv-primary {
+  background: #0088FE;
+  color: white;
+}
+
+.tpv-action-btn.tpv-success {
+  background: #28a745;
+  color: white;
+}
+
+.tpv-action-btn.tpv-info {
+  background: #17a2b8;
+  color: white;
+}
+
+.tpv-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.tpv-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  color: #6c757d;
+  font-size: 1.2em;
+}
+
+.tpv-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #0088FE;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-top: 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tpv-header {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .tpv-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .tpv-view-tabs {
+    margin-left: 0;
+    justify-content: center;
+  }
+  
+  .tpv-charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .tpv-employee-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .tpv-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
