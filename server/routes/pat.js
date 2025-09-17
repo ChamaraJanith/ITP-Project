@@ -5,6 +5,51 @@ import { generatePatientId } from '../utils/generatePatientId.js';
 
 const patrouter = express.Router();
 
+
+// 🔹 FIXED: Search patients
+patrouter.get("/", async (req, res) => {
+  try {
+    const search = req.query.search?.trim() || "";
+
+    if (!search) {
+      return res.json([]);
+    }
+
+    // Split words by spaces
+    const words = search.split(/\s+/);
+
+    let query;
+
+    if (words.length >= 2) {
+      // If two words given: search firstName + lastName
+      const [first, last] = words;
+      query = {
+        $and: [
+          { firstName: new RegExp(first, "i") },
+          { lastName: new RegExp(last, "i") }
+        ]
+      };
+    } else {
+      // Single word: match firstName OR lastName OR patientId
+      const regex = new RegExp(search, "i");
+      query = {
+        $or: [
+          { firstName: regex },
+          { lastName: regex },
+          { patientId: regex }
+        ]
+      };
+    }
+
+    const patients = await Patient.find(query).limit(10);
+
+    res.json(patients);
+  } catch (error) {
+    console.error("Patient search failed:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Register new patient (your existing code)
 patrouter.post('/register', async (req, res) => {
   try {
