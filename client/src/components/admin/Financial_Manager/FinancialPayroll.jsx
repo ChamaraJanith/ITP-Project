@@ -218,7 +218,7 @@ const FinancialPayroll = () => {
     }
   };
 
-  // ✅ UPDATED: Create or update payroll with validation
+  // ✅ FIXED: Create or update payroll with validation and calculated fields
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -241,11 +241,24 @@ const FinancialPayroll = () => {
     }
 
     try {
+      // ✅ MAIN FIX: Calculate EPF, ETF, and net salary before sending
+      const preview = calculatePreview();
+      
+      // ✅ Include calculated values in the payload
+      const payloadData = {
+        ...formData,
+        epf: preview.epf,
+        etf: preview.etf,
+        netSalary: preview.netSalary
+      };
+
+      console.log('Sending payload with calculated values:', payloadData);
+
       if (editingPayroll) {
-        await axios.put(`http://localhost:7000/api/payrolls/${editingPayroll._id}`, formData);
+        await axios.put(`http://localhost:7000/api/payrolls/${editingPayroll._id}`, payloadData);
         setSuccess('Payroll updated successfully!');
       } else {
-        await axios.post('http://localhost:7000/api/payrolls', formData);
+        await axios.post('http://localhost:7000/api/payrolls', payloadData);
         setSuccess('Payroll created successfully!');
       }
       
@@ -339,7 +352,7 @@ const FinancialPayroll = () => {
     });
   };
 
-  // Calculate preview values for form
+  // ✅ Calculate preview values for form
   const calculatePreview = () => {
     const gross = parseFloat(formData.grossSalary) || 0;
     const deductions = parseFloat(formData.deductions) || 0;
@@ -739,8 +752,6 @@ const FinancialPayroll = () => {
      ⏮️ Back to Dashboard
   </button>
 </div>
-
-
 
       {/* Controls */}
       <div className="fp-controls">
