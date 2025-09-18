@@ -6,6 +6,7 @@ import ScheduleConsultation from "../Doctor/ScheduleConsultation.jsx"; // kept
 import { Navigate } from "react-router-dom"; // kept
 import './DoctorDashboard.css';
 import { useNavigate } from "react-router-dom";
+import PatientRecordsPage from "../Doctor/PatientRecordsPage.jsx";
 
 const DoctorDashboard = () => {
   const [admin, setAdmin] = useState(null);
@@ -90,7 +91,7 @@ const DoctorDashboard = () => {
                 </button>
                 <button
                   className="feature-card"
-                  onClick={() => alert("Patient Records clicked")}
+                  onClick={() => navigate("/admin/doctor/patient-records") }
                 >
                   PATIENT RECORDS
                 </button>

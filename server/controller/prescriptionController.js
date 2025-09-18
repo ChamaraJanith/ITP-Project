@@ -1,29 +1,36 @@
 import Prescriptions from "../model/Prescriptions.js";
 
 class PrescriptionController {
-  // =============================
-  // CREATE Prescription
-  // =============================
+  // CREATE new prescription
   static async createPrescription(req, res) {
     try {
       const body = req.body;
 
-      // Use logged-in user or fallback doctor
+      // Use logged-in user or fallback doctor info
       const doctor = req.user || {
         id: "TEMP_DOCTOR_ID",
         name: "Dr. Gayath",
         specialization: "General",
       };
 
+      // Remove any patientId generation here
+      // Use patientId exactly as passed in the request body (frontend responsibility)
+      const patientId = body.patientId;
+
+      if (!patientId) {
+        return res.status(400).json({
+          success: false,
+          message: "patientId is required",
+        });
+      }
+
       const newPrescription = new Prescriptions({
-        // Prescription info
         date: body.date ? new Date(body.date) : Date.now(),
         diagnosis: body.diagnosis,
         medicines: body.medicines,
         notes: body.notes || "",
 
-        // Patient details
-        patientId: body.patientId,
+        patientId: patientId,
         patientName: body.patientName,
         patientEmail: body.patientEmail,
         patientPhone: body.patientPhone,
@@ -31,7 +38,6 @@ class PrescriptionController {
         bloodGroup: body.bloodGroup || "",
         patientAllergies: body.patientAllergies || [],
 
-        // Doctor details
         doctorId: doctor.id,
         doctorName: doctor.name,
         doctorSpecialization: doctor.specialization || "",
@@ -54,9 +60,7 @@ class PrescriptionController {
     }
   }
 
-  // =============================
   // GET all prescriptions
-  // =============================
   static async getAllPrescriptions(req, res) {
     try {
       const prescriptions = await Prescriptions.find().sort({ createdAt: -1 });
@@ -74,9 +78,7 @@ class PrescriptionController {
     }
   }
 
-  // =============================
   // GET prescription by ID
-  // =============================
   static async getPrescriptionById(req, res) {
     try {
       const { id } = req.params;
@@ -103,68 +105,59 @@ class PrescriptionController {
     }
   }
 
-// =============================
-// UPDATE prescription
-// =============================
-static async updatePrescription(req, res) {
-  try {
-    const { id } = req.params;
-    const body = req.body;
+  // UPDATE prescription by ID
+  static async updatePrescription(req, res) {
+    try {
+      const { id } = req.params;
+      const body = req.body;
 
-    // Build update object safely
-    const updateFields = {};
+      const updateFields = {};
 
-    // Prescription info
-    if (body.hasOwnProperty("date")) updateFields.date = body.date ? new Date(body.date) : null;
-    if (body.hasOwnProperty("diagnosis")) updateFields.diagnosis = body.diagnosis || "";
-    if (body.hasOwnProperty("medicines")) updateFields.medicines = body.medicines || [];
-    if (body.hasOwnProperty("notes")) updateFields.notes = body.notes || "";
+      if (body.hasOwnProperty("date")) updateFields.date = body.date ? new Date(body.date) : null;
+      if (body.hasOwnProperty("diagnosis")) updateFields.diagnosis = body.diagnosis || "";
+      if (body.hasOwnProperty("medicines")) updateFields.medicines = body.medicines || [];
+      if (body.hasOwnProperty("notes")) updateFields.notes = body.notes || "";
 
-    // Patient details
-    if (body.hasOwnProperty("patientId")) updateFields.patientId = body.patientId || "";
-    if (body.hasOwnProperty("patientName")) updateFields.patientName = body.patientName || "";
-    if (body.hasOwnProperty("patientEmail")) updateFields.patientEmail = body.patientEmail || "";
-    if (body.hasOwnProperty("patientPhone")) updateFields.patientPhone = body.patientPhone || "";
-    if (body.hasOwnProperty("patientGender")) updateFields.patientGender = body.patientGender || "";
-    if (body.hasOwnProperty("bloodGroup")) updateFields.bloodGroup = body.bloodGroup || "";
-    if (body.hasOwnProperty("patientAllergies")) updateFields.patientAllergies = body.patientAllergies || [];
+      if (body.hasOwnProperty("patientId")) updateFields.patientId = body.patientId || "";
+      if (body.hasOwnProperty("patientName")) updateFields.patientName = body.patientName || "";
+      if (body.hasOwnProperty("patientEmail")) updateFields.patientEmail = body.patientEmail || "";
+      if (body.hasOwnProperty("patientPhone")) updateFields.patientPhone = body.patientPhone || "";
+      if (body.hasOwnProperty("patientGender")) updateFields.patientGender = body.patientGender || "";
+      if (body.hasOwnProperty("bloodGroup")) updateFields.bloodGroup = body.bloodGroup || "";
+      if (body.hasOwnProperty("patientAllergies")) updateFields.patientAllergies = body.patientAllergies || [];
 
-    // Doctor details (optional override if needed)
-    if (body.hasOwnProperty("doctorId")) updateFields.doctorId = body.doctorId || "";
-    if (body.hasOwnProperty("doctorName")) updateFields.doctorName = body.doctorName || "";
-    if (body.hasOwnProperty("doctorSpecialization")) updateFields.doctorSpecialization = body.doctorSpecialization || "";
+      if (body.hasOwnProperty("doctorId")) updateFields.doctorId = body.doctorId || "";
+      if (body.hasOwnProperty("doctorName")) updateFields.doctorName = body.doctorName || "";
+      if (body.hasOwnProperty("doctorSpecialization")) updateFields.doctorSpecialization = body.doctorSpecialization || "";
 
-    const updatedPrescription = await Prescriptions.findByIdAndUpdate(
-      id,
-      { $set: updateFields },
-      { new: true, runValidators: true }
-    );
+      const updatedPrescription = await Prescriptions.findByIdAndUpdate(
+        id,
+        { $set: updateFields },
+        { new: true, runValidators: true }
+      );
 
-    if (!updatedPrescription) {
-      return res.status(404).json({
+      if (!updatedPrescription) {
+        return res.status(404).json({
+          success: false,
+          message: "Prescription not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Prescription updated successfully",
+        data: updatedPrescription,
+      });
+    } catch (error) {
+      return res.status(500).json({
         success: false,
-        message: "Prescription not found",
+        message: "Error updating prescription",
+        error: error.message,
       });
     }
-
-    return res.status(200).json({
-      success: true,
-      message: "Prescription updated successfully",
-      data: updatedPrescription,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Error updating prescription",
-      error: error.message,
-    });
   }
-}
 
-
-  // =============================
-  // DELETE prescription
-  // =============================
+  // DELETE prescription by ID
   static async deletePrescription(req, res) {
     try {
       const { id } = req.params;
