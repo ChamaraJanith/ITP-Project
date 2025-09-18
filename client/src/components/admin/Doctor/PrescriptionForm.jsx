@@ -13,6 +13,7 @@ const dosagePattern = /^[0-9]+(\.[0-9]+)?\s*(mg|g|ml|l|tablet|tablets|capsule|ca
 const frequencyPattern = /^[0-9]+\s*(time|times|daily|weekly|monthly|hourly|per day|per week|per month|once|twice|thrice|morning|evening|night|afternoon).*$/i;
 const durationPattern = /^[0-9]+\s*(day|days|week|weeks|month|months|year|years)$/i;
 
+
 // Medicine validation schema
 const MedicineSchema = yup.object({
   name: yup
@@ -227,8 +228,7 @@ useEffect(() => {
         
         if (patient) {
           handleSelectPatient({
-            _id: patient._id || patient.patientId,
-            patientId: patient.patientId || patient._id,
+            patientId: patient.patientId,
             firstName: patient.firstName,
             lastName: patient.lastName,
             email: patient.email,
@@ -301,8 +301,6 @@ useEffect(() => {
       const patient = data.patient;
 
       setSelectedPatient({
-        _id: patient._id,
-        patientId: patient.patientId || patient._id,
         firstName: patient.firstName,
         lastName: patient.lastName,
         email: patient.email,
@@ -361,13 +359,13 @@ useEffect(() => {
 
   const handleSelectPatient = (patient) => {
     // Validate patient data
-    if (!patient._id && !patient.patientId) {
+    if (!patient.patientId) {
       setSearchError("Invalid patient data");
       return;
     }
 
     setSelectedPatient(patient);
-    setValue("patientId", patient._id || patient.patientId);
+    setValue("patientId",patient.patientId);
     setSearch(`${patient.firstName} ${patient.lastName} (${patient.patientId || patient._id})`);
     setPatientsList([]);
     setSearchError("");
@@ -389,7 +387,7 @@ useEffect(() => {
   useEffect(() => {
     if (parentPatient) {
       setSelectedPatient(parentPatient);
-      setValue("patientId", parentPatient._id || parentPatient.patientId);
+      setValue("patientId", parentPatient.patientId);
       setSearch(`${parentPatient.firstName} ${parentPatient.lastName}`);
     }
   }, [parentPatient, setValue]);
@@ -448,7 +446,7 @@ useEffect(() => {
         diagnosis: data.diagnosis,
         medicines: data.medicines,
         notes: data.notes,
-        patientId: selectedPatient._id || selectedPatient.patientId,
+        patientId: selectedPatient.patientId,
         patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
         patientEmail: selectedPatient.email,
         patientPhone: selectedPatient.phone,
