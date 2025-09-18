@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import './FinancialPayroll.css';
 
 const FinancialPayroll = () => {
@@ -12,6 +13,7 @@ const FinancialPayroll = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMonth, setFilterMonth] = useState('');
   const [filterYear, setFilterYear] = useState('');
+  const navigate = useNavigate();
   
   // ✅ Safe pagination state with all required properties
   const [pagination, setPagination] = useState({
@@ -713,6 +715,32 @@ const FinancialPayroll = () => {
           <button className="fp-message-close" onClick={() => setSuccess('')}>×</button>
         </div>
       )}
+
+     <div className="fp-back-navigation" style={{ marginBottom: '20px' }}>
+  <button 
+    onClick={() => navigate('/admin/financial')} // This should now work
+    className="fp-back-btn"
+    style={{
+      background: '#25a0c5ff',
+      color: 'white',
+      border: 'none',
+      padding: '10px 20px',
+      borderRadius: '5px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      fontSize: '14px',
+      transition: 'background-color 0.3s ease'
+    }}
+    onMouseOver={(e) => e.target.style.background = '#25539eff'}
+    onMouseOut={(e) => e.target.style.background = '#25a0c5ff'}
+  >
+     ⏮️ Back to Dashboard
+  </button>
+</div>
+
+
 
       {/* Controls */}
       <div className="fp-controls">

@@ -259,14 +259,19 @@ const FinancialDashboard = () => {
         navigate("/admin/financial/payrolls");
         break;
 
+      case "expense_tracking":navigate("/admin/financial/expenses");
+        break;
+        
+
       case "payroll_analytics":
          navigate("/admin/financial/payrolls/total-view", {
           state: {
             payrolls: [], 
             type: 'payroll'
             }
-  });
-  break;
+
+        });
+        break; 
         
       default:
         console.log("Clicked feature:", feature);
@@ -572,6 +577,14 @@ const FinancialDashboard = () => {
                 >
                   PAYROLL ANALYTICS
                 </button>
+
+                <button
+                  className="fd-feature-button"
+                  onClick={() => handleFinancialFeatureClick("expense_tracking")}
+                >
+                  EXPENSE TRACKING
+                </button>
+
               </div>
             </div>
 
