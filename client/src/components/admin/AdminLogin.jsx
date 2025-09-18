@@ -101,7 +101,6 @@ const AdminLogin = () => {
       <div className="admin-login-card">
         <div className="admin-login-header">
           <div className="admin-logo">
-            <span className="logo-icon">🏥</span>
             <h2>HealX Healthcare</h2>
           </div>
           <p className="admin-subtitle">Admin Portal Access</p>
@@ -111,7 +110,6 @@ const AdminLogin = () => {
           <div className="form-group">
             <label>Admin Email</label>
             <div className="input-wrapper">
-              <span className="input-icon">📧</span>
               <input
                 type="email"
                 name="email"
@@ -128,7 +126,6 @@ const AdminLogin = () => {
           <div className="form-group">
             <label>Password</label>
             <div className="input-wrapper">
-              <span className="input-icon">🔒</span>
               <input
                 type="password"
                 name="password"
