@@ -9,7 +9,7 @@ class PrescriptionController {
       // Use logged-in user or fallback doctor info
       const doctor = req.user || {
         id: "TEMP_DOCTOR_ID",
-        name: "Dr. Gayath",
+        name: "Dr. Gayath Dahanayaka",
         specialization: "General",
       };
 
