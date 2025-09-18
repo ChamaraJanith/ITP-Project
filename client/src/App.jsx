@@ -7,6 +7,7 @@ import EmergencyPage from './components/EmergencyPage';
 import HospitalsPage from './components/HospitalPage';
 import Footer from './components/Footer';
 
+
 // ✅ Existing User Components
 import Register from './components/admin/Patient/Register';
 import Login from './components/admin/Patient/Login';
@@ -27,6 +28,7 @@ import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
 import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
 import PaymentTotalView from './components/admin/Financial_Manager/PaymentTotalView';
 import PatientDetailsWithCharts from './components/admin/Admin/PatientDetailsWithCharts';
+import PatientRecordsPage from './components/admin/Doctor/PatientRecordsPage';
 
 import DoctorItemRequestModal from "./components/admin/Doctor/DoctorInventoryPage"; // keep modal import [21]
 
@@ -254,7 +256,7 @@ function App() {
     <ProtectedAdminRoute allowedRoles={['admin', 'receptionist']}>
       <PatientDetailsWithCharts />
     </ProtectedAdminRoute>
-  } 
+  }
 />
             
             <Route 
@@ -372,6 +374,8 @@ function App() {
             <Route path="/admin/doctor/schedule-consultation" element={<ScheduleConsultation />} />
             <Route path="/admin/doctor/view-consultations" element={<ViewConsultations />} />
             <Route path="/admin/doctor/prescriptions" element={<PrescriptionPage />} />
+
+            <Route path="/admin/doctor/patient-records" element={<PatientRecordsPage />} />
 
             {/* Alias route so EMERGENCY ALERTS button works without removing it */}
             <Route path="/admin/doctor/prescription-dashboard" element={<PrescriptionPage />} />
