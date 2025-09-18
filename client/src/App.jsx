@@ -32,6 +32,8 @@ import DoctorItemRequestModal from "./components/admin/Doctor/DoctorInventoryPag
 
 import FinancialPayroll from './components/admin/Financial_Manager/FinancialPayroll';
 import TotalPayrollView from './components/admin/Financial_Manager/TotalPayrollView';
+import ExpenseTracking from './components/admin/Financial_Manager/ExpenseTracking';
+
 
 
 // ✅ NEW: Patient Registration Components for Receptionist
@@ -410,6 +412,12 @@ function App() {
               path="/admin/financial/payrolls/total-view" 
               element={<TotalPayrollView />}
          />
+
+         <Route 
+              path="/admin/financial/expenses" 
+              element={<ExpenseTracking />} 
+         />
+
 
               <Route 
   path="/admin/procurement" 
