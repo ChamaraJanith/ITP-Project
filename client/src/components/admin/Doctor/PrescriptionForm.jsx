@@ -309,6 +309,14 @@ const PrescriptionForm = ({
   useEffect(() => {
     if (!editingPrescription) return;
 
+    // FIXED: Ensure patientId is properly set from multiple sources
+    const patientId = editingPrescription.patientId || 
+                      editingPrescription.patient?._id || 
+                      editingPrescription.patient?.patientId || 
+                      "";
+
+    console.log("Editing prescription with patientId:", patientId);
+
     reset({
       date: editingPrescription.date?.slice(0, 10) || "",
       diagnosis: editingPrescription.diagnosis || "",
@@ -316,39 +324,52 @@ const PrescriptionForm = ({
         ? editingPrescription.medicines
         : [{ name: "", dosage: "", frequency: "", duration: "", notes: "" }],
       notes: editingPrescription.notes || "",
-      patientId: editingPrescription.patientId || "",
+      patientId: patientId,
       doctor: {
         name: editingPrescription.doctorName || doctor?.name || "Dr. Gayath Dahanayaka",
         specialization: editingPrescription.doctorSpecialization || doctor?.specialization || "General",
       },
     });
 
-    // Fetch full patient info for dateOfBirth and other fields
-    const pid = editingPrescription.patientId || editingPrescription._id;
+    // FIXED: Set selectedPatient immediately if available in prescription
+    if (editingPrescription.patient) {
+      const patient = editingPrescription.patient;
+      setSelectedPatient(patient);
+      setSearch(`${patient.firstName} ${patient.lastName} ${patient.patientId || patient._id}`);
+    } else if (patientId) {
+      // Fetch full patient info for dateOfBirth and other fields
+      fetch(`http://localhost:7000/api/patients/${patientId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data?.patient) return;
 
-    fetch(`http://localhost:7000/api/patients/${pid}`)
-      .then(res => res.json())
-      .then(data => {
-        if (!data?.patient) return;
+          const patient = data.patient;
 
-        const patient = data.patient;
-
-        setSelectedPatient({
-          firstName: patient.firstName,
-          lastName: patient.lastName,
-          email: patient.email,
-          phone: patient.phone,
-          gender: patient.gender,
-          dateOfBirth: patient.dateOfBirth
-            ? new Date(patient.dateOfBirth).toLocaleDateString()
-            : "",
-          bloodGroup: patient.bloodGroup,
-          allergies: patient.allergies || []
-        });
-        setSearch(`${patient.firstName} ${patient.lastName} ${patient.patientId || patient._id}`);
-      })
-      .catch(err => console.error("Failed to fetch patient for editing:", err));
+          setSelectedPatient({
+            firstName: patient.firstName,
+            lastName: patient.lastName,
+            email: patient.email,
+            phone: patient.phone,
+            gender: patient.gender,
+            dateOfBirth: patient.dateOfBirth
+              ? new Date(patient.dateOfBirth).toLocaleDateString()
+              : "",
+            bloodGroup: patient.bloodGroup,
+            allergies: patient.allergies || []
+          });
+          setSearch(`${patient.firstName} ${patient.lastName} ${patient.patientId || patient._id}`);
+        })
+        .catch(err => console.error("Failed to fetch patient for editing:", err));
+    }
   }, [editingPrescription, reset, doctor]);
+
+  // FIXED: Trigger validation after setting patient in editing mode
+  useEffect(() => {
+    if (editingPrescription && selectedPatient) {
+      trigger("patientId");
+      console.log("Triggered validation for patientId in editing mode");
+    }
+  }, [selectedPatient, editingPrescription, trigger]);
 
   // Enhanced patient search with validation
   const handleSearchButton = async () => {
@@ -386,14 +407,15 @@ const PrescriptionForm = ({
   };
 
   const handleSelectPatient = (patient) => {
-    if (!patient.patientId) {
+    if (!patient.patientId && !patient._id) {
       setSearchError("Invalid patient data");
       return;
     }
 
+    const patientId = patient.patientId || patient._id;
     setSelectedPatient(patient);
-    setValue("patientId", patient.patientId);
-    setSearch(`${patient.firstName} ${patient.lastName} (${patient.patientId || patient._id})`);
+    setValue("patientId", patientId);
+    setSearch(`${patient.firstName} ${patient.lastName} (${patientId})`);
     setPatientsList([]);
     setSearchError("");
     trigger("patientId");
@@ -413,7 +435,7 @@ const PrescriptionForm = ({
   useEffect(() => {
     if (parentPatient) {
       setSelectedPatient(parentPatient);
-      setValue("patientId", parentPatient.patientId);
+      setValue("patientId", parentPatient.patientId || parentPatient._id);
       setSearch(`${parentPatient.firstName} ${parentPatient.lastName}`);
     }
   }, [parentPatient, setValue]);
@@ -469,7 +491,7 @@ const PrescriptionForm = ({
         diagnosis: data.diagnosis,
         medicines: data.medicines,
         notes: data.notes,
-        patientId: selectedPatient.patientId,
+        patientId: selectedPatient.patientId || selectedPatient._id,
         patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
         patientEmail: selectedPatient.email,
         patientPhone: selectedPatient.phone,
@@ -483,17 +505,32 @@ const PrescriptionForm = ({
 
       let res;
       if (editingPrescription) {
-        res = await updatePrescription(editingPrescription._id, payload);
+        // FIXED: Ensure we have the prescription ID
+        const prescriptionId = editingPrescription._id || editingPrescription.id;
+        if (!prescriptionId) {
+          alert("Error: Prescription ID is missing for update.");
+          return;
+        }
+        
+        // FIXED: Use the correct ID for update
+        res = await updatePrescription(prescriptionId, payload);
         alert("Prescription updated successfully.");
+        
+        // FIXED: Clear form after update
+        reset(defaultValues(null, doctor));
+        setSearch("");
+        setSelectedPatient(null);
       } else {
         res = await createPrescription(payload);
         alert("Prescription saved successfully.");
+        
+        // FIXED: Clear form after create
+        reset(defaultValues(null, doctor));
+        setSearch("");
+        setSelectedPatient(null);
       }
 
       if (onSaved) onSaved(res.data?.data || res.data);
-      reset(defaultValues(selectedPatient, doctor));
-      setSearch("");
-      setSelectedPatient(null);
     } catch (err) {
       console.error(err);
       alert(err?.response?.data?.message || "Failed to save prescription.");
@@ -734,7 +771,7 @@ const PrescriptionForm = ({
 
   // Reset form handler
   const handleReset = () => {
-    reset(defaultValues(selectedPatient, doctor));
+    reset(defaultValues(null, doctor));
     setSearch("");
     setSelectedPatient(null);
     setSearchError("");
@@ -1083,16 +1120,16 @@ const PrescriptionForm = ({
       <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
         <button 
           type="submit" 
-          disabled={isSubmitting || !isValid || !selectedPatient}
+          disabled={isSubmitting || (!isValid && !editingPrescription) || !selectedPatient}
           style={{ 
             padding: "12px 24px", 
-            backgroundColor: (isSubmitting || !isValid || !selectedPatient) ? "#ccc" : "#2196F3", 
+            backgroundColor: (isSubmitting || (!isValid && !editingPrescription) || !selectedPatient) ? "#ccc" : "#2196F3", 
             color: "white", 
             border: "none", 
             borderRadius: 4, 
             fontSize: 16, 
             fontWeight: "bold",
-            cursor: (isSubmitting || !isValid || !selectedPatient) ? "not-allowed" : "pointer"
+            cursor: (isSubmitting || (!isValid && !editingPrescription) || !selectedPatient) ? "not-allowed" : "pointer"
           }}
         >
           {isSubmitting ? "Saving..." : editingPrescription ? "Update Prescription" : "Save Prescription"}
