@@ -16,7 +16,7 @@ class RestockScheduler {
 
     try {
       // ✅ CHANGED: Run every 1 minute (instead of 30 minutes)
-      this.job = cron.schedule('*/30 * * * *', async () => {
+      this.job = cron.schedule('*/1 * * * *', async () => {
         console.log('⏰ 30-Minute Auto-Restock Check Starting...', new Date().toLocaleTimeString());
         try {
           const result = await autoRestockService.checkAndRestockItems();
