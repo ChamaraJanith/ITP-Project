@@ -261,6 +261,10 @@ const FinancialDashboard = () => {
 
       case "expense_tracking":navigate("/admin/financial/expenses");
         break;
+
+      
+      case "explore_trends":navigate("/admin/financial/trends");
+        break;
         
 
       case "payroll_analytics":
@@ -583,6 +587,13 @@ const FinancialDashboard = () => {
                   onClick={() => handleFinancialFeatureClick("expense_tracking")}
                 >
                   EXPENSE TRACKING
+                </button>
+
+                 <button
+                  className="fd-feature-button"
+                  onClick={() => handleFinancialFeatureClick("explore_trends")}
+                >
+                  EXPLORE TRENDS
                 </button>
 
               </div>
