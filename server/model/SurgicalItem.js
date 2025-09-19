@@ -309,7 +309,7 @@ surgicalItemSchema.pre('save', function(next) {
     this.autoRestock.reorderQuantity = this.minStockLevel * 2;
   }
   if (this.autoRestock.enabled && !this.autoRestock.nextScheduledCheck) {
-    this.autoRestock.nextScheduledCheck = new Date(Date.now() + (30 * 60 * 1000));
+    this.autoRestock.nextScheduledCheck = new Date(Date.now() + (1 * 60 * 1000));
   }
   next();
 });
@@ -356,7 +356,7 @@ surgicalItemSchema.methods.performAutoRestock = function() {
   this.autoRestock.lastAutoRestock = new Date();
   this.autoRestock.autoRestockCount += 1;
   this.autoRestock.lastAutoRestockQuantity = restockAmount;
-  this.autoRestock.nextScheduledCheck = new Date(Date.now() + (30 * 60 * 1000));
+  this.autoRestock.nextScheduledCheck = new Date(Date.now() + (1 * 60 * 1000));
   this.lastRestocked = new Date();
   return {
     success: true,

@@ -473,7 +473,7 @@ export const getDashboardStats = async (req, res) => {
               $match: {
                 expiryDate: {
                   $gte: new Date(),
-                  $lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+                  $lte: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000) // 30 days
                 }
               }
             },
