@@ -6,9 +6,9 @@ import { createPrescription, updatePrescription } from "../../../services/prescr
 import { jsPDF } from "jspdf";
 
 // Custom validation patterns
-const namePattern = /^[a-zA-Z\s\-'.]+$/; // Only letters, spaces, hyphens, apostrophes, periods
-const phonePattern = /^[\+]?[1-9][\d]{0,15}$/; // International phone format
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Email format
+const namePattern = /^[a-zA-Z\s\-'.]+$/;
+const phonePattern = /^[\+]?[1-9][\d]{0,15}$/;
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const dosagePattern = /^[0-9]+(\.[0-9]+)?\s*(mg|g|ml|l|tablet|tablets|capsule|capsules|drop|drops|tsp|tbsp|unit|units)?$/i;
 const frequencyPattern = /^[0-9]+\s*(time|times|daily|weekly|monthly|hourly|per day|per week|per month|once|twice|thrice|morning|evening|night|afternoon).*$/i;
 const durationPattern = /^[0-9]+\s*(day|days|week|weeks|month|months|year|years)$/i;
@@ -77,7 +77,6 @@ const MedicineSchema = yup.object({
     .max(500, "Notes cannot exceed 500 characters")
     .test('no-special-chars', 'Notes contain invalid characters', (value) => {
       if (!value) return true;
-      // Allow letters, numbers, spaces, and common punctuation
       const allowedPattern = /^[a-zA-Z0-9\s\-_.,;:!?'"()[\]{}]+$/;
       return allowedPattern.test(value);
     }),
@@ -93,7 +92,6 @@ const patientIdValidation = yup
 
 // Prescription validation schema
 const PrescriptionSchema = yup.object({
-
   diagnosis: yup
     .string()
     .required("Diagnosis is required")
@@ -101,7 +99,6 @@ const PrescriptionSchema = yup.object({
     .max(1000, "Diagnosis cannot exceed 1000 characters")
     .test('meaningful-content', 'Please provide a meaningful diagnosis', (value) => {
       if (!value) return true;
-      // Check if it's not just spaces or meaningless characters
       const meaningfulPattern = /[a-zA-Z]{3,}/;
       return meaningfulPattern.test(value);
     }),
@@ -127,16 +124,24 @@ const PrescriptionSchema = yup.object({
   
   patientId: patientIdValidation,
   
-
+  // Add doctor validation
+  doctor: yup.object({
+    name: yup.string().required("Doctor name is required"),
+    specialization: yup.string().required("Doctor specialization is required"),
+  }),
 });
 
-// Default form values
-const defaultValues = ( patient) => ({
+// Updated defaultValues function to include doctor
+const defaultValues = (patient, doctor) => ({
   date: new Date().toISOString().slice(0, 10),
   diagnosis: "",
   medicines: [{ name: "", dosage: "", frequency: "", duration: "", notes: "" }],
   notes: "",
   patientId: patient?._id || "",
+  doctor: {
+    name: doctor?.name || "Dr. Gayath Dahanayaka",
+    specialization: doctor?.specialization || "General",
+  },
 });
 
 // Utility function to filter prescriptions for today
@@ -168,7 +173,7 @@ const validateNumberInput = (value) => {
 };
 
 const PrescriptionForm = ({
-  doctor,
+  doctor: initialDoctor,
   parentPatient,
   ocrTextFromCanvas,
   onSaved,
@@ -176,6 +181,13 @@ const PrescriptionForm = ({
   prescriptions,
   scannedPatientId,
 }) => {
+  // State for doctor information with fallback values from controller
+  const [doctor, setDoctor] = useState(initialDoctor || {
+    id: "TEMP_DOCTOR_ID",
+    name: "Dr. Gayath Dahanayaka",
+    specialization: "General",
+  });
+  
   const {
     control,
     register,
@@ -187,9 +199,31 @@ const PrescriptionForm = ({
     formState: { errors, isSubmitting, isValid },
   } = useForm({
     resolver: yupResolver(PrescriptionSchema),
-    defaultValues: defaultValues(parentPatient),
-    mode: "onChange", // Validate on change for real-time feedback
+    defaultValues: defaultValues(parentPatient, doctor),
+    mode: "onChange",
   });
+
+  // Set doctor values in form when doctor state changes
+  useEffect(() => {
+    if (doctor) {
+      setValue("doctor.name", doctor.name);
+      setValue("doctor.specialization", doctor.specialization);
+      console.log("Setting doctor values in form:", doctor);
+    }
+  }, [doctor, setValue]);
+
+  // Set doctor values when editing prescription
+  useEffect(() => {
+    if (editingPrescription) {
+      const doctorName = editingPrescription.doctorName || doctor?.name || "Dr. Gayath Dahanayaka";
+      const doctorSpecialization = editingPrescription.doctorSpecialization || doctor?.specialization || "General";
+      
+      setValue("doctor.name", doctorName);
+      setValue("doctor.specialization", doctorSpecialization);
+      
+      console.log("Setting doctor values from editing prescription:", { doctorName, doctorSpecialization });
+    }
+  }, [editingPrescription, doctor, setValue]);
 
   const { fields, append, remove } = useFieldArray({ control, name: "medicines" });
 
@@ -209,115 +243,112 @@ const PrescriptionForm = ({
     return filterTodaysPrescriptions(prescriptions);
   }, [prescriptions]);
 
-
   // Add this useEffect to handle scanned patient ID
-useEffect(() => {
-  if (!scannedPatientId || selectedPatient) return;
+  useEffect(() => {
+    if (!scannedPatientId || selectedPatient) return;
 
-  const fetchScannedPatient = async () => {
-    try {
-      setSearchError("");
-      
-      // Try to fetch patient by ID directly
-      const res = await fetch(`http://localhost:7000/api/patients/${scannedPatientId}`);
-      
-      if (res.ok) {
-        const data = await res.json();
-        const patient = data.patient || data;
+    const fetchScannedPatient = async () => {
+      try {
+        setSearchError("");
         
-        if (patient) {
-          handleSelectPatient({
-            _id: patient._id || patient.patientId,
-            patientId: patient.patientId || patient._id,
-            firstName: patient.firstName,
-            lastName: patient.lastName,
-            email: patient.email,
-            phone: patient.phone,
-            gender: patient.gender,
-            dateOfBirth: patient.dateOfBirth,
-            bloodGroup: patient.bloodGroup,
-            allergies: patient.allergies || []
-          });
-          return;
-        }
-      }
-      
-      // If direct fetch fails, try searching by patient ID
-      const searchRes = await fetch(`http://localhost:7000/api/patients?search=${encodeURIComponent(scannedPatientId)}`);
-      
-      if (searchRes.ok) {
-        const searchData = await searchRes.json();
+        // Try to fetch patient by ID directly
+        const res = await fetch(`http://localhost:7000/api/patients/${scannedPatientId}`);
         
-        if (Array.isArray(searchData) && searchData.length > 0) {
-          // Find exact match first, otherwise take first result
-          const exactMatch = searchData.find(p => 
-            p._id === scannedPatientId || 
-            p.patientId === scannedPatientId
-          );
+        if (res.ok) {
+          const data = await res.json();
+          const patient = data.patient || data;
           
-          const patientToSelect = exactMatch || searchData[0];
-          handleSelectPatient(patientToSelect);
-        } else {
-          setSearchError(`No patient found with ID: ${scannedPatientId}`);
+          if (patient) {
+            handleSelectPatient({
+              patientId: patient.patientId,
+              firstName: patient.firstName,
+              lastName: patient.lastName,
+              email: patient.email,
+              phone: patient.phone,
+              gender: patient.gender,
+              dateOfBirth: patient.dateOfBirth,
+              bloodGroup: patient.bloodGroup,
+              allergies: patient.allergies || []
+            });
+            return;
+          }
         }
-      } else {
-        setSearchError("Failed to search for scanned patient");
+        
+        // If direct fetch fails, try searching by patient ID
+        const searchRes = await fetch(`http://localhost:7000/api/patients?search=${encodeURIComponent(scannedPatientId)}`);
+        
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          
+          if (Array.isArray(searchData) && searchData.length > 0) {
+            // Find exact match first, otherwise take first result
+            const exactMatch = searchData.find(p => 
+              p._id === scannedPatientId || 
+              p.patientId === scannedPatientId
+            );
+            
+            const patientToSelect = exactMatch || searchData[0];
+            handleSelectPatient(patientToSelect);
+          } else {
+            setSearchError(`No patient found with ID: ${scannedPatientId}`);
+          }
+        } else {
+          setSearchError("Failed to search for scanned patient");
+        }
+        
+      } catch (err) {
+        console.error("Failed to fetch scanned patient:", err);
+        setSearchError("Failed to load scanned patient data");
       }
-      
-    } catch (err) {
-      console.error("Failed to fetch scanned patient:", err);
-      setSearchError("Failed to load scanned patient data");
-    }
-  };
+    };
 
-  fetchScannedPatient();
-}, [scannedPatientId, selectedPatient]);
-
-
+    fetchScannedPatient();
+  }, [scannedPatientId, selectedPatient]);
 
   // Prefill form for editing
-// Effect to handle editing prescription and fetch full patient data
-useEffect(() => {
-  if (!editingPrescription) return;
+  useEffect(() => {
+    if (!editingPrescription) return;
 
-  reset({
-    date: editingPrescription.date?.slice(0, 10) || "",
-    diagnosis: editingPrescription.diagnosis || "",
-    medicines: editingPrescription.medicines?.length
-      ? editingPrescription.medicines
-      : [{ name: "", dosage: "", frequency: "", duration: "", notes: "" }],
-    notes: editingPrescription.notes || "",
-    patientId: editingPrescription.patientId || ""
-  });
+    reset({
+      date: editingPrescription.date?.slice(0, 10) || "",
+      diagnosis: editingPrescription.diagnosis || "",
+      medicines: editingPrescription.medicines?.length
+        ? editingPrescription.medicines
+        : [{ name: "", dosage: "", frequency: "", duration: "", notes: "" }],
+      notes: editingPrescription.notes || "",
+      patientId: editingPrescription.patientId || "",
+      doctor: {
+        name: editingPrescription.doctorName || doctor?.name || "Dr. Gayath Dahanayaka",
+        specialization: editingPrescription.doctorSpecialization || doctor?.specialization || "General",
+      },
+    });
 
-  // Fetch full patient info for dateOfBirth and other fields
-  const pid = editingPrescription.patientId || editingPrescription._id;
+    // Fetch full patient info for dateOfBirth and other fields
+    const pid = editingPrescription.patientId || editingPrescription._id;
 
-  fetch(`http://localhost:7000/api/patients/${pid}`)
-    .then(res => res.json())
-    .then(data => {
-      if (!data?.patient) return;
+    fetch(`http://localhost:7000/api/patients/${pid}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data?.patient) return;
 
-      const patient = data.patient;
+        const patient = data.patient;
 
-      setSelectedPatient({
-        _id: patient._id,
-        patientId: patient.patientId || patient._id,
-        firstName: patient.firstName,
-        lastName: patient.lastName,
-        email: patient.email,
-        phone: patient.phone,
-        gender: patient.gender,
-        dateOfBirth: patient.dateOfBirth
-          ? new Date(patient.dateOfBirth).toLocaleDateString()
-          : "",
-        bloodGroup: patient.bloodGroup,
-        allergies: patient.allergies || []
-      });
-      setSearch(`${patient.firstName} ${patient.lastName} ${patient.patientId || patient._id}`);
-    })
-    .catch(err => console.error("Failed to fetch patient for editing:", err));
-}, [editingPrescription, reset]);
+        setSelectedPatient({
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          email: patient.email,
+          phone: patient.phone,
+          gender: patient.gender,
+          dateOfBirth: patient.dateOfBirth
+            ? new Date(patient.dateOfBirth).toLocaleDateString()
+            : "",
+          bloodGroup: patient.bloodGroup,
+          allergies: patient.allergies || []
+        });
+        setSearch(`${patient.firstName} ${patient.lastName} ${patient.patientId || patient._id}`);
+      })
+      .catch(err => console.error("Failed to fetch patient for editing:", err));
+  }, [editingPrescription, reset, doctor]);
 
   // Enhanced patient search with validation
   const handleSearchButton = async () => {
@@ -332,11 +363,6 @@ useEffect(() => {
       setSearchError("Search term must be at least 2 characters");
       return;
     }
-
-    // if (!/^[a-zA-Z\s\-'.]+$/.test(search.trim())) {
-    //   setSearchError("Search can only contain letters, spaces, hyphens, apostrophes, and periods");
-    //   return;
-    // }
 
     try {
       const res = await fetch(`http://localhost:7000/api/patients?search=${encodeURIComponent(search)}`);
@@ -360,21 +386,19 @@ useEffect(() => {
   };
 
   const handleSelectPatient = (patient) => {
-    // Validate patient data
-    if (!patient._id && !patient.patientId) {
+    if (!patient.patientId) {
       setSearchError("Invalid patient data");
       return;
     }
 
     setSelectedPatient(patient);
-    setValue("patientId", patient._id || patient.patientId);
+    setValue("patientId", patient.patientId);
     setSearch(`${patient.firstName} ${patient.lastName} (${patient.patientId || patient._id})`);
     setPatientsList([]);
     setSearchError("");
-    trigger("patientId"); // Trigger validation
+    trigger("patientId");
   };
 
-  // Handle search input changes with validation
   const handleSearchChange = (e) => {
     const value = validateNameNumberInput(e.target.value);
     setSearch(value);
@@ -389,7 +413,7 @@ useEffect(() => {
   useEffect(() => {
     if (parentPatient) {
       setSelectedPatient(parentPatient);
-      setValue("patientId", parentPatient._id || parentPatient.patientId);
+      setValue("patientId", parentPatient.patientId);
       setSearch(`${parentPatient.firstName} ${parentPatient.lastName}`);
     }
   }, [parentPatient, setValue]);
@@ -400,16 +424,14 @@ useEffect(() => {
     
     let processedValue = ocrTextFromCanvas;
     
-    // Apply appropriate validation based on field type
     if (activeField.includes('name') && activeField.includes('medicines')) {
       processedValue = validateNameInput(ocrTextFromCanvas);
     } else if (activeField.includes('dosage')) {
-      // Allow dosage pattern
       processedValue = ocrTextFromCanvas;
     }
     
     setValue(activeField, processedValue);
-    trigger(activeField); // Trigger validation
+    trigger(activeField);
   }, [ocrTextFromCanvas, activeField, setValue, trigger]);
 
   // Enhanced form submission with final validation
@@ -419,14 +441,13 @@ useEffect(() => {
       return;
     }
 
-    // Additional business logic validation
     const totalMedicines = data.medicines.length;
     if (totalMedicines > 10) {
       alert("Cannot prescribe more than 10 medicines at once.");
       return;
     }
 
-    // Check for drug interactions (basic example)
+    // Check for drug interactions
     const medicineNames = data.medicines.map(m => m.name.toLowerCase());
     const commonInteractions = [
       ['aspirin', 'warfarin'],
@@ -448,13 +469,16 @@ useEffect(() => {
         diagnosis: data.diagnosis,
         medicines: data.medicines,
         notes: data.notes,
-        patientId: selectedPatient._id || selectedPatient.patientId,
+        patientId: selectedPatient.patientId,
         patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
         patientEmail: selectedPatient.email,
         patientPhone: selectedPatient.phone,
         patientGender: selectedPatient.gender,
         bloodGroup: selectedPatient.bloodGroup,
-        patientAllergies: selectedPatient.allergies
+        patientAllergies: selectedPatient.allergies,
+        doctorId: doctor.id,
+        doctorName: data.doctor.name,
+        doctorSpecialization: data.doctor.specialization,
       };
 
       let res;
@@ -467,7 +491,7 @@ useEffect(() => {
       }
 
       if (onSaved) onSaved(res.data?.data || res.data);
-      reset(defaultValues(doctor, selectedPatient));
+      reset(defaultValues(selectedPatient, doctor));
       setSearch("");
       setSelectedPatient(null);
     } catch (err) {
@@ -485,256 +509,236 @@ useEffect(() => {
   };
 
   // PDF generation function
+  const generateProfessionalPDF = (selectedPatient, diagnosis, medicines, additionalNotes, doctor, date) => {
+    if (!selectedPatient) {
+      alert("Please select a patient to generate PDF");
+      return;
+    }
 
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const pageWidth = 210;
+    const margin = 14;
+    const usableWidth = pageWidth - margin * 2;
+    let y = 18;
 
-// PDF generation function
-// Replace your existing generateProfessionalPDF with this function
-const generateProfessionalPDF = (selectedPatient, diagnosis, medicines, additionalNotes, doctor, date) => {
-  if (!selectedPatient) {
-    alert("Please select a patient to generate PDF");
-    return;
-  }
+    const split = (text, width) => doc.splitTextToSize(text || "", width);
 
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const pageWidth = 210;
-  const margin = 14;
-  const usableWidth = pageWidth - margin * 2;
-  let y = 18;
+    // Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text("HealIX Healthcare Center", pageWidth / 2, y, { align: "center" });
+    y += 8;
 
-  // Helper: safe text splitter
-  const split = (text, width) => doc.splitTextToSize(text || "", width);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text("Prescription", pageWidth / 2, y, { align: "center" });
+    y += 6;
 
-  // Header (clinic title + subtitle)
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.text("HealIX Healthcare Center", pageWidth / 2, y, { align: "center" });
-  y += 8;
+    doc.setFontSize(10);
+    doc.text("Department of Medical Equipment & Supplies", pageWidth / 2, y, { align: "center" });
+    y += 8;
 
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "normal");
-  doc.text("Prescription", pageWidth / 2, y, { align: "center" });
-  y += 6;
+    doc.setLineWidth(0.8);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 6;
 
-  // small department/subtitle line
-  doc.setFontSize(10);
-  doc.text("Department of Medical Equipment & Supplies", pageWidth / 2, y, { align: "center" });
-  y += 8;
-
-  // Thin horizontal rule
-  doc.setLineWidth(0.8);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 6;
-
-  // Metadata row (date, time, doctor, report id)
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const dateStr = date || now.toISOString().slice(0, 10);
-  const reportId = `RPT-${now.toISOString().slice(0,10).replace(/-/g,"")}-${now.getHours()}${now.getMinutes()}`;
-  doc.setFontSize(9);
-  doc.text(`Report Date: ${dateStr} | Time: ${timeStr}`, margin, y);
-  doc.text(`Generated By: ${doctor?.name || "N/A"} | Report ID: ${reportId}`, pageWidth - margin, y, { align: "right" });
-  y += 8;
-
-  // EXECUTIVE SUMMARY box
-  const summaryBoxHeight = 18;
-  doc.setLineWidth(0.6);
-  doc.rect(margin, y, usableWidth, summaryBoxHeight); // stroke
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text("EXECUTIVE SUMMARY", margin + 2, y + 6);
-  doc.setFont("helvetica", "normal");
-  const totalMedicines = (medicines || []).length;
-  const totalNotes = additionalNotes ? 1 : 0;
-  doc.text(`Total Medicines: ${totalMedicines}`, margin + 4, y + 12);
-  doc.text(`Diagnosis: ${diagnosis || "N/A"}`, margin + 60, y + 12);
-  doc.text(`Notes present: ${totalNotes}`, pageWidth - margin - 40, y + 12, { align: "right" });
-  y += summaryBoxHeight + 10;
-
-  // Patient details boxed area (left) + small doctor box (right)
-  const patientBoxHeight = 28;
-  doc.setLineWidth(0.6);
-  doc.rect(margin, y, usableWidth, patientBoxHeight);
-
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text("Patient Details", margin + 2, y + 7);
-  doc.setFont("helvetica", "normal");
-  const patientName = `${selectedPatient.firstName || ""} ${selectedPatient.lastName || ""}`.trim();
-  doc.text(`Name: ${patientName}`, margin + 4, y + 13);
-  doc.text(`Patient ID: ${selectedPatient._id || selectedPatient.patientId || "N/A"}`, margin + 4, y + 19);
-  doc.text(`Gender: ${selectedPatient.gender || "N/A"}`, margin + 70, y + 13);
-  doc.text(`Blood Group: ${selectedPatient.bloodGroup || "N/A"}`, margin + 70, y + 19);
-
-  // Allergies (highlighted if present)
-  if (selectedPatient.allergies && selectedPatient.allergies.length) {
-    doc.setTextColor(160, 0, 0);
+    // Metadata
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dateStr = date || now.toISOString().slice(0, 10);
+    const reportId = `RPT-${now.toISOString().slice(0,10).replace(/-/g,"")}-${now.getHours()}${now.getMinutes()}`;
     doc.setFontSize(9);
-    doc.text(`⚠ Allergies: ${selectedPatient.allergies.join(", ")}`, margin + 4, y + 25);
-    doc.setTextColor(0, 0, 0);
-  }
+    doc.text(`Report Date: ${dateStr} | Time: ${timeStr}`, margin, y);
+    doc.text(`Generated By: ${doctor?.name || "N/A"} | Report ID: ${reportId}`, pageWidth - margin, y, { align: "right" });
+    y += 8;
 
-  y += patientBoxHeight + 10;
+    // EXECUTIVE SUMMARY box
+    const summaryBoxHeight = 18;
+    doc.setLineWidth(0.6);
+    doc.rect(margin, y, usableWidth, summaryBoxHeight);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("EXECUTIVE SUMMARY", margin + 2, y + 6);
+    doc.setFont("helvetica", "normal");
+    const totalMedicines = (medicines || []).length;
+    const totalNotes = additionalNotes ? 1 : 0;
+    doc.text(`Total Medicines: ${totalMedicines}`, margin + 4, y + 12);
+    doc.text(`Diagnosis: ${diagnosis || "N/A"}`, margin + 60, y + 12);
+    doc.text(`Notes present: ${totalNotes}`, pageWidth - margin - 40, y + 12, { align: "right" });
+    y += summaryBoxHeight + 10;
 
-  // Diagnosis block
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text("Diagnosis / Symptoms:", margin, y);
-  y += 5;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  const diagLines = split(diagnosis || "N/A", usableWidth);
-  diagLines.forEach(line => {
-    // page break protection
-    if (y > 275) { doc.addPage(); y = 18; }
-    doc.text(line, margin, y);
-    y += 5;
-  });
-  y += 6;
+    // Patient details
+    const patientBoxHeight = 28;
+    doc.setLineWidth(0.6);
+    doc.rect(margin, y, usableWidth, patientBoxHeight);
 
-  // Medicines table header
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  // column widths that sum to usableWidth
-  const colWidths = [10, 60, 30, 35, 25, 22]; // total 182 for A4 with margins 14
-  const headers = ["S/N", "Medicine", "Dosage", "Frequency", "Duration", "Notes"];
-  let x = margin;
-  const headerHeight = 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Patient Details", margin + 2, y + 7);
+    doc.setFont("helvetica", "normal");
+    const patientName = `${selectedPatient.firstName || ""} ${selectedPatient.lastName || ""}`.trim();
+    doc.text(`Name: ${patientName}`, margin + 4, y + 13);
+    doc.text(`Patient ID: ${selectedPatient._id || selectedPatient.patientId || "N/A"}`, margin + 4, y + 19);
+    doc.text(`Gender: ${selectedPatient.gender || "N/A"}`, margin + 70, y + 13);
+    doc.text(`Blood Group: ${selectedPatient.bloodGroup || "N/A"}`, margin + 70, y + 19);
 
-  // If not enough vertical space for header+1 row, add page
-  if (y + 12 > 285) { doc.addPage(); y = 18; }
-
-  // draw header background & text
-  doc.setFillColor(240, 240, 240);
-  doc.rect(x, y, usableWidth, headerHeight, "F"); // filled header strip
-  doc.setDrawColor(0);
-  doc.setLineWidth(0.5);
-  // draw header cell borders & labels
-  let headerX = x;
-  for (let i = 0; i < headers.length; i++) {
-    doc.rect(headerX, y, colWidths[i], headerHeight); // stroke border
-    doc.text(headers[i], headerX + 2, y + 6);
-    headerX += colWidths[i];
-  }
-  y += headerHeight;
-
-  // table rows
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  const rowPadding = 2;
-  (medicines || []).forEach((med, idx) => {
-    // Prepare wrapped text per cell
-    const rowTexts = [
-      [(idx + 1).toString()],
-      split(med.name || "", colWidths[1] - rowPadding),
-      split(med.dosage || "", colWidths[2] - rowPadding),
-      split(med.frequency || "", colWidths[3] - rowPadding),
-      split(med.duration || "", colWidths[4] - rowPadding),
-      split(med.notes || "", colWidths[5] - rowPadding),
-    ];
-
-    // Calculate max lines in this row
-    const maxLines = Math.max(...rowTexts.map(c => c.length));
-
-    // Row height based on lines
-    const lineHeight = 4.5;
-    const rowHeight = Math.max(7, maxLines * lineHeight + 4);
-
-    // page break if needed
-    if (y + rowHeight > 285) {
-      doc.addPage();
-      y = 18;
-
-      // redraw header on new page
-      doc.setFillColor(240, 240, 240);
-      doc.rect(x, y, usableWidth, headerHeight, "F");
-      headerX = x;
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      for (let i = 0; i < headers.length; i++) {
-        doc.rect(headerX, y, colWidths[i], headerHeight);
-        doc.text(headers[i], headerX + 2, y + 6);
-        headerX += colWidths[i];
-      }
-      y += headerHeight;
-      doc.setFont("helvetica", "normal");
+    if (selectedPatient.allergies && selectedPatient.allergies.length) {
+      doc.setTextColor(160, 0, 0);
       doc.setFontSize(9);
+      doc.text(`⚠ Allergies: ${selectedPatient.allergies.join(", ")}`, margin + 4, y + 25);
+      doc.setTextColor(0, 0, 0);
     }
 
-    // draw cells and text
-    let cellX = x;
-    for (let c = 0; c < rowTexts.length; c++) {
-      // cell border
-      doc.rect(cellX, y, colWidths[c], rowHeight);
+    y += patientBoxHeight + 10;
 
-      // draw each wrapped line
-      const lines = rowTexts[c];
-      for (let li = 0; li < lines.length; li++) {
-        const textY = y + 4 + li * lineHeight;
-        doc.text(String(lines[li] || ""), cellX + 2, textY);
-      }
-
-      cellX += colWidths[c];
-    }
-
-    y += rowHeight;
-  });
-
-  y += 8;
-
-  // Additional notes box
-  if (additionalNotes) {
+    // Diagnosis
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.text("Additional Notes & Instructions:", margin, y);
+    doc.text("Diagnosis / Symptoms:", margin, y);
     y += 5;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    const noteLines = split(additionalNotes, usableWidth);
-    noteLines.forEach(line => {
+    const diagLines = split(diagnosis || "N/A", usableWidth);
+    diagLines.forEach(line => {
       if (y > 275) { doc.addPage(); y = 18; }
       doc.text(line, margin, y);
       y += 5;
     });
     y += 6;
-  }
 
-  // Footer: Signature blocks
-  // Ensure space
-  if (y + 30 > 285) { doc.addPage(); y = 220; }
+    // Medicines table
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    const colWidths = [10, 60, 30, 35, 25, 22];
+    const headers = ["S/N", "Medicine", "Dosage", "Frequency", "Duration", "Notes"];
+    let x = margin;
+    const headerHeight = 8;
 
-  const sigY = Math.max(y + 10, 220);
-  const sigBoxWidth = 70;
+    if (y + 12 > 285) { doc.addPage(); y = 18; }
 
-  // Prepared by
-  doc.setFont("helvetica", "normal");
-  doc.text("Prepared by:", margin, sigY);
-  doc.line(margin, sigY + 6, margin + sigBoxWidth, sigY + 6);
-  doc.text("(Name & Signature)", margin, sigY + 12);
+    doc.setFillColor(240, 240, 240);
+    doc.rect(x, y, usableWidth, headerHeight, "F");
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.5);
+    let headerX = x;
+    for (let i = 0; i < headers.length; i++) {
+      doc.rect(headerX, y, colWidths[i], headerHeight);
+      doc.text(headers[i], headerX + 2, y + 6);
+      headerX += colWidths[i];
+    }
+    y += headerHeight;
 
-  // Reviewed by (right side)
-  const rightX = pageWidth - margin - sigBoxWidth;
-  doc.text("Reviewed by:", rightX, sigY);
-  doc.line(rightX, sigY + 6, rightX + sigBoxWidth, sigY + 6);
-  doc.text("(Name & Signature)", rightX, sigY + 12);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    const rowPadding = 2;
+    (medicines || []).forEach((med, idx) => {
+      const rowTexts = [
+        [(idx + 1).toString()],
+        split(med.name || "", colWidths[1] - rowPadding),
+        split(med.dosage || "", colWidths[2] - rowPadding),
+        split(med.frequency || "", colWidths[3] - rowPadding),
+        split(med.duration || "", colWidths[4] - rowPadding),
+        split(med.notes || "", colWidths[5] - rowPadding),
+      ];
 
-  // Doctor signature rightmost
-  const docSigX = pageWidth - margin - 40;
-  doc.text("____________________", docSigX, sigY + 20, { align: "left" });
-  doc.text(`${doctor?.name || "Doctor"}`, docSigX, sigY + 26, { align: "left" });
-  doc.text(`${doctor?.specialization || ""}`, docSigX, sigY + 31, { align: "left" });
+      const maxLines = Math.max(...rowTexts.map(c => c.length));
+      const lineHeight = 4.5;
+      const rowHeight = Math.max(7, maxLines * lineHeight + 4);
 
-  // Save file (filename safe)
-  const safeFirst = (selectedPatient.firstName || "Patient").replace(/\s+/g, "_");
-  const safeLast = (selectedPatient.lastName || "").replace(/\s+/g, "_");
-  const fileDate = new Date().toISOString().slice(0,10).replace(/-/g,"");
-  doc.save(`Prescription_${safeFirst}_${safeLast}_${fileDate}.pdf`);
-};
+      if (y + rowHeight > 285) {
+        doc.addPage();
+        y = 18;
 
+        doc.setFillColor(240, 240, 240);
+        doc.rect(x, y, usableWidth, headerHeight, "F");
+        headerX = x;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        for (let i = 0; i < headers.length; i++) {
+          doc.rect(headerX, y, colWidths[i], headerHeight);
+          doc.text(headers[i], headerX + 2, y + 6);
+          headerX += colWidths[i];
+        }
+        y += headerHeight;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+      }
+
+      let cellX = x;
+      for (let c = 0; c < rowTexts.length; c++) {
+        doc.rect(cellX, y, colWidths[c], rowHeight);
+
+        const lines = rowTexts[c];
+        for (let li = 0; li < lines.length; li++) {
+          const textY = y + 4 + li * lineHeight;
+          doc.text(String(lines[li] || ""), cellX + 2, textY);
+        }
+
+        cellX += colWidths[c];
+      }
+
+      y += rowHeight;
+    });
+
+    y += 8;
+
+    // Additional notes
+    if (additionalNotes) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("Additional Notes & Instructions:", margin, y);
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      const noteLines = split(additionalNotes, usableWidth);
+      noteLines.forEach(line => {
+        if (y > 275) { doc.addPage(); y = 18; }
+        doc.text(line, margin, y);
+        y += 5;
+      });
+      y += 6;
+    }
+
+    // Footer signatures
+    if (y + 30 > 285) { doc.addPage(); y = 220; }
+
+    const sigY = Math.max(y + 10, 220);
+    const sigBoxWidth = 70;
+
+    doc.setFont("helvetica", "normal");
+    doc.text("Prepared by:", margin, sigY);
+    doc.line(margin, sigY + 6, margin + sigBoxWidth, sigY + 6);
+    doc.text("(Name & Signature)", margin, sigY + 12);
+
+    const rightX = pageWidth - margin - sigBoxWidth;
+    doc.text("Reviewed by:", rightX, sigY);
+    doc.line(rightX, sigY + 6, rightX + sigBoxWidth, sigY + 6);
+    doc.text("(Name & Signature)", rightX, sigY + 12);
+
+    const docSigX = pageWidth - margin - 40;
+    doc.text("____________________", docSigX, sigY + 20, { align: "left" });
+    doc.text(`${doctor?.name || "Doctor"}`, docSigX, sigY + 26, { align: "left" });
+    doc.text(`${doctor?.specialization || ""}`, docSigX, sigY + 31, { align: "left" });
+
+    // Save file
+    const safeFirst = (selectedPatient.firstName || "Patient").replace(/\s+/g, "_");
+    const safeLast = (selectedPatient.lastName || "").replace(/\s+/g, "_");
+    const fileDate = new Date().toISOString().slice(0,10).replace(/-/g,"");
+    doc.save(`Prescription_${safeFirst}_${safeLast}_${fileDate}.pdf`);
+  };
 
   // Error display component
   const ErrorMessage = ({ error }) => (
     error ? <div style={{ color: "red", fontSize: 12, marginTop: 4 }}>{error.message}</div> : null
   );
+
+  // Reset form handler
+  const handleReset = () => {
+    reset(defaultValues(selectedPatient, doctor));
+    setSearch("");
+    setSelectedPatient(null);
+    setSearchError("");
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} style={{ padding: 12 }}>
@@ -825,8 +829,8 @@ const generateProfessionalPDF = (selectedPatient, diagnosis, medicines, addition
           type="date" 
           {...register("date")} 
           onFocus={() => setActiveField("date")} 
-           max={new Date().toISOString().split('T')[0]}
-           min={new Date().toISOString().split('T')[0]}
+          max={new Date().toISOString().split('T')[0]}
+          min={new Date().toISOString().split('T')[0]}
           style={{ 
             padding: 8, 
             borderRadius: 4, 
@@ -1028,33 +1032,29 @@ const generateProfessionalPDF = (selectedPatient, diagnosis, medicines, addition
         <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
           <div style={{ flex: 1 }}>
             <input 
-              {...register("doctor.name")} 
-              placeholder="Doctor Name" 
-              readOnly 
+              value={doctor.name}
+              readOnly
               style={{ 
                 width: "100%",
                 padding: 8, 
                 borderRadius: 4, 
-                border: errors.doctor?.name ? "1px solid red" : "1px solid #ccc", 
+                border: "1px solid #ccc", 
                 backgroundColor: "#f9f9f9" 
               }} 
             />
-            <ErrorMessage error={errors.doctor?.name} />
           </div>
           <div style={{ flex: 1 }}>
             <input 
-              {...register("doctor.specialization")} 
-              placeholder="Specialization" 
-              readOnly 
+              value={doctor.specialization}
+              readOnly
               style={{ 
                 width: "100%",
                 padding: 8, 
                 borderRadius: 4, 
-                border: errors.doctor?.specialization ? "1px solid red" : "1px solid #ccc", 
+                border: "1px solid #ccc", 
                 backgroundColor: "#f9f9f9" 
               }} 
             />
-            <ErrorMessage error={errors.doctor?.specialization} />
           </div>
         </div>
       </div>
@@ -1099,12 +1099,7 @@ const generateProfessionalPDF = (selectedPatient, diagnosis, medicines, addition
         </button>
         <button 
           type="button" 
-          onClick={() => {
-            reset(defaultValues(doctor, selectedPatient));
-            setSearch("");
-            setSelectedPatient(null);
-            setSearchError("");
-          }}
+          onClick={handleReset}
           disabled={isSubmitting}
           style={{ 
             padding: "12px 24px", 
@@ -1119,34 +1114,34 @@ const generateProfessionalPDF = (selectedPatient, diagnosis, medicines, addition
           Reset Form
         </button>
       </div>
+      
       {/* PDF Button */}
-<div style={{ marginTop: 20 }}>
-  <button
-    type="button"
-    onClick={() => generateProfessionalPDF(
-      selectedPatient,
-      watchedDiagnosis,
-      watchedMedicines,
-      watch("notes"),
-      doctor,
-      watch("date")
-    )}
-    disabled={!selectedPatient}
-    style={{
-      padding: "12px 24px",
-      backgroundColor: !selectedPatient ? "#ccc" : "#FF5722",
-      color: "white",
-      border: "none",
-      borderRadius: 4,
-      fontSize: 16,
-      cursor: !selectedPatient ? "not-allowed" : "pointer",
-      marginRight: 12,
-    }}
-  >
-    Generate PDF
-  </button>
-</div>
-
+      <div style={{ marginTop: 20 }}>
+        <button
+          type="button"
+          onClick={() => generateProfessionalPDF(
+            selectedPatient,
+            watchedDiagnosis,
+            watchedMedicines,
+            watch("notes"),
+            doctor,
+            watch("date")
+          )}
+          disabled={!selectedPatient}
+          style={{
+            padding: "12px 24px",
+            backgroundColor: !selectedPatient ? "#ccc" : "#FF5722",
+            color: "white",
+            border: "none",
+            borderRadius: 4,
+            fontSize: 16,
+            cursor: !selectedPatient ? "not-allowed" : "pointer",
+            marginRight: 12,
+          }}
+        >
+          Generate PDF
+        </button>
+      </div>
 
       {/* Validation help text */}
       <div style={{ 

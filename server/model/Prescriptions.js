@@ -17,8 +17,8 @@ const PrescriptionSchema = new mongoose.Schema(
     medicines: { type: [MedicineSchema], default: [] },
     notes: { type: String, trim: true, default: "" },
 
-    // ✅ Patient details
-    patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient", required: true },
+    // Patient details
+    patientId: { type: String, required: true }, // String for custom generated patient ID
     patientName: { type: String, required: true },
     patientEmail: { type: String },
     patientPhone: { type: String },
@@ -26,7 +26,7 @@ const PrescriptionSchema = new mongoose.Schema(
     patientBloodGroup: { type: String },
     patientAllergies: { type: [String], default: [] },
 
-    // ✅ Doctor details
+    // Doctor details
     doctorId: { type: String, required: true },
     doctorName: { type: String, required: true },
     doctorSpecialization: { type: String, default: "" },
