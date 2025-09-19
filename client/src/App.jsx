@@ -34,6 +34,8 @@ import DoctorItemRequestModal from "./components/admin/Doctor/DoctorInventoryPag
 import FinancialPayroll from './components/admin/Financial_Manager/FinancialPayroll';
 import TotalPayrollView from './components/admin/Financial_Manager/TotalPayrollView';
 import ExpenseTracking from './components/admin/Financial_Manager/ExpenseTracking';
+import InventoryReports from './components/admin/Admin/InventoryReports';
+import PatientRecordsPage from './components/admin/Doctor/PatientRecordsPage';
 
 
 
