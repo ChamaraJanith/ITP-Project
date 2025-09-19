@@ -1,0 +1,551 @@
+/* PrescriptionForm.css */
+/* All styles are scoped with .pf- prefix to avoid conflicts */
+
+/* Form Container */
+.pf-form {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1f2937;
+  padding: 0;
+  margin: 0;
+}
+
+/* Stats Card */
+.pf-stats-card {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.pf-stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+.pf-stat-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pf-stat-icon {
+  font-size: 2rem;
+  opacity: 0.8;
+}
+
+.pf-stat-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.pf-stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #4f46e5;
+}
+
+/* Sections */
+.pf-section {
+  margin-bottom: 24px;
+}
+
+.pf-label {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+/* Inputs */
+.pf-input,
+.pf-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.pf-input:focus,
+.pf-textarea:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.pf-input.pf-error,
+.pf-textarea.pf-error {
+  border-color: #ef4444;
+}
+
+.pf-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.pf-character-count {
+  text-align: right;
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* Search */
+.pf-search-container {
+  display: flex;
+  gap: 12px;
+}
+
+.pf-search-button {
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  white-space: nowrap;
+}
+
+.pf-search-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+}
+
+.pf-search-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Patient List */
+.pf-patient-list {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.pf-patient-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pf-patient-item:last-child {
+  border-bottom: none;
+}
+
+.pf-patient-item:hover {
+  background: #f9fafb;
+}
+
+.pf-patient-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.pf-patient-details {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* Selected Patient */
+.pf-selected-patient {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid #bae6fd;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.pf-selected-patient-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.pf-selected-patient-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.pf-selected-patient-id {
+  font-size: 0.9rem;
+  color: #0369a1;
+  background: rgba(255,255,255,0.5);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.pf-patient-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pf-patient-info-item {
+  display: flex;
+  align-items: center;
+}
+
+.pf-patient-info-label {
+  font-weight: 600;
+  color: #0369a1;
+  min-width: 80px;
+  margin-right: 8px;
+}
+
+.pf-patient-allergies {
+  background: rgba(239, 68, 68, 0.1);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border-left: 4px solid #ef4444;
+  font-weight: 600;
+  color: #b91c1c;
+}
+
+/* Medicines */
+.pf-medicine-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+}
+
+.pf-medicine-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+.pf-medicine-card.pf-error {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.02);
+}
+
+.pf-medicine-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.pf-medicine-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+.pf-remove-button {
+  background: linear-gradient(90deg, #ef4444, #b91c1c);
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.pf-remove-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+.pf-remove-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.pf-medicine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.pf-medicine-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.pf-field-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 6px;
+}
+
+/* Buttons */
+.pf-button {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pf-add-button {
+  background: linear-gradient(90deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.pf-add-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.pf-add-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Doctor Info */
+.pf-doctor-info {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.pf-doctor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.pf-doctor-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.pf-input.pf-readonly {
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+/* Validation Summary */
+.pf-validation-summary {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid #fecaca;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+}
+
+.pf-validation-title {
+  font-weight: 700;
+  color: #b91c1c;
+  margin-bottom: 12px;
+}
+
+.pf-validation-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.pf-validation-item {
+  color: #b91c1c;
+  margin-bottom: 4px;
+}
+
+/* Button Group */
+.pf-button-group {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.pf-primary-button {
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  color: white;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  flex: 1;
+}
+
+.pf-primary-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+}
+
+.pf-primary-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.pf-secondary-button {
+  background: linear-gradient(90deg, #6b7280, #4b5563);
+  color: white;
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+  flex: 1;
+}
+
+.pf-secondary-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(107, 114, 128, 0.4);
+}
+
+.pf-secondary-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* PDF Section */
+.pf-pdf-section {
+  margin-bottom: 24px;
+}
+
+.pf-pdf-button {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+  color: white;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  width: 100%;
+}
+
+.pf-pdf-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+}
+
+.pf-pdf-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Guidelines */
+.pf-guidelines {
+  background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #99f6e4;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.pf-guidelines-title {
+  font-weight: 700;
+  color: #0d9488;
+  margin-bottom: 12px;
+}
+
+.pf-guidelines-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.pf-guidelines-list li {
+  margin-bottom: 8px;
+  color: #0f766e;
+}
+
+/* Error Messages */
+.pf-error-text {
+  color: #ef4444;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.pf-error-message {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* Loading Animation */
+.pf-loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: pf-spin 1s ease-in-out infinite;
+}
+
+@keyframes pf-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .pf-search-container {
+    flex-direction: column;
+  }
+  
+  .pf-search-button {
+    width: 100%;
+  }
+  
+  .pf-medicine-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pf-doctor-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pf-button-group {
+    flex-direction: column;
+  }
+  
+  .pf-patient-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .pf-selected-patient-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .pf-medicine-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .pf-remove-button {
+    width: 100%;
+  }
+}

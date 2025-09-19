@@ -1,294 +1,617 @@
 /* PrescriptionPage.css */
+/* All styles are scoped with .pp- prefix to avoid conflicts */
 
-/* ===== General Page Styling ===== */
-.prescription-page {
-  font-family: "Inter", "Segoe UI", sans-serif;
-  background: #f4f6fa;
-  padding: 30px;
-  color: #1f2937;
+/* Main Container */
+.pp-wrapper {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1e293b;
+  padding: 24px;
 }
 
-.prescription-page h1 {
-  font-size: 34px;
-  margin-bottom: 30px;
-  font-weight: 700;
-  color: #111827;
-  border-left: 6px solid #3b82f6;
-  padding-left: 12px;
+.pp-container {
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-/* ===== Layout Grid ===== */
-.prescription-grid {
-  display: flex;
-  gap: 30px;
-  flex-wrap: wrap;
-}
-
-/* ===== LEFT PANEL ===== */
-.left-panel {
-  flex: 1 1 450px; /* increased width */
-  background: linear-gradient(145deg, #ffffff, #f0f3f8);
-  padding: 25px;
-  border-radius: 22px;
-  box-shadow: 0 18px 28px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.left-panel:hover {
-  transform: translateY(-5px);
-}
-
-/* ===== QR Section ===== */
-.qr-section h2 {
-  font-size: 18px;
-  margin-bottom: 14px;
-  color: #3b82f6;
-  font-weight: 600;
-}
-
-.qr-button {
-  background: linear-gradient(90deg, #3b82f6, #2563eb);
-  color: #fff;
-  border: none;
-  padding: 10px 22px;
-  border-radius: 14px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
-}
-
-.qr-button.stop {
-  background: linear-gradient(90deg, #ef4444, #b91c1c);
-  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
-}
-
-.qr-button:hover {
-  transform: scale(1.05);
-}
-
-/* QR Reader Container */
-.qr-reader-container {
-  margin-top: 18px;
-  border: 3px dashed #3b82f6;
-  border-radius: 18px;
-  overflow: hidden;
+/* Header Styles */
+.pp-header {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
   position: relative;
-  height: 280px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2);
+}
+
+.pp-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  pointer-events: none;
+}
+
+.pp-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.pp-title {
+  color: white;
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  letter-spacing: -0.02em;
+}
+
+.pp-subtitle {
+  color: rgba(255,255,255,0.9);
+  font-size: 1.1rem;
+  margin: 0.5rem 0 0 0;
+  font-weight: 400;
+}
+
+.pp-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.pp-back-button {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pp-back-button:hover {
+  background: rgba(255,255,255,0.3);
+  transform: translateY(-2px);
+}
+
+.pp-header-icon {
+  flex-shrink: 0;
+}
+
+.pp-icon-circle {
+  width: 64px;
+  height: 64px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e0f2fe;
-  transition: all 0.3s ease;
-  animation: pulseBorder 2s infinite;
+  backdrop-filter: blur(10px);
 }
 
-@keyframes pulseBorder {
-  0%, 100% { border-color: #3b82f6; }
-  50% { border-color: #2563eb; }
+.pp-icon {
+  font-size: 1.8rem;
 }
 
-.qr-result {
-  margin-top: 12px;
-  padding: 10px 16px;
-  background: #d1fae5;
-  color: #065f46;
-  font-weight: 600;
-  border-radius: 10px;
-  text-align: center;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
-  transition: all 0.3s ease;
+/* Layout Grid */
+.pp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
 }
 
-/* ===== Patient Info ===== */
-.patient-info strong {
-  display: block;
-  font-size: 16px;
-  margin-bottom: 12px;
-  color: #111827;
-}
-
-.patient-details {
-  background: #f9fafb;
-  padding: 16px;
-  border-radius: 15px;
-  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-}
-
-.patient-details div {
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-
-/* ===== Canvas Section ===== */
-.canvas-section strong {
-  display: block;
-  font-size: 16px;
-  margin-bottom: 14px;
-  color: #111827;
-}
-
-canvas {
-  border-radius: 15px;
-  border: 2px solid #d1d5db;
-  box-shadow: 0 6px 15px rgba(0,0,0,0.07);
-  transition: all 0.3s ease;
-  width: 100%; /* full width of container */
-   /* new max width */
-  height: 220px;
-}
-
-canvas:hover {
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-  transform: scale(1.02);
-  border-color: #3b82f6;
-}
-
-.canvas-buttons {
+/* Left Panel */
+.pp-left-panel {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   display: flex;
-  gap: 14px;
-  margin-top: 14px;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.canvas-buttons button {
-  padding: 10px 20px;
-  border-radius: 14px;
+/* Section Titles */
+.pp-section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pp-section-title::before {
+  content: '';
+  width: 4px;
+  height: 20px;
+  background: #3b82f6;
+  border-radius: 2px;
+}
+
+/* QR Section */
+.pp-qr-section {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.pp-qr-button {
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+}
+
+.pp-qr-button.stop {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.pp-qr-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+.pp-qr-reader-container {
+  margin-top: 20px;
+  border: 2px dashed #3b82f6;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eff6ff;
+}
+
+.pp-qr-result {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pp-result-icon {
+  width: 24px;
+  height: 24px;
+  background: #22c55e;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.pp-result-text {
+  font-weight: 600;
+}
+
+/* Patient Info */
+.pp-patient-info {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.pp-patient-details {
+  background: white;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.pp-patient-data {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pp-patient-row {
+  display: flex;
+  align-items: center;
+}
+
+.pp-patient-label {
+  min-width: 80px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.pp-patient-value {
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.pp-no-patient {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #64748b;
+}
+
+.pp-no-patient-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+  opacity: 0.7;
+}
+
+.pp-no-patient-text {
+  text-align: center;
+  font-style: italic;
+}
+
+/* Canvas Section */
+.pp-canvas-section {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.pp-canvas-container {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  margin-bottom: 16px;
+  background: white;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.canvas-container {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.pp-canvas-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.pp-canvas-button {
+  padding: 12px 20px;
+  border-radius: 10px;
   font-weight: 600;
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.canvas-buttons button:first-child {
+.pp-canvas-button.pp-convert {
   background: linear-gradient(90deg, #10b981, #059669);
   color: #fff;
-  box-shadow: 0 5px 15px rgba(16,185,129,0.3);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
 }
 
-.canvas-buttons button:last-child {
-  background: linear-gradient(90deg, #ef4444, #b91c1c);
+.pp-canvas-button.pp-clear {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
   color: #fff;
-  box-shadow: 0 5px 15px rgba(239,68,68,0.3);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
 }
 
-.canvas-buttons button:hover {
-  transform: scale(1.05);
+.pp-canvas-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
 
-textarea {
+.pp-canvas-textarea {
   width: 100%;
-  margin-top: 14px;
   padding: 16px;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
   resize: vertical;
-  box-shadow: inset 0 3px 6px rgba(0,0,0,0.05);
-}
-
-/* ===== RIGHT PANEL ===== */
-.right-panel {
-  flex: 1 1 550px; /* wider panel */
-  background: linear-gradient(145deg, #ffffff, #f0f3f8);
-  padding: 28px;
-  border-radius: 22px;
-  box-shadow: 0 18px 28px rgba(0,0,0,0.08);
+  min-height: 120px;
+  background: white;
   transition: all 0.3s ease;
 }
 
-.right-panel:hover {
-  transform: translateY(-5px);
+.pp-canvas-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* ===== Prescription List ===== */
-.prescription-list {
-  margin-top: 40px;
-  background: linear-gradient(145deg, #ffffff, #f0f3f8);
-  padding: 28px;
-  border-radius: 22px;
-  box-shadow: 0 18px 28px rgba(0,0,0,0.08);
+/* Right Panel */
+.pp-right-panel {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-.prescription-list h2 {
-  font-size: 22px;
-  margin-bottom: 22px;
+/* Prescription List */
+.pp-prescription-list {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.pp-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.pp-list-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.pp-list-count {
+  background: #eff6ff;
   color: #3b82f6;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
-.prescription-list table {
+.pp-table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.pp-prescription-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 0.95rem;
 }
 
-.prescription-list th,
-.prescription-list td {
-  padding: 14px 16px;
-  border-bottom: 1px solid #e5e7eb;
+.pp-prescription-table th,
+.pp-prescription-table td {
+  padding: 16px;
   text-align: left;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.prescription-list th {
-  background-color: #f3f4f6;
+.pp-prescription-table th {
+  background-color: #f8fafc;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  position: sticky;
+  top: 0;
+}
+
+.pp-prescription-table tr {
+  transition: all 0.2s ease;
+}
+
+.pp-prescription-table tr:hover {
+  background-color: #f8fafc;
+}
+
+.pp-prescription-table tr:last-child td {
+  border-bottom: none;
+}
+
+.pp-prescription-table .pp-diagnosis {
   font-weight: 600;
-  color: #111827;
+  color: #3b82f6;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.prescription-list tr {
-  transition: all 0.3s ease;
-}
-
-.prescription-list tr:hover {
-  background-color: #f9fafb;
-  transform: scale(1.01);
-}
-
-/* Color-coded prescription badges */
-.prescription-list td.diagnosis {
-  font-weight: 600;
-  color: #2563eb;
-}
-
-.prescription-list td.doctor {
+.pp-prescription-table .pp-doctor {
   font-weight: 600;
   color: #10b981;
 }
 
-/* Buttons in list */
-.edit-btn,
-.delete-btn {
-  padding: 8px 16px;
-  border-radius: 14px;
+.pp-prescription-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pp-edit-btn,
+.pp-delete-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
   border: none;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
+  font-size: 0.85rem;
 }
 
-.edit-btn {
+.pp-edit-btn {
   background: linear-gradient(90deg, #3b82f6, #2563eb);
   color: #fff;
-  margin-right: 6px;
 }
 
-.delete-btn {
-  background: linear-gradient(90deg, #ef4444, #b91c1c);
+.pp-delete-btn {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
   color: #fff;
 }
 
-.edit-btn:hover,
-.delete-btn:hover {
-  transform: scale(1.05);
-  opacity: 0.9;
+.pp-edit-btn:hover,
+.pp-delete-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
-/* ===== Responsive ===== */
-@media (max-width: 1200px) {
-  .prescription-grid {
+.pp-no-prescriptions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.pp-no-data-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.7;
+}
+
+.pp-no-data-text {
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+/* Loading Animation */
+.pp-loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: pp-spin 1s ease-in-out infinite;
+}
+
+@keyframes pp-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .pp-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .pp-header {
+    padding: 24px;
+  }
+  
+  .pp-title {
+    font-size: 2rem;
+  }
+  
+  .pp-header-content {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+  
+  .pp-header-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .pp-left-panel,
+  .pp-right-panel,
+  .pp-prescription-list {
+    padding: 20px;
+  }
+  
+  .pp-prescription-table {
+    font-size: 0.9rem;
+  }
+  
+  .pp-prescription-table th,
+  .pp-prescription-table td {
+    padding: 12px 10px;
+  }
+  
+  .pp-prescription-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pp-wrapper {
+    padding: 16px;
+  }
+  
+  .pp-header {
+    padding: 20px;
+  }
+  
+  .pp-title {
+    font-size: 1.8rem;
+  }
+  
+  .pp-canvas-buttons {
     flex-direction: column;
   }
-  .left-panel, .right-panel {
-    width: 100%;
+  
+  .pp-prescription-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
   }
+  
+  .pp-prescription-table .pp-diagnosis {
+    max-width: 120px;
+  }
+}
+
+/* Custom Scrollbar */
+.pp-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pp-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.pp-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-radius: 4px;
+}
+
+.pp-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
 }
