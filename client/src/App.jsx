@@ -28,7 +28,6 @@ import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
 import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
 import PaymentTotalView from './components/admin/Financial_Manager/PaymentTotalView';
 import PatientDetailsWithCharts from './components/admin/Admin/PatientDetailsWithCharts';
-import PatientRecordsPage from './components/admin/Doctor/PatientRecordsPage';
 
 import DoctorItemRequestModal from "./components/admin/Doctor/DoctorInventoryPage"; // keep modal import [21]
 
@@ -374,6 +373,7 @@ function App() {
             <Route path="/admin/doctor/schedule-consultation" element={<ScheduleConsultation />} />
             <Route path="/admin/doctor/view-consultations" element={<ViewConsultations />} />
             <Route path="/admin/doctor/prescriptions" element={<PrescriptionPage />} />
+            <Route path="/admin/inventory-reports" element={<InventoryReports />} />
 
             <Route path="/admin/doctor/patient-records" element={<PatientRecordsPage />} />
 

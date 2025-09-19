@@ -196,6 +196,32 @@ export const adminDashboardApi = {
     }
   },
 
+  // Get payment analytics
+  getPaymentAnalytics: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/payment-analytics`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch payment analytics');
+      }
+      
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error fetching payment analytics:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Failed to fetch payment analytics',
+        data: null 
+      };
+    }
+  },
+
   // ===============================
   // REPORT GENERATION FUNCTIONS
   // ===============================
@@ -424,6 +450,7 @@ export const adminDashboardApi = {
       };
     }
   },
+  
   getAllProfilesDetailed: async (filters = {}) => {
     try {
       const queryParams = new URLSearchParams({
@@ -435,6 +462,11 @@ export const adminDashboardApi = {
         sortBy: filters.sortBy || 'createdAt',
         sortOrder: filters.sortOrder || 'desc'
       });
+
+      // Add optional date filters if provided
+      if (filters.startDate) queryParams.append('startDate', filters.startDate);
+      if (filters.endDate) queryParams.append('endDate', filters.endDate);
+      if (filters.department) queryParams.append('department', filters.department);
 
       const response = await fetch(`${API_BASE_URL}/api/admin/profiles/detailed?${queryParams}`, {
         method: 'GET',
