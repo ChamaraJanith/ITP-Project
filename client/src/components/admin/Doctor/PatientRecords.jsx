@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from "react-router-dom";
 import './PatientRecords.css';
 import {
   Search,
@@ -18,7 +19,6 @@ import {
   ChevronDown,
   ChevronUp,
   X,
-  Plus,
   Activity,
   Clock,
   AlertTriangle,
@@ -26,7 +26,8 @@ import {
   Hash,
   UserRound,
   Clipboard,
-  Flag
+  Flag,
+  ArrowLeft
 } from 'lucide-react';
 
 const PatientRecords = () => {
@@ -47,6 +48,13 @@ const PatientRecords = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [diagnosisFilter, setDiagnosisFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const navigate = useNavigate();
+
+  // Function to navigate back to Doctor Dashboard
+  const navigateToDashboard = () => {
+    navigate('/admin/doctor-dashboard'); 
+  };
 
   // Fetch prescriptions from API
   const fetchPrescriptions = async () => {
@@ -94,14 +102,25 @@ const PatientRecords = () => {
     // Apply tab filtering
     if (activeTab !== 'all') {
       const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set to beginning of today
+      
       filtered = filtered.filter(p => {
         const prescriptionDate = new Date(p.date);
-        const diffTime = Math.abs(today - prescriptionDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        prescriptionDate.setHours(0, 0, 0, 0); // Set to beginning of the day
         
-        if (activeTab === 'today') return diffDays === 0;
-        if (activeTab === 'week') return diffDays <= 7;
-        if (activeTab === 'month') return diffDays <= 30;
+        if (activeTab === 'today') {
+          return prescriptionDate.getTime() === today.getTime();
+        }
+        if (activeTab === 'week') {
+          const oneWeekAgo = new Date(today);
+          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+          return prescriptionDate >= oneWeekAgo && prescriptionDate <= today;
+        }
+        if (activeTab === 'month') {
+          const oneMonthAgo = new Date(today);
+          oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+          return prescriptionDate >= oneMonthAgo && prescriptionDate <= today;
+        }
         return true;
       });
     }
@@ -586,17 +605,6 @@ const PatientRecords = () => {
     }));
   };
 
-  const getPrescriptionStatus = (date) => {
-    const prescriptionDate = new Date(date);
-    const today = new Date();
-    const diffTime = Math.abs(today - prescriptionDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays <= 7) return { text: 'Recent', class: 'status-recent' };
-    if (diffDays <= 30) return { text: 'This Month', class: 'status-month' };
-    return { text: 'Older', class: 'status-older' };
-  };
-
   if (loading) {
     return (
       <div className="pr-loading-container">
@@ -627,48 +635,60 @@ const PatientRecords = () => {
           <button className="pr-refresh-btn" onClick={fetchPrescriptions}>
             <RefreshCw size={18} /> Refresh
           </button>
-          <button className="pr-add-btn">
-            <Plus size={18} /> Add Record
+          <button className="pr-dashboard-btn" onClick={navigateToDashboard}>
+            <ArrowLeft size={18} /> Back to Dashboard
           </button>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="pr-stats-section">
-        <div className="pr-stat-card">
-          <div className="pr-stat-icon pr-stat-icon-file">
-            <FileText size={24} />
-          </div>
-          <div>
-            <h3 className="pr-stat-number">{prescriptions.length}</h3>
-            <p className="pr-stat-label">Total Prescriptions</p>
-          </div>
-        </div>
-        <div className="pr-stat-card">
-          <div className="pr-stat-icon pr-stat-icon-user">
-            <User size={24} />
-          </div>
-          <div>
-            <h3 className="pr-stat-number">{new Set(prescriptions.map((p) => p.patientId)).size}</h3>
-            <p className="pr-stat-label">Unique Patients</p>
+        <div className="pr-stat-card pr-stat-card--blue">
+          <div className="pr-stat-card-content">
+            <div className="pr-stat-info">
+              <div className="pr-stat-title">Total Prescriptions</div>
+              <div className="pr-stat-value">{prescriptions.length}</div>
+              <div className="pr-stat-subtitle">All records in system</div>
+            </div>
+            <div className="pr-stat-icon-wrapper">
+              <FileText size={24} />
+            </div>
           </div>
         </div>
-        <div className="pr-stat-card">
-          <div className="pr-stat-icon pr-stat-icon-stethoscope">
-            <Stethoscope size={24} />
-          </div>
-          <div>
-            <h3 className="pr-stat-number">{uniqueDoctors.length}</h3>
-            <p className="pr-stat-label">Active Doctors</p>
+        <div className="pr-stat-card pr-stat-card--green">
+          <div className="pr-stat-card-content">
+            <div className="pr-stat-info">
+              <div className="pr-stat-title">Unique Patients</div>
+              <div className="pr-stat-value">{new Set(prescriptions.map((p) => p.patientId)).size}</div>
+              <div className="pr-stat-subtitle">Individual patients</div>
+            </div>
+            <div className="pr-stat-icon-wrapper">
+              <User size={24} />
+            </div>
           </div>
         </div>
-        <div className="pr-stat-card">
-          <div className="pr-stat-icon pr-stat-icon-filter">
-            <Filter size={24} />
+        <div className="pr-stat-card pr-stat-card--purple">
+          <div className="pr-stat-card-content">
+            <div className="pr-stat-info">
+              <div className="pr-stat-title">Active Doctors</div>
+              <div className="pr-stat-value">{uniqueDoctors.length}</div>
+              <div className="pr-stat-subtitle">Medical professionals</div>
+            </div>
+            <div className="pr-stat-icon-wrapper">
+              <Stethoscope size={24} />
+            </div>
           </div>
-          <div>
-            <h3 className="pr-stat-number">{filteredPrescriptions.length}</h3>
-            <p className="pr-stat-label">Filtered Results</p>
+        </div>
+        <div className="pr-stat-card pr-stat-card--yellow">
+          <div className="pr-stat-card-content">
+            <div className="pr-stat-info">
+              <div className="pr-stat-title">Filtered Results</div>
+              <div className="pr-stat-value">{filteredPrescriptions.length}</div>
+              <div className="pr-stat-subtitle">Current view</div>
+            </div>
+            <div className="pr-stat-icon-wrapper">
+              <Filter size={24} />
+            </div>
           </div>
         </div>
       </div>
@@ -830,13 +850,11 @@ const PatientRecords = () => {
                   <th className="pr-th">Patient</th>
                   <th className="pr-th">Diagnosis</th>
                   <th className="pr-th">Doctor</th>
-                  <th className="pr-th">Status</th>
                   <th className="pr-th">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {currentRecords.map((prescription) => {
-                  const status = getPrescriptionStatus(prescription.date);
                   const isExpanded = expandedRows[prescription._id];
                   
                   return (
@@ -855,7 +873,6 @@ const PatientRecords = () => {
                             <Calendar className="pr-td-icon" size={16} />
                             <div>
                               <div>{new Date(prescription.date).toLocaleDateString()}</div>
-                              <div className="pr-td-subtitle">{new Date(prescription.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                             </div>
                           </div>
                         </td>
@@ -890,11 +907,6 @@ const PatientRecords = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="pr-td">
-                          <span className={`pr-status ${status.class}`}>
-                            {status.text}
-                          </span>
-                        </td>
                         <td className="pr-td pr-td-actions">
                           <button
                             className="pr-action-btn pr-view-btn"
@@ -921,7 +933,7 @@ const PatientRecords = () => {
                       
                       {isExpanded && (
                         <tr className="pr-expanded-row">
-                          <td colSpan="7">
+                          <td colSpan="6">
                             <div className="pr-expanded-content">
                               <div className="pr-expanded-section">
                                 <h4>Patient Details</h4>
@@ -1202,7 +1214,7 @@ const PatientRecords = () => {
                     <div>
                       <div className="pr-info-label">Consultation Date</div>
                       <div className="pr-info-value">
-                        {new Date(selectedPatient.date).toLocaleDateString()} at {new Date(selectedPatient.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        {new Date(selectedPatient.date).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
