@@ -1,4 +1,5 @@
 import React, { useRef, useState, useContext, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import CanvasPad from "../Doctor/CanvasPad";
 import PrescriptionForm from "./PrescriptionForm";
 import { DoctorContext } from "../../../context/DoctorContext";
@@ -14,6 +15,7 @@ import { QrReader } from "react-qr-reader";
 import "./PrescriptionPage.css";
 
 const PrescriptionPage = ({ patientFromParent }) => {
+  const navigate = useNavigate();
   const { doctor } = useContext(DoctorContext);
   const [patient, setPatient] = useState(patientFromParent || null);
   const canvasRef = useRef(null);
@@ -147,134 +149,201 @@ const PrescriptionPage = ({ patientFromParent }) => {
   };
 
   return (
-    <div className="prescription-page">
-      <h1>{editingPrescription ? "Edit Prescription" : "Create Prescription"}</h1>
-
-      <div className="prescription-grid">
-        {/* LEFT SIDE */}
-        <div className="left-panel">
-          {/* QR section only if creating */}
-          {!editingPrescription && (
-            <div className="qr-section">
-              <h2>Scan Patient QR Code</h2>
-              <button
-                onClick={() => setScanning((prev) => !prev)}
-                className={`qr-button ${scanning ? "stop" : "start"}`}
-              >
-                {scanning ? "Stop Scanning" : "Start Scanning"}
-              </button>
-
-              {scanning && (
-                <div className="qr-reader-container">
-                  <QrReader
-                    constraints={{ facingMode: "environment" }}
-                    onResult={handleScan}
-                    className="qr-reader"
-                  />
-                </div>
-              )}
-
-              {scannedPatientId && (
-                <div className="qr-result">✅ Scanned Patient ID: {scannedPatientId}</div>
-              )}
+    <div className="pp-wrapper">
+      <div className="pp-container">
+        {/* Header */}
+        <div className="pp-header">
+          <div className="pp-header-content">
+            <div>
+              <h1 className="pp-title">
+                {editingPrescription ? "Edit Prescription" : "Create Prescription"}
+              </h1>
+              <p className="pp-subtitle">
+                {editingPrescription ? "Update patient prescription details" : "Create a new prescription for your patient"}
+              </p>
             </div>
-          )}
+            <div className="pp-header-actions">
+              <button 
+                onClick={() => navigate('/dashboard')} 
+                className="pp-back-button"
+              >
+                ← Back to Dashboard
+              </button>
+              <div className="pp-header-icon">
+                <div className="pp-icon-circle">
+                  <span className="pp-icon">📋</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-          {/* Patient Info */}
-          <div className="patient-info">
-            <strong>Patient</strong>
-            <div className="patient-details">
-              {patient ? (
-                <>
-                  <div>
-                    <b>Name:</b> {patient.firstName} {patient.lastName}
+        {/* Main Grid */}
+        <div className="pp-grid">
+          {/* LEFT SIDE */}
+          <div className="pp-left-panel">
+            {/* QR section only if creating */}
+            {!editingPrescription && (
+              <div className="pp-qr-section">
+                <h2 className="pp-section-title">Scan Patient QR Code</h2>
+                <button
+                  onClick={() => setScanning((prev) => !prev)}
+                  className={`pp-qr-button ${scanning ? "stop" : "start"}`}
+                >
+                  {scanning ? (
+                    <>
+                      <span className="pp-loading"></span>
+                      Stop Scanning
+                    </>
+                  ) : (
+                    "Start Scanning"
+                  )}
+                </button>
+
+                {scanning && (
+                  <div className="pp-qr-reader-container">
+                    <QrReader
+                      constraints={{ facingMode: "environment" }}
+                      onResult={handleScan}
+                      className="pp-qr-reader"
+                    />
                   </div>
-                  <div>
-                    <b>Email:</b> {patient.email || "N/A"}
+                )}
+
+                {scannedPatientId && (
+                  <div className="pp-qr-result">
+                    <div className="pp-result-icon">✓</div>
+                    <div className="pp-result-text">Scanned Patient ID: {scannedPatientId}</div>
                   </div>
-                  <div>
-                    <b>Gender:</b> {patient.gender}
+                )}
+              </div>
+            )}
+
+            {/* Patient Info */}
+            <div className="pp-patient-info">
+              <h2 className="pp-section-title">Patient Information</h2>
+              <div className="pp-patient-details">
+                {patient ? (
+                  <div className="pp-patient-data">
+                    <div className="pp-patient-row">
+                      <span className="pp-patient-label">Name:</span>
+                      <span className="pp-patient-value">{patient.firstName} {patient.lastName}</span>
+                    </div>
+                    <div className="pp-patient-row">
+                      <span className="pp-patient-label">Email:</span>
+                      <span className="pp-patient-value">{patient.email || "N/A"}</span>
+                    </div>
+                    <div className="pp-patient-row">
+                      <span className="pp-patient-label">Gender:</span>
+                      <span className="pp-patient-value">{patient.gender}</span>
+                    </div>
+                    <div className="pp-patient-row">
+                      <span className="pp-patient-label">Phone:</span>
+                      <span className="pp-patient-value">{patient.phone || "N/A"}</span>
+                    </div>
                   </div>
-                  <div>
-                    <b>Phone:</b> {patient.phone || "N/A"}
+                ) : (
+                  <div className="pp-no-patient">
+                    <div className="pp-no-patient-icon">👤</div>
+                    <div className="pp-no-patient-text">No patient selected. Use search or scan QR.</div>
                   </div>
-                </>
-              ) : (
-                <div className="no-patient">No patient selected. Use search or scan QR.</div>
-              )}
+                )}
+              </div>
+            </div>
+
+            {/* Canvas + OCR */}
+            <div className="pp-canvas-section">
+              <h2 className="pp-section-title">Draw Prescription</h2>
+              <div className="pp-canvas-container">
+                <CanvasPad ref={canvasRef} height={300} lineWidth={3} />
+              </div>
+              <div className="pp-canvas-buttons">
+                <button onClick={handleConvert} disabled={processing} className="pp-canvas-button pp-convert">
+                  {processing ? (
+                    <>
+                      <span className="pp-loading"></span>
+                      Converting...
+                    </>
+                  ) : (
+                    "Convert to Text"
+                  )}
+                </button>
+                <button onClick={handleClearCanvas} className="pp-canvas-button pp-clear">
+                  Clear Canvas
+                </button>
+              </div>
+              <textarea
+                value={ocrText}
+                onChange={(e) => setOcrText(e.target.value)}
+                className="pp-canvas-textarea"
+                rows={4}
+                placeholder="OCR Output (editable)"
+              />
             </div>
           </div>
 
-          {/* Canvas + OCR */}
-          <div className="canvas-section">
-            <strong>Write on Canvas</strong>
-            <CanvasPad ref={canvasRef} width={380} height={220} lineWidth={3} />
-            <div className="canvas-buttons">
-              <button onClick={handleConvert} disabled={processing}>
-                {processing ? "Converting..." : "Convert to Text"}
-              </button>
-              <button onClick={handleClearCanvas}>Clear</button>
-            </div>
-            <textarea
-              value={ocrText}
-              onChange={(e) => setOcrText(e.target.value)}
-              rows={6}
-              placeholder="OCR Output (editable)"
+          {/* RIGHT SIDE */}
+          <div className="pp-right-panel">
+            <PrescriptionForm
+              doctor={doctor}
+              parentPatient={patient}
+              ocrTextFromCanvas={ocrText}
+              onSaved={handleSaved}
+              editingPrescription={editingPrescription}
+              scannedPatientId={scannedPatientId}
             />
           </div>
         </div>
 
-        {/* RIGHT SIDE */}
-        <div className="right-panel">
-          <PrescriptionForm
-            doctor={doctor}
-            parentPatient={patient}
-            ocrTextFromCanvas={ocrText}
-            onSaved={handleSaved}
-            editingPrescription={editingPrescription}
-            scannedPatientId={scannedPatientId}
-          />
+        {/* Prescriptions list */}
+        <div className="pp-prescription-list">
+          <div className="pp-list-header">
+            <h2 className="pp-list-title">Today's Prescriptions</h2>
+            <div className="pp-list-count">{prescriptions.length} prescriptions</div>
+          </div>
+          {prescriptions.length === 0 ? (
+            <div className="pp-no-prescriptions">
+              <div className="pp-no-data-icon">📋</div>
+              <div className="pp-no-data-text">No prescriptions found for today.</div>
+            </div>
+          ) : (
+            <div className="pp-table-container">
+              <table className="pp-prescription-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Patient</th>
+                    <th>Diagnosis</th>
+                    <th>Doctor</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {prescriptions.map((p) => (
+                    <tr key={p._id}>
+                      <td>{new Date(p.date).toLocaleDateString()}</td>
+                      <td>{p.patientName}</td>
+                      <td className="pp-diagnosis">{p.diagnosis}</td>
+                      <td className="pp-doctor">
+                        {p.doctorName} ({p.doctorSpecialization})
+                      </td>
+                      <td>
+                        <div className="pp-prescription-actions">
+                          <button className="pp-edit-btn" onClick={() => handleEdit(p._id)}>
+                            Edit
+                          </button>
+                          <button className="pp-delete-btn" onClick={() => handleDelete(p._id)}>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* Prescriptions list */}
-      <div className="prescription-list">
-        <h2>Today Patient History</h2>
-        {prescriptions.length === 0 ? (
-          <div>No prescriptions found.</div>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Patient</th>
-                <th>Diagnosis</th>
-                <th>Doctor</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {prescriptions.map((p) => (
-                <tr key={p._id}>
-                  <td>{new Date(p.date).toLocaleDateString()}</td>
-                  <td>{p.patientName}</td>
-                  <td>{p.diagnosis}</td>
-                  <td>
-                    {p.doctorName} ({p.doctorSpecialization})
-                  </td>
-                  <td>
-                    <button className="edit-btn" onClick={() => handleEdit(p._id)}>
-                      Edit
-                    </button>
-                    <button className="delete-btn" onClick={() => handleDelete(p._id)}>
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
       </div>
     </div>
   );

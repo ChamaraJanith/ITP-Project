@@ -5,6 +5,8 @@ import * as yup from "yup";
 import { createPrescription, updatePrescription } from "../../../services/prescriptionService";
 import { jsPDF } from "jspdf";
 
+import "./PrescriptionForm.css";
+
 // Custom validation patterns
 const namePattern = /^[a-zA-Z\s\-'.]+$/;
 const phonePattern = /^[\+]?[1-9][\d]{0,15}$/;
@@ -766,7 +768,7 @@ const PrescriptionForm = ({
 
   // Error display component
   const ErrorMessage = ({ error }) => (
-    error ? <div style={{ color: "red", fontSize: 12, marginTop: 4 }}>{error.message}</div> : null
+    error ? <div className="pf-error-message">{error.message}</div> : null
   );
 
   // Reset form handler
@@ -778,62 +780,57 @@ const PrescriptionForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} style={{ padding: 12 }}>
+    <form onSubmit={handleSubmit(onSubmit)} className="pf-form">
       {/* Today's prescriptions count */}
       {prescriptions && (
-        <div style={{ marginBottom: 16, padding: 12, backgroundColor: "#e3f2fd", borderRadius: 6, border: "1px solid #90caf9" }}>
-          <strong>Today's Prescriptions Count: {todaysPrescriptions.length}</strong>
+        <div className="pf-stats-card">
+          <div className="pf-stat-content">
+            <div className="pf-stat-icon">📋</div>
+            <div>
+              <div className="pf-stat-title">Today's Prescriptions</div>
+              <div className="pf-stat-value">{todaysPrescriptions.length}</div>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Patient search */}
-      <div style={{ marginBottom: 12 }}>
-        <label><strong>Patient Search</strong></label>
-        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+      <div className="pf-section">
+        <label className="pf-label">Patient Search</label>
+        <div className="pf-search-container">
           <input
             type="text"
             placeholder="Enter patient name or patient id..."
             value={search}
             onChange={handleSearchChange}
-            style={{ 
-              flex: 1, 
-              padding: 8, 
-              borderRadius: 4, 
-              border: searchError ? "1px solid red" : "1px solid #ccc" 
-            }}
+            className={`pf-input ${searchError ? 'pf-error' : ''}`}
           />
           <button
             type="button"
             onClick={handleSearchButton}
             disabled={!search.trim() || search.length < 2}
-            style={{ 
-              padding: "8px 16px", 
-              backgroundColor: search.trim() && search.length >= 2 ? "#2196F3" : "#ccc", 
-              color: "white", 
-              border: "none", 
-              borderRadius: 4,
-              cursor: search.trim() && search.length >= 2 ? "pointer" : "not-allowed"
-            }}
+            className="pf-button pf-search-button"
           >
             Search
           </button>
         </div>
-        {searchError && <div style={{ color: "red", fontSize: 12, marginTop: 4 }}>{searchError}</div>}
+        {searchError && <div className="pf-error-text">{searchError}</div>}
       </div>
 
       {/* Patient list */}
       {patientsList.length > 0 && (
-        <ul style={{ border: "1px solid #ccc", borderRadius: 4, maxHeight: 150, overflowY: "auto", padding: 0, margin: "0 0 12px 0" }}>
+        <div className="pf-patient-list">
           {patientsList.map((p) => (
-            <li
+            <div
               key={p._id}
               onClick={() => handleSelectPatient(p)}
-              style={{ padding: 8, cursor: "pointer", borderBottom: "1px solid #eee", listStyle: "none" }}
+              className="pf-patient-item"
             >
-              {p.firstName} {p.lastName} ({p.gender}, {p.phone})
-            </li>
+              <div className="pf-patient-name">{p.firstName} {p.lastName}</div>
+              <div className="pf-patient-details">{p.gender}, {p.phone}</div>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
       {/* Patient ID validation error */}
@@ -841,81 +838,103 @@ const PrescriptionForm = ({
 
       {/* Selected patient */}
       {selectedPatient && (
-        <div style={{ marginBottom: 16, padding: 12, backgroundColor: "#f0f8ff", border: "1px solid #4CAF50", borderRadius: 6 }}>
-          <strong>Selected Patient:</strong>
-          <div>Patient ID: {selectedPatient.patientId || selectedPatient._id}</div>
-          <div>Name: {selectedPatient.firstName} {selectedPatient.lastName}</div>
-          <div>Gender: {selectedPatient.gender}</div>
-          <div>Date of Birth: {selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : "N/A"}</div>
-          <div>Email: {selectedPatient.email}</div>
-          <div>Phone: {selectedPatient.phone}</div>
-          <div>Blood Group: {selectedPatient.bloodGroup || "N/A"}</div>
+        <div className="pf-selected-patient">
+          <div className="pf-selected-patient-header">
+            <div className="pf-selected-patient-title">Selected Patient</div>
+            <div className="pf-selected-patient-id">
+              ID: {selectedPatient.patientId || selectedPatient._id}
+            </div>
+          </div>
+          <div className="pf-patient-info-grid">
+            <div className="pf-patient-info-item">
+              <span className="pf-patient-info-label">Name:</span>
+              <span>{selectedPatient.firstName} {selectedPatient.lastName}</span>
+            </div>
+            <div className="pf-patient-info-item">
+              <span className="pf-patient-info-label">Gender:</span>
+              <span>{selectedPatient.gender}</span>
+            </div>
+            <div className="pf-patient-info-item">
+              <span className="pf-patient-info-label">DOB:</span>
+              <span>
+                {selectedPatient.dateOfBirth 
+                  ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() 
+                  : "N/A"}
+              </span>
+            </div>
+            <div className="pf-patient-info-item">
+              <span className="pf-patient-info-label">Email:</span>
+              <span>{selectedPatient.email}</span>
+            </div>
+            <div className="pf-patient-info-item">
+              <span className="pf-patient-info-label">Phone:</span>
+              <span>{selectedPatient.phone}</span>
+            </div>
+            <div className="pf-patient-info-item">
+              <span className="pf-patient-info-label">Blood Group:</span>
+              <span>{selectedPatient.bloodGroup || "N/A"}</span>
+            </div>
+          </div>
           {selectedPatient.allergies?.length > 0 && (
-            <div style={{ color: "#d32f2f", fontWeight: "bold" }}>
-              ⚠ Allergies: {selectedPatient.allergies.join(", ")}
+            <div className="pf-patient-allergies">
+              <span className="pf-patient-info-label">Allergies:</span>
+              <span>{selectedPatient.allergies.join(", ")}</span>
             </div>
           )}
         </div>
       )}
 
       {/* Date */}
-      <div style={{ marginBottom: 12 }}>
-        <label><strong>Date</strong></label>
-        <br />
+      <div className="pf-section">
+        <label className="pf-label">Date</label>
         <input 
           type="date" 
           {...register("date")} 
           onFocus={() => setActiveField("date")} 
           max={new Date().toISOString().split('T')[0]}
           min={new Date().toISOString().split('T')[0]}
-          style={{ 
-            padding: 8, 
-            borderRadius: 4, 
-            border: errors.date ? "1px solid red" : "1px solid #ccc", 
-            width: "200px" 
-          }} 
+          className={`pf-input ${errors.date ? 'pf-error' : ''}`} 
         />
         <ErrorMessage error={errors.date} />
       </div>
 
       {/* Diagnosis */}
-      <div style={{ marginBottom: 12 }}>
-        <label><strong>Diagnosis / Symptoms</strong></label>
-        <br />
+      <div className="pf-section">
+        <label className="pf-label">Diagnosis / Symptoms</label>
         <textarea 
           {...register("diagnosis")} 
           rows={3} 
           onFocus={() => setActiveField("diagnosis")} 
           placeholder="Enter detailed diagnosis (minimum 3 characters)"
           maxLength={1000}
-          style={{ 
-            width: "100%", 
-            padding: 8, 
-            borderRadius: 4, 
-            border: errors.diagnosis ? "1px solid red" : "1px solid #ccc" 
-          }} 
+          className={`pf-textarea ${errors.diagnosis ? 'pf-error' : ''}`} 
         />
-        <div style={{ fontSize: 12, color: "#666", textAlign: "right" }}>
+        <div className="pf-character-count">
           {watchedDiagnosis?.length || 0}/1000 characters
         </div>
         <ErrorMessage error={errors.diagnosis} />
       </div>
 
       {/* Medicines */}
-      <div style={{ marginBottom: 12 }}>
-        <label><strong>Prescribed Medicines</strong></label>
+      <div className="pf-section">
+        <label className="pf-label">Prescribed Medicines</label>
         {fields.map((f, i) => (
-          <div key={f.id} style={{ 
-            border: errors.medicines?.[i] ? "1px solid red" : "1px solid #e0e0e0", 
-            padding: 12, 
-            marginBottom: 8, 
-            borderRadius: 6, 
-            backgroundColor: "#fafafa" 
-          }}>
-            <div style={{ marginBottom: 8, fontSize: 14, fontWeight: "bold" }}>Medicine #{i + 1}</div>
+          <div key={f.id} className={`pf-medicine-card ${errors.medicines?.[i] ? 'pf-error' : ''}`}>
+            <div className="pf-medicine-header">
+              <div className="pf-medicine-title">Medicine #{i + 1}</div>
+              <button 
+                type="button" 
+                onClick={() => remove(i)} 
+                disabled={fields.length === 1}
+                className="pf-button pf-remove-button"
+              >
+                Remove
+              </button>
+            </div>
             
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", gap: 8, marginBottom: 8 }}>
-              <div>
+            <div className="pf-medicine-grid">
+              <div className="pf-medicine-field">
+                <label className="pf-field-label">Medicine Name</label>
                 <input 
                   placeholder="Medicine Name (letters only)" 
                   {...register(`medicines.${i}.name`)} 
@@ -926,95 +945,56 @@ const PrescriptionForm = ({
                     trigger(`medicines.${i}.name`);
                   }}
                   maxLength={100}
-                  style={{ 
-                    width: "100%",
-                    padding: 6, 
-                    borderRadius: 4, 
-                    border: errors.medicines?.[i]?.name ? "1px solid red" : "1px solid #ccc" 
-                  }} 
+                  className={`pf-input ${errors.medicines?.[i]?.name ? 'pf-error' : ''}`} 
                 />
                 <ErrorMessage error={errors.medicines?.[i]?.name} />
               </div>
               
-              <div>
+              <div className="pf-medicine-field">
+                <label className="pf-field-label">Dosage</label>
                 <input 
                   placeholder="Dosage (e.g., 10mg)" 
                   {...register(`medicines.${i}.dosage`)} 
                   onFocus={() => setActiveField(`medicines.${i}.dosage`)}
                   maxLength={50}
-                  style={{ 
-                    width: "100%",
-                    padding: 6, 
-                    borderRadius: 4, 
-                    border: errors.medicines?.[i]?.dosage ? "1px solid red" : "1px solid #ccc" 
-                  }} 
+                  className={`pf-input ${errors.medicines?.[i]?.dosage ? 'pf-error' : ''}`} 
                 />
                 <ErrorMessage error={errors.medicines?.[i]?.dosage} />
               </div>
               
-              <div>
+              <div className="pf-medicine-field">
+                <label className="pf-field-label">Frequency</label>
                 <input 
                   placeholder="Frequency (e.g., 3 times daily)" 
                   {...register(`medicines.${i}.frequency`)} 
                   onFocus={() => setActiveField(`medicines.${i}.frequency`)}
                   maxLength={100}
-                  style={{ 
-                    width: "100%",
-                    padding: 6, 
-                    borderRadius: 4, 
-                    border: errors.medicines?.[i]?.frequency ? "1px solid red" : "1px solid #ccc" 
-                  }} 
+                  className={`pf-input ${errors.medicines?.[i]?.frequency ? 'pf-error' : ''}`} 
                 />
                 <ErrorMessage error={errors.medicines?.[i]?.frequency} />
               </div>
               
-              <div>
+              <div className="pf-medicine-field">
+                <label className="pf-field-label">Duration</label>
                 <input 
                   placeholder="Duration (e.g., 7 days)" 
                   {...register(`medicines.${i}.duration`)} 
                   onFocus={() => setActiveField(`medicines.${i}.duration`)}
                   maxLength={50}
-                  style={{ 
-                    width: "100%",
-                    padding: 6, 
-                    borderRadius: 4, 
-                    border: errors.medicines?.[i]?.duration ? "1px solid red" : "1px solid #ccc" 
-                  }} 
+                  className={`pf-input ${errors.medicines?.[i]?.duration ? 'pf-error' : ''}`} 
                 />
                 <ErrorMessage error={errors.medicines?.[i]?.duration} />
               </div>
-              
-              <button 
-                type="button" 
-                onClick={() => remove(i)} 
-                disabled={fields.length === 1}
-                style={{ 
-                  padding: "6px 12px", 
-                  backgroundColor: fields.length === 1 ? "#ccc" : "#f44336", 
-                  color: "white", 
-                  border: "none", 
-                  borderRadius: 4, 
-                  fontSize: 12,
-                  cursor: fields.length === 1 ? "not-allowed" : "pointer"
-                }}
-              >
-                Remove
-              </button>
             </div>
             
-            <div>
+            <div className="pf-medicine-field">
+              <label className="pf-field-label">Notes (optional)</label>
               <input 
-                placeholder="Notes (optional)" 
+                placeholder="Additional notes" 
                 {...register(`medicines.${i}.notes`)} 
                 onFocus={() => setActiveField(`medicines.${i}.notes`)}
                 maxLength={500}
-                style={{ 
-                  width: "100%", 
-                  padding: 6, 
-                  borderRadius: 4, 
-                  border: errors.medicines?.[i]?.notes ? "1px solid red" : "1px solid #ccc", 
-                  fontSize: 13 
-                }} 
+                className={`pf-input ${errors.medicines?.[i]?.notes ? 'pf-error' : ''}`} 
               />
               <ErrorMessage error={errors.medicines?.[i]?.notes} />
             </div>
@@ -1025,15 +1005,7 @@ const PrescriptionForm = ({
           type="button" 
           onClick={addMedicine} 
           disabled={fields.length >= 10}
-          style={{ 
-            padding: "8px 16px", 
-            backgroundColor: fields.length >= 10 ? "#ccc" : "#4CAF50", 
-            color: "white", 
-            border: "none", 
-            borderRadius: 4, 
-            marginTop: 8,
-            cursor: fields.length >= 10 ? "not-allowed" : "pointer"
-          }}
+          className="pf-button pf-add-button"
         >
           + Add Medicine {fields.length >= 10 ? "(Maximum reached)" : `(${fields.length}/10)`}
         </button>
@@ -1041,56 +1013,40 @@ const PrescriptionForm = ({
       </div>
 
       {/* Additional Notes */}
-      <div style={{ marginBottom: 12 }}>
-        <label><strong>Additional Notes & Instructions</strong></label>
-        <br />
+      <div className="pf-section">
+        <label className="pf-label">Additional Notes & Instructions</label>
         <textarea 
           {...register("notes")} 
           rows={3} 
           onFocus={() => setActiveField("notes")} 
           placeholder="Additional instructions for patient (optional)"
           maxLength={1000}
-          style={{ 
-            width: "100%", 
-            padding: 8, 
-            borderRadius: 4, 
-            border: errors.notes ? "1px solid red" : "1px solid #ccc" 
-          }} 
+          className={`pf-textarea ${errors.notes ? 'pf-error' : ''}`} 
         />
-        <div style={{ fontSize: 12, color: "#666", textAlign: "right" }}>
+        <div className="pf-character-count">
           {watch("notes")?.length || 0}/1000 characters
         </div>
         <ErrorMessage error={errors.notes} />
       </div>
 
       {/* Doctor Info */}
-      <div style={{ marginBottom: 16, padding: 12, backgroundColor: "#f5f5f5", borderRadius: 6, border: "1px solid #e0e0e0" }}>
-        <label><strong>Prescribing Doctor</strong></label>
-        <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-          <div style={{ flex: 1 }}>
+      <div className="pf-doctor-info">
+        <label className="pf-label">Prescribing Doctor</label>
+        <div className="pf-doctor-grid">
+          <div className="pf-doctor-field">
+            <label className="pf-field-label">Name</label>
             <input 
               value={doctor.name}
               readOnly
-              style={{ 
-                width: "100%",
-                padding: 8, 
-                borderRadius: 4, 
-                border: "1px solid #ccc", 
-                backgroundColor: "#f9f9f9" 
-              }} 
+              className="pf-input pf-readonly" 
             />
           </div>
-          <div style={{ flex: 1 }}>
+          <div className="pf-doctor-field">
+            <label className="pf-field-label">Specialization</label>
             <input 
               value={doctor.specialization}
               readOnly
-              style={{ 
-                width: "100%",
-                padding: 8, 
-                borderRadius: 4, 
-                border: "1px solid #ccc", 
-                backgroundColor: "#f9f9f9" 
-              }} 
+              className="pf-input pf-readonly" 
             />
           </div>
         </div>
@@ -1098,17 +1054,11 @@ const PrescriptionForm = ({
 
       {/* Form validation summary */}
       {Object.keys(errors).length > 0 && (
-        <div style={{ 
-          marginBottom: 16, 
-          padding: 12, 
-          backgroundColor: "#ffebee", 
-          border: "1px solid #f44336", 
-          borderRadius: 6 
-        }}>
-          <strong style={{ color: "#d32f2f" }}>⚠ Please fix the following errors:</strong>
-          <ul style={{ margin: "8px 0 0 0", paddingLeft: 20, color: "#d32f2f" }}>
+        <div className="pf-validation-summary">
+          <div className="pf-validation-title">⚠ Please fix the following errors:</div>
+          <ul className="pf-validation-list">
             {Object.keys(errors).map(key => (
-              <li key={key} style={{ marginBottom: 4 }}>
+              <li key={key} className="pf-validation-item">
                 {errors[key]?.message || `${key} field has an error`}
               </li>
             ))}
@@ -1117,43 +1067,31 @@ const PrescriptionForm = ({
       )}
 
       {/* Buttons */}
-      <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+      <div className="pf-button-group">
         <button 
           type="submit" 
           disabled={isSubmitting || (!isValid && !editingPrescription) || !selectedPatient}
-          style={{ 
-            padding: "12px 24px", 
-            backgroundColor: (isSubmitting || (!isValid && !editingPrescription) || !selectedPatient) ? "#ccc" : "#2196F3", 
-            color: "white", 
-            border: "none", 
-            borderRadius: 4, 
-            fontSize: 16, 
-            fontWeight: "bold",
-            cursor: (isSubmitting || (!isValid && !editingPrescription) || !selectedPatient) ? "not-allowed" : "pointer"
-          }}
+          className="pf-button pf-primary-button"
         >
-          {isSubmitting ? "Saving..." : editingPrescription ? "Update Prescription" : "Save Prescription"}
+          {isSubmitting ? (
+            <>
+              <span className="pf-loading"></span>
+              Saving...
+            </>
+          ) : editingPrescription ? "Update Prescription" : "Save Prescription"}
         </button>
         <button 
           type="button" 
           onClick={handleReset}
           disabled={isSubmitting}
-          style={{ 
-            padding: "12px 24px", 
-            backgroundColor: isSubmitting ? "#ccc" : "#757575", 
-            color: "white", 
-            border: "none", 
-            borderRadius: 4, 
-            fontSize: 16,
-            cursor: isSubmitting ? "not-allowed" : "pointer"
-          }}
+          className="pf-button pf-secondary-button"
         >
           Reset Form
         </button>
       </div>
       
       {/* PDF Button */}
-      <div style={{ marginTop: 20 }}>
+      <div className="pf-pdf-section">
         <button
           type="button"
           onClick={() => generateProfessionalPDF(
@@ -1165,33 +1103,16 @@ const PrescriptionForm = ({
             watch("date")
           )}
           disabled={!selectedPatient}
-          style={{
-            padding: "12px 24px",
-            backgroundColor: !selectedPatient ? "#ccc" : "#FF5722",
-            color: "white",
-            border: "none",
-            borderRadius: 4,
-            fontSize: 16,
-            cursor: !selectedPatient ? "not-allowed" : "pointer",
-            marginRight: 12,
-          }}
+          className="pf-button pf-pdf-button"
         >
-          Generate PDF
+          📄 Generate PDF
         </button>
       </div>
 
       {/* Validation help text */}
-      <div style={{ 
-        marginTop: 16, 
-        padding: 12, 
-        backgroundColor: "#f5f5f5", 
-        borderRadius: 6, 
-        border: "1px solid #e0e0e0",
-        fontSize: 12,
-        color: "#666"
-      }}>
-        <strong>Validation Guidelines:</strong>
-        <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+      <div className="pf-guidelines">
+        <div className="pf-guidelines-title">Validation Guidelines:</div>
+        <ul className="pf-guidelines-list">
           <li><strong>Medicine Names:</strong> Only letters, spaces, hyphens, apostrophes allowed. No numbers.</li>
           <li><strong>Dosage:</strong> Must include a number and unit (e.g., "10mg", "2 tablets", "5ml")</li>
           <li><strong>Frequency:</strong> Use formats like "3 times daily", "twice daily", "once per day"</li>
