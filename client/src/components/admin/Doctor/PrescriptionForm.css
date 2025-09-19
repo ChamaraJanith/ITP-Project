@@ -7,6 +7,8 @@
   color: #1f2937;
   padding: 0;
   margin: 0;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 /* Stats Card */
@@ -85,6 +87,7 @@
 .pf-input.pf-error,
 .pf-textarea.pf-error {
   border-color: #ef4444;
+  background-color: #fef2f2;
 }
 
 .pf-textarea {
@@ -116,6 +119,9 @@
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pf-search-button:hover {
@@ -452,6 +458,51 @@
   box-shadow: none;
 }
 
+/* Print Section */
+.pf-print-section {
+  margin-bottom: 24px;
+}
+
+.pf-print-button {
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  width: 100%;
+}
+
+.pf-print-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.pf-print-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Signature Section */
+.pf-signature-container {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.pf-clear-signature-button {
+  background: linear-gradient(90deg, #ef4444, #b91c1c);
+  color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  width: 100%;
+  margin-top: 12px;
+}
+
+.pf-clear-signature-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
 /* Guidelines */
 .pf-guidelines {
   background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
@@ -490,8 +541,8 @@
   margin-top: 4px;
 }
 
-/* Loading Animation */
-.pf-loading {
+/* Loading Spinner */
+.pf-spinner {
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -548,4 +599,92 @@
   .pf-remove-button {
     width: 100%;
   }
+}
+
+/* Enhanced input styling for validation */
+.pf-input:focus,
+.pf-textarea:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.pf-input.pf-error,
+.pf-textarea.pf-error {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+/* Animation for invalid character removal */
+.pf-input,
+.pf-textarea {
+  transition: all 0.2s ease;
+}
+
+.pf-input:invalid,
+.pf-textarea:invalid {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Add placeholder hints for input fields */
+.pf-input::placeholder {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.pf-textarea::placeholder {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Add validation hints using pseudo-elements */
+.pf-medicine-field .pf-input[placeholder*="Dosage"]::after {
+  content: "Numbers, decimal points, and units (mg, ml, tablet, etc.) only";
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.pf-medicine-field .pf-input[placeholder*="Frequency"]::after {
+  content: "Numbers, spaces, and time-related words only";
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.pf-medicine-field .pf-input[placeholder*="Duration"]::after {
+  content: "Numbers and time units (days, weeks, months, years) only";
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.pf-medicine-field .pf-input[placeholder*="Additional notes"]::after {
+  content: "Letters, numbers, and common punctuation only";
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.pf-section .pf-textarea[placeholder*="instructions"]::after {
+  content: "Letters, numbers, and common punctuation only";
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 4px;
+  font-style: italic;
 }

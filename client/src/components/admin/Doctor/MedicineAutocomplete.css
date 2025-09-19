@@ -1,0 +1,53 @@
+/* MedicineAutocomplete.css */
+.medicine-autocomplete {
+  position: relative;
+}
+
+.medicine-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.medicine-suggestion-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.medicine-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.medicine-suggestion-item:hover,
+.medicine-suggestion-item.highlighted {
+  background-color: #f9fafb;
+}
+
+.medicine-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.medicine-details {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.pf-validation-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 4px;
+  font-style: italic;
+}
