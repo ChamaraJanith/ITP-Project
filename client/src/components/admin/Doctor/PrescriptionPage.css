@@ -380,6 +380,10 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding: 16px 20px;
+  background-color: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
 }
 
 .pp-list-title {
@@ -390,47 +394,48 @@
 }
 
 .pp-list-count {
-  background: #eff6ff;
-  color: #3b82f6;
+  background: #e6f7ff;
+  color: #0066cc;
   padding: 6px 12px;
   border-radius: 20px;
   font-weight: 600;
   font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .pp-table-container {
   overflow-x: auto;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .pp-prescription-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.95rem;
+  background-color: #fff;
 }
 
 .pp-prescription-table th,
 .pp-prescription-table td {
-  padding: 16px;
+  padding: 14px 16px;
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
 }
 
 .pp-prescription-table th {
-  background-color: #f8fafc;
+  background-color: #f1f5f9;
+  color: #334155;
   font-weight: 700;
-  color: #475569;
   text-transform: uppercase;
   font-size: 0.75rem;
   letter-spacing: 0.05em;
   position: sticky;
   top: 0;
-}
-
-.pp-prescription-table tr {
-  transition: all 0.2s ease;
+  z-index: 10;
 }
 
 .pp-prescription-table tr:hover {
@@ -462,29 +467,29 @@
 
 .pp-edit-btn,
 .pp-delete-btn {
-  padding: 8px 14px;
-  border-radius: 8px;
+  padding: 6px 12px;
+  border-radius: 4px;
   border: none;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   font-size: 0.85rem;
 }
 
 .pp-edit-btn {
-  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  background: #3b82f6;
   color: #fff;
 }
 
 .pp-delete-btn {
-  background: linear-gradient(90deg, #ef4444, #dc2626);
+  background: #ef4444;
   color: #fff;
 }
 
 .pp-edit-btn:hover,
 .pp-delete-btn:hover {
+  opacity: 0.9;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .pp-no-prescriptions {
@@ -507,19 +512,20 @@
   text-align: center;
 }
 
-/* Loading Animation */
-.pp-loading {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255,255,255,.3);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: pp-spin 1s ease-in-out infinite;
+/* Loading States */
+.pp-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #64748b;
 }
 
-@keyframes pp-spin {
-  to { transform: rotate(360deg); }
+.pp-loading-text {
+  margin-top: 16px;
+  font-size: 1.1rem;
+  text-align: center;
 }
 
 /* Responsive Design */
