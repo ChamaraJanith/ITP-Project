@@ -7,6 +7,7 @@ import EmergencyPage from './components/EmergencyPage';
 import HospitalsPage from './components/HospitalPage';
 import Footer from './components/Footer';
 
+
 // ✅ Existing User Components
 import Register from './components/admin/Patient/Register';
 import Login from './components/admin/Patient/Login';
@@ -27,12 +28,13 @@ import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
 import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
 import PaymentTotalView from './components/admin/Financial_Manager/PaymentTotalView';
 import PatientDetailsWithCharts from './components/admin/Admin/PatientDetailsWithCharts';
-import InventoryReports from './components/admin/Admin/InventoryReports';
 
 import DoctorItemRequestModal from "./components/admin/Doctor/DoctorInventoryPage"; // keep modal import [21]
 
 import FinancialPayroll from './components/admin/Financial_Manager/FinancialPayroll';
 import TotalPayrollView from './components/admin/Financial_Manager/TotalPayrollView';
+import ExpenseTracking from './components/admin/Financial_Manager/ExpenseTracking';
+
 
 
 // ✅ NEW: Patient Registration Components for Receptionist
@@ -253,7 +255,7 @@ function App() {
     <ProtectedAdminRoute allowedRoles={['admin', 'receptionist']}>
       <PatientDetailsWithCharts />
     </ProtectedAdminRoute>
-  } 
+  }
 />
             
             <Route 
@@ -373,6 +375,8 @@ function App() {
             <Route path="/admin/doctor/prescriptions" element={<PrescriptionPage />} />
             <Route path="/admin/inventory-reports" element={<InventoryReports />} />
 
+            <Route path="/admin/doctor/patient-records" element={<PatientRecordsPage />} />
+
             {/* Alias route so EMERGENCY ALERTS button works without removing it */}
             <Route path="/admin/doctor/prescription-dashboard" element={<PrescriptionPage />} />
 
@@ -412,6 +416,12 @@ function App() {
               path="/admin/financial/payrolls/total-view" 
               element={<TotalPayrollView />}
          />
+
+         <Route 
+              path="/admin/financial/expenses" 
+              element={<ExpenseTracking />} 
+         />
+
 
               <Route 
   path="/admin/procurement" 
