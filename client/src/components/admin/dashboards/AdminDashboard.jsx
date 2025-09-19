@@ -4,6 +4,7 @@ import AdminLayout from '../AdminLayout';
 import AdminErrorBoundary from '../AdminErrorBoundary';
 import ProfileDetailModal from '../../admin/ProfileDetailModal.jsx';
 import { adminDashboardApi } from '../../../services/adminApi.js';
+import InventoryReports from '../Admin/InventoryReports.jsx';
 import './AdminDashboard.css';
 
 // Import Chart.js components
@@ -19,7 +20,7 @@ import {
   Legend, 
   ArcElement 
 } from 'chart.js';
-import { Line, Bar, Pie } from 'react-chartjs-2';
+import { Bar, Pie, Doughnut } from 'react-chartjs-2';
 
 // Register Chart.js components
 ChartJS.register(
@@ -34,6 +35,8 @@ ChartJS.register(
   ArcElement
 );
 
+const API_URL = "http://localhost:7000/api/payments";
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [admin, setAdmin] = useState(null);
@@ -45,7 +48,6 @@ const AdminDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [growthAnalytics, setGrowthAnalytics] = useState(null);
   const [activityLogs, setActivityLogs] = useState([]);
   const [recentPatients, setRecentPatients] = useState([]);
   const [realTimeProfiles, setRealTimeProfiles] = useState([]);
@@ -80,8 +82,8 @@ const AdminDashboard = () => {
     page: 1,
     limit: 10,
     search: '',
-    type: 'all', // 'all', 'patients', 'staff'
-    status: 'all', // 'all', 'verified', 'pending', 'active', 'inactive'
+    type: 'all',
+    status: 'all',
     sortBy: 'createdAt',
     sortOrder: 'desc',
     startDate: '',
@@ -90,11 +92,11 @@ const AdminDashboard = () => {
   });
   const [userPagination, setUserPagination] = useState({});
 
-  // NEW: Notification state
+  // Notification state
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   
-  // NEW: System diagnostics state
+  // System diagnostics state
   const [diagnostics, setDiagnostics] = useState({
     serverStatus: 'checking',
     databaseStatus: 'checking',
@@ -103,12 +105,25 @@ const AdminDashboard = () => {
   });
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   
-  // NEW: Quick actions state
+  // Quick actions state
   const [showQuickActions, setShowQuickActions] = useState(false);
   
-  // NEW: Data export state
+  // Data export state
   const [exportLoading, setExportLoading] = useState(false);
   const [exportFormat, setExportFormat] = useState('csv');
+
+  // Payment analytics state
+  const [paymentAnalytics, setPaymentAnalytics] = useState(null);
+  const [paymentAnalyticsLoading, setPaymentAnalyticsLoading] = useState(true);
+  const [payments, setPayments] = useState([]);
+
+  // Delete user confirmation state
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    show: false,
+    userId: null,
+    userName: '',
+    userType: ''
+  });
 
   useEffect(() => {
     initializeDashboard();
@@ -148,13 +163,12 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       
-      // Check admin authentication with better error handling
+      // Check admin authentication
       const adminData = localStorage.getItem('admin');
       if (adminData) {
         try {
           const parsedAdmin = JSON.parse(adminData);
           
-          // Validate admin data structure
           if (parsedAdmin && parsedAdmin.role && parsedAdmin.email) {
             if (parsedAdmin.role !== 'admin') {
               console.log('⚠️ Non-admin user trying to access admin dashboard');
@@ -236,11 +250,8 @@ const AdminDashboard = () => {
         throw new Error(statsResponse.message || 'Failed to fetch dashboard stats');
       }
 
-      // Fetch growth analytics
-      const analyticsResponse = await adminDashboardApi.getUserGrowthAnalytics(7);
-      if (analyticsResponse.success) {
-        setGrowthAnalytics(analyticsResponse.data);
-      }
+      // Fetch payment analytics
+      await loadPaymentAnalytics();
 
       // Fetch activity logs
       const logsResponse = await adminDashboardApi.getSystemActivityLogs(10);
@@ -260,6 +271,82 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Load payment analytics from the payments API
+  const loadPaymentAnalytics = async () => {
+    try {
+      setPaymentAnalyticsLoading(true);
+      
+      // Fetch payments data
+      const response = await fetch(API_URL);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const paymentsData = await response.json();
+      setPayments(paymentsData);
+      
+      // Calculate analytics from payments data
+      const analytics = calculatePaymentAnalytics(paymentsData);
+      setPaymentAnalytics(analytics);
+      
+      console.log('✅ Payment analytics loaded:', analytics);
+    } catch (error) {
+      console.error('❌ Error loading payment analytics:', error);
+      // Set empty analytics to prevent errors
+      setPaymentAnalytics({
+        payments: [],
+        stats: {
+          totalPayments: 0,
+          totalAmountDue: 0,
+          totalAmountPaid: 0,
+          totalPending: 0,
+          paymentMethods: {},
+          hospitalBreakdown: {}
+        }
+      });
+    } finally {
+      setPaymentAnalyticsLoading(false);
+    }
+  };
+
+  // Calculate payment analytics from payments data
+  const calculatePaymentAnalytics = (paymentsData) => {
+    const stats = {
+      totalPayments: paymentsData.length,
+      totalAmountDue: paymentsData.reduce((sum, p) => sum + (p.totalAmount || 0), 0),
+      totalAmountPaid: paymentsData.reduce((sum, p) => sum + (p.amountPaid || 0), 0),
+      totalPending: paymentsData.reduce((sum, p) => sum + ((p.totalAmount || 0) - (p.amountPaid || 0)), 0),
+      paymentMethods: {},
+      hospitalBreakdown: {}
+    };
+    
+    // Calculate payment methods breakdown
+    paymentsData.forEach(payment => {
+      const method = payment.paymentMethod || 'Unknown';
+      const amount = payment.amountPaid || 0;
+      stats.paymentMethods[method] = (stats.paymentMethods[method] || 0) + amount;
+    });
+    
+    // Calculate hospital breakdown
+    paymentsData.forEach(payment => {
+      const hospital = payment.hospitalName || 'Unknown Hospital';
+      if (!stats.hospitalBreakdown[hospital]) {
+        stats.hospitalBreakdown[hospital] = {
+          count: 0,
+          totalDue: 0,
+          totalPaid: 0
+        };
+      }
+      stats.hospitalBreakdown[hospital].count += 1;
+      stats.hospitalBreakdown[hospital].totalDue += (payment.totalAmount || 0);
+      stats.hospitalBreakdown[hospital].totalPaid += (payment.amountPaid || 0);
+    });
+    
+    return {
+      payments: paymentsData,
+      stats
+    };
   };
 
   const loadRealTimeProfiles = async () => {
@@ -419,7 +506,6 @@ const AdminDashboard = () => {
 
   // Contact support functionality
   const handleContactSupport = () => {
-    // Option 1: Open email client with pre-filled details
     const subject = encodeURIComponent('Admin Dashboard Support Request');
     const body = encodeURIComponent(`Hello Support Team,
 
@@ -957,7 +1043,7 @@ ${admin?.name || 'Admin User'}`);
     return months[monthNumber - 1];
   };
 
-  // NEW: Notification functions
+  // Notification functions
   const addNotification = useCallback((notification) => {
     setNotifications(prev => [notification, ...prev].slice(0, 10)); // Keep only last 10 notifications
   }, []);
@@ -970,7 +1056,7 @@ ${admin?.name || 'Admin User'}`);
     setNotifications([]);
   }, []);
 
-  // NEW: System diagnostics functions
+  // System diagnostics functions
   const runSystemDiagnostics = async () => {
     try {
       setDiagnostics({
@@ -1019,7 +1105,7 @@ ${admin?.name || 'Admin User'}`);
     }
   };
 
-  // NEW: Export functions
+  // Export functions
   const exportUserData = async () => {
     try {
       setExportLoading(true);
@@ -1207,7 +1293,7 @@ ${admin?.name || 'Admin User'}`);
     }, 1000);
   };
 
-  // NEW: Quick actions
+  // Quick actions
   const handleQuickAction = (action) => {
     switch (action) {
       case 'backup':
@@ -1244,6 +1330,85 @@ ${admin?.name || 'Admin User'}`);
         console.log('Unknown quick action:', action);
     }
     setShowQuickActions(false);
+  };
+
+  // Delete user functionality
+  const handleDeleteUser = async (userId, userName, userType) => {
+    // Show confirmation dialog
+    setDeleteConfirmation({
+      show: true,
+      userId,
+      userName,
+      userType
+    });
+  };
+
+  const confirmDeleteUser = async () => {
+    const { userId, userName, userType } = deleteConfirmation;
+    
+    try {
+      // Call API to delete user
+      const response = await fetch(`http://localhost:7000/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Show success notification
+        addNotification({
+          id: Date.now(),
+          type: 'success',
+          title: 'User Deleted',
+          message: `${userType} "${userName}" has been successfully deleted from the system.`,
+          timestamp: new Date()
+        });
+        
+        // Refresh the user list
+        if (showAllUsers) {
+          loadAllUsers();
+        }
+        
+        // Refresh dashboard stats
+        loadDashboardData();
+      } else {
+        throw new Error(data.message || 'Failed to delete user');
+      }
+    } catch (error) {
+      console.error('❌ Error deleting user:', error);
+      addNotification({
+        id: Date.now(),
+        type: 'error',
+        title: 'Delete Failed',
+        message: `Failed to delete user: ${error.message}`,
+        timestamp: new Date()
+      });
+    } finally {
+      // Hide confirmation dialog
+      setDeleteConfirmation({
+        show: false,
+        userId: null,
+        userName: '',
+        userType: ''
+      });
+    }
+  };
+
+  const cancelDeleteUser = () => {
+    setDeleteConfirmation({
+      show: false,
+      userId: null,
+      userName: '',
+      userType: ''
+    });
   };
 
   // Better loading state handling
@@ -1318,83 +1483,117 @@ ${admin?.name || 'Admin User'}`);
     );
   }
 
-  // Chart data and options
-  const userGrowthData = {
-    labels: growthAnalytics ? growthAnalytics.labels : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    datasets: [
-      {
-        label: 'New Users',
-        data: growthAnalytics ? growthAnalytics.data : [12, 19, 3, 5, 2, 3, 7],
-        borderColor: 'rgb(75, 192, 192)',
-        backgroundColor: 'rgba(75, 192, 192, 0.5)',
-        tension: 0.3,
-      },
-    ],
+  // Payment analytics data with fallback
+  const fullyPaidPayments = paymentAnalytics ? 
+    paymentAnalytics.payments.filter(p => (p.amountPaid || 0) >= (p.totalAmount || 0)) : [];
+  const partiallyPaidPayments = paymentAnalytics ? 
+    paymentAnalytics.payments.filter(p => (p.amountPaid || 0) > 0 && (p.amountPaid || 0) < (p.totalAmount || 0)) : [];
+  const unpaidPayments = paymentAnalytics ? 
+    paymentAnalytics.payments.filter(p => (p.amountPaid || 0) === 0) : [];
+
+  // Payment Status Chart Data
+  const paymentStatusData = {
+    labels: ['Fully Paid', 'Partially Paid', 'Unpaid'],
+    datasets: [{
+      data: [
+        fullyPaidPayments.length, 
+        partiallyPaidPayments.length, 
+        unpaidPayments.length
+      ],
+      backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+      borderWidth: 2,
+      borderColor: '#fff'
+    }]
   };
 
-  const userGrowthOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top',
-      },
-      title: {
-        display: true,
-        text: 'User Growth (Last 7 Days)',
-      },
-    },
+  // Payment Methods Chart Data
+  const paymentMethodsChartData = paymentAnalytics && paymentAnalytics.stats ? {
+    labels: Object.keys(paymentAnalytics.stats.paymentMethods),
+    datasets: [{
+      label: 'Amount Paid by Method ($)',
+      data: Object.values(paymentAnalytics.stats.paymentMethods),
+      backgroundColor: [
+        '#4BC0C0', '#FF6384', '#36A2EB', '#FFCE56', '#9966FF', 
+        '#FF9F40'
+      ],
+      borderWidth: 2,
+      borderColor: '#fff'
+    }]
+  } : {
+    labels: [],
+    datasets: [{
+      data: [],
+      backgroundColor: []
+    }]
   };
 
-  const staffBreakdownData = {
-    labels: ['Admin', 'Doctors', 'Nurses', 'Receptionists', 'Financial Managers'],
-    datasets: [
-      {
-        label: 'Staff Count',
-        data: [
-          systemStats.staffBreakdown?.admin || 0,
-          systemStats.staffBreakdown?.doctor || 0,
-          systemStats.staffBreakdown?.nurse || 0,
-          systemStats.staffBreakdown?.receptionist || 0,
-          systemStats.staffBreakdown?.financial_manager || 0
-        ],
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.7)',
-          'rgba(54, 162, 235, 0.7)',
-          'rgba(255, 206, 86, 0.7)',
-          'rgba(75, 192, 192, 0.7)',
-          'rgba(153, 102, 255, 0.7)',
-        ],
-        borderColor: [
-          'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(75, 192, 192, 1)',
-          'rgba(153, 102, 255, 1)',
-        ],
-        borderWidth: 1,
-      },
-    ],
+  // Hospital Performance Chart Data
+  const hospitalChartData = paymentAnalytics && paymentAnalytics.stats ? {
+    labels: Object.keys(paymentAnalytics.stats.hospitalBreakdown).slice(0, 10),
+    datasets: [{
+      label: 'Total Due ($)',
+      data: Object.values(paymentAnalytics.stats.hospitalBreakdown)
+        .slice(0, 10).map(hospital => hospital.totalDue),
+      backgroundColor: '#36A2EB',
+      borderRadius: 4
+    }, {
+      label: 'Total Paid ($)',
+      data: Object.values(paymentAnalytics.stats.hospitalBreakdown)
+        .slice(0, 10).map(hospital => hospital.totalPaid),
+      backgroundColor: '#4BC0C0',
+      borderRadius: 4
+    }]
+  } : {
+    labels: [],
+    datasets: [{
+      label: 'Total Due ($)',
+      data: [],
+      backgroundColor: '#36A2EB',
+      borderRadius: 4
+    }, {
+      label: 'Total Paid ($)',
+      data: [],
+      backgroundColor: '#4BC0C0',
+      borderRadius: 4
+    }]
   };
 
-  const patientStatusData = {
-    labels: ['Verified', 'Unverified'],
-    datasets: [
-      {
-        data: [
-          systemStats.verifiedUsers || 0,
-          systemStats.unverifiedUsers || 0
-        ],
-        backgroundColor: [
-          'rgba(75, 192, 192, 0.7)',
-          'rgba(255, 99, 132, 0.7)',
-        ],
-        borderColor: [
-          'rgba(75, 192, 192, 1)',
-          'rgba(255, 99, 132, 1)',
-        ],
-        borderWidth: 1,
-      },
-    ],
+  // Monthly trend data (if payments have dates)
+  const getMonthlyTrend = () => {
+    if (!paymentAnalytics || !paymentAnalytics.payments) return {};
+    
+    const monthlyData = {};
+    paymentAnalytics.payments.forEach(payment => {
+      if (payment.date) {
+        const month = new Date(payment.date).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'short' 
+        });
+        if (!monthlyData[month]) {
+          monthlyData[month] = { totalDue: 0, totalPaid: 0, count: 0 };
+        }
+        monthlyData[month].totalDue += (payment.totalAmount || 0);
+        monthlyData[month].totalPaid += (payment.amountPaid || 0);
+        monthlyData[month].count += 1;
+      }
+    });
+    return monthlyData;
+  };
+
+  const monthlyTrend = getMonthlyTrend();
+  const trendChartData = {
+    labels: Object.keys(monthlyTrend),
+    datasets: [{
+      label: 'Monthly Revenue ($)',
+      data: Object.values(monthlyTrend).map(month => month.totalPaid),
+      backgroundColor: '#28a745',
+      borderRadius: 4
+    }, {
+      label: 'Monthly Invoiced ($)',
+      data: Object.values(monthlyTrend).map(month => month.totalDue),
+      backgroundColor: '#6c757d',
+      borderRadius: 4
+    }]
   };
 
   return (
@@ -1416,14 +1615,14 @@ ${admin?.name || 'Admin User'}`);
                 <button onClick={toggleAllUsers} className="all-users-btn">
                   {showAllUsers ? '👥 Hide All Users' : '👥 Show All Users'}
                 </button>
-                {/* NEW: Notifications Button */}
+                {/* Notifications Button */}
                 <button 
                   onClick={() => setShowNotifications(!showNotifications)} 
                   className="notifications-btn"
                 >
                   🔔 {notifications.length > 0 && <span className="notification-badge">{notifications.length}</span>}
                 </button>
-                {/* NEW: Diagnostics Button */}
+                {/* Diagnostics Button */}
                 <button 
                   onClick={() => {
                     setShowDiagnostics(!showDiagnostics);
@@ -1433,7 +1632,7 @@ ${admin?.name || 'Admin User'}`);
                 >
                   🩺
                 </button>
-                {/* NEW: Quick Actions Button */}
+                {/* Quick Actions Button */}
                 <button 
                   onClick={() => setShowQuickActions(!showQuickActions)} 
                   className="quick-actions-btn"
@@ -1457,7 +1656,7 @@ ${admin?.name || 'Admin User'}`);
             )}
           </div>
 
-          {/* NEW: Notifications Panel */}
+          {/* Notifications Panel */}
           {showNotifications && (
             <div className="notifications-panel">
               <div className="notifications-header">
@@ -1504,7 +1703,7 @@ ${admin?.name || 'Admin User'}`);
             </div>
           )}
 
-          {/* NEW: Diagnostics Panel */}
+          {/* Diagnostics Panel */}
           {showDiagnostics && (
             <div className="diagnostics-panel">
               <div className="diagnostics-header">
@@ -1560,7 +1759,7 @@ ${admin?.name || 'Admin User'}`);
             </div>
           )}
 
-          {/* NEW: Quick Actions Panel */}
+          {/* Quick Actions Panel */}
           {showQuickActions && (
             <div className="quick-actions-panel">
               <div className="quick-actions-header">
@@ -1615,7 +1814,7 @@ ${admin?.name || 'Admin User'}`);
                   <button onClick={loadAllUsers} className="refresh-users-btn" disabled={usersLoading}>
                     {usersLoading ? '⏳ Loading...' : '🔄 Refresh Users'}
                   </button>
-                  {/* NEW: Export Button */}
+                  {/* Export Button */}
                   <button 
                     onClick={exportUserData} 
                     className="export-users-btn" 
@@ -1696,7 +1895,7 @@ ${admin?.name || 'Admin User'}`);
                   </div>
                 </div>
                 
-                {/* NEW: Advanced Filters */}
+                {/* Advanced Filters */}
                 <div className="filter-row">
                   <div className="filter-group">
                     <label>📅 Start Date:</label>
@@ -1854,6 +2053,18 @@ ${admin?.name || 'Admin User'}`);
                               >
                                 🔧
                               </button>
+                              {/* Delete Button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteUser(user._id, user.name, user.type);
+                                }}
+                                className="action-btn delete-btn"
+                                title="Delete User"
+                                style={{ backgroundColor: '#dc3545', color: 'white' }}
+                              >
+                                🗑️
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -2001,6 +2212,100 @@ ${admin?.name || 'Admin User'}`);
             </div>
           </div>
 
+          {/* Payment Analytics Section */}
+          {paymentAnalyticsLoading ? (
+            <div className="payment-analytics-loading">
+              <div className="loading-spinner"></div>
+              <p>Loading payment analytics...</p>
+            </div>
+          ) : paymentAnalytics && paymentAnalytics.stats ? (
+            <div className="payment-analytics-section">
+              <h2>💰 Payment Analytics Dashboard</h2>
+              
+              {/* Payment Summary Cards */}
+              <div className="payment-summary-grid">
+                <div className="payment-summary-card payment-primary-card">
+                  <div className="payment-card-icon">📄</div>
+                  <div className="payment-card-content">
+                    <h2>{paymentAnalytics.stats.totalPayments}</h2>
+                    <p>Total Invoices</p>
+                    <div className="payment-card-trend">
+                      <span className="payment-trend-info">🏥 All Hospitals</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="payment-summary-card payment-success-card">
+                  <div className="payment-card-icon">💵</div>
+                  <div className="payment-card-content">
+                    <h3>${paymentAnalytics.stats.totalAmountDue.toLocaleString()}</h3>
+                    <p>Total Amount Due</p>
+                    <small>All invoices combined</small>
+                  </div>
+                </div>
+                
+                <div className="payment-summary-card payment-primary-card">
+                  <div className="payment-card-icon">✅</div>
+                  <div className="payment-card-content">
+                    <h3>${paymentAnalytics.stats.totalAmountPaid.toLocaleString()}</h3>
+                    <p>Total Amount Paid</p>
+                    <small>Revenue collected</small>
+                  </div>
+                </div>
+                
+                <div className="payment-summary-card payment-warning-card">
+                  <div className="payment-card-icon">⏳</div>
+                  <div className="payment-card-content">
+                    <h3>${paymentAnalytics.stats.totalPending.toLocaleString()}</h3>
+                    <p>Pending Amount</p>
+                    <small>
+                      {paymentAnalytics.stats.totalAmountDue > 0 
+                        ? `${((paymentAnalytics.stats.totalPending / paymentAnalytics.stats.totalAmountDue) * 100).toFixed(1)}% of total` 
+                        : '0% of total'}
+                    </small>
+                  </div>
+                </div>
+                
+                <div className="payment-summary-card payment-success-card">
+                  <div className="payment-card-icon">📊</div>
+                  <div className="payment-card-content">
+                    <h3>
+                      {paymentAnalytics.stats.totalAmountDue > 0 
+                        ? `${((paymentAnalytics.stats.totalAmountPaid / paymentAnalytics.stats.totalAmountDue) * 100).toFixed(1)}%` 
+                        : '0%'}
+                    </h3>
+                    <p>Collection Rate</p>
+                    <small>Payment efficiency</small>
+                  </div>
+                </div>
+                
+                <div className="payment-summary-card">
+                  <div className="payment-card-icon">💳</div>
+                  <div className="payment-card-content">
+                    <h3>
+                      {paymentAnalytics.stats.totalPayments > 0 
+                        ? (paymentAnalytics.stats.totalAmountDue / paymentAnalytics.stats.totalPayments).toFixed(2)
+                        : '0.00'}
+                    </h3>
+                    <p>Avg Invoice Value</p>
+                    <small>Per invoice</small>
+                  </div>
+                </div>
+              </div>
+
+          
+              {/* Monthly Trend if available */}
+            </div>
+          ) : (
+            <div className="payment-analytics-error">
+              <h3>💰 Payment Analytics</h3>
+              <p>Payment analytics data is not available at the moment.</p>
+              <button onClick={loadPaymentAnalytics} className="retry-btn">
+                🔄 Retry
+              </button>
+            </div>
+          )}
+
           {/* Dashboard Access Section - 3 Role-based Buttons with Bubble Icons */}
           <div className="dashboard-access-section">
             <h2>🎛️ Role-Based Dashboard Access</h2>
@@ -2073,64 +2378,6 @@ ${admin?.name || 'Admin User'}`);
                   {dashboardRoleAccess.roleAccess?.financial_manager?.accessible ? '✅' : '🔒'}
                 </div>
               </button>
-            </div>
-          </div>
-
-          {/* Charts Section */}
-          <div className="charts-section">
-            <h2>📈 Data Analytics</h2>
-            <div className="charts-grid">
-              {/* User Growth Chart */}
-              <div className="chart-container">
-                <h3>User Growth (Last 7 Days)</h3>
-                <div className="chart-wrapper">
-                  <Line data={userGrowthData} options={userGrowthOptions} />
-                </div>
-              </div>
-              
-              {/* Staff Breakdown Chart */}
-              <div className="chart-container">
-                <h3>Staff Breakdown</h3>
-                <div className="chart-wrapper">
-                  <Bar 
-                    data={staffBreakdownData} 
-                    options={{
-                      responsive: true,
-                      plugins: {
-                        legend: {
-                          position: 'top',
-                        },
-                        title: {
-                          display: true,
-                          text: 'Staff Distribution by Role',
-                        },
-                      },
-                    }} 
-                  />
-                </div>
-              </div>
-              
-              {/* Patient Status Chart */}
-              <div className="chart-container">
-                <h3>Patient Verification Status</h3>
-                <div className="chart-wrapper">
-                  <Pie 
-                    data={patientStatusData} 
-                    options={{
-                      responsive: true,
-                      plugins: {
-                        legend: {
-                          position: 'top',
-                        },
-                        title: {
-                          display: true,
-                          text: 'Patient Verification Distribution',
-                        },
-                      },
-                    }} 
-                  />
-                </div>
-              </div>
             </div>
           </div>
 
@@ -2273,113 +2520,7 @@ ${admin?.name || 'Admin User'}`);
             </div>
           </div>
 
-          {/* Recent Patient Profiles - Also Clickable with Bubble Icons */}
-          <div className="patient-profiles-section">
-            <h2>👨‍⚕️ Recent Patient Profiles (Click to View Details)</h2>
-            <div className="patient-buttons-grid">
-              {recentPatients.length > 0 ? (
-                recentPatients.map((patient, index) => (
-                  <button 
-                    key={patient._id || index} 
-                    className="patient-profile-btn clickable-profile"
-                    onClick={() => handleProfileClick({
-                      _id: patient._id,
-                      name: patient.name,
-                      email: patient.email,
-                      type: 'patient',
-                      role: 'patient',
-                      status: patient.isAccountVerified ? 'verified' : 'pending',
-                      lastActivity: patient.createdAt
-                    })}
-                  >
-                    <div className="bubble-icon patient-bubble">
-                      <span className="bubble-emoji">👤</span>
-                      <div className="bubble"></div>
-                    </div>
-                    <div className="patient-info">
-                      <h4>{patient.name}</h4>
-                      <p>{patient.email}</p>
-                      <small>
-                        {patient.isAccountVerified ? '✅ Verified' : '⏳ Pending'} | 
-                        Registered: {new Date(patient.createdAt).toLocaleDateString()}
-                      </small>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="no-patients-message">
-                  <p>No recent patients. System is ready for patient registration.</p>
-                  <button className="patient-profile-btn" onClick={() => navigate('/admin/patients')}>
-                    <div className="bubble-icon patient-bubble">
-                      <span className="bubble-emoji">👥</span>
-                      <div className="bubble"></div>
-                    </div>
-                    <div className="patient-info">
-                      <h4>View All Patients</h4>
-                      <p>Access complete patient database</p>
-                      <small>Manage all registered patients</small>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Growth Analytics with Bubble Icons */}
-          {growthAnalytics && (
-            <div className="analytics-section">
-              <h2>📈 Growth Analytics (Last 7 Days)</h2>
-              <div className="analytics-cards">
-                <div className="analytics-card">
-                  <div className="bubble-icon growth-bubble">
-                    <span className="bubble-emoji">📅</span>
-                    <div className="bubble"></div>
-                  </div>
-                  <h4>New Registrations</h4>
-                  <p className="big-number">{systemStats.recentRegistrations}</p>
-                  <small>Last 7 days</small>
-                </div>
-                <div className="analytics-card">
-                  <div className="bubble-icon monthly-growth-bubble">
-                    <span className="bubble-emoji">📊</span>
-                    <div className="bubble"></div>
-                  </div>
-                  <h4>Monthly Growth</h4>
-                  <p className="big-number">{systemStats.monthlyGrowth}</p>
-                  <small>Last 30 days</small>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Recent Activity with Bubble Icons */}
-          {activityLogs.length > 0 && (
-            <div className="activity-section">
-              <h2>🔄 Recent System Activity</h2>
-              <div className="activity-list">
-                {activityLogs.slice(0, 5).map((log, index) => (
-                  <div key={index} className="activity-item">
-                    <div className="bubble-icon activity-bubble">
-                      <span className="bubble-emoji">
-                        {log.type === 'user_registration' ? '👤' : '🔐'}
-                      </span>
-                      <div className="bubble"></div>
-                    </div>
-                    <div className="activity-content">
-                      <p>
-                        <strong>{log.user}</strong> 
-                        {log.type === 'user_registration' 
-                          ? ' registered as a new user' 
-                          : ` logged in as ${log.role}`}
-                      </p>
-                      <small>{new Date(log.timestamp).toLocaleString()}</small>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
+          
           {/* Profile Detail Modal */}
           <ProfileDetailModal
             isOpen={showProfileModal}
@@ -2651,6 +2792,52 @@ ${admin?.name || 'Admin User'}`);
             </div>
           )}
 
+          {/* Delete User Confirmation Modal */}
+          {deleteConfirmation.show && (
+            <div className="delete-confirmation-modal-overlay" onClick={cancelDeleteUser}>
+              <div className="delete-confirmation-modal" onClick={e => e.stopPropagation()}>
+                <div className="delete-confirmation-header">
+                  <h3>⚠️ Confirm User Deletion</h3>
+                  <button 
+                    className="close-modal-btn"
+                    onClick={cancelDeleteUser}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="delete-confirmation-body">
+                  <div className="delete-warning-icon">⚠️</div>
+                  <p>Are you sure you want to permanently delete this user from the system?</p>
+                  <div className="delete-user-details">
+                    <div className="delete-user-detail">
+                      <strong>Name:</strong> {deleteConfirmation.userName}
+                    </div>
+                    <div className="delete-user-detail">
+                      <strong>Type:</strong> {deleteConfirmation.userType === 'patient' ? 'Patient' : 'Staff Member'}
+                    </div>
+                  </div>
+                  <p className="delete-warning-text">
+                    This action cannot be undone. All user data will be permanently removed from the system.
+                  </p>
+                  <div className="delete-confirmation-actions">
+                    <button
+                      onClick={cancelDeleteUser}
+                      className="btn-cancel-delete"
+                    >
+                      ❌ Cancel
+                    </button>
+                    <button
+                      onClick={confirmDeleteUser}
+                      className="btn-confirm-delete"
+                    >
+                      🗑️ Delete User
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Floating Action Buttons with Bubble Icons */}
           <div className="floating-action-buttons">
             <button 
@@ -2683,7 +2870,7 @@ ${admin?.name || 'Admin User'}`);
                 <div className="bubble"></div>
               </div>
             </button>
-            {/* NEW: Notifications FAB */}
+            {/* Notifications FAB */}
             <button 
               className="fab-button notifications-fab"
               onClick={() => setShowNotifications(!showNotifications)}
