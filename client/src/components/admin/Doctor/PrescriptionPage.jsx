@@ -164,7 +164,7 @@ const PrescriptionPage = ({ patientFromParent }) => {
             </div>
             <div className="pp-header-actions">
               <button 
-                onClick={() => navigate('/dashboard')} 
+                onClick={() => navigate('/admin/doctor')} 
                 className="pp-back-button"
               >
                 ← Back to Dashboard
