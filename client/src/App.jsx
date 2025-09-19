@@ -36,6 +36,7 @@ import TotalPayrollView from './components/admin/Financial_Manager/TotalPayrollV
 import ExpenseTracking from './components/admin/Financial_Manager/ExpenseTracking';
 import InventoryReports from './components/admin/Admin/InventoryReports';
 import PatientRecordsPage from './components/admin/Doctor/PatientRecordsPage';
+import ExploreTrends from './components/admin/Financial_Manager/ExploreTrends'; //new  
 
 
 
@@ -423,6 +424,11 @@ function App() {
               path="/admin/financial/expenses" 
               element={<ExpenseTracking />} 
          />
+
+         <Route 
+              path="/admin/financial/trends" 
+              element={<ExploreTrends />} 
+        />
 
 
               <Route 
