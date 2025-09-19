@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './ScheduleConsultation.css';
 
 const ScheduleConsultation = () => {
+  const navigate = useNavigate();
+  
   const [formData, setFormData] = useState({
     doctor: "",
     date: "",
@@ -29,12 +32,49 @@ const ScheduleConsultation = () => {
     return `Dr. ${cleanName}`;
   };
 
-  // Handle input changes
+  // Validation function for alphabetic characters and spaces only
+  const isAlphabeticWithSpaces = (str) => {
+    return /^[a-zA-Z\s]*$/.test(str);
+  };
+
+  // Handle back to dashboard
+  const handleBackToDashboard = () => {
+    navigate('/admin/doctor');
+  };
+
+  // Handle input changes with validation
   const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Apply validation for doctor name and reason fields
+    if (name === 'doctor' || name === 'reason') {
+      // Only allow alphabetic characters and spaces
+      if (value === '' || isAlphabeticWithSpaces(value)) {
+        setFormData({
+          ...formData,
+          [name]: value
+        });
+      }
+      // If validation fails, don't update the field (prevents typing)
+      return;
+    }
+    
+    // For other fields (date, time, notes), no validation restrictions
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+  };
+
+  // Handle keypress to prevent non-alphabetic characters
+  const handleKeyPress = (e, fieldName) => {
+    if (fieldName === 'doctor' || fieldName === 'reason') {
+      const char = String.fromCharCode(e.which);
+      // Allow only alphabetic characters and space
+      if (!/[a-zA-Z\s]/.test(char)) {
+        e.preventDefault();
+      }
+    }
   };
 
   // Handle form submit (create or update)
@@ -44,7 +84,8 @@ const ScheduleConsultation = () => {
     // Format the doctor name before submitting
     const submissionData = {
       ...formData,
-      doctor: formData.doctor.trim().replace(/\s+/g, ' ') // Clean up spacing but don't add Dr. prefix in form data
+      doctor: formData.doctor.trim().replace(/\s+/g, ' '), // Clean up spacing but don't add Dr. prefix in form data
+      reason: formData.reason.trim().replace(/\s+/g, ' ') // Clean up spacing for reason as well
     };
 
     if (editingId) {
@@ -107,6 +148,18 @@ const ScheduleConsultation = () => {
   return (
     <div className="sched-consult-wrapper">
       <div className="sched-consult-container">
+        {/* Back to Dashboard Button */}
+        <div className="sched-consult-nav">
+          <button 
+            onClick={handleBackToDashboard}
+            className="sched-consult-back-btn"
+            title="Back to Dashboard"
+          >
+            <span className="sched-consult-back-icon">←</span>
+            <span className="sched-consult-back-text">Back to Dashboard</span>
+          </button>
+        </div>
+
         {/* Header Section */}
         <div className="sched-consult-header">
           <div className="sched-consult-title">
@@ -132,11 +185,12 @@ const ScheduleConsultation = () => {
                   placeholder="Enter doctor's name (e.g., John Smith)"
                   value={formData.doctor}
                   onChange={handleChange}
+                  onKeyPress={(e) => handleKeyPress(e, 'doctor')}
                   className="sched-consult-input"
                   required
                 />
                 <small className="sched-consult-input-hint">
-                  Enter name without "Dr." prefix - it will be added automatically
+                  Enter name without "Dr." prefix - it will be added automatically. Only letters allowed.
                 </small>
               </div>
 
@@ -173,9 +227,13 @@ const ScheduleConsultation = () => {
                   placeholder="Brief description of the consultation reason"
                   value={formData.reason}
                   onChange={handleChange}
+                  onKeyPress={(e) => handleKeyPress(e, 'reason')}
                   className="sched-consult-input"
                   required
                 />
+                <small className="sched-consult-input-hint">
+                  Only alphabetic characters are allowed.
+                </small>
               </div>
 
               <div className="sched-consult-form-group sched-consult-full-width">
