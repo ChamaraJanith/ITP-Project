@@ -1,175 +1,563 @@
-/* ScheduleConsultation.css */
+/* ScheduleConsultation.css - Modern and Unique Styling */
 
-/* Container */
-.schedule-consultation {
-  max-width: 900px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+/* Color Variables */
+:root {
+  --sched-consult-primary: #2563eb;
+  --sched-consult-primary-hover: #1d4ed8;
+  --sched-consult-secondary: #64748b;
+  --sched-consult-success: #059669;
+  --sched-consult-danger: #dc2626;
+  --sched-consult-warning: #d97706;
+  --sched-consult-bg-primary: #ffffff;
+  --sched-consult-bg-secondary: #f8fafc;
+  --sched-consult-bg-accent: #f1f5f9;
+  --sched-consult-border: #e2e8f0;
+  --sched-consult-border-focus: #3b82f6;
+  --sched-consult-text-primary: #1e293b;
+  --sched-consult-text-secondary: #64748b;
+  --sched-consult-text-muted: #94a3b8;
+  --sched-consult-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --sched-consult-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --sched-consult-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --sched-consult-radius: 0.75rem;
+  --sched-consult-radius-sm: 0.5rem;
+  --sched-consult-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Header */
-.schedule-consultation h2 {
-  text-align: center;
-  color: #333333;
-  margin-bottom: 1.5rem;
+/* Main Wrapper */
+.sched-consult-wrapper {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 2rem 1rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.6;
+  color: var(--sched-consult-text-primary);
 }
 
-/* Form */
-.schedule-consultation form {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.schedule-consultation input,
-.schedule-consultation textarea {
-  padding: 0.7rem 1rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
-  outline: none;
-  transition: border 0.2s, box-shadow 0.2s;
-}
-
-.schedule-consultation input:focus,
-.schedule-consultation textarea:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
-}
-
-.schedule-consultation textarea {
-  grid-column: span 2;
-  resize: vertical;
-  min-height: 80px;
-}
-
-/* Submit button */
-.schedule-consultation button[type='submit'] {
-  grid-column: span 2;
-  padding: 0.8rem 1.5rem;
-  background-color: #007bff;
-  color: white;
-  font-size: 1rem;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-}
-
-.schedule-consultation button[type='submit']:hover {
-  background-color: #0056b3;
-  transform: translateY(-2px);
-}
-
-/* Table */
-.schedule-consultation h3 {
-  margin-bottom: 1rem;
-  color: #555555;
-}
-
-.schedule-consultation table {
-  width: 100%;
-  border-collapse: collapse;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.schedule-consultation th,
-.schedule-consultation td {
-  padding: 0.8rem 1rem;
-  text-align: left;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.schedule-consultation th {
-  background-color: #f8f8f8;
-  color: #333333;
-  font-weight: 600;
-}
-
-.schedule-consultation tr:hover {
-  background-color: #f1f9ff;
-}
-
-/* Action buttons container */
-.schedule-consultation td .action-buttons {
+.sched-consult-container {
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
-  gap: 0.5rem;
-  justify-content: center;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-/* Icon buttons */
-.schedule-consultation .action-btn {
+/* Header Section */
+.sched-consult-header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.sched-consult-title {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 1rem;
-  color: #fff;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.sched-consult-icon {
+  font-size: 3rem;
+  animation: sched-consult-pulse 2s infinite;
+}
+
+@keyframes sched-consult-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.sched-consult-heading {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, var(--sched-consult-primary) 0%, var(--sched-consult-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sched-consult-subtitle {
+  font-size: 1.125rem;
+  color: var(--sched-consult-text-secondary);
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Form Card */
+.sched-consult-form-card {
+  background: var(--sched-consult-bg-primary);
+  border-radius: var(--sched-consult-radius);
+  padding: 2rem;
+  box-shadow: var(--sched-consult-shadow-lg);
+  border: 1px solid var(--sched-consult-border);
   position: relative;
+  overflow: hidden;
 }
 
-/* Edit button */
-.schedule-consultation .edit-btn {
-  background-color: #ffc107;
-}
-
-.schedule-consultation .edit-btn:hover {
-  background-color: #e0a800;
-  transform: scale(1.1);
-}
-
-/* Delete button */
-.schedule-consultation .delete-btn {
-  background-color: #dc3545;
-}
-
-.schedule-consultation .delete-btn:hover {
-  background-color: #b02a37;
-  transform: scale(1.1);
-}
-
-/* Tooltip */
-.schedule-consultation .action-btn[data-tooltip]:hover::after {
-  content: attr(data-tooltip);
+.sched-consult-form-card::before {
+  content: '';
   position: absolute;
-  background-color: #333;
-  color: #fff;
-  padding: 0.3rem 0.6rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  top: -35px;
-  white-space: nowrap;
-  opacity: 1;
-  pointer-events: none;
-  z-index: 10;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--sched-consult-primary), var(--sched-consult-success));
 }
 
-/* Responsive */
+.sched-consult-form {
+  width: 100%;
+}
+
+.sched-consult-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.sched-consult-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sched-consult-full-width {
+  grid-column: 1 / -1;
+}
+
+.sched-consult-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--sched-consult-text-primary);
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.sched-consult-input,
+.sched-consult-textarea {
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--sched-consult-border);
+  border-radius: var(--sched-consult-radius-sm);
+  font-size: 1rem;
+  transition: var(--sched-consult-transition);
+  background: var(--sched-consult-bg-primary);
+  color: var(--sched-consult-text-primary);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sched-consult-input:focus,
+.sched-consult-textarea:focus {
+  outline: none;
+  border-color: var(--sched-consult-border-focus);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+  transform: translateY(-1px);
+}
+
+.sched-consult-input::placeholder,
+.sched-consult-textarea::placeholder {
+  color: var(--sched-consult-text-muted);
+  font-style: italic;
+}
+
+.sched-consult-textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+}
+
+/* Form Actions */
+.sched-consult-form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.sched-consult-submit-btn {
+  background: linear-gradient(135deg, var(--sched-consult-primary) 0%, var(--sched-consult-primary-hover) 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: var(--sched-consult-radius-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--sched-consult-transition);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: var(--sched-consult-shadow);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.sched-consult-submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sched-consult-shadow-lg);
+}
+
+.sched-consult-submit-btn:active {
+  transform: translateY(0);
+}
+
+.sched-consult-cancel-btn {
+  background: var(--sched-consult-bg-secondary);
+  color: var(--sched-consult-text-secondary);
+  border: 2px solid var(--sched-consult-border);
+  padding: 1rem 2rem;
+  border-radius: var(--sched-consult-radius-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--sched-consult-transition);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.sched-consult-cancel-btn:hover {
+  background: var(--sched-consult-border);
+  transform: translateY(-1px);
+}
+
+.sched-consult-btn-icon {
+  font-size: 1.125rem;
+}
+
+/* List Section */
+.sched-consult-list-section {
+  margin-top: 1rem;
+}
+
+.sched-consult-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 0 0.5rem;
+}
+
+.sched-consult-list-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--sched-consult-text-primary);
+  margin: 0;
+}
+
+.sched-consult-count {
+  background: var(--sched-consult-primary);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+/* Cards Container */
+.sched-consult-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Individual Card */
+.sched-consult-card {
+  background: var(--sched-consult-bg-primary);
+  border-radius: var(--sched-consult-radius);
+  padding: 1.5rem;
+  box-shadow: var(--sched-consult-shadow);
+  border: 1px solid var(--sched-consult-border);
+  transition: var(--sched-consult-transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.sched-consult-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--sched-consult-success), var(--sched-consult-primary));
+}
+
+.sched-consult-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--sched-consult-shadow-lg);
+}
+
+.sched-consult-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.sched-consult-doctor-info {
+  flex: 1;
+}
+
+.sched-consult-doctor-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--sched-consult-text-primary);
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sched-consult-datetime {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sched-consult-date,
+.sched-consult-time {
+  font-size: 0.875rem;
+  color: var(--sched-consult-text-secondary);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sched-consult-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sched-consult-action-btn {
+  background: var(--sched-consult-bg-accent);
+  border: 1px solid var(--sched-consult-border);
+  border-radius: var(--sched-consult-radius-sm);
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: var(--sched-consult-transition);
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+}
+
+.sched-consult-edit-btn:hover {
+  background: #fef3c7;
+  border-color: var(--sched-consult-warning);
+  transform: scale(1.1);
+}
+
+.sched-consult-delete-btn:hover {
+  background: #fecaca;
+  border-color: var(--sched-consult-danger);
+  transform: scale(1.1);
+}
+
+.sched-consult-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sched-consult-reason,
+.sched-consult-notes {
+  font-size: 0.925rem;
+  line-height: 1.6;
+  color: var(--sched-consult-text-primary);
+}
+
+.sched-consult-reason strong,
+.sched-consult-notes strong {
+  color: var(--sched-consult-primary);
+  font-weight: 600;
+}
+
+/* Empty State */
+.sched-consult-empty-state {
+  text-align: center;
+  padding: 3rem;
+  grid-column: 1 / -1;
+  background: var(--sched-consult-bg-primary);
+  border-radius: var(--sched-consult-radius);
+  border: 2px dashed var(--sched-consult-border);
+}
+
+.sched-consult-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.sched-consult-empty-state h3 {
+  font-size: 1.5rem;
+  color: var(--sched-consult-text-primary);
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.sched-consult-empty-state p {
+  color: var(--sched-consult-text-secondary);
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
-  .schedule-consultation form {
+  .sched-consult-wrapper {
+    padding: 1rem 0.5rem;
+  }
+
+  .sched-consult-container {
+    gap: 1.5rem;
+  }
+
+  .sched-consult-heading {
+    font-size: 1.75rem;
+  }
+
+  .sched-consult-title {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .sched-consult-form-card {
+    padding: 1.5rem;
+  }
+
+  .sched-consult-form-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .sched-consult-cards-container {
     grid-template-columns: 1fr;
   }
 
-  .schedule-consultation textarea,
-  .schedule-consultation button[type='submit'] {
-    grid-column: span 1;
+  .sched-consult-list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
   }
 
-  .schedule-consultation table,
-  .schedule-consultation th,
-  .schedule-consultation td {
-    font-size: 0.9rem;
+  .sched-consult-card-header {
+    flex-direction: column;
+    gap: 1rem;
   }
+
+  .sched-consult-actions {
+    align-self: flex-end;
+  }
+
+  .sched-consult-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sched-consult-submit-btn,
+  .sched-consult-cancel-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .sched-consult-wrapper {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .sched-consult-heading {
+    font-size: 1.5rem;
+  }
+
+  .sched-consult-form-card {
+    padding: 1rem;
+  }
+
+  .sched-consult-card {
+    padding: 1rem;
+  }
+
+  .sched-consult-empty-state {
+    padding: 2rem 1rem;
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sched-consult-bg-primary: #1e293b;
+    --sched-consult-bg-secondary: #334155;
+    --sched-consult-bg-accent: #475569;
+    --sched-consult-border: #475569;
+    --sched-consult-text-primary: #f8fafc;
+    --sched-consult-text-secondary: #cbd5e1;
+    --sched-consult-text-muted: #94a3b8;
+  }
+
+  .sched-consult-wrapper {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  }
+
+  .sched-consult-card::before,
+  .sched-consult-form-card::before {
+    opacity: 0.8;
+  }
+}
+
+/* Input hints styling */
+.sched-consult-input-hint {
+  font-size: 0.75rem;
+  color: var(--sched-consult-text-muted);
+  font-style: italic;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+/* Better spacing for cards */
+.sched-consult-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 1.75rem;
+}
+
+/* Card enhancements */
+.sched-consult-card {
+  background: var(--sched-consult-bg-primary);
+  border-radius: var(--sched-consult-radius);
+  padding: 1.75rem;
+  box-shadow: var(--sched-consult-shadow);
+  border: 1px solid var(--sched-consult-border);
+  transition: var(--sched-consult-transition);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Better doctor name formatting */
+.sched-consult-doctor-name {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--sched-consult-text-primary);
+  margin: 0 0 0.875rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  line-height: 1.3;
+}
+
+/* Enhanced card body */
+.sched-consult-reason,
+.sched-consult-notes {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--sched-consult-text-primary);
+  padding: 0.75rem;
+  background: var(--sched-consult-bg-accent);
+  border-radius: var(--sched-consult-radius-sm);
+  border-left: 3px solid var(--sched-consult-primary);
 }
