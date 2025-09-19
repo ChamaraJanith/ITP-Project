@@ -1,3 +1,4 @@
+// PrescriptionPage.js
 import React, { useRef, useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CanvasPad from "../Doctor/CanvasPad";
@@ -11,6 +12,8 @@ import {
   updatePrescription,
 } from "../../../services/prescriptionService";
 import { QrReader } from "react-qr-reader";
+import LoadingSpinner from "./LoadingSpinner";
+import ErrorBoundary from "./ErrBound";
 
 import "./PrescriptionPage.css";
 
@@ -24,6 +27,7 @@ const PrescriptionPage = ({ patientFromParent }) => {
 
   const [prescriptions, setPrescriptions] = useState([]);
   const [editingPrescription, setEditingPrescription] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [scannedPatientId, setScannedPatientId] = useState(null);
   const [scanning, setScanning] = useState(false);
@@ -31,6 +35,7 @@ const PrescriptionPage = ({ patientFromParent }) => {
   // Fetch all prescriptions and filter today's only
   const fetchPrescriptions = async () => {
     try {
+      setIsLoading(true);
       const res = await getAllPrescriptions();
       const allPrescriptions = res.data?.data || [];
       const today = new Date();
@@ -45,6 +50,8 @@ const PrescriptionPage = ({ patientFromParent }) => {
     } catch (err) {
       console.error("Failed to fetch prescriptions", err);
       setPrescriptions([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -148,6 +155,12 @@ const PrescriptionPage = ({ patientFromParent }) => {
     }
   };
 
+  // Format date for display
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+  };
+
   return (
     <div className="pp-wrapper">
       <div className="pp-container">
@@ -192,7 +205,7 @@ const PrescriptionPage = ({ patientFromParent }) => {
                 >
                   {scanning ? (
                     <>
-                      <span className="pp-loading"></span>
+                      <LoadingSpinner />
                       Stop Scanning
                     </>
                   ) : (
@@ -261,7 +274,7 @@ const PrescriptionPage = ({ patientFromParent }) => {
                 <button onClick={handleConvert} disabled={processing} className="pp-canvas-button pp-convert">
                   {processing ? (
                     <>
-                      <span className="pp-loading"></span>
+                      <LoadingSpinner />
                       Converting...
                     </>
                   ) : (
@@ -284,24 +297,38 @@ const PrescriptionPage = ({ patientFromParent }) => {
 
           {/* RIGHT SIDE */}
           <div className="pp-right-panel">
-            <PrescriptionForm
-              doctor={doctor}
-              parentPatient={patient}
-              ocrTextFromCanvas={ocrText}
-              onSaved={handleSaved}
-              editingPrescription={editingPrescription}
-              scannedPatientId={scannedPatientId}
-            />
+            {/* Wrap PrescriptionForm with ErrorBoundary */}
+            <ErrorBoundary>
+              <PrescriptionForm
+                doctor={doctor}
+                parentPatient={patient}
+                ocrTextFromCanvas={ocrText}
+                onSaved={handleSaved}
+                editingPrescription={editingPrescription}
+                scannedPatientId={scannedPatientId}
+              />
+            </ErrorBoundary>
           </div>
         </div>
 
         {/* Prescriptions list */}
         <div className="pp-prescription-list">
           <div className="pp-list-header">
-            <h2 className="pp-list-title">Today's Prescriptions</h2>
-            <div className="pp-list-count">{prescriptions.length} prescriptions</div>
+            <h2 className="pp-list-title">📋 Today's Prescriptions</h2>
+            <div className="pp-list-count">
+              {isLoading ? (
+                <LoadingSpinner />
+              ) : (
+                `${prescriptions.length} prescription${prescriptions.length !== 1 ? 's' : ''}`
+              )}
+            </div>
           </div>
-          {prescriptions.length === 0 ? (
+          {isLoading ? (
+            <div className="pp-loading-container">
+              <LoadingSpinner size="large" />
+              <div className="pp-loading-text">Loading prescriptions...</div>
+            </div>
+          ) : prescriptions.length === 0 ? (
             <div className="pp-no-prescriptions">
               <div className="pp-no-data-icon">📋</div>
               <div className="pp-no-data-text">No prescriptions found for today.</div>
@@ -311,17 +338,17 @@ const PrescriptionPage = ({ patientFromParent }) => {
               <table className="pp-prescription-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Patient</th>
-                    <th>Diagnosis</th>
-                    <th>Doctor</th>
-                    <th>Actions</th>
+                    <th>DATE</th>
+                    <th>PATIENT</th>
+                    <th>DIAGNOSIS</th>
+                    <th>DOCTOR</th>
+                    <th>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {prescriptions.map((p) => (
                     <tr key={p._id}>
-                      <td>{new Date(p.date).toLocaleDateString()}</td>
+                      <td>{formatDate(p.date)}</td>
                       <td>{p.patientName}</td>
                       <td className="pp-diagnosis">{p.diagnosis}</td>
                       <td className="pp-doctor">
