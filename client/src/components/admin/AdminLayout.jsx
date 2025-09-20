@@ -109,18 +109,6 @@ const AdminLayout = ({ admin, title, children }) => {
           {children}
         </div>
       </main>
-
-      {/* Admin Footer */}
-      <footer className="admin-footer">
-        <div className="admin-footer-content">
-          <p>&copy; 2025 HealX Healthcare Admin Portal. All rights reserved.</p>
-          <div className="admin-footer-links">
-            <Link to="/" target="_blank">🏠 Main Site</Link>
-            <span>|</span>
-            <span>Logged in as: {adminEmail}</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

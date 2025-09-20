@@ -668,14 +668,6 @@ ${admin?.name || 'Admin User'}`);
                   padding: 3px 8px; 
                   border-radius: 4px;
               }
-              .footer {
-                  margin-top: 50px;
-                  text-align: center;
-                  color: #6c757d;
-                  font-size: 0.9em;
-                  padding-top: 25px;
-                  border-top: 1px solid #dee2e6;
-              }
               @media print {
                   body { margin: 0; background: white; }
                   .container { box-shadow: none; }
@@ -850,17 +842,6 @@ ${admin?.name || 'Admin User'}`);
           </div>
       `;
     }
-
-    html += `
-              <div class="footer">
-                  <p>📋 This report was generated automatically by the Hospital Management System</p>
-                  <p>© ${new Date().getFullYear()} Your Hospital Name - All rights reserved</p>
-                  <p>For questions about this report, contact: ${admin?.email || 'admin@hospital.com'}</p>
-              </div>
-          </div>
-      </body>
-      </html>
-    `;
 
     const newWindow = window.open();
     newWindow.document.write(html);

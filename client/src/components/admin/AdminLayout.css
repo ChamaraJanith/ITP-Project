@@ -41,15 +41,16 @@
 /* Fixed Header */
 .admin-header {
   position: fixed;
-  top: 70px;
+  top: 70px; /* Change from 70px to 0 for true top positioning */
   left: 0;
   right: 0;
   height: var(--admin-header-height);
   background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-secondary) 100%);
   backdrop-filter: blur(10px);
   box-shadow: var(--admin-shadow-lg);
-  z-index: 1000;
+  z-index: 99999;
   transition: var(--admin-transition);
+  width: 100%; /* Ensure full width */
 }
 
 .admin-header::before {
@@ -71,9 +72,10 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 2rem;
-  position: relative;
-  z-index: 1;
+  position: relative; /* Remove the duplicate position: fixed */
+  z-index: 1; /* Lower z-index since parent handles stacking */
 }
+
 
 /* Logo Section */
 .admin-logo {
