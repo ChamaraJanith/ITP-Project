@@ -144,7 +144,6 @@ const PrescriptionSchema = yup.object({
   
   patientId: patientIdValidation,
   
-  // Add doctor validation
   doctor: yup.object({
     name: yup.string().required("Doctor name is required"),
     specialization: yup.string().required("Doctor specialization is required"),
@@ -192,440 +191,25 @@ const validateNumberInput = (value) => {
   return value.replace(/[^0-9.]/g, '');
 };
 
-// Dosage validation - allow numbers, decimal points, and units
 const validateDosageInput = (value) => {
   return value.replace(/[^0-9.\smgmltabletcapsuledropstsp tbspunitunits]/gi, '');
 };
 
-// Frequency validation - allow numbers, spaces, and time-related words
 const validateFrequencyInput = (value) => {
   return value.replace(/[^a-zA-Z0-9\s\/\-\.\(\)]/g, '');
 };
 
-// Duration validation - allow numbers and time units
 const validateDurationInput = (value) => {
   return value.replace(/[^0-9\sdayweekmonthyear]/gi, '');
 };
 
-// Notes validation - allow alphanumeric and common punctuation
 const validateNotesInput = (value) => {
   return value.replace(/[^a-zA-Z0-9\s\&-_.,;:!?'"()[\]{}]/g, '');
 };
 
-const PrescriptionForm = ({
-  doctor: initialDoctor,
-  parentPatient,
-  ocrTextFromCanvas,
-  onSaved,
-  editingPrescription,
-  prescriptions,
-  scannedPatientId,
-  hospitalLogo, // Added hospital logo prop
-}) => {
-  // State for doctor information with fallback values from controller
-  const [doctor, setDoctor] = useState(initialDoctor || {
-    id: "TEMP_DOCTOR_ID",
-    name: "Dr. Gayath Dahanayaka",
-    specialization: "General",
-  });
-  
-  const [signature, setSignature] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const signatureRef = useRef(null);
-  
-  const {
-    control,
-    register,
-    handleSubmit,
-    setValue,
-    reset,
-    watch,
-    trigger,
-    formState: { errors, isSubmitting, isValid },
-  } = useForm({
-    resolver: yupResolver(PrescriptionSchema),
-    defaultValues: defaultValues(parentPatient, doctor),
-    mode: "onChange",
-  });
-
-  // Set doctor values in form when doctor state changes
-  useEffect(() => {
-    if (doctor) {
-      setValue("doctor.name", doctor.name);
-      setValue("doctor.specialization", doctor.specialization);
-      console.log("Setting doctor values in form:", doctor);
-    }
-  }, [doctor, setValue]);
-
-  // Set doctor values when editing prescription
-  useEffect(() => {
-    if (editingPrescription) {
-      const doctorName = editingPrescription.doctorName || doctor?.name || "Dr. Gayath Dahanayaka";
-      const doctorSpecialization = editingPrescription.doctorSpecialization || doctor?.specialization || "General";
-      
-      setValue("doctor.name", doctorName);
-      setValue("doctor.specialization", doctorSpecialization);
-      
-      console.log("Setting doctor values from editing prescription:", { doctorName, doctorSpecialization });
-    }
-  }, [editingPrescription, doctor, setValue]);
-
-  const { fields, append, remove } = useFieldArray({ control, name: "medicines" });
-
-  const [activeField, setActiveField] = useState(null);
-  const [search, setSearch] = useState("");
-  const [patientsList, setPatientsList] = useState([]);
-  const [selectedPatient, setSelectedPatient] = useState(parentPatient || null);
-  const [searchError, setSearchError] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-
-  // Watch form values for additional validation
-  const watchedMedicines = watch("medicines");
-  const watchedDiagnosis = watch("diagnosis");
-
-  // Filter today's prescriptions
-  const todaysPrescriptions = React.useMemo(() => {
-    if (!prescriptions) return [];
-    return filterTodaysPrescriptions(prescriptions);
-  }, [prescriptions]);
-
-  // Add this useEffect to handle scanned patient ID
-  useEffect(() => {
-    if (!scannedPatientId || selectedPatient) return;
-
-    const fetchScannedPatient = async () => {
-      try {
-        setIsSearching(true);
-        setSearchError("");
-        
-        // Try to fetch patient by ID directly
-        const res = await fetch(`http://localhost:7000/api/patients/${scannedPatientId}`);
-        
-        if (res.ok) {
-          const data = await res.json();
-          const patient = data.patient || data;
-          
-          if (patient) {
-            handleSelectPatient({
-              patientId: patient.patientId,
-              firstName: patient.firstName,
-              lastName: patient.lastName,
-              email: patient.email,
-              phone: patient.phone,
-              gender: patient.gender,
-              dateOfBirth: patient.dateOfBirth,
-              bloodGroup: patient.bloodGroup,
-              allergies: patient.allergies || []
-            });
-            return;
-          }
-        }
-        
-        // If direct fetch fails, try searching by patient ID
-        const searchRes = await fetch(`http://localhost:7000/api/patients?search=${encodeURIComponent(scannedPatientId)}`);
-        
-        if (searchRes.ok) {
-          const searchData = await searchRes.json();
-          
-          if (Array.isArray(searchData) && searchData.length > 0) {
-            // Find exact match first, otherwise take first result
-            const exactMatch = searchData.find(p => 
-              p._id === scannedPatientId || 
-              p.patientId === scannedPatientId
-            );
-            
-            const patientToSelect = exactMatch || searchData[0];
-            handleSelectPatient(patientToSelect);
-          } else {
-            setSearchError(`No patient found with ID: ${scannedPatientId}`);
-          }
-        } else {
-          setSearchError("Failed to search for scanned patient");
-        }
-        
-      } catch (err) {
-        console.error("Failed to fetch scanned patient:", err);
-        setSearchError("Failed to load scanned patient data");
-      } finally {
-        setIsSearching(false);
-      }
-    };
-
-    fetchScannedPatient();
-  }, [scannedPatientId, selectedPatient]);
-
-  // Prefill form for editing
-  useEffect(() => {
-    if (!editingPrescription) return;
-
-    // FIXED: Ensure patientId is properly set from multiple sources
-    const patientId = editingPrescription.patientId || 
-                      editingPrescription.patient?._id || 
-                      editingPrescription.patient?.patientId || 
-                      "";
-
-    console.log("Editing prescription with patientId:", patientId);
-
-    reset({
-      date: editingPrescription.date?.slice(0, 10) || "",
-      diagnosis: editingPrescription.diagnosis || "",
-      medicines: editingPrescription.medicines?.length
-        ? editingPrescription.medicines
-        : [{ name: "", dosage: "", frequency: "", duration: "", notes: "" }],
-      notes: editingPrescription.notes || "",
-      patientId: patientId,
-      doctor: {
-        name: editingPrescription.doctorName || doctor?.name || "Dr. Gayath Dahanayaka",
-        specialization: editingPrescription.doctorSpecialization || doctor?.specialization || "General",
-      },
-    });
-
-    // FIXED: Set selectedPatient immediately if available in prescription
-    if (editingPrescription.patient) {
-      const patient = editingPrescription.patient;
-      setSelectedPatient(patient);
-      setSearch(`${patient.firstName} ${patient.lastName} ${patient.patientId || patient._id}`);
-    } else if (patientId) {
-      // Fetch full patient info for dateOfBirth and other fields
-      fetch(`http://localhost:7000/api/patients/${patientId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (!data?.patient) return;
-
-          const patient = data.patient;
-
-          setSelectedPatient({
-            firstName: patient.firstName,
-            lastName: patient.lastName,
-            email: patient.email,
-            phone: patient.phone,
-            gender: patient.gender,
-            dateOfBirth: patient.dateOfBirth
-              ? new Date(patient.dateOfBirth).toLocaleDateString()
-              : "",
-            bloodGroup: patient.bloodGroup,
-            allergies: patient.allergies || []
-          });
-          setSearch(`${patient.firstName} ${patient.lastName} ${patient.patientId || patient._id}`);
-        })
-        .catch(err => console.error("Failed to fetch patient for editing:", err));
-    }
-  }, [editingPrescription, reset, doctor]);
-
-  // FIXED: Trigger validation after setting patient in editing mode
-  useEffect(() => {
-    if (editingPrescription && selectedPatient) {
-      trigger("patientId");
-      console.log("Triggered validation for patientId in editing mode");
-    }
-  }, [selectedPatient, editingPrescription, trigger]);
-
-  // Enhanced patient search with validation
-  const handleSearchButton = async () => {
-    setSearchError("");
-    
-    if (!search.trim()) {
-      setSearchError("Enter a patient name to search");
-      return;
-    }
-
-    if (search.trim().length < 2) {
-      setSearchError("Search term must be at least 2 characters");
-      return;
-    }
-
-    try {
-      setIsSearching(true);
-      const res = await fetch(`http://localhost:7000/api/patients?search=${encodeURIComponent(search)}`);
-      if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-      
-      const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) {
-        setSearchError("No patient found with that name");
-        setPatientsList([]);
-        setSelectedPatient(null);
-        setValue("patientId", "");
-        return;
-      }
-      
-      setPatientsList(data);
-      setSearchError("");
-    } catch (err) {
-      console.error("Patient search failed:", err);
-      setSearchError("Failed to search patients. Please try again.");
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleSelectPatient = (patient) => {
-    if (!patient.patientId && !patient._id) {
-      setSearchError("Invalid patient data");
-      return;
-    }
-
-    const patientId = patient.patientId || patient._id;
-    setSelectedPatient(patient);
-    setValue("patientId", patientId);
-    setSearch(`${patient.firstName} ${patient.lastName} (${patientId})`);
-    setPatientsList([]);
-    setSearchError("");
-    trigger("patientId");
-  };
-
-  const handleSearchChange = (e) => {
-    const value = validateNameNumberInput(e.target.value);
-    setSearch(value);
-    setSearchError("");
-    
-    if (value.length === 0) {
-      setSelectedPatient(null);
-      setValue("patientId", "");
-    }
-  };
-
-  useEffect(() => {
-    if (parentPatient) {
-      setSelectedPatient(parentPatient);
-      setValue("patientId", parentPatient.patientId || parentPatient._id);
-      setSearch(`${parentPatient.firstName} ${parentPatient.lastName}`);
-    }
-  }, [parentPatient, setValue]);
-
-  // OCR text integration with validation
-  useEffect(() => {
-    if (!ocrTextFromCanvas || !activeField) return;
-    
-    let processedValue = ocrTextFromCanvas;
-    
-    if (activeField.includes('name') && activeField.includes('medicines')) {
-      processedValue = validateNameInput(ocrTextFromCanvas);
-    } else if (activeField.includes('dosage')) {
-      processedValue = ocrTextFromCanvas;
-    }
-    
-    setValue(activeField, processedValue);
-    trigger(activeField);
-  }, [ocrTextFromCanvas, activeField, setValue, trigger]);
-
-  // Enhanced form submission with final validation
-  const onSubmit = async (data) => {
-    if (!selectedPatient) {
-      alert("Please select a patient.");
-      return;
-    }
-
-    const totalMedicines = data.medicines.length;
-    if (totalMedicines > 10) {
-      alert("Cannot prescribe more than 10 medicines at once.");
-      return;
-    }
-
-    // Check for drug interactions
-    const medicineNames = data.medicines.map(m => m.name.toLowerCase());
-    const commonInteractions = [
-      ['aspirin', 'warfarin'],
-      ['paracetamol', 'alcohol'],
-    ];
-
-    for (const interaction of commonInteractions) {
-      if (interaction.every(drug => medicineNames.some(name => name.includes(drug)))) {
-        const confirmProceed = window.confirm(
-          `Warning: Potential drug interaction detected between ${interaction.join(' and ')}. Do you want to proceed?`
-        );
-        if (!confirmProceed) return;
-      }
-    }
-
-    try {
-      setIsSaving(true);
-      
-      // Get signature if available
-      const signatureData = signatureRef.current ? signatureRef.current.getSignature() : null;
-      
-      const payload = {
-        date: data.date,
-        diagnosis: data.diagnosis,
-        medicines: data.medicines,
-        notes: data.notes,
-        patientId: selectedPatient.patientId || selectedPatient._id,
-        patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
-        patientEmail: selectedPatient.email,
-        patientPhone: selectedPatient.phone,
-        patientGender: selectedPatient.gender,
-        bloodGroup: selectedPatient.bloodGroup,
-        patientAllergies: selectedPatient.allergies,
-        doctorId: doctor.id,
-        doctorName: data.doctor.name,
-        doctorSpecialization: data.doctor.specialization,
-        signature: signatureData
-      };
-
-      let res;
-      if (editingPrescription) {
-        // FIXED: Ensure we have the prescription ID
-        const prescriptionId = editingPrescription._id || editingPrescription.id;
-        if (!prescriptionId) {
-          alert("Error: Prescription ID is missing for update.");
-          return;
-        }
-        
-        // FIXED: Use the correct ID for update
-        res = await updatePrescription(prescriptionId, payload);
-        alert("Prescription updated successfully.");
-        
-        // FIXED: Clear form after update
-        reset(defaultValues(null, doctor));
-        setSearch("");
-        setSelectedPatient(null);
-        setSignature(null);
-      } else {
-        res = await createPrescription(payload);
-        alert("Prescription saved successfully.");
-        
-        // FIXED: Clear form after create
-        reset(defaultValues(null, doctor));
-        setSearch("");
-        setSelectedPatient(null);
-        setSignature(null);
-      }
-
-      if (onSaved) onSaved(res.data?.data || res.data);
-    } catch (err) {
-      console.error(err);
-      alert(err?.response?.data?.message || "Failed to save prescription.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const addMedicine = () => {
-    if (fields.length >= 10) {
-      alert("Cannot add more than 10 medicines");
-      return;
-    }
-    append({ name: "", dosage: "", frequency: "", duration: "", notes: "" });
-  };
-
-  // Handle medicine selection from autocomplete
-  const handleMedicineSelect = (index, medicine) => {
-    setValue(`medicines.${index}.name`, medicine.name);
-    setValue(`medicines.${index}.dosage`, medicine.dosage);
-    setValue(`medicines.${index}.frequency`, medicine.frequency);
-    setValue(`medicines.${index}.duration`, medicine.duration);
-    trigger(`medicines.${index}`);
-  };
-
-  // Enhanced PDF generation function
-  const generateProfessionalPDF = (selectedPatient, diagnosis, medicines, additionalNotes, doctor, date) => {
-    if (!selectedPatient) {
-      alert("Please select a patient to generate PDF");
-      return;
-    }
-
-    setIsGeneratingPDF(true);
-    
+// ✅ NEW: Function to generate PDF and return as buffer
+const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNotes, doctor, date, signature, hospitalLogo) => {
+  return new Promise((resolve, reject) => {
     try {
       const doc = new jsPDF({ unit: "mm", format: "a4" });
       const pageWidth = 210;
@@ -654,7 +238,6 @@ const PrescriptionForm = ({
       // Add hospital logo if available
       if (hospitalLogo) {
         try {
-          // Position logo on the right side of the header
           doc.addImage(hospitalLogo, 'PNG', pageWidth - margin - 40, y + 5, 30, 20);
         } catch (e) {
           console.error("Error adding hospital logo to PDF:", e);
@@ -796,7 +379,7 @@ const PrescriptionForm = ({
 
       // Table headers
       doc.setFontSize(9);
-      const colWidths = [8, 45, 25, 30, 25, 32]; // Adjusted column widths
+      const colWidths = [8, 45, 25, 30, 25, 32];
       const headers = ["S/N", "Medicine", "Dosage", "Frequency", "Duration", "Notes"];
       const headerHeight = 8;
       
@@ -966,11 +549,551 @@ const PrescriptionForm = ({
       doc.setLineWidth(1);
       doc.rect(5, 5, pageWidth - 10, pageHeight - 10);
 
-      // Save file
+      // Return PDF as buffer
+      const pdfBuffer = doc.output('arraybuffer');
+      resolve(pdfBuffer);
+
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+// ✅ NEW: Function to send email with PDF attachment
+const sendPrescriptionEmail = async (prescriptionData, pdfBuffer, isUpdate = false) => {
+  try {
+    console.log('📧 Preparing to send prescription email...');
+    
+    const response = await fetch('http://localhost:7000/api/prescription-notifications/send-prescription', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prescriptionData: prescriptionData,
+        pdfBuffer: Array.from(new Uint8Array(pdfBuffer)), // Convert ArrayBuffer to array for JSON
+        isUpdate: isUpdate
+      })
+    });
+
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to send email');
+    }
+
+    console.log('✅ Prescription email sent successfully!', result);
+    return result;
+
+  } catch (error) {
+    console.error('❌ Error sending prescription email:', error);
+    throw error;
+  }
+};
+
+const PrescriptionForm = ({
+  doctor: initialDoctor,
+  parentPatient,
+  ocrTextFromCanvas,
+  onSaved,
+  editingPrescription,
+  prescriptions,
+  scannedPatientId,
+  hospitalLogo,
+}) => {
+  // State for doctor information with fallback values from controller
+  const [doctor, setDoctor] = useState(initialDoctor || {
+    id: "TEMP_DOCTOR_ID",
+    name: "Dr. Gayath Dahanayaka",
+    specialization: "General",
+  });
+  
+  const [signature, setSignature] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false); // ✅ NEW: Email sending state
+  const signatureRef = useRef(null);
+  
+  const {
+    control,
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    watch,
+    trigger,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm({
+    resolver: yupResolver(PrescriptionSchema),
+    defaultValues: defaultValues(parentPatient, doctor),
+    mode: "onChange",
+  });
+
+  // Set doctor values in form when doctor state changes
+  useEffect(() => {
+    if (doctor) {
+      setValue("doctor.name", doctor.name);
+      setValue("doctor.specialization", doctor.specialization);
+      console.log("Setting doctor values in form:", doctor);
+    }
+  }, [doctor, setValue]);
+
+  // Set doctor values when editing prescription
+  useEffect(() => {
+    if (editingPrescription) {
+      const doctorName = editingPrescription.doctorName || doctor?.name || "Dr. Gayath Dahanayaka";
+      const doctorSpecialization = editingPrescription.doctorSpecialization || doctor?.specialization || "General";
+      
+      setValue("doctor.name", doctorName);
+      setValue("doctor.specialization", doctorSpecialization);
+      
+      console.log("Setting doctor values from editing prescription:", { doctorName, doctorSpecialization });
+    }
+  }, [editingPrescription, doctor, setValue]);
+
+  const { fields, append, remove } = useFieldArray({ control, name: "medicines" });
+
+  const [activeField, setActiveField] = useState(null);
+  const [search, setSearch] = useState("");
+  const [patientsList, setPatientsList] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState(parentPatient || null);
+  const [searchError, setSearchError] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Watch form values for additional validation
+  const watchedMedicines = watch("medicines");
+  const watchedDiagnosis = watch("diagnosis");
+
+  // Filter today's prescriptions
+  const todaysPrescriptions = React.useMemo(() => {
+    if (!prescriptions) return [];
+    return filterTodaysPrescriptions(prescriptions);
+  }, [prescriptions]);
+
+  // Add this useEffect to handle scanned patient ID
+  useEffect(() => {
+    if (!scannedPatientId || selectedPatient) return;
+
+    const fetchScannedPatient = async () => {
+      try {
+        setIsSearching(true);
+        setSearchError("");
+        
+        // Try to fetch patient by ID directly
+        const res = await fetch(`http://localhost:7000/api/patients/${scannedPatientId}`);
+        
+        if (res.ok) {
+          const data = await res.json();
+          const patient = data.patient || data;
+          
+          if (patient) {
+            handleSelectPatient({
+              patientId: patient.patientId,
+              firstName: patient.firstName,
+              lastName: patient.lastName,
+              email: patient.email,
+              phone: patient.phone,
+              gender: patient.gender,
+              dateOfBirth: patient.dateOfBirth,
+              bloodGroup: patient.bloodGroup,
+              allergies: patient.allergies || []
+            });
+            return;
+          }
+        }
+        
+        // If direct fetch fails, try searching by patient ID
+        const searchRes = await fetch(`http://localhost:7000/api/patients?search=${encodeURIComponent(scannedPatientId)}`);
+        
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          
+          if (Array.isArray(searchData) && searchData.length > 0) {
+            // Find exact match first, otherwise take first result
+            const exactMatch = searchData.find(p => 
+              p._id === scannedPatientId || 
+              p.patientId === scannedPatientId
+            );
+            
+            const patientToSelect = exactMatch || searchData[0];
+            handleSelectPatient(patientToSelect);
+          } else {
+            setSearchError(`No patient found with ID: ${scannedPatientId}`);
+          }
+        } else {
+          setSearchError("Failed to search for scanned patient");
+        }
+        
+      } catch (err) {
+        console.error("Failed to fetch scanned patient:", err);
+        setSearchError("Failed to load scanned patient data");
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    fetchScannedPatient();
+  }, [scannedPatientId, selectedPatient]);
+
+  // Prefill form for editing
+  useEffect(() => {
+    if (!editingPrescription) return;
+
+    const patientId = editingPrescription.patientId || 
+                      editingPrescription.patient?._id || 
+                      editingPrescription.patient?.patientId || 
+                      "";
+
+    console.log("Editing prescription with patientId:", patientId);
+
+    reset({
+      date: editingPrescription.date?.slice(0, 10) || "",
+      diagnosis: editingPrescription.diagnosis || "",
+      medicines: editingPrescription.medicines?.length
+        ? editingPrescription.medicines
+        : [{ name: "", dosage: "", frequency: "", duration: "", notes: "" }],
+      notes: editingPrescription.notes || "",
+      patientId: patientId,
+      doctor: {
+        name: editingPrescription.doctorName || doctor?.name || "Dr. Gayath Dahanayaka",
+        specialization: editingPrescription.doctorSpecialization || doctor?.specialization || "General",
+      },
+    });
+
+    if (editingPrescription.patient) {
+      const patient = editingPrescription.patient;
+      setSelectedPatient(patient);
+      setSearch(`${patient.firstName} ${patient.lastName} ${patient.patientId || patient._id}`);
+    } else if (patientId) {
+      fetch(`http://localhost:7000/api/patients/${patientId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data?.patient) return;
+
+          const patient = data.patient;
+
+          setSelectedPatient({
+            firstName: patient.firstName,
+            lastName: patient.lastName,
+            email: patient.email,
+            phone: patient.phone,
+            gender: patient.gender,
+            dateOfBirth: patient.dateOfBirth
+              ? new Date(patient.dateOfBirth).toLocaleDateString()
+              : "",
+            bloodGroup: patient.bloodGroup,
+            allergies: patient.allergies || []
+          });
+          setSearch(`${patient.firstName} ${patient.lastName} ${patient.patientId || patient._id}`);
+        })
+        .catch(err => console.error("Failed to fetch patient for editing:", err));
+    }
+  }, [editingPrescription, reset, doctor]);
+
+  useEffect(() => {
+    if (editingPrescription && selectedPatient) {
+      trigger("patientId");
+      console.log("Triggered validation for patientId in editing mode");
+    }
+  }, [selectedPatient, editingPrescription, trigger]);
+
+  // Enhanced patient search with validation
+  const handleSearchButton = async () => {
+    setSearchError("");
+    
+    if (!search.trim()) {
+      setSearchError("Enter a patient name to search");
+      return;
+    }
+
+    if (search.trim().length < 2) {
+      setSearchError("Search term must be at least 2 characters");
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      const res = await fetch(`http://localhost:7000/api/patients?search=${encodeURIComponent(search)}`);
+      if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+      
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) {
+        setSearchError("No patient found with that name");
+        setPatientsList([]);
+        setSelectedPatient(null);
+        setValue("patientId", "");
+        return;
+      }
+      
+      setPatientsList(data);
+      setSearchError("");
+    } catch (err) {
+      console.error("Patient search failed:", err);
+      setSearchError("Failed to search patients. Please try again.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSelectPatient = (patient) => {
+    if (!patient.patientId && !patient._id) {
+      setSearchError("Invalid patient data");
+      return;
+    }
+
+    const patientId = patient.patientId || patient._id;
+    setSelectedPatient(patient);
+    setValue("patientId", patientId);
+    setSearch(`${patient.firstName} ${patient.lastName} (${patientId})`);
+    setPatientsList([]);
+    setSearchError("");
+    trigger("patientId");
+  };
+
+  const handleSearchChange = (e) => {
+    const value = validateNameNumberInput(e.target.value);
+    setSearch(value);
+    setSearchError("");
+    
+    if (value.length === 0) {
+      setSelectedPatient(null);
+      setValue("patientId", "");
+    }
+  };
+
+  useEffect(() => {
+    if (parentPatient) {
+      setSelectedPatient(parentPatient);
+      setValue("patientId", parentPatient.patientId || parentPatient._id);
+      setSearch(`${parentPatient.firstName} ${parentPatient.lastName}`);
+    }
+  }, [parentPatient, setValue]);
+
+  // OCR text integration with validation
+  useEffect(() => {
+    if (!ocrTextFromCanvas || !activeField) return;
+    
+    let processedValue = ocrTextFromCanvas;
+    
+    if (activeField.includes('name') && activeField.includes('medicines')) {
+      processedValue = validateNameInput(ocrTextFromCanvas);
+    } else if (activeField.includes('dosage')) {
+      processedValue = ocrTextFromCanvas;
+    }
+    
+    setValue(activeField, processedValue);
+    trigger(activeField);
+  }, [ocrTextFromCanvas, activeField, setValue, trigger]);
+
+  // ✅ ENHANCED: Form submission with PDF generation and email sending
+  const onSubmit = async (data) => {
+    if (!selectedPatient) {
+      alert("Please select a patient.");
+      return;
+    }
+
+    const totalMedicines = data.medicines.length;
+    if (totalMedicines > 10) {
+      alert("Cannot prescribe more than 10 medicines at once.");
+      return;
+    }
+
+    // Check for drug interactions
+    const medicineNames = data.medicines.map(m => m.name.toLowerCase());
+    const commonInteractions = [
+      ['aspirin', 'warfarin'],
+      ['paracetamol', 'alcohol'],
+    ];
+
+    for (const interaction of commonInteractions) {
+      if (interaction.every(drug => medicineNames.some(name => name.includes(drug)))) {
+        const confirmProceed = window.confirm(
+          `Warning: Potential drug interaction detected between ${interaction.join(' and ')}. Do you want to proceed?`
+        );
+        if (!confirmProceed) return;
+      }
+    }
+
+    // Validate patient email for sending
+    if (!selectedPatient.email) {
+      const confirmWithoutEmail = window.confirm(
+        "This patient doesn't have an email address. The prescription will be saved but cannot be emailed. Do you want to continue?"
+      );
+      if (!confirmWithoutEmail) return;
+    }
+
+    try {
+      setIsSaving(true);
+      
+      // Get signature if available
+      const signatureData = signatureRef.current ? signatureRef.current.getSignature() : null;
+      
+      const payload = {
+        date: data.date,
+        diagnosis: data.diagnosis,
+        medicines: data.medicines,
+        notes: data.notes,
+        patientId: selectedPatient.patientId || selectedPatient._id,
+        patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
+        patientEmail: selectedPatient.email,
+        patientPhone: selectedPatient.phone,
+        patientGender: selectedPatient.gender,
+        bloodGroup: selectedPatient.bloodGroup,
+        patientAllergies: selectedPatient.allergies,
+        doctorId: doctor.id,
+        doctorName: data.doctor.name,
+        doctorSpecialization: data.doctor.specialization,
+        signature: signatureData
+      };
+
+      let res;
+      const isUpdate = !!editingPrescription;
+      
+      if (editingPrescription) {
+        const prescriptionId = editingPrescription._id || editingPrescription.id;
+        if (!prescriptionId) {
+          alert("Error: Prescription ID is missing for update.");
+          return;
+        }
+        
+        res = await updatePrescription(prescriptionId, payload);
+        console.log("✅ Prescription updated successfully in database");
+      } else {
+        res = await createPrescription(payload);
+        console.log("✅ Prescription created successfully in database");
+      }
+
+      const savedPrescription = res.data?.data || res.data;
+
+      // ✅ NEW: Generate PDF and send email if patient has email
+      if (selectedPatient.email) {
+        try {
+          console.log("📧 Starting PDF generation and email process...");
+          setIsSendingEmail(true);
+
+          // Generate PDF buffer
+          const pdfBuffer = await generatePDFBuffer(
+            selectedPatient,
+            data.diagnosis,
+            data.medicines,
+            data.notes,
+            doctor,
+            data.date,
+            signatureData,
+            hospitalLogo
+          );
+
+          console.log("✅ PDF buffer generated successfully");
+
+          // Prepare prescription data for email
+          const emailPrescriptionData = {
+            _id: savedPrescription._id || savedPrescription.id,
+            patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
+            patientEmail: selectedPatient.email,
+            date: data.date,
+            diagnosis: data.diagnosis,
+            medicines: data.medicines,
+            notes: data.notes,
+            doctorName: data.doctor.name,
+            doctorSpecialization: data.doctor.specialization,
+            patient: selectedPatient
+          };
+
+          // Send email with PDF attachment
+          await sendPrescriptionEmail(emailPrescriptionData, pdfBuffer, isUpdate);
+          
+          console.log("✅ Email sent successfully to patient");
+          alert(
+            isUpdate 
+              ? `Prescription updated successfully and emailed to ${selectedPatient.email}!`
+              : `Prescription saved successfully and emailed to ${selectedPatient.email}!`
+          );
+
+        } catch (emailError) {
+          console.error("❌ Email sending failed:", emailError);
+          alert(
+            `Prescription ${isUpdate ? 'updated' : 'saved'} successfully, but failed to send email: ${emailError.message}`
+          );
+        } finally {
+          setIsSendingEmail(false);
+        }
+      } else {
+        alert(
+          `Prescription ${isUpdate ? 'updated' : 'saved'} successfully. No email sent (patient email not available).`
+        );
+      }
+
+      // Clear form after successful save/update
+      reset(defaultValues(null, doctor));
+      setSearch("");
+      setSelectedPatient(null);
+      setSignature(null);
+
+      if (onSaved) onSaved(savedPrescription);
+
+    } catch (err) {
+      console.error("❌ Prescription save/update failed:", err);
+      alert(err?.response?.data?.message || "Failed to save prescription.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const addMedicine = () => {
+    if (fields.length >= 10) {
+      alert("Cannot add more than 10 medicines");
+      return;
+    }
+    append({ name: "", dosage: "", frequency: "", duration: "", notes: "" });
+  };
+
+  // Handle medicine selection from autocomplete
+  const handleMedicineSelect = (index, medicine) => {
+    setValue(`medicines.${index}.name`, medicine.name);
+    setValue(`medicines.${index}.dosage`, medicine.dosage);
+    setValue(`medicines.${index}.frequency`, medicine.frequency);
+    setValue(`medicines.${index}.duration`, medicine.duration);
+    trigger(`medicines.${index}`);
+  };
+
+  // Enhanced PDF generation function
+  const generateProfessionalPDF = async (selectedPatient, diagnosis, medicines, additionalNotes, doctor, date) => {
+    if (!selectedPatient) {
+      alert("Please select a patient to generate PDF");
+      return;
+    }
+
+    setIsGeneratingPDF(true);
+    
+    try {
+      const signatureData = signatureRef.current ? signatureRef.current.getSignature() : null;
+      const pdfBuffer = await generatePDFBuffer(
+        selectedPatient,
+        diagnosis,
+        medicines,
+        additionalNotes,
+        doctor,
+        date,
+        signatureData,
+        hospitalLogo
+      );
+
+      // Convert buffer to blob and download
+      const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
       const safeFirst = (selectedPatient.firstName || "Patient").replace(/\s+/g, "_");
       const safeLast = (selectedPatient.lastName || "").replace(/\s+/g, "_");
       const fileDate = new Date().toISOString().slice(0,10).replace(/-/g,"");
-      doc.save(`Prescription_${safeFirst}_${safeLast}_${fileDate}.pdf`);
+      link.download = `Prescription_${safeFirst}_${safeLast}_${fileDate}.pdf`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Failed to generate PDF. Please try again.");
@@ -1053,7 +1176,7 @@ const PrescriptionForm = ({
             </div>
             <div className="pf-patient-info-item">
               <span className="pf-patient-info-label">Email:</span>
-              <span>{selectedPatient.email}</span>
+              <span>{selectedPatient.email || "❌ No Email"}</span>
             </div>
             <div className="pf-patient-info-item">
               <span className="pf-patient-info-label">Phone:</span>
@@ -1080,6 +1203,8 @@ const PrescriptionForm = ({
           type="date" 
           {...register("date")} 
           onFocus={() => setActiveField("date")} 
+          max={new Date().toISOString().split('T')[0]}
+          min={new Date().toISOString().split('T')[0]}
           // max={new Date().toISOString().split('T')[0]}
           // min={new Date().toISOString().split('T')[0]}
           className={`pf-input ${errors.date ? 'pf-error' : ''}`} 
@@ -1302,11 +1427,11 @@ const PrescriptionForm = ({
         </div>
       )}
 
-      {/* Buttons */}
+      {/* ✅ ENHANCED: Buttons with email status */}
       <div className="pf-button-group">
         <button 
           type="submit" 
-          disabled={isSubmitting || isSaving || (!isValid && !editingPrescription) || !selectedPatient}
+          disabled={isSubmitting || isSaving || isSendingEmail || (!isValid && !editingPrescription) || !selectedPatient}
           className="pf-button pf-primary-button"
         >
           {isSaving ? (
@@ -1314,17 +1439,37 @@ const PrescriptionForm = ({
               <LoadingSpinner />
               Saving...
             </>
-          ) : editingPrescription ? "Update Prescription" : "Save Prescription"}
+          ) : isSendingEmail ? (
+            <>
+              <LoadingSpinner />
+              Sending Email...
+            </>
+          ) : editingPrescription ? "Update & Email Prescription" : "Save & Email Prescription"}
         </button>
         <button 
           type="button" 
           onClick={handleReset}
-          disabled={isSubmitting || isSaving}
+          disabled={isSubmitting || isSaving || isSendingEmail}
           className="pf-button pf-secondary-button"
         >
           Reset Form
         </button>
       </div>
+
+      {/* ✅ ENHANCED: Email status indicator */}
+      {selectedPatient && (
+        <div className={`pf-email-status ${selectedPatient.email ? 'has-email' : 'no-email'}`}>
+          {selectedPatient.email ? (
+            <div className="pf-email-info">
+              ✅ Email will be sent to: {selectedPatient.email}
+            </div>
+          ) : (
+            <div className="pf-no-email-warning">
+              ⚠ No email address - prescription will be saved but not emailed
+            </div>
+          )}
+        </div>
+      )}
       
       {/* PDF Button */}
       <div className="pf-pdf-section">
@@ -1348,7 +1493,7 @@ const PrescriptionForm = ({
             </>
           ) : (
             <>
-              📄 Generate PDF
+              📄 Download PDF
             </>
           )}
         </button>

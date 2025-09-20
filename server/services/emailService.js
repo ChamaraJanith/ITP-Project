@@ -47,11 +47,10 @@ class EmailService {
     }
 
     try {
-      // ✅ FIXED: Use createTransport (not createTransporter)
       this.transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT),
-        secure: false, // true for 465, false for other ports like 587
+        secure: false,
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS
@@ -86,6 +85,237 @@ class EmailService {
     }
   }
 
+  // ✅ NEW: Send prescription PDF to patient
+  async sendPrescriptionToPatient(prescriptionData, pdfBuffer, isUpdate = false) {
+    console.log('📧 sendPrescriptionToPatient called for:', prescriptionData.patientEmail);
+    
+    try {
+      await this.ensureInitialized();
+    } catch (error) {
+      console.error('❌ Failed to initialize EmailService:', error.message);
+      throw new Error(`Email system not ready: ${error.message}`);
+    }
+
+    if (!prescriptionData.patientEmail) {
+      throw new Error('Patient email is required to send prescription');
+    }
+
+    try {
+      const prescriptionId = prescriptionData._id || `RX-${Date.now().toString(36).toUpperCase()}`;
+      const patientName = prescriptionData.patientName || 
+        `${prescriptionData.patient?.firstName || ''} ${prescriptionData.patient?.lastName || ''}`.trim() || 'Patient';
+      
+      const doctorName = prescriptionData.doctorName || prescriptionData.doctor?.name || 'Doctor';
+      const doctorSpec = prescriptionData.doctorSpecialization || prescriptionData.doctor?.specialization || '';
+      
+      const prescriptionDate = new Date(prescriptionData.date || Date.now()).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      const subject = isUpdate ? 
+        `📋 Updated Prescription - ${patientName} | HealX Healthcare` :
+        `📋 Your Prescription from HealX Healthcare - ${prescriptionDate}`;
+
+      const medicinesList = (prescriptionData.medicines || []).map((med, index) => `
+        <tr style="border-bottom: 1px solid #e0e0e0;">
+          <td style="padding: 12px; font-weight: 500; color: #2c3e50;">${index + 1}</td>
+          <td style="padding: 12px; font-weight: 600; color: #34495e;">${med.name || 'N/A'}</td>
+          <td style="padding: 12px; color: #7f8c8d;">${med.dosage || 'N/A'}</td>
+          <td style="padding: 12px; color: #7f8c8d;">${med.frequency || 'N/A'}</td>
+          <td style="padding: 12px; color: #7f8c8d;">${med.duration || 'N/A'}</td>
+          <td style="padding: 12px; color: #95a5a6; font-size: 12px;">${med.notes || '-'}</td>
+        </tr>
+      `).join('');
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Your Prescription - HealX Healthcare</title>
+        </head>
+        <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f8f9fa;">
+          <div style="max-width: 800px; margin: 0 auto; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center; position: relative; overflow: hidden;">
+              <div style="position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+              <div style="position: absolute; bottom: -30px; left: -30px; width: 60px; height: 60px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+              <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700;">HealX Healthcare Center</h1>
+              <p style="margin: 0; font-size: 18px; opacity: 0.9;">${isUpdate ? 'Updated Prescription' : 'Your Prescription'}</p>
+              <div style="margin-top: 20px; padding: 10px 20px; background: rgba(255,255,255,0.2); border-radius: 25px; display: inline-block;">
+                <span style="font-size: 14px; font-weight: 500;">ID: ${prescriptionId}</span>
+              </div>
+            </div>
+
+            <!-- Patient Info Section -->
+            <div style="padding: 30px;">
+              ${isUpdate ? `
+                <div style="background: linear-gradient(135deg, #ffeaa7, #fab1a0); padding: 20px; border-radius: 12px; margin-bottom: 30px; text-align: center;">
+                  <h2 style="margin: 0 0 10px 0; color: #e17055; font-size: 24px;">📋 Prescription Updated</h2>
+                  <p style="margin: 0; color: #636e72; font-size: 16px;">Your prescription has been updated with new information. Please review the changes below.</p>
+                </div>
+              ` : `
+                <div style="background: linear-gradient(135deg, #a8edea, #fed6e3); padding: 20px; border-radius: 12px; margin-bottom: 30px; text-align: center;">
+                  <h2 style="margin: 0 0 10px 0; color: #2d3436; font-size: 24px;">📋 New Prescription</h2>
+                  <p style="margin: 0; color: #636e72; font-size: 16px;">Your doctor has prescribed new medication for you. Please review the details below.</p>
+                </div>
+              `}
+
+              <!-- Patient Details -->
+              <div style="background: #f8f9fa; padding: 25px; border-radius: 12px; border-left: 5px solid #667eea; margin-bottom: 30px;">
+                <h3 style="margin: 0 0 20px 0; color: #2c3e50; font-size: 20px;">👤 Patient Information</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                  <div>
+                    <p style="margin: 0 0 5px 0; font-weight: 600; color: #34495e;">Full Name:</p>
+                    <p style="margin: 0; color: #7f8c8d;">${patientName}</p>
+                  </div>
+                  <div>
+                    <p style="margin: 0 0 5px 0; font-weight: 600; color: #34495e;">Email:</p>
+                    <p style="margin: 0; color: #7f8c8d;">${prescriptionData.patientEmail}</p>
+                  </div>
+                  <div>
+                    <p style="margin: 0 0 5px 0; font-weight: 600; color: #34495e;">Date:</p>
+                    <p style="margin: 0; color: #7f8c8d;">${prescriptionDate}</p>
+                  </div>
+                  <div>
+                    <p style="margin: 0 0 5px 0; font-weight: 600; color: #34495e;">Doctor:</p>
+                    <p style="margin: 0; color: #7f8c8d;">${doctorName}${doctorSpec ? ` (${doctorSpec})` : ''}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Diagnosis -->
+              <div style="background: #e8f4f8; padding: 25px; border-radius: 12px; border-left: 5px solid #3498db; margin-bottom: 30px;">
+                <h3 style="margin: 0 0 15px 0; color: #2c3e50; font-size: 20px;">🔬 Diagnosis</h3>
+                <p style="margin: 0; color: #34495e; font-size: 16px; line-height: 1.6;">${prescriptionData.diagnosis || 'No diagnosis provided'}</p>
+              </div>
+
+              <!-- Medications Table -->
+              <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px;">
+                <div style="background: linear-gradient(135deg, #00b894, #55a3ff); padding: 20px;">
+                  <h3 style="margin: 0; color: white; font-size: 22px;">💊 Prescribed Medications</h3>
+                </div>
+                <div style="overflow-x: auto;">
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                      <tr style="background: #f1f2f6; border-bottom: 2px solid #ddd;">
+                        <th style="padding: 15px; text-align: left; font-weight: 600; color: #2c3e50;">#</th>
+                        <th style="padding: 15px; text-align: left; font-weight: 600; color: #2c3e50;">Medicine Name</th>
+                        <th style="padding: 15px; text-align: left; font-weight: 600; color: #2c3e50;">Dosage</th>
+                        <th style="padding: 15px; text-align: left; font-weight: 600; color: #2c3e50;">Frequency</th>
+                        <th style="padding: 15px; text-align: left; font-weight: 600; color: #2c3e50;">Duration</th>
+                        <th style="padding: 15px; text-align: left; font-weight: 600; color: #2c3e50;">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${medicinesList || '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #95a5a6;">No medications prescribed</td></tr>'}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Additional Instructions -->
+              ${prescriptionData.notes ? `
+                <div style="background: #fff2e6; padding: 25px; border-radius: 12px; border-left: 5px solid #f39c12; margin-bottom: 30px;">
+                  <h3 style="margin: 0 0 15px 0; color: #e67e22; font-size: 20px;">📝 Additional Instructions</h3>
+                  <p style="margin: 0; color: #d35400; font-size: 16px; line-height: 1.6;">${prescriptionData.notes}</p>
+                </div>
+              ` : ''}
+
+              <!-- Important Information -->
+              <div style="background: #ffe6e6; padding: 25px; border-radius: 12px; border-left: 5px solid #e74c3c; margin-bottom: 30px;">
+                <h3 style="margin: 0 0 15px 0; color: #c0392b; font-size: 20px;">⚠️ Important Information</h3>
+                <ul style="margin: 0; color: #c0392b; line-height: 1.8; padding-left: 20px;">
+                  <li><strong>Take medications exactly as prescribed</strong> by your doctor</li>
+                  <li><strong>Do not skip doses</strong> or stop medication without consulting your doctor</li>
+                  <li><strong>Contact your doctor</strong> if you experience any side effects</li>
+                  <li><strong>Keep all follow-up appointments</strong> as scheduled</li>
+                  <li><strong>Store medications</strong> in a cool, dry place away from children</li>
+                  <li><strong>Bring this prescription</strong> to your pharmacy for filling</li>
+                </ul>
+              </div>
+
+              <!-- Contact Information -->
+              <div style="background: #e8f8f5; padding: 25px; border-radius: 12px; border-left: 5px solid #27ae60; margin-bottom: 30px;">
+                <h3 style="margin: 0 0 15px 0; color: #229954; font-size: 20px;">📞 Contact Information</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                  <div>
+                    <p style="margin: 0 0 10px 0; font-weight: 600; color: #27ae60;">HealX Healthcare Center</p>
+                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">📍 123 Medical Avenue, Health City</p>
+                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">📞 Phone: (123) 456-7890</p>
+                    <p style="margin: 0; color: #2e7d5b;">📧 Email: contact@healx.com</p>
+                  </div>
+                  <div>
+                    <p style="margin: 0 0 10px 0; font-weight: 600; color: #27ae60;">Emergency Contact</p>
+                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">🚨 Emergency: (123) 456-7911</p>
+                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">⏰ 24/7 Helpline: (123) 456-7900</p>
+                    <p style="margin: 0; color: #2e7d5b;">💬 Text Support: (123) 456-7899</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 30px; text-align: center;">
+              <p style="margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">Thank you for choosing HealX Healthcare</p>
+              <p style="margin: 0 0 20px 0; font-size: 14px; opacity: 0.9;">
+                Your health is our priority. We're here to support your journey to wellness.
+              </p>
+              <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px; margin-top: 20px;">
+                <p style="margin: 0; font-size: 12px; opacity: 0.7;">
+                  This is an automated email from HealX Healthcare Management System.<br>
+                  Generated on ${new Date().toLocaleString()} | Prescription ID: ${prescriptionId}
+                </p>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Create filename
+      const safePatientName = patientName.replace(/[^a-zA-Z0-9]/g, '_');
+      const dateStr = new Date(prescriptionData.date || Date.now()).toISOString().slice(0, 10);
+      const filename = `Prescription_${safePatientName}_${dateStr}_${prescriptionId}.pdf`;
+
+      const mailOptions = {
+        from: `"HealX Healthcare Center" <${process.env.EMAIL_USER}>`,
+        to: prescriptionData.patientEmail,
+        subject: subject,
+        html: htmlContent,
+        attachments: [
+          {
+            filename: filename,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+          }
+        ]
+      };
+
+      console.log('📧 Sending prescription email to:', prescriptionData.patientEmail);
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('✅ Prescription email sent successfully! MessageId:', result.messageId);
+      
+      return {
+        success: true,
+        messageId: result.messageId,
+        recipient: prescriptionData.patientEmail,
+        filename: filename,
+        isUpdate: isUpdate
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to send prescription email:', error);
+      throw new Error(`Failed to send prescription email: ${error.message}`);
+    }
+  }
+
+  // Keep existing methods...
   async sendTestEmail() {
     console.log('📧 sendTestEmail called');
     
@@ -278,7 +508,7 @@ class EmailService {
     return result;
   }
 
-  // ✅ NEW: Enhanced Auto-Restock Supplier Email Function
+  // Keep other existing methods...
   async sendSupplierRestockOrder(item, restockQuantity, orderDetails = {}) {
     console.log(`📧 sendSupplierRestockOrder called for ${item.name}`);
     
@@ -291,9 +521,7 @@ class EmailService {
 
     try {
       const supplierEmail = item.autoRestock?.supplier?.contactEmail || item.supplier?.email;
-      
-      // ✅ For testing, use fallback email if supplier email is missing
-      const emailToSend = supplierEmail || 'chamarasweed44@gmail.com'; // Fallback for testing
+      const emailToSend = supplierEmail || 'chamarasweed44@gmail.com';
       
       console.log(`📧 Preparing supplier email for ${item.name} to ${emailToSend}`);
 
@@ -362,8 +590,8 @@ class EmailService {
                         <span style="color: #28a745; font-weight: bold; font-size: 18px;">ORDER: ${restockQuantity} units</span>
                       </td>
                       <td>
-                        <span style="color: #666;">Unit Price: $${(parseFloat(item.price) || 0).toFixed(2)}</span><br>
-                        <strong style="font-size: 20px; color: #dc3545;">Total: $${estimatedCost.toFixed(2)}</strong><br>
+                        <span style="color: #666;">Unit Price: ${(parseFloat(item.price) || 0).toFixed(2)}</span><br>
+                        <strong style="font-size: 20px; color: #dc3545;">Total: ${estimatedCost.toFixed(2)}</strong><br>
                         <span style="color: #28a745; font-size: 12px;">✓ Pre-approved amount</span>
                       </td>
                     </tr>
@@ -429,7 +657,7 @@ class EmailService {
       const result = await this.transporter.sendMail({
         from: `"HealX Healthcare Emergency System" <${process.env.EMAIL_USER}>`,
         to: emailToSend,
-        cc: 'supplies@healx-healthcare.com', // Copy hospital supplies department
+        cc: 'supplies@healx-healthcare.com',
         subject: subject,
         html: htmlMessage,
         priority: 'high',
@@ -459,7 +687,6 @@ class EmailService {
     }
   }
 
-  // ✅ NEW: Send confirmation email to hospital admin
   async sendRestockConfirmationToAdmin(item, restockQuantity, supplierEmailResult) {
     console.log('📧 Sending admin confirmation for auto-restock');
     
@@ -494,7 +721,7 @@ class EmailService {
                 <h3 style="margin: 0 0 15px 0; color: #0c5460;">📧 Supplier Notification Status</h3>
                 <p style="margin: 5px 0;"><strong>✅ Order sent to supplier:</strong> ${supplierEmailResult.supplierEmail}</p>
                 <p style="margin: 5px 0;"><strong>Order Number:</strong> ${supplierEmailResult.orderNumber}</p>
-                <p style="margin: 5px 0;"><strong>Estimated Cost:</strong> $${supplierEmailResult.estimatedCost.toFixed(2)}</p>
+                <p style="margin: 5px 0;"><strong>Estimated Cost:</strong> ${supplierEmailResult.estimatedCost.toFixed(2)}</p>
                 <p style="margin: 5px 0;"><strong>Message ID:</strong> ${supplierEmailResult.messageId}</p>
                 <p style="margin: 5px 0; color: #28a745; font-weight: bold;">✅ Supplier has been notified and should respond within 30 minutes</p>
               </div>
@@ -557,7 +784,7 @@ class EmailService {
 // Create singleton instance
 const emailService = new EmailService();
 
-// ✅ UTILITY FUNCTIONS - These work with the singleton instance
+// Utility functions
 export async function sendCriticalStockAlert(criticalItems) {
   try {
     await emailService.ensureInitialized();
@@ -636,5 +863,4 @@ export async function sendRestockSummary(items) {
   }
 }
 
-// ✅ DEFAULT EXPORT - The singleton instance
 export default emailService;
