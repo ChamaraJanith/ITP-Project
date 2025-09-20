@@ -972,3 +972,433 @@
     padding: 20px;
   }
 }
+
+/* Additional Styles for New Features */
+
+/* Connection Status */
+.connection-status {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.connection-status.excellent { color: #00D4AA; }
+.connection-status.good { color: #4CAF50; }
+.connection-status.fair { color: #FF9800; }
+.connection-status.poor { color: #FF6B6B; }
+
+/* Search and Filter Bar */
+.search-filter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.search-section {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: rgba(0, 212, 170, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.7;
+}
+
+.filter-section {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sort-select, .view-select {
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.predictions-btn {
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.predictions-btn.active {
+  background: linear-gradient(135deg, #00D4AA 0%, #4ECDC4 100%);
+  color: white;
+  border-color: transparent;
+}
+
+/* Performance Metrics */
+.performance-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.metric-card {
+  text-align: center;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.metric-card.gainers {
+  border-left: 4px solid #00D4AA;
+}
+
+.metric-card.losers {
+  border-left: 4px solid #FF6B6B;
+}
+
+.metric-value {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.metric-label {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  font-weight: 500;
+}
+
+/* Enhanced Data Cards */
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.watchlist-toggle {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.watchlist-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.watchlist-toggle.active {
+  color: #FFD700;
+}
+
+.watchlist-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Predictions Section */
+.predictions-section {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(0, 212, 170, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 212, 170, 0.2);
+}
+
+.prediction-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+}
+
+.confidence {
+  font-size: 0.75rem;
+  text-align: center;
+  opacity: 0.8;
+  font-weight: 600;
+  color: #00D4AA;
+}
+
+/* List View Styles */
+.data-grid.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.data-grid.list .data-card {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  height: auto;
+}
+
+.data-grid.list .card-header {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.data-grid.list .card-content {
+  flex: 1;
+  margin-bottom: 0;
+  justify-content: flex-end;
+}
+
+.data-grid.list .chart-container {
+  width: 120px;
+  margin: 0 0 0 20px;
+}
+
+/* Additional Action Buttons */
+.export-btn, .watchlist-btn, .portfolio-btn {
+  padding: 10px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+}
+
+.export-btn:hover, .watchlist-btn:hover, .portfolio-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(0, 212, 170, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 212, 170, 0.2);
+}
+
+/* New Modals */
+.watchlist-modal, .export-modal, .portfolio-modal {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(24px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  opacity: 0.7;
+}
+
+.watchlist-items {
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.watchlist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.item-info {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex: 1;
+}
+
+.item-info .symbol {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.item-info .type {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  padding: 2px 8px;
+  background: rgba(0, 212, 170, 0.2);
+  border-radius: 8px;
+}
+
+.remove-btn {
+  background: rgba(255, 107, 107, 0.2);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-btn:hover {
+  background: rgba(255, 107, 107, 0.3);
+  transform: scale(1.1);
+}
+
+/* Export Modal Styles */
+.export-options {
+  padding: 20px;
+}
+
+.format-selection {
+  margin: 20px 0;
+  display: flex;
+  gap: 20px;
+}
+
+.format-selection label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* Portfolio Modal Styles */
+.portfolio-summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.portfolio-summary .label {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-right: 8px;
+}
+
+.portfolio-summary .value {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.portfolio-assets-list {
+  padding: 20px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.portfolio-asset {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+/* Responsive Enhancements */
+@media (max-width: 768px) {
+  .search-filter-bar {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .filter-section {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .performance-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .data-grid.list .data-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .data-grid.list .card-content {
+    justify-content: flex-start;
+    margin-top: 12px;
+  }
+  
+  .data-grid.list .chart-container {
+    width: 100%;
+    margin: 12px 0 0 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .performance-metrics {
+    grid-template-columns: 1fr;
+  }
+  
+  .item-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+
