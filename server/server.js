@@ -26,6 +26,7 @@ import surgicalrouter from './routes/surgicalItems.js';
 import consultationRouter from './routes/consultationRoutes.js';
 import prescriptionRouter from './routes/prescriptionRoutes.js';
 import payrollrouter from './routes/FinancialPayrollRoutes.js';  
+import prescriptionNotificationRouter from './routes/prescriptionNotifications.js'
 
 
 
@@ -111,6 +112,11 @@ app.get("/", (req, res) => {
     }
   });
 });
+
+// Mount the prescription notification router at a unique path
+console.log('📧 Mounting prescription notification router at /api/prescription-notifications');
+app.use('/api/prescription-notifications', prescriptionNotificationRouter);
+
 
 // Mount notification routes FIRST
 console.log('📧 Mounting notification router at /api/inventory/notifications');
