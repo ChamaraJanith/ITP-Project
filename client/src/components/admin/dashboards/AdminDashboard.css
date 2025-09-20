@@ -1572,13 +1572,13 @@
   height: 100%;
 }
 
-.profile-card.patient::before { background: linear-gradient(to bottom, #f093fb, #f5576c); }
+/* .profile-card.patient::before { background: linear-gradient(to bottom, #f093fb, #f5576c); }
 .profile-card.doctor::before { background: linear-gradient(to bottom, var(--primary), var(--secondary)); }
 .profile-card.receptionist::before { background: linear-gradient(to bottom, #4facfe, #00f2fe); }
 .profile-card.financial_manager::before { background: linear-gradient(to bottom, #43e97b, #38f9d7); }
-.profile-card.admin::before { background: linear-gradient(to bottom, var(--admin-primary), var(--admin-secondary)); }
+.profile-card.admin::before { background: linear-gradient(to bottom, var(--admin-primary), var(--admin-secondary)); } */
 
-.profile-card::after {
+/* .profile-card::after {
   content: '';
   position: absolute;
   top: 0;
@@ -1588,11 +1588,11 @@
   background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.05) 100%);
   opacity: 0;
   transition: opacity var(--transition-normal);
-}
+} */
 
-.profile-card:hover::after {
+/* .profile-card:hover::after {
   opacity: 1;
-}
+} */
 
 .profile-card:hover {
   transform: translateY(-8px) scale(1.03);
@@ -1605,12 +1605,12 @@
   box-shadow: 0 25px 50px rgba(240, 147, 251, 0.4), 0 0 30px rgba(240, 147, 251, 0.4);
 }
 
-.profile-card.doctor:hover {
+/* .profile-card.doctor:hover {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: var(--white);
   box-shadow: 0 25px 50px rgba(102, 126, 234, 0.4), var(--shadow-glow);
-}
-
+} */
+/* 
 .profile-card.receptionist:hover {
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   color: var(--white);
@@ -1627,7 +1627,7 @@
   background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-secondary) 100%);
   color: var(--white);
   box-shadow: 0 25px 50px rgba(76, 29, 149, 0.6), var(--shadow-glow-admin);
-}
+} */
 
 .profile-avatar {
   width: 60px;
@@ -1710,13 +1710,13 @@
   display: block;
 }
 
-.profile-card:hover .profile-info h4,
+/* .profile-card:hover .profile-info h4,
 .profile-card:hover .profile-info p,
 .profile-card:hover .profile-info small,
 .profile-card:hover .role-badge,
 .profile-card:hover .status-badge {
   color: var(--white);
-}
+} */
 
 .profile-card:hover .role-badge,
 .profile-card:hover .status-badge {
