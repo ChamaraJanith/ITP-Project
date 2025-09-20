@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../AdminLayout";
+import "./ExploreTrends.css";
 import {
   LineChart,
   Line,
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   XAxis,
@@ -16,8 +15,7 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell,
-  ComposedChart,
+  Cell
 } from "recharts";
 
 const ExploreTrends = () => {
@@ -26,7 +24,7 @@ const ExploreTrends = () => {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("currencies");
   const [themeMode, setThemeMode] = useState("dark");
-  const [refreshTimer, setRefreshTimer] = useState(3600); // Changed to 3600 (1 hour)
+  const [refreshTimer, setRefreshTimer] = useState(3600);
   const [lastUpdated, setLastUpdated] = useState("");
   
   // Financial Data States
@@ -53,6 +51,11 @@ const ExploreTrends = () => {
 
   const navigate = useNavigate();
 
+  // Navigate back to Financial Dashboard
+  const handleBackToFinancial = () => {
+    navigate("/admin/financial");
+  };
+
   // Helper function to format timer display
   const formatTimer = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -64,12 +67,10 @@ const ExploreTrends = () => {
   useEffect(() => {
     initializeTrends();
     
-    // Auto-refresh every 1 hour (3600000 milliseconds)
     const interval = setInterval(() => {
       refreshAllData();
     }, 3600000);
 
-    // Countdown timer
     const timerInterval = setInterval(() => {
       setRefreshTimer(prev => prev > 0 ? prev - 1 : 3600);
     }, 1000);
@@ -87,7 +88,6 @@ const ExploreTrends = () => {
         setAdmin(JSON.parse(adminData));
       }
 
-      // Load saved theme
       const savedTheme = localStorage.getItem("trendsTheme") || "dark";
       setThemeMode(savedTheme);
       document.body.className = savedTheme === "dark" ? "dark-theme" : "light-theme";
@@ -116,7 +116,7 @@ const ExploreTrends = () => {
       ]);
       
       setLastUpdated(new Date().toLocaleString());
-      setRefreshTimer(3600); // Reset to 1 hour
+      setRefreshTimer(3600);
       checkAlerts();
     } catch (error) {
       console.error("Error refreshing data:", error);
@@ -126,7 +126,6 @@ const ExploreTrends = () => {
     }
   };
 
-  // Fetch Currency Exchange Rates
   const fetchCurrencyRates = async () => {
     try {
       const mockCurrencyData = [
@@ -135,42 +134,42 @@ const ExploreTrends = () => {
           rate: (0.85 + Math.random() * 0.02).toFixed(4), 
           change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 0.5).toFixed(2)}%`, 
           trend: Math.random() > 0.5 ? "up" : "down", 
-          history: Array(24).fill(0).map((_, i) => (0.85 + Math.sin(i/4) * 0.02).toFixed(4)) 
+          history: Array(24).fill(0).map((_, i) => ({ value: (0.85 + Math.sin(i/4) * 0.02), index: i }))
         },
         { 
           currency: "USD/GBP", 
           rate: (0.73 + Math.random() * 0.02).toFixed(4), 
           change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 0.4).toFixed(2)}%`, 
           trend: Math.random() > 0.5 ? "up" : "down", 
-          history: Array(24).fill(0).map((_, i) => (0.73 + Math.sin(i/5) * 0.01).toFixed(4)) 
+          history: Array(24).fill(0).map((_, i) => ({ value: (0.73 + Math.sin(i/5) * 0.01), index: i }))
         },
         { 
           currency: "USD/JPY", 
           rate: (149.25 + Math.random() * 2).toFixed(2), 
           change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 1).toFixed(2)}%`, 
           trend: Math.random() > 0.5 ? "up" : "down", 
-          history: Array(24).fill(0).map((_, i) => (149 + Math.sin(i/3) * 2).toFixed(2)) 
+          history: Array(24).fill(0).map((_, i) => ({ value: (149 + Math.sin(i/3) * 2), index: i }))
         },
         { 
           currency: "USD/LKR", 
           rate: (324.50 + Math.random() * 5).toFixed(2), 
           change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 0.8).toFixed(2)}%`, 
           trend: Math.random() > 0.5 ? "up" : "down", 
-          history: Array(24).fill(0).map((_, i) => (324 + Math.sin(i/4) * 3).toFixed(2)) 
+          history: Array(24).fill(0).map((_, i) => ({ value: (324 + Math.sin(i/4) * 3), index: i }))
         },
         { 
           currency: "USD/CNY", 
           rate: (7.23 + Math.random() * 0.1).toFixed(3), 
           change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 0.3).toFixed(2)}%`, 
           trend: Math.random() > 0.5 ? "up" : "down", 
-          history: Array(24).fill(0).map((_, i) => (7.2 + Math.sin(i/6) * 0.05).toFixed(3)) 
+          history: Array(24).fill(0).map((_, i) => ({ value: (7.2 + Math.sin(i/6) * 0.05), index: i }))
         },
         { 
           currency: "USD/INR", 
           rate: (83.25 + Math.random() * 1).toFixed(2), 
           change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 0.5).toFixed(2)}%`, 
           trend: Math.random() > 0.5 ? "up" : "down", 
-          history: Array(24).fill(0).map((_, i) => (83 + Math.sin(i/4) * 0.5).toFixed(2)) 
+          history: Array(24).fill(0).map((_, i) => ({ value: (83 + Math.sin(i/4) * 0.5), index: i }))
         }
       ];
       
@@ -180,7 +179,6 @@ const ExploreTrends = () => {
     }
   };
 
-  // Fetch Stock Market Data
   const fetchStockData = async () => {
     try {
       const mockStockData = [
@@ -190,7 +188,7 @@ const ExploreTrends = () => {
           change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 3).toFixed(2)}%`, 
           volume: `${(50 + Math.random() * 20).toFixed(1)}M`, 
           trend: Math.random() > 0.5 ? "up" : "down", 
-          sparkline: Array(20).fill(0).map((_, i) => (185 + Math.sin(i/3) * 5).toFixed(2)) 
+          sparkline: Array(20).fill(0).map((_, i) => ({ value: (185 + Math.sin(i/3) * 5), index: i }))
         },
         { 
           symbol: "GOOGL", 
@@ -198,7 +196,7 @@ const ExploreTrends = () => {
           change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 2.5).toFixed(2)}%`, 
           volume: `${(25 + Math.random() * 15).toFixed(1)}M`, 
           trend: Math.random() > 0.5 ? "up" : "down", 
-          sparkline: Array(20).fill(0).map((_, i) => (140 + Math.sin(i/4) * 4).toFixed(2)) 
+          sparkline: Array(20).fill(0).map((_, i) => ({ value: (140 + Math.sin(i/4) * 4), index: i }))
         },
         { 
           symbol: "MSFT", 
@@ -206,7 +204,7 @@ const ExploreTrends = () => {
           change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 2).toFixed(2)}%`, 
           volume: `${(30 + Math.random() * 12).toFixed(1)}M`, 
           trend: Math.random() > 0.5 ? "up" : "down", 
-          sparkline: Array(20).fill(0).map((_, i) => (375 + Math.sin(i/5) * 8).toFixed(2)) 
+          sparkline: Array(20).fill(0).map((_, i) => ({ value: (375 + Math.sin(i/5) * 8), index: i }))
         },
         { 
           symbol: "TSLA", 
@@ -214,7 +212,7 @@ const ExploreTrends = () => {
           change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 5).toFixed(2)}%`, 
           volume: `${(80 + Math.random() * 30).toFixed(1)}M`, 
           trend: Math.random() > 0.5 ? "up" : "down", 
-          sparkline: Array(20).fill(0).map((_, i) => (245 + Math.sin(i/2) * 12).toFixed(2)) 
+          sparkline: Array(20).fill(0).map((_, i) => ({ value: (245 + Math.sin(i/2) * 12), index: i }))
         },
         { 
           symbol: "AMZN", 
@@ -222,7 +220,7 @@ const ExploreTrends = () => {
           change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 2.8).toFixed(2)}%`, 
           volume: `${(40 + Math.random() * 18).toFixed(1)}M`, 
           trend: Math.random() > 0.5 ? "up" : "down", 
-          sparkline: Array(20).fill(0).map((_, i) => (154 + Math.sin(i/3.5) * 6).toFixed(2)) 
+          sparkline: Array(20).fill(0).map((_, i) => ({ value: (154 + Math.sin(i/3.5) * 6), index: i }))
         }
       ];
       
@@ -232,7 +230,6 @@ const ExploreTrends = () => {
     }
   };
 
-  // Fetch Economic Indicators
   const fetchEconomicIndicators = async () => {
     try {
       const currentDate = new Date().toLocaleDateString();
@@ -252,7 +249,6 @@ const ExploreTrends = () => {
     }
   };
 
-  // Fetch Market News
   const fetchMarketNews = async () => {
     try {
       const timeOptions = ["1 hour ago", "2 hours ago", "3 hours ago", "4 hours ago", "5 hours ago"];
@@ -309,7 +305,6 @@ const ExploreTrends = () => {
     }
   };
 
-  // Fetch Global Market Indices
   const fetchGlobalIndices = async () => {
     try {
       const mockIndicesData = [
@@ -328,7 +323,6 @@ const ExploreTrends = () => {
     }
   };
 
-  // Fetch Commodities Prices
   const fetchCommoditiesPrices = async () => {
     try {
       const mockCommoditiesData = [
@@ -346,7 +340,6 @@ const ExploreTrends = () => {
     }
   };
 
-  // Fetch Cryptocurrency Data
   const fetchCryptoData = async () => {
     try {
       const mockCryptoData = [
@@ -363,7 +356,6 @@ const ExploreTrends = () => {
     }
   };
 
-  // Analyze Market Sentiment
   const analyzeMarketSentiment = async () => {
     try {
       let positiveCount = 0;
@@ -395,7 +387,6 @@ const ExploreTrends = () => {
     }
   };
 
-  // Check and trigger alerts
   const checkAlerts = () => {
     const newAlerts = [];
     
@@ -434,7 +425,6 @@ const ExploreTrends = () => {
     }
   };
 
-  // Theme Toggle
   const toggleTheme = () => {
     const newTheme = themeMode === "dark" ? "light" : "dark";
     setThemeMode(newTheme);
@@ -442,7 +432,6 @@ const ExploreTrends = () => {
     localStorage.setItem("trendsTheme", newTheme);
   };
 
-  // Add Custom Alert
   const addCustomAlert = () => {
     if (!newAlert.symbol || !newAlert.threshold) return;
     
@@ -457,12 +446,10 @@ const ExploreTrends = () => {
     setAlertModal(false);
   };
 
-  // Remove Alert
   const removeAlert = (alertId) => {
     setCustomAlerts(prev => prev.filter(alert => alert.id !== alertId));
   };
 
-  // Chart Color Schemes
   const chartColors = themeMode === "dark" 
     ? ["#00D4AA", "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7"]
     : ["#2196F3", "#FF5722", "#4CAF50", "#FF9800", "#9C27B0", "#00BCD4"];
@@ -470,25 +457,8 @@ const ExploreTrends = () => {
   if (loading && !currencyRates.length) {
     return (
       <AdminLayout admin={admin} title="Explore Financial Trends">
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          minHeight: '60vh', 
-          textAlign: 'center',
-          background: themeMode === 'dark' ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-          color: themeMode === 'dark' ? '#ffffff' : '#333333'
-        }}>
-          <div style={{
-            width: '60px',
-            height: '60px',
-            border: '4px solid rgba(0, 212, 170, 0.3)',
-            borderLeft: '4px solid #00D4AA',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            marginBottom: '20px'
-          }}></div>
+        <div className={`loading-container ${themeMode}`}>
+          <div className="loading-spinner"></div>
           <h3>Loading Global Financial Insights...</h3>
           <p>Fetching real-time data from multiple sources</p>
         </div>
@@ -498,210 +468,59 @@ const ExploreTrends = () => {
 
   return (
     <AdminLayout admin={admin} title="Explore Financial Trends">
-      <div style={{
-        padding: '20px',
-        minHeight: '100vh',
-        background: themeMode === 'dark' 
-          ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' 
-          : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-        color: themeMode === 'dark' ? '#ffffff' : '#333333',
-        transition: 'all 0.3s ease'
-      }}>
+      <div className={`trends-container ${themeMode}`}>
         {/* Header Section */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: '30px',
-          padding: '20px',
-          background: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '15px',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          flexWrap: 'wrap',
-          gap: '20px'
-        }}>
-          <div>
-            <h1 style={{
-              margin: '0 0 10px 0',
-              fontSize: '2.5rem',
-              fontWeight: '700',
-              background: 'linear-gradient(45deg, #00D4AA, #4ECDC4)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}>🌍 Global Financial Trends</h1>
-            <p style={{ margin: '0 0 15px 0', opacity: '0.8', fontSize: '1.1rem' }}>
-              Real-time insights • Updated every hour
-            </p>
-            <div style={{ display: 'flex', gap: '20px', fontSize: '0.9rem', flexWrap: 'wrap' }}>
-              <span style={{
-                padding: '5px 10px',
-                background: 'rgba(0, 212, 170, 0.2)',
-                borderRadius: '20px',
-                border: '1px solid rgba(0, 212, 170, 0.3)'
-              }}>
-                Last updated: {lastUpdated}
-              </span>
-              <span style={{
-                padding: '5px 10px',
-                background: 'rgba(255, 107, 107, 0.2)',
-                borderRadius: '20px',
-                border: '1px solid rgba(255, 107, 107, 0.3)',
-                animation: 'pulse 1s infinite'
-              }}>
-                Next update: {formatTimer(refreshTimer)}
-              </span>
+        <div className="trends-header">
+          <div className="header-info">
+            <h1 className="main-title">🌍 Global Financial Trends</h1>
+            <p className="subtitle">Real-time insights • Updated every hour</p>
+            <div className="update-status">
+              <span className="last-updated">Last updated: {lastUpdated}</span>
+              <span className="next-update">Next update: {formatTimer(refreshTimer)}</span>
             </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button 
-              onClick={toggleTheme}
-              style={{
-                padding: '12px 20px',
-                border: 'none',
-                borderRadius: '25px',
-                background: 'linear-gradient(45deg, #00D4AA, #4ECDC4)',
-                color: 'white',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 15px rgba(0, 212, 170, 0.3)'
-              }}
-            >
+          <div className="header-actions">
+            <button onClick={handleBackToFinancial} className="back-btn">
+              ← Financial Dashboard
+            </button>
+            <button onClick={toggleTheme} className="theme-btn">
               {themeMode === "dark" ? "🌞 Light" : "🌙 Dark"}
             </button>
-            <button 
-              onClick={refreshAllData} 
-              disabled={loading}
-              style={{
-                padding: '12px 20px',
-                border: 'none',
-                borderRadius: '25px',
-                background: loading ? 'rgba(0, 212, 170, 0.6)' : 'linear-gradient(45deg, #00D4AA, #4ECDC4)',
-                color: 'white',
-                fontWeight: '600',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 15px rgba(0, 212, 170, 0.3)'
-              }}
-            >
+            <button onClick={refreshAllData} disabled={loading} className="refresh-btn">
               {loading ? "🔄 Updating..." : "🔄 Refresh Now"}
             </button>
-            <button 
-              onClick={() => setAlertModal(true)}
-              style={{
-                padding: '12px 20px',
-                border: 'none',
-                borderRadius: '25px',
-                background: 'linear-gradient(45deg, #00D4AA, #4ECDC4)',
-                color: 'white',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 15px rgba(0, 212, 170, 0.3)'
-              }}
-            >
+            <button onClick={() => setAlertModal(true)} className="alerts-btn">
               ⚠️ Alerts ({customAlerts.length})
             </button>
           </div>
         </div>
 
         {error && (
-          <div style={{
-            background: 'linear-gradient(45deg, #ff6b6b, #ee5a5a)',
-            color: 'white',
-            padding: '15px 20px',
-            borderRadius: '10px',
-            marginBottom: '20px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            boxShadow: '0 4px 15px rgba(255, 107, 107, 0.3)'
-          }}>
+          <div className="error-banner">
             ⚠️ {error}
-            <button 
-              onClick={() => setError("")}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'white',
-                fontSize: '1.2rem',
-                cursor: 'pointer',
-                padding: '5px'
-              }}
-            >
-              ✕
-            </button>
+            <button onClick={() => setError("")} className="close-btn">✕</button>
           </div>
         )}
 
         {/* Market Sentiment Overview */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: window.innerWidth > 768 ? '1fr 2fr' : '1fr',
-          gap: '20px',
-          marginBottom: '30px'
-        }}>
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(10px)',
-            borderRadius: '15px',
-            padding: '25px',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            textAlign: 'center'
-          }}>
-            <h3 style={{ margin: '0 0 20px 0', fontSize: '1.3rem' }}>📊 Market Sentiment</h3>
-            <div style={{ marginBottom: '15px' }}>
-              <span style={{
-                display: 'block',
-                fontSize: '3rem',
-                fontWeight: '700',
-                marginBottom: '5px'
-              }}>
-                {sentiment.score > 0 ? '+' : ''}{sentiment.score}
-              </span>
-              <span style={{
-                fontSize: '1.1rem',
-                fontWeight: '600',
-                padding: '5px 15px',
-                borderRadius: '20px',
-                background: sentiment.trend === 'bullish' 
-                  ? 'rgba(0, 212, 170, 0.3)' 
-                  : sentiment.trend === 'bearish' 
-                    ? 'rgba(255, 107, 107, 0.3)' 
-                    : 'rgba(255, 217, 61, 0.3)',
-                color: sentiment.trend === 'bullish' 
-                  ? '#00D4AA' 
-                  : sentiment.trend === 'bearish' 
-                    ? '#FF6B6B' 
-                    : '#FFD93D'
-              }}>
-                {sentiment.trend.toUpperCase()}
-              </span>
+        <div className="sentiment-overview">
+          <div className="sentiment-card">
+            <h3>📊 Market Sentiment</h3>
+            <div className="sentiment-score">
+              <span className="score">{sentiment.score > 0 ? '+' : ''}{sentiment.score}</span>
+              <span className={`trend ${sentiment.trend}`}>{sentiment.trend.toUpperCase()}</span>
             </div>
             <p>Based on {stockData.length + currencyRates.length} indicators</p>
           </div>
           
           {alerts.length > 0 && (
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '15px',
-              padding: '20px',
-              border: '1px solid rgba(255, 255, 255, 0.2)'
-            }}>
-              <h4 style={{ margin: '0 0 15px 0', color: '#FF6B6B' }}>🔔 Recent Alerts</h4>
+            <div className="alerts-card">
+              <h4>🔔 Recent Alerts</h4>
               {alerts.slice(0, 3).map(alert => (
-                <div key={alert.id} style={{
-                  padding: '10px',
-                  marginBottom: '10px',
-                  background: 'rgba(255, 107, 107, 0.1)',
-                  borderRadius: '8px',
-                  borderLeft: '4px solid #FF6B6B'
-                }}>
-                  <span style={{ display: 'block', fontWeight: '500' }}>{alert.message}</span>
-                  <small style={{ opacity: '0.7', fontSize: '0.8rem' }}>{alert.timestamp}</small>
+                <div key={alert.id} className="alert-item">
+                  <span className="alert-message">{alert.message}</span>
+                  <small className="alert-time">{alert.timestamp}</small>
                 </div>
               ))}
             </div>
@@ -709,14 +528,7 @@ const ExploreTrends = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <div style={{
-          display: 'flex',
-          gap: '10px',
-          marginBottom: '30px',
-          overflowX: 'auto',
-          paddingBottom: '10px',
-          flexWrap: 'wrap'
-        }}>
+        <div className="nav-tabs">
           {[
             { id: "currencies", label: "💱 Currencies" },
             { id: "stocks", label: "📈 Stocks" },
@@ -729,91 +541,37 @@ const ExploreTrends = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: '12px 20px',
-                border: activeTab === tab.id ? 'none' : '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: '25px',
-                background: activeTab === tab.id 
-                  ? 'linear-gradient(45deg, #00D4AA, #4ECDC4)' 
-                  : 'rgba(255, 255, 255, 0.1)',
-                color: activeTab === tab.id ? 'white' : 'inherit',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                whiteSpace: 'nowrap',
-                boxShadow: activeTab === tab.id ? '0 4px 15px rgba(0, 212, 170, 0.3)' : 'none'
-              }}
+              className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
             >
               {tab.label}
             </button>
           ))}
         </div>
 
-        {/* Currency Exchange Rates Tab */}
+        {/* Currency Tab */}
         {activeTab === "currencies" && (
-          <div style={{ animation: 'fadeIn 0.5s ease-in' }}>
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h2 style={{
-                fontSize: '2rem',
-                margin: '0 0 10px 0',
-                background: 'linear-gradient(45deg, #00D4AA, #4ECDC4)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>💱 Currency Exchange Rates</h2>
-              <p style={{ opacity: '0.8', fontSize: '1.1rem' }}>Live forex rates with historical trends</p>
+          <div className="tab-content fade-in">
+            <div className="tab-header">
+              <h2>💱 Currency Exchange Rates</h2>
+              <p>Live forex rates with historical trends</p>
             </div>
             
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '20px',
-              marginBottom: '40px'
-            }}>
+            <div className="data-grid">
               {currencyRates.map((currency, index) => (
-                <div key={index} style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: '15px',
-                  padding: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  transition: 'all 0.3s ease',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '15px'
-                  }}>
-                    <h3 style={{ margin: '0', fontSize: '1.3rem', fontWeight: '700' }}>{currency.currency}</h3>
-                    <span style={{ fontSize: '1.5rem' }}>
-                      {currency.trend === "up" ? "📈" : "📉"}
-                    </span>
+                <div key={index} className="data-card">
+                  <div className="card-header">
+                    <h3>{currency.currency}</h3>
+                    <span className="trend-icon">{currency.trend === "up" ? "📈" : "📉"}</span>
                   </div>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: '10px',
-                    marginBottom: '15px'
-                  }}>
-                    <span style={{ fontSize: '1.8rem', fontWeight: '700' }}>{currency.rate}</span>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '15px',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      background: currency.change.includes('+') 
-                        ? 'rgba(0, 212, 170, 0.3)' 
-                        : 'rgba(255, 107, 107, 0.3)',
-                      color: currency.change.includes('+') ? '#00D4AA' : '#FF6B6B'
-                    }}>
+                  <div className="card-content">
+                    <span className="main-value">{currency.rate}</span>
+                    <span className={`change ${currency.change.includes('+') ? 'positive' : 'negative'}`}>
                       {currency.change}
                     </span>
                   </div>
-                  <div style={{ marginTop: '15px', height: '60px' }}>
+                  <div className="chart-container">
                     <ResponsiveContainer width="100%" height={60}>
-                      <LineChart data={currency.history.map((value, i) => ({ value: parseFloat(value), index: i }))}>
+                      <LineChart data={currency.history}>
                         <Line 
                           type="monotone" 
                           dataKey="value" 
@@ -828,17 +586,8 @@ const ExploreTrends = () => {
               ))}
             </div>
 
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '15px',
-              padding: '25px',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              marginTop: '30px'
-            }}>
-              <h3 style={{ margin: '0 0 20px 0', textAlign: 'center', fontSize: '1.5rem' }}>
-                📈 Currency Trends Comparison
-              </h3>
+            <div className="comparison-chart">
+              <h3>📈 Currency Trends Comparison</h3>
               <ResponsiveContainer width="100%" height={400}>
                 <LineChart data={currencyRates.map(currency => ({
                   currency: currency.currency,
@@ -856,67 +605,30 @@ const ExploreTrends = () => {
           </div>
         )}
 
-        {/* Stock Market Data Tab */}
+        {/* Stock Tab */}
         {activeTab === "stocks" && (
-          <div style={{ animation: 'fadeIn 0.5s ease-in' }}>
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h2 style={{
-                fontSize: '2rem',
-                margin: '0 0 10px 0',
-                background: 'linear-gradient(45deg, #00D4AA, #4ECDC4)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>📈 Stock Market Data</h2>
-              <p style={{ opacity: '0.8', fontSize: '1.1rem' }}>Real-time stock prices with trading volumes</p>
+          <div className="tab-content fade-in">
+            <div className="tab-header">
+              <h2>📈 Stock Market Data</h2>
+              <p>Real-time stock prices with trading volumes</p>
             </div>
             
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '20px',
-              marginBottom: '40px'
-            }}>
+            <div className="data-grid">
               {stockData.map((stock, index) => (
-                <div key={index} style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: '15px',
-                  padding: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  transition: 'all 0.3s ease'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '15px'
-                  }}>
-                    <h3 style={{ margin: '0', fontSize: '1.3rem', fontWeight: '700' }}>{stock.symbol}</h3>
-                    <span style={{ fontSize: '0.9rem', opacity: '0.7' }}>Vol: {stock.volume}</span>
+                <div key={index} className="data-card">
+                  <div className="card-header">
+                    <h3>{stock.symbol}</h3>
+                    <span className="volume">Vol: {stock.volume}</span>
                   </div>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: '10px',
-                    marginBottom: '15px'
-                  }}>
-                    <span style={{ fontSize: '1.8rem', fontWeight: '700' }}>${stock.price}</span>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '15px',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      background: stock.change.includes('+') 
-                        ? 'rgba(0, 212, 170, 0.3)' 
-                        : 'rgba(255, 107, 107, 0.3)',
-                      color: stock.change.includes('+') ? '#00D4AA' : '#FF6B6B'
-                    }}>
+                  <div className="card-content">
+                    <span className="main-value">${stock.price}</span>
+                    <span className={`change ${stock.change.includes('+') ? 'positive' : 'negative'}`}>
                       {stock.change}
                     </span>
                   </div>
-                  <div style={{ marginTop: '15px', height: '50px' }}>
+                  <div className="chart-container">
                     <ResponsiveContainer width="100%" height={50}>
-                      <LineChart data={stock.sparkline.map((value, i) => ({ value: parseFloat(value), index: i }))}>
+                      <LineChart data={stock.sparkline}>
                         <Line 
                           type="monotone" 
                           dataKey="value" 
@@ -931,17 +643,8 @@ const ExploreTrends = () => {
               ))}
             </div>
 
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '15px',
-              padding: '25px',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              marginTop: '30px'
-            }}>
-              <h3 style={{ margin: '0 0 20px 0', textAlign: 'center', fontSize: '1.5rem' }}>
-                📊 Stock Performance Comparison
-              </h3>
+            <div className="comparison-chart">
+              <h3>📊 Stock Performance Comparison</h3>
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={stockData.map(stock => ({
                   symbol: stock.symbol,
@@ -959,70 +662,28 @@ const ExploreTrends = () => {
           </div>
         )}
 
-        {/* Economic Indicators Tab */}
+        {/* Economic Tab */}
         {activeTab === "economics" && (
-          <div style={{ animation: 'fadeIn 0.5s ease-in' }}>
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h2 style={{
-                fontSize: '2rem',
-                margin: '0 0 10px 0',
-                background: 'linear-gradient(45deg, #00D4AA, #4ECDC4)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>🏦 Economic Indicators</h2>
-              <p style={{ opacity: '0.8', fontSize: '1.1rem' }}>Key global economic measurements and trends</p>
+          <div className="tab-content fade-in">
+            <div className="tab-header">
+              <h2>🏦 Economic Indicators</h2>
+              <p>Key global economic measurements and trends</p>
             </div>
             
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '20px',
-              marginBottom: '40px'
-            }}>
+            <div className="data-grid">
               {economicIndicators.map((indicator, index) => (
-                <div key={index} style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: '15px',
-                  padding: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  transition: 'all 0.3s ease'
-                }}>
-                  <div style={{ marginBottom: '15px' }}>
-                    <h4 style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}>{indicator.indicator}</h4>
-                    <span style={{
-                      fontSize: '0.9rem',
-                      opacity: '0.7',
-                      padding: '2px 8px',
-                      background: 'rgba(0, 212, 170, 0.2)',
-                      borderRadius: '10px'
-                    }}>
-                      {indicator.country}
-                    </span>
+                <div key={index} className="data-card">
+                  <div className="indicator-header">
+                    <h4>{indicator.indicator}</h4>
+                    <span className="country-tag">{indicator.country}</span>
                   </div>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: '10px',
-                    marginBottom: '10px'
-                  }}>
-                    <span style={{ fontSize: '1.6rem', fontWeight: '700' }}>{indicator.value}</span>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '15px',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      background: indicator.change.includes('+') 
-                        ? 'rgba(0, 212, 170, 0.3)' 
-                        : 'rgba(255, 107, 107, 0.3)',
-                      color: indicator.change.includes('+') ? '#00D4AA' : '#FF6B6B'
-                    }}>
+                  <div className="card-content">
+                    <span className="main-value">{indicator.value}</span>
+                    <span className={`change ${indicator.change.includes('+') ? 'positive' : 'negative'}`}>
                       {indicator.change}
                     </span>
                   </div>
-                  <div style={{ opacity: '0.7', fontSize: '0.8rem' }}>
-                    Updated: {indicator.lastUpdate}
-                  </div>
+                  <div className="last-update">Updated: {indicator.lastUpdate}</div>
                 </div>
               ))}
             </div>
@@ -1031,60 +692,22 @@ const ExploreTrends = () => {
 
         {/* Global Indices Tab */}
         {activeTab === "indices" && (
-          <div style={{ animation: 'fadeIn 0.5s ease-in' }}>
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h2 style={{
-                fontSize: '2rem',
-                margin: '0 0 10px 0',
-                background: 'linear-gradient(45deg, #00D4AA, #4ECDC4)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>📊 Global Market Indices</h2>
-              <p style={{ opacity: '0.8', fontSize: '1.1rem' }}>Major stock market indices worldwide</p>
+          <div className="tab-content fade-in">
+            <div className="tab-header">
+              <h2>📊 Global Market Indices</h2>
+              <p>Major stock market indices worldwide</p>
             </div>
             
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '20px',
-              marginBottom: '40px'
-            }}>
+            <div className="data-grid">
               {globalIndices.map((index, idx) => (
-                <div key={idx} style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: '15px',
-                  padding: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  transition: 'all 0.3s ease'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '15px'
-                  }}>
-                    <h3 style={{ margin: '0', fontSize: '1.3rem', fontWeight: '700' }}>{index.index}</h3>
-                    <span style={{ fontSize: '0.9rem', opacity: '0.7' }}>{index.country}</span>
+                <div key={idx} className="data-card">
+                  <div className="card-header">
+                    <h3>{index.index}</h3>
+                    <span className="country">{index.country}</span>
                   </div>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: '10px'
-                  }}>
-                    <span style={{ fontSize: '1.8rem', fontWeight: '700' }}>
-                      {parseFloat(index.value).toLocaleString()}
-                    </span>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '15px',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      background: index.change.includes('+') 
-                        ? 'rgba(0, 212, 170, 0.3)' 
-                        : 'rgba(255, 107, 107, 0.3)',
-                      color: index.change.includes('+') ? '#00D4AA' : '#FF6B6B'
-                    }}>
+                  <div className="card-content">
+                    <span className="main-value">{parseFloat(index.value).toLocaleString()}</span>
+                    <span className={`change ${index.change.includes('+') ? 'positive' : 'negative'}`}>
                       {index.change}
                     </span>
                   </div>
@@ -1092,17 +715,8 @@ const ExploreTrends = () => {
               ))}
             </div>
 
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '15px',
-              padding: '25px',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              marginTop: '30px'
-            }}>
-              <h3 style={{ margin: '0 0 20px 0', textAlign: 'center', fontSize: '1.5rem' }}>
-                🌍 Global Indices Performance
-              </h3>
+            <div className="comparison-chart">
+              <h3>🌍 Global Indices Performance</h3>
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={globalIndices.map(index => ({
                   index: index.index,
@@ -1122,58 +736,22 @@ const ExploreTrends = () => {
 
         {/* Commodities Tab */}
         {activeTab === "commodities" && (
-          <div style={{ animation: 'fadeIn 0.5s ease-in' }}>
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h2 style={{
-                fontSize: '2rem',
-                margin: '0 0 10px 0',
-                background: 'linear-gradient(45deg, #00D4AA, #4ECDC4)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>🥇 Commodities Prices</h2>
-              <p style={{ opacity: '0.8', fontSize: '1.1rem' }}>Live prices of precious metals, energy, and agricultural products</p>
+          <div className="tab-content fade-in">
+            <div className="tab-header">
+              <h2>🥇 Commodities Prices</h2>
+              <p>Live prices of precious metals, energy, and agricultural products</p>
             </div>
             
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '20px',
-              marginBottom: '40px'
-            }}>
+            <div className="data-grid">
               {commoditiesPrices.map((commodity, index) => (
-                <div key={index} style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: '15px',
-                  padding: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  transition: 'all 0.3s ease'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '15px'
-                  }}>
-                    <h3 style={{ margin: '0', fontSize: '1.3rem', fontWeight: '700' }}>{commodity.commodity}</h3>
-                    <span style={{ fontSize: '0.9rem', opacity: '0.7' }}>per {commodity.unit}</span>
+                <div key={index} className="data-card">
+                  <div className="card-header">
+                    <h3>{commodity.commodity}</h3>
+                    <span className="unit">per {commodity.unit}</span>
                   </div>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: '10px'
-                  }}>
-                    <span style={{ fontSize: '1.8rem', fontWeight: '700' }}>{commodity.price}</span>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '15px',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      background: commodity.change.includes('+') 
-                        ? 'rgba(0, 212, 170, 0.3)' 
-                        : 'rgba(255, 107, 107, 0.3)',
-                      color: commodity.change.includes('+') ? '#00D4AA' : '#FF6B6B'
-                    }}>
+                  <div className="card-content">
+                    <span className="main-value">{commodity.price}</span>
+                    <span className={`change ${commodity.change.includes('+') ? 'positive' : 'negative'}`}>
                       {commodity.change}
                     </span>
                   </div>
@@ -1183,82 +761,34 @@ const ExploreTrends = () => {
           </div>
         )}
 
-        {/* Cryptocurrency Tab */}
+        {/* Crypto Tab */}
         {activeTab === "crypto" && (
-          <div style={{ animation: 'fadeIn 0.5s ease-in' }}>
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h2 style={{
-                fontSize: '2rem',
-                margin: '0 0 10px 0',
-                background: 'linear-gradient(45deg, #00D4AA, #4ECDC4)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>₿ Cryptocurrency Markets</h2>
-              <p style={{ opacity: '0.8', fontSize: '1.1rem' }}>Live crypto prices and market capitalizations</p>
+          <div className="tab-content fade-in">
+            <div className="tab-header">
+              <h2>₿ Cryptocurrency Markets</h2>
+              <p>Live crypto prices and market capitalizations</p>
             </div>
             
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '20px',
-              marginBottom: '40px'
-            }}>
+            <div className="data-grid">
               {cryptoData.map((crypto, index) => (
-                <div key={index} style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: '15px',
-                  padding: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  transition: 'all 0.3s ease'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '15px'
-                  }}>
-                    <h3 style={{ margin: '0', fontSize: '1.3rem', fontWeight: '700' }}>{crypto.symbol}</h3>
-                    <span style={{ fontSize: '0.9rem', opacity: '0.7' }}>{crypto.name}</span>
+                <div key={index} className="data-card">
+                  <div className="card-header">
+                    <h3>{crypto.symbol}</h3>
+                    <span className="crypto-name">{crypto.name}</span>
                   </div>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: '10px',
-                    marginBottom: '15px'
-                  }}>
-                    <span style={{ fontSize: '1.8rem', fontWeight: '700' }}>{crypto.price}</span>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '15px',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      background: crypto.change.includes('+') 
-                        ? 'rgba(0, 212, 170, 0.3)' 
-                        : 'rgba(255, 107, 107, 0.3)',
-                      color: crypto.change.includes('+') ? '#00D4AA' : '#FF6B6B'
-                    }}>
+                  <div className="card-content">
+                    <span className="main-value">{crypto.price}</span>
+                    <span className={`change ${crypto.change.includes('+') ? 'positive' : 'negative'}`}>
                       {crypto.change}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.9rem', opacity: '0.8', marginTop: '10px' }}>
-                    <small>Market Cap: {crypto.marketCap}</small>
-                  </div>
+                  <div className="market-cap">Market Cap: {crypto.marketCap}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '15px',
-              padding: '25px',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              marginTop: '30px'
-            }}>
-              <h3 style={{ margin: '0 0 20px 0', textAlign: 'center', fontSize: '1.5rem' }}>
-                💰 Crypto Market Overview
-              </h3>
+            <div className="comparison-chart">
+              <h3>💰 Crypto Market Overview</h3>
               <ResponsiveContainer width="100%" height={400}>
                 <PieChart>
                   <Pie
@@ -1285,110 +815,36 @@ const ExploreTrends = () => {
           </div>
         )}
 
-        {/* Market News Tab */}
+        {/* News Tab */}
         {activeTab === "news" && (
-          <div style={{ animation: 'fadeIn 0.5s ease-in' }}>
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h2 style={{
-                fontSize: '2rem',
-                margin: '0 0 10px 0',
-                background: 'linear-gradient(45deg, #00D4AA, #4ECDC4)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>📰 Market News & Analysis</h2>
-              <p style={{ opacity: '0.8', fontSize: '1.1rem' }}>Latest financial news with sentiment analysis</p>
+          <div className="tab-content fade-in">
+            <div className="tab-header">
+              <h2>📰 Market News & Analysis</h2>
+              <p>Latest financial news with sentiment analysis</p>
             </div>
             
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '20px',
-              marginBottom: '40px'
-            }}>
+            <div className="news-grid">
               {marketNews.map((news, index) => (
-                <div key={index} style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: '15px',
-                  padding: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderLeft: `4px solid ${
-                    news.sentiment === 'positive' ? '#00D4AA' 
-                    : news.sentiment === 'negative' ? '#FF6B6B' 
-                    : '#FFD93D'
-                  }`,
-                  transition: 'all 0.3s ease',
-                  position: 'relative'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: '15px'
-                  }}>
-                    <div style={{ display: 'flex', gap: '10px', fontSize: '0.9rem', opacity: '0.8' }}>
-                      <span style={{ fontWeight: '600' }}>{news.source}</span>
-                      <span>{news.time}</span>
-                      <span style={{
-                        padding: '2px 6px',
-                        borderRadius: '10px',
-                        fontSize: '0.8rem',
-                        fontWeight: '600',
-                        background: news.impact === 'high' 
-                          ? 'rgba(255, 107, 107, 0.3)' 
-                          : news.impact === 'medium' 
-                            ? 'rgba(255, 217, 61, 0.3)' 
-                            : 'rgba(0, 212, 170, 0.3)',
-                        color: news.impact === 'high' 
-                          ? '#FF6B6B' 
-                          : news.impact === 'medium' 
-                            ? '#FFD93D' 
-                            : '#00D4AA'
-                      }}>
-                        {news.impact.toUpperCase()}
-                      </span>
+                <div key={index} className={`news-card ${news.sentiment}`}>
+                  <div className="news-meta">
+                    <div className="news-info">
+                      <span className="source">{news.source}</span>
+                      <span className="time">{news.time}</span>
+                      <span className={`impact ${news.impact}`}>{news.impact.toUpperCase()}</span>
                     </div>
-                    <div style={{
-                      padding: '5px 10px',
-                      borderRadius: '15px',
-                      fontSize: '0.8rem',
-                      fontWeight: '600',
-                      background: news.sentiment === 'positive' 
-                        ? 'rgba(0, 212, 170, 0.3)' 
-                        : news.sentiment === 'negative' 
-                          ? 'rgba(255, 107, 107, 0.3)' 
-                          : 'rgba(255, 217, 61, 0.3)',
-                      color: news.sentiment === 'positive' 
-                        ? '#00D4AA' 
-                        : news.sentiment === 'negative' 
-                          ? '#FF6B6B' 
-                          : '#FFD93D'
-                    }}>
+                    <div className={`sentiment-badge ${news.sentiment}`}>
                       {news.sentiment === 'positive' ? '📈' : news.sentiment === 'negative' ? '📉' : '📊'}
                       {news.sentiment.toUpperCase()}
                     </div>
                   </div>
-                  <h3 style={{ margin: '0 0 10px 0', fontSize: '1.2rem', lineHeight: '1.4' }}>
-                    {news.title}
-                  </h3>
-                  <p style={{ margin: '0', opacity: '0.8', lineHeight: '1.5' }}>
-                    {news.summary}
-                  </p>
+                  <h3 className="news-title">{news.title}</h3>
+                  <p className="news-summary">{news.summary}</p>
                 </div>
               ))}
             </div>
 
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '15px',
-              padding: '25px',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              marginTop: '30px'
-            }}>
-              <h3 style={{ margin: '0 0 20px 0', textAlign: 'center', fontSize: '1.5rem' }}>
-                📊 News Sentiment Analysis
-              </h3>
+            <div className="comparison-chart">
+              <h3>📊 News Sentiment Analysis</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -1418,72 +874,21 @@ const ExploreTrends = () => {
 
         {/* Alerts Modal */}
         {alertModal && (
-          <div style={{
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%',
-            background: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: '1000'
-          }}>
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(20px)',
-              borderRadius: '20px',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              maxWidth: '600px',
-              width: '90%',
-              maxHeight: '80vh',
-              overflow: 'hidden'
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '25px',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.2)'
-              }}>
-                <h2 style={{ margin: '0', fontSize: '1.8rem' }}>⚠️ Custom Alerts</h2>
-                <button 
-                  onClick={() => setAlertModal(false)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '1.5rem',
-                    color: 'inherit',
-                    cursor: 'pointer',
-                    padding: '5px'
-                  }}
-                >
-                  ✕
-                </button>
+          <div className="modal-overlay">
+            <div className="alert-modal">
+              <div className="modal-header">
+                <h2>⚠️ Custom Alerts</h2>
+                <button onClick={() => setAlertModal(false)} className="close-btn">✕</button>
               </div>
               
-              <div style={{ padding: '25px', maxHeight: '60vh', overflowY: 'auto' }}>
-                <div style={{
-                  marginBottom: '30px',
-                  paddingBottom: '30px',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.2)'
-                }}>
-                  <h3 style={{ margin: '0 0 20px 0', fontSize: '1.3rem' }}>Create New Alert</h3>
-                  <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', flexWrap: 'wrap' }}>
+              <div className="modal-content">
+                <div className="create-alert">
+                  <h3>Create New Alert</h3>
+                  <div className="alert-form">
                     <select 
                       value={newAlert.type} 
                       onChange={(e) => setNewAlert(prev => ({...prev, type: e.target.value}))}
-                      style={{
-                        flex: '1',
-                        padding: '12px 15px',
-                        border: '1px solid rgba(255, 255, 255, 0.3)',
-                        borderRadius: '10px',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        color: 'inherit',
-                        fontSize: '1rem',
-                        minWidth: '150px'
-                      }}
+                      className="form-input"
                     >
                       <option value="currency">Currency</option>
                       <option value="stock">Stock</option>
@@ -1493,32 +898,12 @@ const ExploreTrends = () => {
                       placeholder="Symbol (e.g., USD/EUR, AAPL)"
                       value={newAlert.symbol}
                       onChange={(e) => setNewAlert(prev => ({...prev, symbol: e.target.value}))}
-                      style={{
-                        flex: '1',
-                        padding: '12px 15px',
-                        border: '1px solid rgba(255, 255, 255, 0.3)',
-                        borderRadius: '10px',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        color: 'inherit',
-                        fontSize: '1rem',
-                        minWidth: '200px'
-                      }}
+                      className="form-input"
                     />
-                  </div>
-                  <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', flexWrap: 'wrap' }}>
                     <select 
                       value={newAlert.condition}
                       onChange={(e) => setNewAlert(prev => ({...prev, condition: e.target.value}))}
-                      style={{
-                        flex: '1',
-                        padding: '12px 15px',
-                        border: '1px solid rgba(255, 255, 255, 0.3)',
-                        borderRadius: '10px',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        color: 'inherit',
-                        fontSize: '1rem',
-                        minWidth: '150px'
-                      }}
+                      className="form-input"
                     >
                       <option value="above">Above</option>
                       <option value="below">Below</option>
@@ -1529,81 +914,28 @@ const ExploreTrends = () => {
                       step="0.01"
                       value={newAlert.threshold}
                       onChange={(e) => setNewAlert(prev => ({...prev, threshold: e.target.value}))}
-                      style={{
-                        flex: '1',
-                        padding: '12px 15px',
-                        border: '1px solid rgba(255, 255, 255, 0.3)',
-                        borderRadius: '10px',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        color: 'inherit',
-                        fontSize: '1rem',
-                        minWidth: '200px'
-                      }}
+                      className="form-input"
                     />
+                    <button onClick={addCustomAlert} className="add-alert-btn">Add Alert</button>
                   </div>
-                  <button 
-                    onClick={addCustomAlert} 
-                    style={{
-                      padding: '12px 25px',
-                      border: 'none',
-                      borderRadius: '25px',
-                      background: 'linear-gradient(45deg, #00D4AA, #4ECDC4)',
-                      color: 'white',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease'
-                    }}
-                  >
-                    Add Alert
-                  </button>
                 </div>
 
-                <div style={{ marginBottom: '25px' }}>
-                  <h3 style={{ margin: '0 0 15px 0', fontSize: '1.2rem' }}>
-                    Active Alerts ({customAlerts.length})
-                  </h3>
+                <div className="active-alerts">
+                  <h3>Active Alerts ({customAlerts.length})</h3>
                   {customAlerts.map(alert => (
-                    <div key={alert.id} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '12px 15px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      borderRadius: '10px',
-                      marginBottom: '10px',
-                      border: '1px solid rgba(255, 255, 255, 0.2)'
-                    }}>
+                    <div key={alert.id} className="alert-item">
                       <span>{alert.type}: {alert.symbol} {alert.condition} {alert.threshold}</span>
-                      <button 
-                        onClick={() => removeAlert(alert.id)}
-                        style={{
-                          background: 'rgba(255, 107, 107, 0.3)',
-                          border: 'none',
-                          borderRadius: '50%',
-                          width: '30px',
-                          height: '30px',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        🗑️
-                      </button>
+                      <button onClick={() => removeAlert(alert.id)} className="delete-btn">🗑️</button>
                     </div>
                   ))}
                 </div>
 
-                <div>
-                  <h3 style={{ margin: '0 0 15px 0', fontSize: '1.2rem' }}>Recent Triggered Alerts</h3>
+                <div className="triggered-alerts">
+                  <h3>Recent Triggered Alerts</h3>
                   {alerts.map(alert => (
-                    <div key={alert.id} style={{
-                      padding: '10px 15px',
-                      background: 'rgba(255, 107, 107, 0.1)',
-                      borderRadius: '8px',
-                      marginBottom: '10px',
-                      borderLeft: '4px solid #FF6B6B'
-                    }}>
-                      <span style={{ display: 'block', fontWeight: '500' }}>{alert.message}</span>
-                      <small style={{ opacity: '0.7', fontSize: '0.8rem' }}>{alert.timestamp}</small>
+                    <div key={alert.id} className="triggered-alert">
+                      <span className="alert-message">{alert.message}</span>
+                      <small className="alert-time">{alert.timestamp}</small>
                     </div>
                   ))}
                 </div>
