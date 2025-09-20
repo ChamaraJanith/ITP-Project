@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { MdInventory, MdAnalytics, MdHome, MdDescription } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import jsPDF from 'jspdf';
-import "../Financial_Manager/financialManagePayments.css";
+import "./FinancialManagePayments.css";
 
 const API_URL = "http://localhost:7000/api/payments";
 
@@ -489,20 +489,20 @@ function FinancialManagePayments() {
   };
 
   return (
-    <div className="financial-container">
+    <div className="fm-financial-container">
       {/* Header */}
-      <div className="financial-header">
-        <h2 className="financial-title">Payment Management</h2>
-        <div className="header-buttons-container">
-          <button className="return-home-btn" onClick={handleReturnHome}>
+      <div className="fm-financial-header">
+        <h2 className="fm-financial-title">Payment Management</h2>
+        <div className="fm-header-buttons-container">
+          <button className="fm-btn-base fm-return-home-btn" onClick={handleReturnHome}>
             <MdHome size={18} />
             <span style={{ marginLeft: 6 }}>Return Home</span>
           </button>
-          <button className="total-value-btn" onClick={handleTotalValueClick}>
+          <button className="fm-btn-base fm-total-value-btn" onClick={handleTotalValueClick}>
             <MdAnalytics size={18} />
             <span style={{ marginLeft: 6 }}>Payment Analysis</span>
           </button>
-          <button className="inventory-btn" onClick={handleInventoryAnalysisClick}>
+          <button className="fm-btn-base fm-inventory-btn" onClick={handleInventoryAnalysisClick}>
             <MdInventory size={18} />
             <span style={{ marginLeft: 6 }}>Inventory Analysis</span>
           </button>
@@ -510,21 +510,21 @@ function FinancialManagePayments() {
       </div>
 
       {/* Floating Action Buttons */}
-      <div className="fab-container">
-        <div className="fab fab-purple" onClick={generateFinancialReport} title="Generate Financial Report">
+      <div className="fm-fab-container">
+        <div className="fm-fab fm-fab-purple" onClick={generateFinancialReport} title="Generate Financial Report">
           <MdDescription size={24} />
         </div>
-        <div className="fab fab-pink" onClick={handleTotalValueClick} title="Payment Analysis">
+        <div className="fm-fab fm-fab-pink" onClick={handleTotalValueClick} title="Payment Analysis">
           <MdAnalytics size={24} />
         </div>
-        <div className="fab fab-green" onClick={handleInventoryAnalysisClick} title="Inventory Analysis">
+        <div className="fm-fab fm-fab-green" onClick={handleInventoryAnalysisClick} title="Inventory Analysis">
           <MdInventory size={24} />
         </div>
       </div>
 
       {message && (
         <div
-          className={`financial-message ${
+          className={`fm-financial-message ${
             /error|fail|not /i.test(message) ? "error" : "success"
           }`}
         >
@@ -532,7 +532,7 @@ function FinancialManagePayments() {
         </div>
       )}
 
-      <table className="financial-table">
+      <table className="fm-financial-table">
         <thead>
           <tr>
             <th>Invoice #</th>
@@ -561,10 +561,10 @@ function FinancialManagePayments() {
               <td>{p.paymentMethod}</td>
               <td>{p.date ? new Date(p.date).toLocaleDateString() : ''}</td>
               <td>{p.note}</td>
-              <td className="financial-actions">
+              <td className="fm-financial-actions">
                 <button onClick={() => handleEdit(p)}>Edit</button>{" "}
                 <button
-                  className="delete-btn"
+                  className="fm-delete-btn"
                   onClick={() => handleDelete(p._id)}
                 >
                   Delete
@@ -575,7 +575,7 @@ function FinancialManagePayments() {
         </tbody>
       </table>
 
-      <form onSubmit={handleSubmit} className="financial-form">
+      <form onSubmit={handleSubmit} className="fm-financial-form">
         <h3>{editingId ? "Edit Payment" : "New Payment"}</h3>
         
         <input
@@ -700,3 +700,5 @@ function FinancialManagePayments() {
 }
 
 export default FinancialManagePayments;
+
+
