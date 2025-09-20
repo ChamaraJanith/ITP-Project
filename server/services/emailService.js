@@ -294,7 +294,12 @@ class EmailService {
             content: pdfBuffer,
             contentType: 'application/pdf'
           }
-        ]
+        ],
+        // Fix: Use base64 encoding instead of quoted-printable
+        textEncoding: 'base64',
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8'
+        }
       };
 
       console.log('📧 Sending prescription email to:', prescriptionData.patientEmail);
@@ -356,7 +361,12 @@ class EmailService {
               </p>
             </div>
           </div>
-        `
+        `,
+        // Fix: Use base64 encoding instead of quoted-printable
+        textEncoding: 'base64',
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8'
+        }
       };
 
       console.log('📧 Sending test email to chamarasweed44@gmail.com...');
@@ -467,7 +477,12 @@ class EmailService {
               </p>
             </div>
           </div>
-        `
+        `,
+        // Fix: Use base64 encoding instead of quoted-printable
+        textEncoding: 'base64',
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8'
+        }
       };
 
       console.log(`📧 Sending ${isSingleItemAlert ? 'individual' : 'bulk'} alert for ${items.length} item(s)...`);
@@ -500,7 +515,12 @@ class EmailService {
             </p>
           </div>
         </div>
-      `
+      `,
+      // Fix: Use base64 encoding instead of quoted-printable
+      textEncoding: 'base64',
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8'
+      }
     };
 
     const result = await this.transporter.sendMail(mailOptions);
@@ -601,20 +621,22 @@ class EmailService {
 
               <div style="background: #d4edda; padding: 25px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #28a745;">
                 <h3 style="margin: 0 0 20px 0; color: #155724;">🏥 DELIVERY INFORMATION</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                  <div>
-                    <p style="margin: 5px 0;"><strong>Hospital:</strong> HealX Healthcare Center</p>
-                    <p style="margin: 5px 0;"><strong>Department:</strong> Medical Supplies & Equipment</p>
-                    <p style="margin: 5px 0;"><strong>Loading Dock:</strong> Emergency Supplies Bay</p>
-                    <p style="margin: 5px 0;"><strong>Hours:</strong> 24/7 Emergency Receiving</p>
-                  </div>
-                  <div>
-                    <p style="margin: 5px 0;"><strong>Contact:</strong> Medical Supplies Manager</p>
-                    <p style="margin: 5px 0;"><strong>Phone:</strong> +1-555-MEDICAL (24hr)</p>
-                    <p style="margin: 5px 0;"><strong>Email:</strong> supplies@healx-healthcare.com</p>
-                    <p style="margin: 5px 0;"><strong>Required Delivery:</strong> <span style="color: #dc3545; font-weight: bold;">Within ${item.autoRestock?.supplier?.leadTimeDays || 1} Day(s)</span></p>
-                  </div>
-                </div>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="width: 50%; padding: 0 10px 0 0; vertical-align: top;">
+                      <p style="margin: 5px 0;"><strong>Hospital:</strong> HealX Healthcare Center</p>
+                      <p style="margin: 5px 0;"><strong>Department:</strong> Medical Supplies & Equipment</p>
+                      <p style="margin: 5px 0;"><strong>Loading Dock:</strong> Emergency Supplies Bay</p>
+                      <p style="margin: 5px 0;"><strong>Hours:</strong> 24/7 Emergency Receiving</p>
+                    </td>
+                    <td style="width: 50%; padding: 0 0 0 10px; vertical-align: top;">
+                      <p style="margin: 5px 0;"><strong>Contact:</strong> Medical Supplies Manager</p>
+                      <p style="margin: 5px 0;"><strong>Phone:</strong> +1-555-MEDICAL (24hr)</p>
+                      <p style="margin: 5px 0;"><strong>Email:</strong> supplies@healx-healthcare.com</p>
+                      <p style="margin: 5px 0;"><strong>Required Delivery:</strong> <span style="color: #dc3545; font-weight: bold;">Within ${item.autoRestock?.supplier?.leadTimeDays || 1} Day(s)</span></p>
+                    </td>
+                  </tr>
+                </table>
               </div>
 
               <div class="action-required">
@@ -664,8 +686,11 @@ class EmailService {
         headers: {
           'X-Priority': '1',
           'X-MSMail-Priority': 'High',
-          'Importance': 'high'
-        }
+          'Importance': 'high',
+          'Content-Type': 'text/html; charset=utf-8'
+        },
+        // Fix: Use base64 encoding instead of quoted-printable
+        textEncoding: 'base64'
       });
 
       console.log(`✅ Supplier order email sent successfully! MessageId: ${result.messageId}`);
@@ -758,7 +783,12 @@ class EmailService {
         from: `HealX Healthcare System <${process.env.EMAIL_USER}>`,
         to: adminEmail,
         subject: subject,
-        html: htmlMessage
+        html: htmlMessage,
+        // Fix: Use base64 encoding instead of quoted-printable
+        textEncoding: 'base64',
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8'
+        }
       });
 
       console.log(`✅ Admin confirmation email sent for ${item.name} restock`);
@@ -813,7 +843,12 @@ export async function sendCriticalStockAlert(criticalItems) {
       from: `HealX Healthcare <${process.env.EMAIL_USER}>`,
       to: ['admin@hospital.com', 'inventory@hospital.com', 'chamarasweed44@gmail.com'],
       subject: subject,
-      html: html
+      html: html,
+      // Fix: Use base64 encoding instead of quoted-printable
+      textEncoding: 'base64',
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8'
+      }
     };
 
     const result = await emailService.transporter.sendMail(mailOptions);
@@ -851,7 +886,12 @@ export async function sendRestockSummary(items) {
       from: `HealX Healthcare <${process.env.EMAIL_USER}>`,
       to: ['procurement@hospital.com', 'chamarasweed44@gmail.com'],
       subject: subject,
-      html: html
+      html: html,
+      // Fix: Use base64 encoding instead of quoted-printable
+      textEncoding: 'base64',
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8'
+      }
     };
 
     const result = await emailService.transporter.sendMail(mailOptions);
