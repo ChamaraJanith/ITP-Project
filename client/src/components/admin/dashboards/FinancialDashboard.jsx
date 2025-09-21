@@ -42,7 +42,7 @@ const FinancialDashboard = () => {
     try {
       const response = await fetch(API_URL);
       const text = await response.text();
-      
+
       try {
         const data = JSON.parse(text);
         return data || [];
@@ -156,7 +156,7 @@ const FinancialDashboard = () => {
     if (!paymentsData || paymentsData.length === 0) return [];
 
     const activities = [];
-    
+
     // Get recent payments (last 10)
     const recentPayments = paymentsData
       .filter(payment => payment.date)
@@ -201,7 +201,7 @@ const FinancialDashboard = () => {
         stats: realTimeStats,
         recentActivities: recentActivities
       });
-      
+
     } catch (error) {
       console.error("❌ Error loading financial dashboard:", error);
       setError("Failed to load financial dashboard");
@@ -259,33 +259,53 @@ const FinancialDashboard = () => {
         navigate("/admin/financial/payrolls");
         break;
 
-      case "expense_tracking":navigate("/admin/financial/expenses");
+      case "expense_tracking":
+        navigate("/admin/financial/expenses");
         break;
 
-      
-      case "explore_trends":navigate("/admin/financial/trends");
+      case "explore_trends":
+        navigate("/admin/financial/trends");
         break;
-        
 
       case "payroll_analytics":
-         navigate("/admin/financial/payrolls/total-view", {
+        navigate("/admin/financial/payrolls/total-view", {
           state: {
             payrolls: [], 
             type: 'payroll'
-            }
-
+          }
         });
         break; 
-        
+
       default:
         console.log("Clicked feature:", feature);
+    }
+  };
+
+  // **SIMPLIFIED: Handle operational task clicks**
+  const handleOperationalTaskClick = (task) => {
+    switch (task) {
+      case "send_emails":
+        navigate("/admin/financial/send-email");
+        break;
+
+      case "send_notifications":
+        navigate("/admin/notifications");
+        break;
+
+      case "generate_reports":
+        
+        navigate("/admin/reports");
+        break;
+
+      default:
+        console.log("Clicked operational task:", task);
     }
   };
 
   // Handle analytics selection
   const handleFinancialAnalyticsSelection = (analyticsType) => {
     setShowAnalyticsModal(false);
-    
+
     if (analyticsType === "financial") {
       navigate("/admin/financial/payments/total-view", {
         state: {
@@ -399,78 +419,6 @@ const FinancialDashboard = () => {
                 </div>
               </div>
             </div>
-
-            {/* Rest of your existing JSX remains the same... */}
-            {/* Just update the data sources to use real data */}
-
-            {/* Billing Modal */}
-            {showBilling && (
-              <div className="fd-billing-modal">
-                <div className="fd-billing-content">
-                  <h2>🧾 Recent Billing Information</h2>
-                  {payments.slice(0, 3).map((payment, index) => (
-                    <div key={index} className="fd-bill-card">
-                      <p><strong>Invoice #:</strong> {payment.invoiceNumber}</p>
-                      <p><strong>Hospital:</strong> {payment.hospitalName}</p>
-                      <p><strong>Patient:</strong> {payment.patientName}</p>
-                      <p><strong>Amount:</strong> ${(payment.totalAmount || 0).toLocaleString()}</p>
-                      <p><strong>Paid:</strong> ${(payment.amountPaid || 0).toLocaleString()}</p>
-                      <p><strong>Status:</strong> 
-                        {payment.amountPaid >= payment.totalAmount ? 
-                          <span style={{color: 'green'}}> Paid ✅</span> : 
-                          <span style={{color: 'orange'}}> Pending ⏳</span>
-                        }
-                      </p>
-                    </div>
-                  ))}
-                  <button className="fd-close-btn" onClick={() => setShowBilling(false)}>
-                    Close
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Analytics Selection Modal */}
-            {showAnalyticsModal && (
-              <div className="fd-analytics-modal">
-                <div className="fd-analytics-modal-content">
-                  <h2>📊 Select Analytics Type</h2>
-                  <p>Choose the type of analytics you want to view:</p>
-                  
-                  <div className="fd-analytics-options">
-                    <button 
-                      className="fd-analytics-option fd-financial"
-                      onClick={() => handleFinancialAnalyticsSelection("financial")}
-                    >
-                      <div className="fd-option-icon">💰</div>
-                      <div className="fd-option-details">
-                        <h3>Financial Analytics</h3>
-                        <p>View payment trends, revenue data, and financial insights</p>
-                        <small>{dashboardData.stats?.totalPayments || 0} payments analyzed</small>
-                      </div>
-                    </button>
-
-                    <button 
-                      className="fd-analytics-option fd-inventory"
-                      onClick={() => handleFinancialAnalyticsSelection("inventory")}
-                    >
-                      <div className="fd-option-icon">📦</div>
-                      <div className="fd-option-details">
-                        <h3>Inventory Analytics</h3>
-                        <p>View stock levels, inventory trends, and supply metrics</p>
-                      </div>
-                    </button>
-                  </div>
-
-                  <button 
-                    className="fd-analytics-close-btn" 
-                    onClick={() => setShowAnalyticsModal(false)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Charts Section - Charts will now show real data */}
             <div className="fd-charts-section">
@@ -595,9 +543,104 @@ const FinancialDashboard = () => {
                 >
                   EXPLORE TRENDS
                 </button>
-
               </div>
             </div>
+
+            {/* **SIMPLIFIED: Operational Tasks Section with just Email Button** */}
+            <div className="fd-operational-section">
+              <h2>⚙️ Operational Tasks</h2>
+              <div className="fd-operational-grid">
+                <button
+                  className="fd-operational-button"
+                  onClick={() => handleOperationalTaskClick("send_emails")}
+                >
+                  📧 SEND EMAILS
+                </button>
+
+                <button
+                  className="fd-operational-button"
+                  onClick={() => handleOperationalTaskClick("send_notifications")}
+                >
+                  🔔 SEND NOTIFICATIONS
+                </button>
+
+                <button
+                  className="fd-operational-button"
+                  onClick={() => handleOperationalTaskClick("generate_reports")}
+                >
+                  📋 GENERATE REPORTS
+                </button>
+              </div>
+            </div>
+
+            {/* Billing Modal */}
+            {showBilling && (
+              <div className="fd-billing-modal">
+                <div className="fd-billing-content">
+                  <h2>🧾 Recent Billing Information</h2>
+                  {payments.slice(0, 3).map((payment, index) => (
+                    <div key={index} className="fd-bill-card">
+                      <p><strong>Invoice #:</strong> {payment.invoiceNumber}</p>
+                      <p><strong>Hospital:</strong> {payment.hospitalName}</p>
+                      <p><strong>Patient:</strong> {payment.patientName}</p>
+                      <p><strong>Amount:</strong> ${(payment.totalAmount || 0).toLocaleString()}</p>
+                      <p><strong>Paid:</strong> ${(payment.amountPaid || 0).toLocaleString()}</p>
+                      <p><strong>Status:</strong> 
+                        {payment.amountPaid >= payment.totalAmount ? 
+                          <span style={{color: 'green'}}> Paid ✅</span> : 
+                          <span style={{color: 'orange'}}> Pending ⏳</span>
+                        }
+                      </p>
+                    </div>
+                  ))}
+                  <button className="fd-close-btn" onClick={() => setShowBilling(false)}>
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Analytics Selection Modal */}
+            {showAnalyticsModal && (
+              <div className="fd-analytics-modal">
+                <div className="fd-analytics-modal-content">
+                  <h2>📊 Select Analytics Type</h2>
+                  <p>Choose the type of analytics you want to view:</p>
+
+                  <div className="fd-analytics-options">
+                    <button 
+                      className="fd-analytics-option fd-financial"
+                      onClick={() => handleFinancialAnalyticsSelection("financial")}
+                    >
+                      <div className="fd-option-icon">💰</div>
+                      <div className="fd-option-details">
+                        <h3>Financial Analytics</h3>
+                        <p>View payment trends, revenue data, and financial insights</p>
+                        <small>{dashboardData.stats?.totalPayments || 0} payments analyzed</small>
+                      </div>
+                    </button>
+
+                    <button 
+                      className="fd-analytics-option fd-inventory"
+                      onClick={() => handleFinancialAnalyticsSelection("inventory")}
+                    >
+                      <div className="fd-option-icon">📦</div>
+                      <div className="fd-option-details">
+                        <h3>Inventory Analytics</h3>
+                        <p>View stock levels, inventory trends, and supply metrics</p>
+                      </div>
+                    </button>
+                  </div>
+
+                  <button 
+                    className="fd-analytics-close-btn" 
+                    onClick={() => setShowAnalyticsModal(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Recent Activities - Now showing real data */}
             <div className="fd-activity-section">
