@@ -28,6 +28,7 @@ import InventoryTotalView from './components/admin/Admin/InventoryTotalView';
 import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
 import PaymentTotalView from './components/admin/Financial_Manager/PaymentTotalView';
 import PatientDetailsWithCharts from './components/admin/Admin/PatientDetailsWithCharts';
+import EmergencyAlertsPage from './components/admin/Doctor/EmergencyAlertsPage';
 
 import DoctorItemRequestModal from "./components/admin/Doctor/DoctorInventoryPage"; // keep modal import [21]
 
@@ -297,6 +298,16 @@ function App() {
                 </ProtectedAdminRoute>
               } 
             />
+
+            {/* ✅ NEW: emergency-alerts Route */}
+            <Route 
+            path="/admin/doctor/emergency-alerts" 
+            element={
+              <ProtectedAdminRoute allowedRoles={['doctor', 'admin']}>
+                <EmergencyAlertsPage />
+              </ProtectedAdminRoute>
+            } 
+          />
 
             {/* ✅ NEW: Procurement & Suppliers Route */}
             <Route 

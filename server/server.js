@@ -27,6 +27,7 @@ import consultationRouter from './routes/consultationRoutes.js';
 import prescriptionRouter from './routes/prescriptionRoutes.js';
 import payrollrouter from './routes/FinancialPayrollRoutes.js';  
 import prescriptionNotificationRouter from './routes/prescriptionNotifications.js'
+import emergencyAlertRouter from './routes/emergencyAlertRoutes.js';
 
 
 
@@ -147,6 +148,9 @@ app.use("/api/payments", financialPayRoutes);
 app.use("/api/prescription", consultationRouter);
 app.use("/api/doctor/prescriptions", prescriptionRouter);
 app.use("/api/payrolls", payrollrouter);
+
+console.log('🚨 Mounting emergency alerts router at /api/doctor/emergency-alerts');
+app.use('/api/doctor/emergency-alerts', emergencyAlertRouter);
 
 // Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
