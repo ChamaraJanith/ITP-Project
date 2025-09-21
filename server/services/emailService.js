@@ -85,7 +85,8 @@ class EmailService {
     }
   }
 
-  // ✅ EXISTING: Send prescription PDF to patient
+
+  // ✅ NEW: Send prescription PDF to patient
   async sendPrescriptionToPatient(prescriptionData, pdfBuffer, isUpdate = false) {
     console.log('📧 sendPrescriptionToPatient called for:', prescriptionData.patientEmail);
     
@@ -294,11 +295,7 @@ class EmailService {
             content: pdfBuffer,
             contentType: 'application/pdf'
           }
-        ],
-        textEncoding: 'base64',
-        headers: {
-          'Content-Type': 'text/html; charset=utf-8'
-        }
+        ]
       };
 
       console.log('📧 Sending prescription email to:', prescriptionData.patientEmail);
