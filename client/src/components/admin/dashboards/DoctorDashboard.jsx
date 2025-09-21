@@ -8,6 +8,49 @@ import './DoctorDashboard.css';
 import { useNavigate } from "react-router-dom";
 import PatientRecordsPage from "../Doctor/PatientRecordsPage.jsx";
 
+// Add this function to fetch emergency alert count
+const fetchEmergencyAlertCount = async () => {
+  try {
+    const response = await fetch('http://localhost:7000/api/doctor/emergency-alerts/stats');
+    const data = await response.json();
+    
+    if (data.success) {
+      setDashboardData(prev => ({
+        ...prev,
+        stats: {
+          ...prev.stats,
+          emergencyAlerts: data.data.activeAlerts
+        }
+      }));
+    }
+  } catch (error) {
+    console.error("Error fetching emergency alert count:", error);
+  }
+};
+
+// Update the initializeDashboard function to include this call
+const initializeDashboard = async () => {
+  try {
+    const adminData = localStorage.getItem("admin");
+    if (adminData) {
+      setAdmin(JSON.parse(adminData));
+    }
+
+    const response = await adminDashboardApi.accessDoctorDashboard();
+    if (response.success) {
+      setDashboardData(response.data);
+    }
+    
+    // Fetch emergency alert count
+    fetchEmergencyAlertCount();
+  } catch (error) {
+    console.error("❌ Error loading doctor dashboard:", error);
+    setError("Failed to load doctor dashboard");
+  } finally {
+    setLoading(false);
+  }
+};
+
 const DoctorDashboard = () => {
   const [admin, setAdmin] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
@@ -46,6 +89,7 @@ const DoctorDashboard = () => {
       </AdminLayout>
     );
   }
+  
 
   return (
     <AdminLayout admin={admin} title="Doctor Dashboard">
@@ -109,7 +153,7 @@ const DoctorDashboard = () => {
                 </button>
                 <button
                   className="feature-card" 
-                  onClick={() => navigate("/admin/doctor/prescription-dashboard") }
+                  onClick={() => navigate("/admin/doctor/emergency-alerts") }
                 >
                   EMERGENCY ALERTS
                 </button>
