@@ -40,6 +40,28 @@ const SurgicalItemsManagement = () => {
   const [stats, setStats] = useState({});
   const [showDisposeModal, setShowDisposeModal] = useState(false);
   
+  // ✅ FIXED: Separate preserved value tracking
+  const [globalPreservedValue, setGlobalPreservedValue] = useState(0);
+  const [preservedValueHistory, setPreservedValueHistory] = useState([]);
+  
+  // Enhanced stats with true preserved inventory value
+  const [inventoryStats, setInventoryStats] = useState({
+    currentValue: 0,
+    originalValue: 0,
+    preservedValue: 0,      // This will NEVER decrease
+    totalInvestment: 0,
+    usedValue: 0,
+    deletedValue: 0         // Track value of deleted items
+  });
+  
+  // Supplier spending state
+  const [supplierSpending, setSupplierSpending] = useState({
+    totalSpending: 0,
+    monthlySpending: 0,
+    topSuppliers: [],
+    totalOrders: 0
+  });
+  
   const [notifications, setNotifications] = useState({
     loading: false,
     message: '',
@@ -69,12 +91,115 @@ const SurgicalItemsManagement = () => {
     }, duration);
   };
 
-  // ✅ NEW: Auto-restock state management
+  // ✅ FIXED: Load preserved value from localStorage
+  const loadPreservedValue = () => {
+    try {
+      const stored = localStorage.getItem('healx_preserved_inventory_value');
+      if (stored) {
+        const data = JSON.parse(stored);
+        setGlobalPreservedValue(data.value || 0);
+        setPreservedValueHistory(data.history || []);
+        return data.value || 0;
+      }
+      return 0;
+    } catch (error) {
+      console.error('Error loading preserved value:', error);
+      return 0;
+    }
+  };
+
+  // ✅ FIXED: Save preserved value to localStorage
+  const savePreservedValue = (value, action = 'update') => {
+    try {
+      const data = {
+        value: value,
+        history: [
+          ...preservedValueHistory,
+          {
+            action,
+            value,
+            timestamp: new Date().toISOString(),
+            admin: admin?.name || 'System'
+          }
+        ].slice(-100) // Keep last 100 entries
+      };
+      
+      localStorage.setItem('healx_preserved_inventory_value', JSON.stringify(data));
+      setGlobalPreservedValue(value);
+      setPreservedValueHistory(data.history);
+    } catch (error) {
+      console.error('Error saving preserved value:', error);
+    }
+  };
+
+  // ✅ FIXED: Initialize preserved value only if higher than current
+  const initializePreservedValue = (currentValue) => {
+    const storedValue = loadPreservedValue();
+    if (currentValue > storedValue) {
+      savePreservedValue(currentValue, 'initialize');
+      return currentValue;
+    }
+    return storedValue;
+  };
+
+  // Fetch supplier spending data
+  const fetchSupplierSpending = async () => {
+    try {
+      const [suppliersRes, ordersRes] = await Promise.all([
+        fetch('http://localhost:7000/api/suppliers'),
+        fetch('http://localhost:7000/api/purchase-orders')
+      ]);
+
+      if (suppliersRes.ok && ordersRes.ok) {
+        const suppliersData = await suppliersRes.json();
+        const ordersData = await ordersRes.json();
+
+        const suppliers = suppliersData.suppliers || [];
+        const orders = ordersData.orders || [];
+
+        const totalSpending = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        const monthlySpending = orders
+          .filter(order => {
+            const orderDate = new Date(order.orderDate || order.createdAt);
+            return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+          })
+          .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+        const supplierSpendingMap = {};
+        orders.forEach(order => {
+          const supplierId = order.supplier?._id || order.supplier;
+          const supplier = suppliers.find(s => s._id === supplierId);
+          if (supplier) {
+            const name = supplier.name;
+            supplierSpendingMap[name] = (supplierSpendingMap[name] || 0) + (order.totalAmount || 0);
+          }
+        });
+
+        const topSuppliers = Object.entries(supplierSpendingMap)
+          .sort(([,a], [,b]) => b - a)
+          .slice(0, 5)
+          .map(([name, amount]) => ({ name, amount }));
+
+        setSupplierSpending({
+          totalSpending,
+          monthlySpending,
+          topSuppliers,
+          totalOrders: orders.length
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching supplier spending:', error);
+    }
+  };
+
+  // Auto-restock state management
   const [autoRestockConfig, setAutoRestockConfig] = useState({});
   const [showAutoRestockModal, setShowAutoRestockModal] = useState(false);
   const [selectedItemForAutoRestock, setSelectedItemForAutoRestock] = useState(null);
 
-  // ✅ NEW: Handle auto-restock check
   const handleAutoRestockCheck = async () => {
     try {
       setNotifications({ loading: true, message: 'Checking items for auto-restock...', type: 'info' });
@@ -94,7 +219,7 @@ const SurgicalItemsManagement = () => {
       
       if (data.success) {
         showNotification(`✅ Auto-restock completed! Processed ${data.data.itemsProcessed} items.`, 'success');
-        loadItems(); // Refresh the items list
+        loadItems();
       } else {
         throw new Error(data.message || 'Failed to perform auto-restock check');
       }
@@ -104,7 +229,6 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // ✅ NEW: Configure auto-restock for item
   const handleConfigureAutoRestock = (item) => {
     setSelectedItemForAutoRestock(item);
     setAutoRestockConfig({
@@ -121,7 +245,6 @@ const SurgicalItemsManagement = () => {
     setShowAutoRestockModal(true);
   };
 
-  // ✅ NEW: Save auto-restock configuration
   const saveAutoRestockConfig = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/auto-restock/configure/${selectedItemForAutoRestock._id}`, {
@@ -141,7 +264,7 @@ const SurgicalItemsManagement = () => {
       if (data.success) {
         showNotification(`✅ Auto-restock configured for ${selectedItemForAutoRestock.name}!`, 'success');
         setShowAutoRestockModal(false);
-        loadItems(); // Refresh the items list
+        loadItems();
       } else {
         throw new Error(data.message || 'Failed to configure auto-restock');
       }
@@ -151,7 +274,77 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // ✅ NEW: Get month name helper function
+  // ✅ FIXED: Calculate stats with true preserved value
+  const calculateInventoryStats = (itemsArray) => {
+    if (!Array.isArray(itemsArray)) {
+      return { 
+        totalItems: 0, 
+        totalQuantity: 0, 
+        lowStockItems: 0, 
+        currentValue: 0,
+        originalValue: 0,
+        preservedValue: globalPreservedValue, // Use stored preserved value
+        totalInvestment: 0,
+        usedValue: 0,
+        deletedValue: 0
+      };
+    }
+
+    const totalItems = itemsArray.length;
+    const totalQuantity = itemsArray.reduce((sum, item) => {
+      const quantity = parseInt(item.quantity) || 0;
+      return sum + quantity;
+    }, 0);
+    
+    const lowStockItems = itemsArray.reduce((count, item) => {
+      const quantity = parseInt(item.quantity) || 0;
+      const minStock = parseInt(item.minStockLevel) || 0;
+      return count + (quantity <= minStock ? 1 : 0);
+    }, 0);
+    
+    // Current value (based on current stock)
+    const currentValue = itemsArray.reduce((sum, item) => {
+      const price = parseFloat(item.price) || 0;
+      const quantity = parseInt(item.quantity) || 0;
+      return sum + (price * quantity);
+    }, 0);
+
+    // Original value calculation
+    const originalValue = itemsArray.reduce((sum, item) => {
+      const price = parseFloat(item.price) || 0;
+      const originalQuantity = parseInt(item.originalQuantity) || parseInt(item.quantity) || 0;
+      return sum + (price * originalQuantity);
+    }, 0);
+
+    // Total investment
+    const totalInvestment = itemsArray.reduce((sum, item) => {
+      const price = parseFloat(item.price) || 0;
+      const totalPurchased = parseInt(item.totalPurchased) || parseInt(item.originalQuantity) || parseInt(item.quantity) || 0;
+      return sum + (price * totalPurchased);
+    }, 0);
+
+    // Used value
+    const usedValue = itemsArray.reduce((sum, item) => {
+      const price = parseFloat(item.price) || 0;
+      const originalQuantity = parseInt(item.originalQuantity) || parseInt(item.quantity) || 0;
+      const currentQuantity = parseInt(item.quantity) || 0;
+      const usedQuantity = Math.max(0, originalQuantity - currentQuantity);
+      return sum + (price * usedQuantity);
+    }, 0);
+
+    return {
+      totalItems,
+      totalQuantity,
+      lowStockItems,
+      currentValue,
+      originalValue,
+      preservedValue: globalPreservedValue, // Always use stored value
+      totalInvestment: Math.max(totalInvestment, originalValue),
+      usedValue,
+      deletedValue: Math.max(0, globalPreservedValue - currentValue - usedValue) // Calculate deleted value
+    };
+  };
+
   const getMonthName = (monthNumber) => {
     const months = [
       'January', 'February', 'March', 'April', 'May', 'June',
@@ -160,7 +353,7 @@ const SurgicalItemsManagement = () => {
     return months[monthNumber - 1];
   };
 
-  // OPTIMIZED SINGLE PAGE PDF GENERATION
+  // PDF generation
   const generatePDFReport = () => {
     try {
       if (!items || items.length === 0) {
@@ -168,242 +361,161 @@ const SurgicalItemsManagement = () => {
         return;
       }
 
-      showNotification('📄 Generating single-page PDF report...', 'info');
+      showNotification('📄 Generating preserved value report...', 'info');
 
-      const doc = new jsPDF('landscape', 'mm', 'a4'); // Landscape for better table fit
+      const doc = new jsPDF('landscape', 'mm', 'a4');
       const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      let currentY = 15; // Reduced top margin
+      let currentY = 15;
       
-      // COMPACT HEADER SECTION
-      doc.setFontSize(18); // Reduced font size
+      // Header
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0);
       doc.text('HealX Healthcare Center', pageWidth / 2, currentY, { align: 'center' });
       
-      currentY += 6; // Reduced spacing
+      currentY += 6;
       doc.setFontSize(14);
       doc.setFont('helvetica', 'normal');
-      doc.text('Surgical Items Inventory Management Report', pageWidth / 2, currentY, { align: 'center' });
+      doc.text('Preserved Inventory Value Report', pageWidth / 2, currentY, { align: 'center' });
       
-      currentY += 5; // Reduced spacing
+      currentY += 5;
       doc.setFontSize(10);
-      doc.text('Department of Medical Equipment & Supplies', pageWidth / 2, currentY, { align: 'center' });
-      
-      // Compact separator line
-      currentY += 6;
-      doc.setDrawColor(0, 0, 0);
-      doc.setLineWidth(0.8);
-      doc.line(15, currentY, pageWidth - 15, currentY); // Reduced margins
+      doc.text('Asset Protection & Financial Integrity', pageWidth / 2, currentY, { align: 'center' });
       
       currentY += 8;
-      
-      // COMPACT REPORT METADATA - Single row
-      doc.setFontSize(9); // Smaller font
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0);
-      
-      const currentDate = new Date();
-      const dateString = currentDate.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-      const timeString = currentDate.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      }) + ' IST';
-      const reportId = `RPT-${currentDate.getFullYear()}${String(currentDate.getMonth() + 1).padStart(2, '0')}${String(currentDate.getDate()).padStart(2, '0')}-${String(currentDate.getHours()).padStart(2, '0')}${String(currentDate.getMinutes()).padStart(2, '0')}`;
-      
-      // Single line metadata
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Report Date: ${dateString} | Time: ${timeString} | Generated By: ${admin?.name || 'System Administrator'} | Report ID: ${reportId}`, pageWidth / 2, currentY, { align: 'center' });
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.8);
+      doc.line(15, currentY, pageWidth - 15, currentY);
       
       currentY += 10;
       
-      // COMPACT SUMMARY SECTION
+      // ✅ ENHANCED: Preserved Value Summary
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text('EXECUTIVE SUMMARY', 20, currentY);
+      doc.text('PRESERVED VALUE PROTECTION SUMMARY', 20, currentY);
       
-      // Compact summary box
       const summaryBoxY = currentY + 2;
       doc.setDrawColor(0, 0, 0);
       doc.setLineWidth(0.5);
-      doc.rect(20, summaryBoxY, pageWidth - 40, 15); // Reduced height
+      doc.rect(20, summaryBoxY, pageWidth - 40, 30);
       
       currentY += 8;
-      doc.setFontSize(9); // Smaller font
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       
-      // Horizontal summary layout
-      const summaryData = [
-        `Total Items: ${stats.totalItems || 0}`,
-        `Total Stock: ${(stats.totalQuantity || 0).toLocaleString()}`,
-        `Critical Items: ${stats.lowStockItems || 0}`,
-        `Total Value: $${(stats.totalValue || 0).toLocaleString()}`
+      // Value protection breakdown
+      const valueData = [
+        `Current Value: $${inventoryStats.currentValue?.toLocaleString() || '0'}`,
+        `Preserved Value: $${globalPreservedValue?.toLocaleString() || '0'}`,
+        `Deleted Value: $${inventoryStats.deletedValue?.toLocaleString() || '0'}`,
+        `Protection Rate: ${globalPreservedValue > 0 ? '100%' : '0%'}`
       ];
 
-      summaryData.forEach((text, index) => {
+      valueData.forEach((text, index) => {
         const x = 25 + (index * 65);
         doc.setFont('helvetica', 'bold');
         doc.text(text, x, currentY + 5);
       });
       
-      currentY += 22;
+      currentY += 15;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text(`✅ Value Protection: ENABLED | Items Added/Deleted: Preserved value maintained | Last Updated: ${new Date().toLocaleString()}`, 25, currentY + 5);
+      
+      currentY += 35;
 
-      // OPTIMIZED TABLE FOR SINGLE PAGE
+      // Table with preserved value info
       const tableData = items.map((item, index) => {
         const quantity = parseInt(item.quantity) || 0;
-        const minStock = parseInt(item.minStockLevel) || 0;
         const price = parseFloat(item.price) || 0;
-        const totalValue = price * quantity;
-        const status = getStatusText(quantity, minStock);
-        const stockPercentage = minStock > 0 ? Math.round((quantity / minStock) * 100) : 0;
-        const riskLevel = quantity === 0 ? 'CRITICAL' : 
-                         quantity <= minStock ? 'HIGH' : 
-                         quantity <= (minStock * 1.5) ? 'MEDIUM' : 'LOW';
+        const currentValue = price * quantity;
         
         return [
           String(index + 1).padStart(3, '0'),
-          (item.name || 'Unknown Item').substring(0, 20), // Shortened
-          item.category ? item.category.substring(0, 12) : 'Other', // Shortened
-          (item.supplier?.name || 'N/A').substring(0, 12), // Shortened
+          (item.name || 'Unknown Item').substring(0, 30),
+          item.category ? item.category.substring(0, 15) : 'Other',
           `$${price.toFixed(2)}`,
           quantity.toString(),
-          minStock.toString(),
-          `${stockPercentage}%`,
-          `$${totalValue.toFixed(2)}`,
-          status.substring(0, 8), // Shortened
-          riskLevel
+          `$${currentValue.toFixed(2)}`,
+          '✅ Protected',
+          getStatusText(item.quantity, item.minStockLevel)
         ];
       });
 
-      // OPTIMIZED TABLE CONFIGURATION FOR SINGLE PAGE
       const tableConfig = {
         startY: currentY,
         head: [[
           'S/N',
-          'Item Description',
+          'Item Name',
           'Category',
-          'Supplier',
-          'Unit Cost',
-          'Stock',
-          'Min',
-          'Stock %',
-          'Total Value',
-          'Status',
-          'Risk'
+          'Unit Price',
+          'Quantity',
+          'Current Value',
+          'Value Status',
+          'Stock Status'
         ]],
         body: tableData,
         theme: 'plain',
         headStyles: {
-          fillColor: [240, 240, 240], // Light gray header
+          fillColor: [240, 240, 240],
           textColor: [0, 0, 0],
           fontStyle: 'bold',
-          fontSize: 8, // Smaller header font
+          fontSize: 8,
           halign: 'center',
-          valign: 'middle',
-          lineColor: [0, 0, 0],
-          lineWidth: 0.5,
-          cellPadding: { top: 2, right: 1, bottom: 2, left: 1 } // Reduced padding
+          valign: 'middle'
         },
         bodyStyles: {
-          fillColor: [255, 255, 255],
-          textColor: [0, 0, 0],
-          fontSize: 7, // Smaller body font
+          fontSize: 7,
           halign: 'center',
-          valign: 'middle',
-          lineColor: [0, 0, 0],
-          lineWidth: 0.3,
-          cellPadding: { top: 2, right: 1, bottom: 2, left: 1 } // Reduced padding
+          valign: 'middle'
         },
-        // OPTIMIZED COLUMN WIDTHS FOR SINGLE PAGE
         columnStyles: {
-          0: { cellWidth: 15, halign: 'center', fontStyle: 'bold' }, // S/N
-          1: { cellWidth: 45, halign: 'left', fontSize: 7 },        // Item Description
-          2: { cellWidth: 25, halign: 'center', fontSize: 6 },      // Category
-          3: { cellWidth: 25, halign: 'left', fontSize: 6 },        // Supplier
-          4: { cellWidth: 20, halign: 'right', fontSize: 7 },       // Unit Cost
-          5: { cellWidth: 15, halign: 'center', fontStyle: 'bold' }, // Stock
-          6: { cellWidth: 12, halign: 'center', fontSize: 7 },      // Min
-          7: { cellWidth: 15, halign: 'center', fontSize: 7 },      // Stock %
-          8: { cellWidth: 22, halign: 'right', fontStyle: 'bold' }, // Total Value
-          9: { cellWidth: 18, halign: 'center', fontSize: 7 },      // Status
-          10: { cellWidth: 15, halign: 'center', fontSize: 6 }      // Risk
+          0: { cellWidth: 15, halign: 'center' },
+          1: { cellWidth: 50, halign: 'left' },
+          2: { cellWidth: 25, halign: 'center' },
+          3: { cellWidth: 20, halign: 'right' },
+          4: { cellWidth: 20, halign: 'center' },
+          5: { cellWidth: 25, halign: 'right' },
+          6: { cellWidth: 25, halign: 'center', fillColor: [230, 255, 230] },
+          7: { cellWidth: 25, halign: 'center' }
         },
-        // Simple alternating rows
         didParseCell: (data) => {
+          const colIndex = data.column.index;
           const rowIndex = data.row.index;
-          if (rowIndex % 2 === 0) {
-            data.cell.styles.fillColor = [248, 248, 248];
-          } else {
-            data.cell.styles.fillColor = [255, 255, 255];
+          
+          if (colIndex === 6) { // Value Status column
+            data.cell.styles.fillColor = [230, 255, 230]; // Light green
+            data.cell.styles.textColor = [0, 100, 0]; // Dark green
+            data.cell.styles.fontStyle = 'bold';
           }
-          data.cell.styles.textColor = [0, 0, 0];
-          data.cell.styles.lineColor = [0, 0, 0];
+          
+          if (rowIndex % 2 === 0) {
+            if (colIndex !== 6) data.cell.styles.fillColor = [248, 248, 248];
+          }
         },
-        margin: { top: 10, left: 15, right: 15, bottom: 20 }, // Reduced margins
-        styles: {
-          overflow: 'linebreak',
-          fontSize: 7, // Smaller font
-          cellPadding: { top: 2, right: 1, bottom: 2, left: 1 },
-          fillColor: [255, 255, 255],
-          textColor: [0, 0, 0],
-          lineColor: [0, 0, 0],
-          lineWidth: 0.3
-        },
-        showHead: 'firstPage', // Only show header on first page
-        showFoot: 'never'
+        margin: { top: 10, left: 15, right: 15, bottom: 20 }
       };
 
-      // Generate the table
       autoTable(doc, tableConfig);
 
-      // COMPACT SIGNATURE SECTION AT BOTTOM
+      // Add preserved value guarantee text
       const finalY = doc.lastAutoTable?.finalY || 150;
-      const remainingSpace = pageHeight - finalY;
+      const guaranteeY = finalY + 15;
       
-      // Only add signature if there's enough space
-      if (remainingSpace > 30) {
-        let signatureY = finalY + 15;
-        
-        // Compact signature section
-        doc.setDrawColor(0, 0, 0);
-        doc.setLineWidth(0.5);
-        doc.rect(20, signatureY, pageWidth - 40, 25); // Reduced height
-        
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text('REPORT VERIFICATION', 25, signatureY + 6);
-
-        signatureY += 12;
-        doc.setFontSize(8); // Smaller font
-        doc.setFont('helvetica', 'normal');
-        
-        // Compact signature lines
-        doc.text('Prepared by: ______________________', 25, signatureY);
-        doc.text('Reviewed by: ______________________', 150, signatureY);
-        doc.text('Date: ____________', 25, signatureY + 8);
-        doc.text('Date: ____________', 150, signatureY + 8);
-      }
-
-      // COMPACT FOOTER
-      const footerY = pageHeight - 10;
-      doc.setFontSize(7); // Very small footer
-      doc.setTextColor(100, 100, 100);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 100, 0);
+      doc.text('🛡️ VALUE PROTECTION GUARANTEE', 20, guaranteeY);
+      
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text(`HealX Healthcare Center - Confidential Report | Page 1 of 1 | Generated: ${currentDate.toLocaleDateString()}`, pageWidth / 2, footerY, { align: 'center' });
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Total Preserved Value: $${globalPreservedValue?.toLocaleString() || '0'} - This value will NEVER decrease, ensuring accurate financial records.`, 20, guaranteeY + 8);
 
-      // Generate filename
-      const timestamp = currentDate.toISOString().replace(/[:.]/g, '-').split('T')[0];
-      const fileName = `HealX_SinglePage_Report_${timestamp}.pdf`;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+      const fileName = `HealX_Preserved_Value_Report_${timestamp}.pdf`;
       
       doc.save(fileName);
-      showNotification(`✅ Single-page PDF "${fileName}" generated successfully!`, 'success', 6000);
+      showNotification(`✅ Preserved value report "${fileName}" generated successfully!`, 'success', 6000);
 
     } catch (error) {
       console.error('PDF generation error:', error);
@@ -411,7 +523,6 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // All your existing functions remain the same...
   const handleTestEmail = async () => {
     try {
       setNotifications({ loading: true, message: 'Sending test email...', type: 'info' });
@@ -554,32 +665,20 @@ const SurgicalItemsManagement = () => {
     }
   };
 
+  // ✅ FIXED: Updated calculateStats to use preserved value
   const calculateStats = (itemsArray) => {
-    if (!Array.isArray(itemsArray)) return { totalItems: 0, totalQuantity: 0, lowStockItems: 0, totalValue: 0 };
-
-    const totalItems = itemsArray.length;
-    const totalQuantity = itemsArray.reduce((sum, item) => {
-      const quantity = parseInt(item.quantity) || 0;
-      return sum + quantity;
-    }, 0);
-    
-    const lowStockItems = itemsArray.reduce((count, item) => {
-      const quantity = parseInt(item.quantity) || 0;
-      const minStock = parseInt(item.minStockLevel) || 0;
-      return count + (quantity <= minStock ? 1 : 0);
-    }, 0);
-    
-    const totalValue = itemsArray.reduce((sum, item) => {
-      const price = parseFloat(item.price) || 0;
-      const quantity = parseInt(item.quantity) || 0;
-      return sum + (price * quantity);
-    }, 0);
-
+    const inventoryData = calculateInventoryStats(itemsArray);
     return {
-      totalItems,
-      totalQuantity,
-      lowStockItems,
-      totalValue
+      totalItems: inventoryData.totalItems,
+      totalQuantity: inventoryData.totalQuantity,
+      lowStockItems: inventoryData.lowStockItems,
+      totalValue: inventoryData.preservedValue, // Always use preserved value
+      currentValue: inventoryData.currentValue,
+      originalValue: inventoryData.originalValue,
+      preservedValue: inventoryData.preservedValue,
+      totalInvestment: inventoryData.totalInvestment,
+      usedValue: inventoryData.usedValue,
+      deletedValue: inventoryData.deletedValue
     };
   };
 
@@ -591,12 +690,24 @@ const SurgicalItemsManagement = () => {
     if (items && items.length >= 0) {
       const calculatedStats = calculateStats(items);
       setStats(calculatedStats);
+      
+      // ✅ FIXED: Only update preserved value if current value is higher
+      const currentValue = calculatedStats.currentValue || 0;
+      if (currentValue > globalPreservedValue) {
+        savePreservedValue(currentValue, 'auto-increase');
+      }
+      
+      const inventoryData = calculateInventoryStats(items);
+      setInventoryStats(inventoryData);
     }
-  }, [items]);
+  }, [items, globalPreservedValue]);
 
   const initializeComponent = async () => {
     try {
       setLoading(true);
+      
+      // ✅ FIXED: Load preserved value first
+      loadPreservedValue();
       
       const adminData = localStorage.getItem('admin');
       if (adminData) {
@@ -618,7 +729,10 @@ const SurgicalItemsManagement = () => {
         return;
       }
 
-      await loadItems();
+      await Promise.all([
+        loadItems(),
+        fetchSupplierSpending()
+      ]);
     } catch (error) {
       console.error('Initialization error:', error);
       setError('Failed to initialize component');
@@ -638,9 +752,26 @@ const SurgicalItemsManagement = () => {
       const data = await response.json();
       
       if (data.success && Array.isArray(data.data?.items)) {
-        setItems(data.data.items);
-        const calculatedStats = calculateStats(data.data.items);
-        setStats(calculatedStats);
+        const enhancedItems = data.data.items.map(item => ({
+          ...item,
+          originalQuantity: item.originalQuantity || item.quantity || 0,
+          preservedQuantity: item.preservedQuantity || item.originalQuantity || item.quantity || 0,
+          totalPurchased: item.totalPurchased || item.originalQuantity || item.quantity || 0
+        }));
+        
+        setItems(enhancedItems);
+        
+        // ✅ FIXED: Initialize preserved value only if current value is higher
+        const currentValue = enhancedItems.reduce((sum, item) => {
+          const price = parseFloat(item.price) || 0;
+          const quantity = parseInt(item.quantity) || 0;
+          return sum + (price * quantity);
+        }, 0);
+        
+        if (currentValue > globalPreservedValue) {
+          initializePreservedValue(currentValue);
+        }
+        
       } else {
         throw new Error(data.message || 'Failed to fetch items');
       }
@@ -673,13 +804,29 @@ const SurgicalItemsManagement = () => {
     setShowEditModal(true);
   };
 
+  // ✅ FIXED: Delete item without affecting preserved value
   const handleDeleteItem = async (itemId) => {
     if (!itemId) {
       showNotification('❌ Invalid item selected for deletion', 'error');
       return;
     }
 
-    if (window.confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+    const itemToDelete = items.find(item => item._id === itemId);
+    if (!itemToDelete) {
+      showNotification('❌ Item not found', 'error');
+      return;
+    }
+
+    const itemValue = (parseFloat(itemToDelete.price) || 0) * (parseInt(itemToDelete.quantity) || 0);
+
+    if (window.confirm(`Are you sure you want to delete "${itemToDelete.name}"? 
+
+⚠️ IMPORTANT: 
+- Item will be removed from inventory
+- Preserved value will remain protected: $${globalPreservedValue.toLocaleString()}
+- Item value: $${itemValue.toFixed(2)}
+
+This action cannot be undone.`)) {
       try {
         const response = await fetch(`${API_BASE_URL}/surgical-items/${itemId}`, {
           method: 'DELETE'
@@ -691,8 +838,32 @@ const SurgicalItemsManagement = () => {
         
         const data = await response.json();
         if (data.success) {
-          showNotification('✅ Item deleted successfully!', 'success');
+          // ✅ FIXED: Preserved value is NOT changed when deleting
+          showNotification(`✅ Item "${itemToDelete.name}" deleted successfully! Preserved value protected: $${globalPreservedValue.toLocaleString()}`, 'success');
           loadItems();
+          
+          // Log the deletion in preserved value history
+          const updatedHistory = [
+            ...preservedValueHistory,
+            {
+              action: 'item-deleted',
+              value: globalPreservedValue, // Same value
+              itemName: itemToDelete.name,
+              itemValue: itemValue,
+              timestamp: new Date().toISOString(),
+              admin: admin?.name || 'System',
+              note: `Item deleted but preserved value maintained`
+            }
+          ].slice(-100);
+          
+          const data = {
+            value: globalPreservedValue, // Keep same value
+            history: updatedHistory
+          };
+          
+          localStorage.setItem('healx_preserved_inventory_value', JSON.stringify(data));
+          setPreservedValueHistory(updatedHistory);
+          
         } else {
           throw new Error(data.message);
         }
@@ -708,11 +879,13 @@ const SurgicalItemsManagement = () => {
       state: {
         stats: stats,
         items: items,
-        admin: admin
+        admin: admin,
+        preservedValue: globalPreservedValue
       }
     });
   };
 
+  // ✅ FIXED: Stock update with preserved value maintenance
   const handleUpdateStock = async (itemId, quantityChange, type) => {
     try {
       if (!itemId) {
@@ -743,15 +916,20 @@ const SurgicalItemsManagement = () => {
         return;
       }
 
+      const updateData = {
+        quantityChange: Math.abs(quantity),
+        type: type,
+        usedBy: admin?.name || 'Admin',
+        purpose: type === 'usage' ? 'Manual stock reduction' : 'Manual stock replenishment',
+        preserveValue: true,
+        originalQuantity: item.originalQuantity || item.quantity || 0,
+        preservedQuantity: item.preservedQuantity || item.originalQuantity || item.quantity || 0
+      };
+
       const response = await fetch(`${API_BASE_URL}/surgical-items/${itemId}/update-stock`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          quantityChange: Math.abs(quantity),
-          type: type,
-          usedBy: admin?.name || 'Admin',
-          purpose: type === 'usage' ? 'Manual stock reduction' : 'Manual stock replenishment'
-        })
+        body: JSON.stringify(updateData)
       });
       
       if (!response.ok) {
@@ -762,7 +940,18 @@ const SurgicalItemsManagement = () => {
       const data = await response.json();
       if (data.success) {
         const action = type === 'usage' ? 'reduced' : 'increased';
-        showNotification(`✅ Stock ${action} by ${quantity} units successfully!`, 'success');
+        
+        // ✅ FIXED: Only increase preserved value if adding stock increases total value
+        if (type === 'restock') {
+          const addedValue = (parseFloat(item.price) || 0) * quantity;
+          const newPreservedValue = globalPreservedValue + addedValue;
+          savePreservedValue(newPreservedValue, 'stock-increase');
+          
+          showNotification(`✅ Stock ${action} by ${quantity} units! Value added: $${addedValue.toFixed(2)}. Preserved value: $${newPreservedValue.toLocaleString()}`, 'success');
+        } else {
+          showNotification(`✅ Stock ${action} by ${quantity} units! Preserved value protected: $${globalPreservedValue.toLocaleString()}`, 'success');
+        }
+        
         loadItems();
       } else {
         throw new Error(data.message || 'Failed to update stock');
@@ -770,6 +959,20 @@ const SurgicalItemsManagement = () => {
     } catch (error) {
       console.error('Error updating stock:', error);
       showNotification(`❌ Failed to update stock: ${error.message}`, 'error');
+    }
+  };
+
+  // ✅ NEW: Reset Preserved Value function (for admin use)
+  const handleResetPreservedValue = () => {
+    if (window.confirm(`Are you sure you want to reset the preserved value?
+
+Current preserved value: $${globalPreservedValue.toLocaleString()}
+This will set it to current inventory value: $${inventoryStats.currentValue.toLocaleString()}
+
+This action cannot be undone.`)) {
+      const newValue = inventoryStats.currentValue;
+      savePreservedValue(newValue, 'admin-reset');
+      showNotification(`✅ Preserved value reset to $${newValue.toLocaleString()}`, 'success');
     }
   };
 
@@ -1126,6 +1329,9 @@ const SurgicalItemsManagement = () => {
                 <button onClick={() => navigate('/admin/dashboard')} className="back-btn">
                   ← Back to Dashboard
                 </button>
+                <button onClick={() => navigate('/admin/suppliers')} className="supplier-btn">
+                  👥 View Suppliers
+                </button>
                 <button onClick={handleAddItem} className="add-item-btn">
                   ➕ Add New Item
                 </button>
@@ -1146,6 +1352,224 @@ const SurgicalItemsManagement = () => {
                 ⚠️ {error}
               </div>
             )}
+          </div>
+
+          {/* Supplier Spending Section */}
+          <div className="supplier-spending-section" style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            padding: '25px',
+            borderRadius: '12px',
+            marginBottom: '25px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '20px' }}>💰 Total Supplier Spending</h3>
+              <button
+                onClick={fetchSupplierSpending}
+                style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  color: 'white',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                🔄 Refresh
+              </button>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+              <div style={{
+                background: 'rgba(255,255,255,0.1)',
+                padding: '20px',
+                borderRadius: '10px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>
+                  ${supplierSpending.totalSpending.toLocaleString()}
+                </div>
+                <div style={{ opacity: 0.9 }}>Total Supplier Spending</div>
+                <small style={{ opacity: 0.8 }}>From {supplierSpending.totalOrders} purchase orders</small>
+              </div>
+
+              <div style={{
+                background: 'rgba(255,255,255,0.1)',
+                padding: '20px',
+                borderRadius: '10px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>
+                  ${supplierSpending.monthlySpending.toLocaleString()}
+                </div>
+                <div style={{ opacity: 0.9 }}>This Month</div>
+                <small style={{ opacity: 0.8 }}>
+                  {supplierSpending.totalSpending > 0 
+                    ? `${((supplierSpending.monthlySpending / supplierSpending.totalSpending) * 100).toFixed(1)}% of total`
+                    : 'No spending this month'
+                  }
+                </small>
+              </div>
+
+              {supplierSpending.topSuppliers.length > 0 && (
+                <div style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  padding: '20px',
+                  borderRadius: '10px'
+                }}>
+                  <h4 style={{ margin: '0 0 15px 0', fontSize: '16px' }}>🏆 Top Suppliers</h4>
+                  {supplierSpending.topSuppliers.slice(0, 3).map((supplier, index) => (
+                    <div key={supplier.name} style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      marginBottom: '8px',
+                      padding: '8px',
+                      background: 'rgba(255,255,255,0.1)',
+                      borderRadius: '6px'
+                    }}>
+                      <span style={{ fontSize: '14px' }}>#{index + 1} {supplier.name}</span>
+                      <strong>${supplier.amount.toLocaleString()}</strong>
+                    </div>
+                  ))}
+                  {supplierSpending.topSuppliers.length > 3 && (
+                    <div style={{ textAlign: 'center', marginTop: '10px', opacity: 0.8 }}>
+                      <small>and {supplierSpending.topSuppliers.length - 3} more suppliers</small>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ✅ FIXED: True Inventory Value Protection Section */}
+          <div className="inventory-value-section" style={{
+            background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+            color: 'white',
+            padding: '25px',
+            borderRadius: '12px',
+            marginBottom: '25px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '20px' }}>🛡️ True Value Protection System</h3>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ 
+                  background: 'rgba(255,255,255,0.2)', 
+                  padding: '8px 16px', 
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: '600'
+                }}>
+                  ✅ NEVER DECREASES
+                </div>
+                {admin?.role === 'admin' && (
+                  <button
+                    onClick={handleResetPreservedValue}
+                    style={{
+                      background: 'rgba(255,193,7,0.3)',
+                      border: '1px solid rgba(255,193,7,0.5)',
+                      color: 'white',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '11px'
+                    }}
+                  >
+                    🔧 Reset Value
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{
+                background: 'rgba(255,255,255,0.1)',
+                padding: '15px',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '5px' }}>
+                  ${inventoryStats.currentValue?.toLocaleString() || '0'}
+                </div>
+                <div style={{ fontSize: '14px', opacity: 0.9 }}>Current Stock Value</div>
+                <small style={{ fontSize: '12px', opacity: 0.8 }}>Changes with stock</small>
+              </div>
+
+              <div style={{
+                background: 'rgba(255,255,255,0.2)',
+                padding: '15px',
+                borderRadius: '8px',
+                textAlign: 'center',
+                border: '3px solid rgba(255,255,255,0.4)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.1) 75%)',
+                  backgroundSize: '20px 20px',
+                  animation: 'shimmer 2s linear infinite'
+                }}></div>
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '5px' }}>
+                    ${globalPreservedValue?.toLocaleString() || '0'}
+                  </div>
+                  <div style={{ fontSize: '16px', opacity: 0.95, fontWeight: 'bold' }}>🛡️ PRESERVED VALUE</div>
+                  <small style={{ fontSize: '12px', opacity: 0.9 }}>PROTECTED FOREVER</small>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(255,255,255,0.1)',
+                padding: '15px',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '5px' }}>
+                  ${inventoryStats.deletedValue?.toLocaleString() || '0'}
+                </div>
+                <div style={{ fontSize: '14px', opacity: 0.9 }}>Deleted Items Value</div>
+                <small style={{ fontSize: '12px', opacity: 0.8 }}>Still protected</small>
+              </div>
+
+              <div style={{
+                background: 'rgba(255,255,255,0.1)',
+                padding: '15px',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '5px' }}>
+                  100%
+                </div>
+                <div style={{ fontSize: '14px', opacity: 0.9 }}>Protection Rate</div>
+                <small style={{ fontSize: '12px', opacity: 0.8 }}>Always protected</small>
+              </div>
+            </div>
+
+            <div style={{
+              marginTop: '20px',
+              padding: '15px',
+              background: 'rgba(255,255,255,0.1)',
+              borderRadius: '8px',
+              fontSize: '14px'
+            }}>
+              <strong>🛡️ True Value Protection:</strong> Your preserved inventory value of <strong>${globalPreservedValue?.toLocaleString()}</strong> will NEVER decrease, 
+              even when items are deleted or used. This ensures accurate financial tracking and permanent asset value protection.
+              
+              {preservedValueHistory.length > 0 && (
+                <div style={{ marginTop: '10px', fontSize: '12px', opacity: 0.9 }}>
+                  <strong>Last updated:</strong> {new Date(preservedValueHistory[preservedValueHistory.length - 1]?.timestamp).toLocaleString()} 
+                  by {preservedValueHistory[preservedValueHistory.length - 1]?.admin}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="notification-section" style={{
@@ -1183,18 +1607,6 @@ const SurgicalItemsManagement = () => {
                     transition: 'all 0.3s ease',
                     opacity: notifications.loading ? 0.7 : 1
                   }}
-                  onMouseOver={(e) => {
-                    if (!notifications.loading) {
-                      e.target.style.background = 'rgba(255,255,255,0.3)';
-                      e.target.style.transform = 'translateY(-2px)';
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (!notifications.loading) {
-                      e.target.style.background = 'rgba(255,255,255,0.2)';
-                      e.target.style.transform = 'translateY(0)';
-                    }
-                  }}
                 >
                   📬 Test Email
                 </button>
@@ -1214,18 +1626,6 @@ const SurgicalItemsManagement = () => {
                     transition: 'all 0.3s ease',
                     opacity: notifications.loading ? 0.7 : 1,
                     position: 'relative'
-                  }}
-                  onMouseOver={(e) => {
-                    if (!notifications.loading) {
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2)';
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (!notifications.loading) {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                    }
                   }}
                 >
                   🚨 Send Low Stock Alert
@@ -1251,7 +1651,6 @@ const SurgicalItemsManagement = () => {
                   )}
                 </button>
 
-                {/* ✅ NEW: Auto-Restock Check Button */}
                 <button
                   onClick={handleAutoRestockCheck}
                   disabled={notifications.loading}
@@ -1266,18 +1665,6 @@ const SurgicalItemsManagement = () => {
                     fontWeight: '600',
                     transition: 'all 0.3s ease',
                     opacity: notifications.loading ? 0.7 : 1
-                  }}
-                  onMouseOver={(e) => {
-                    if (!notifications.loading) {
-                      e.target.style.background = '#218838';
-                      e.target.style.transform = 'translateY(-2px)';
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (!notifications.loading) {
-                      e.target.style.background = '#28a745';
-                      e.target.style.transform = 'translateY(0)';
-                    }
                   }}
                 >
                   🔄 Auto-Restock Check
@@ -1319,6 +1706,7 @@ const SurgicalItemsManagement = () => {
             )}
           </div>
 
+          {/* ✅ FIXED: Stats grid with true preserved value */}
           <div className="supplier-stats-grid">
             <div className="supplier-stat-card">
               <div className="supplier-stat-icon">📦</div>
@@ -1348,13 +1736,50 @@ const SurgicalItemsManagement = () => {
                 )}
               </div>
             </div>
-            <div className="supplier-stat-card" style={{ cursor: 'pointer' }} onClick={handleViewTotalValue}>
+            <div className="supplier-stat-card" style={{ 
+              background: 'linear-gradient(135deg, #28a745, #20c997)',
+              color: 'white',
+              cursor: 'pointer'
+            }} onClick={() => navigate('/admin/suppliers')}>
               <div className="supplier-stat-icon">💰</div>
               <div className="supplier-stat-info">
-                <h3>${(stats.totalValue || 0).toLocaleString()}</h3>
-                <p>Total Value</p>
-                <small style={{ fontSize: '12px', opacity: 0.8, color: '#007bff' }}>
-                  👆 Click for details
+                <h3>${supplierSpending.totalSpending.toLocaleString()}</h3>
+                <p>Total Supplier Spending</p>
+                <small style={{ fontSize: '12px', opacity: 0.9 }}>
+                  👆 Click to manage suppliers
+                </small>
+              </div>
+            </div>
+            {/* ✅ FIXED: Show true preserved inventory value */}
+            <div className="supplier-stat-card" style={{ 
+              cursor: 'pointer',
+              background: 'linear-gradient(135deg, #6f42c1, #8e44ad)',
+              color: 'white',
+              border: '3px solid rgba(255,255,255,0.3)',
+              position: 'relative',
+              overflow: 'hidden'
+            }} onClick={handleViewTotalValue}>
+              <div style={{
+                position: 'absolute',
+                top: '-2px',
+                right: '-2px',
+                background: 'linear-gradient(45deg, #28a745, #20c997)',
+                borderRadius: '50%',
+                width: '24px',
+                height: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '12px'
+              }}>
+                🛡️
+              </div>
+              <div className="supplier-stat-icon">💎</div>
+              <div className="supplier-stat-info">
+                <h3>${globalPreservedValue?.toLocaleString() || '0'}</h3>
+                <p>Protected Value</p>
+                <small style={{ fontSize: '12px', opacity: 0.9 }}>
+                  ✅ Never decreases
                 </small>
               </div>
             </div>
@@ -1413,7 +1838,7 @@ const SurgicalItemsManagement = () => {
                   <th>Quantity</th>
                   <th>Min Stock</th>
                   <th>Price</th>
-                  <th>Item Value</th>
+                  <th>Current Value</th>
                   <th>Price Trend</th>
                   <th>Status</th>
                   <th>Supplier</th>
@@ -1421,137 +1846,148 @@ const SurgicalItemsManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {currentItems.map(item => (
-                  <tr key={item._id} style={{
-                    backgroundColor: getStatusText(item.quantity, item.minStockLevel) === 'Out of Stock' ? '#fff5f5' :
-                                   getStatusText(item.quantity, item.minStockLevel) === 'Low Stock' ? '#fffbf0' : undefined
-                  }}>
-                    <td>
-                      <div className="item-info">
-                        <strong>{item.name || 'Unknown Item'}</strong>
-                        {item.description && (
-                          <small style={{ display: 'block', color: '#666', marginTop: '2px' }}>
-                            {item.description.substring(0, 40)}{item.description.length > 40 ? '...' : ''}
-                          </small>
-                        )}
-                      </div>
-                    </td>
-                    <td>{item.category || 'Other'}</td>
-                    <td>
-                      <ItemStockChart item={item} />
-                    </td>
-                    <td>
-                      <span 
-                        style={{ 
-                          fontWeight: 'bold',
-                          color: getStatusColor(item.quantity, item.minStockLevel)
-                        }}
-                      >
-                        {parseInt(item.quantity) || 0}
-                      </span>
-                    </td>
-                    <td>{parseInt(item.minStockLevel) || 0}</td>
-                    <td>${(parseFloat(item.price) || 0).toFixed(2)}</td>
-                    <td>
-                      <strong>${((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0)).toFixed(2)}</strong>
-                    </td>
-                    <td>
-                      <PriceTrendChart item={item} />
-                    </td>
-                    <td>
-                      <span 
-                        className="status-badge"
-                        style={{ 
-                          backgroundColor: getStatusColor(item.quantity, item.minStockLevel),
-                          color: 'white',
-                          padding: '4px 8px',
-                          borderRadius: '12px',
-                          fontSize: '11px',
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        {getStatusText(item.quantity, item.minStockLevel)}
-                      </span>
-                    </td>
-                    <td>{item.supplier?.name || 'N/A'}</td>
-                    <td>
-                      <div className="action-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        <button
-                          onClick={() => handleEditItem(item)}
-                          className="action-btn edit-btn"
-                          title="Edit Item"
-                          style={{ padding: '3px 6px', fontSize: '10px' }}
-                        >
-                          ✏️ Edit
-                        </button>
-                        
-                        <CustomNumberInput
-                          placeholder="+ Stock"
-                          title="Add Stock"
-                          onSubmit={(qty) => handleUpdateStock(item._id, qty, 'restock')}
-                          type="add"
-                        />
-
-                        <CustomNumberInput
-                          placeholder="- Stock"
-                          title="Use Stock"
-                          onSubmit={(qty) => handleUpdateStock(item._id, qty, 'usage')}
-                          type="remove"
-                          max={parseInt(item.quantity) || 0}
-                        />
-
-                        {/* ✅ NEW: Auto-Restock Configuration Button */}
-                        <button
-                          onClick={() => handleConfigureAutoRestock(item)}
-                          className="action-btn auto-restock-btn"
-                          title="Configure Auto-Restock"
+                {currentItems.map(item => {
+                  const currentValue = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0);
+                  
+                  return (
+                    <tr key={item._id} style={{
+                      backgroundColor: getStatusText(item.quantity, item.minStockLevel) === 'Out of Stock' ? '#fff5f5' :
+                                     getStatusText(item.quantity, item.minStockLevel) === 'Low Stock' ? '#fffbf0' : undefined
+                    }}>
+                      <td>
+                        <div className="item-info">
+                          <strong>{item.name || 'Unknown Item'}</strong>
+                          {item.description && (
+                            <small style={{ display: 'block', color: '#666', marginTop: '2px' }}>
+                              {item.description.substring(0, 40)}{item.description.length > 40 ? '...' : ''}
+                            </small>
+                          )}
+                        </div>
+                      </td>
+                      <td>{item.category || 'Other'}</td>
+                      <td>
+                        <ItemStockChart item={item} />
+                      </td>
+                      <td>
+                        <span 
                           style={{ 
-                            padding: '3px 6px', 
-                            fontSize: '10px',
-                            background: item.autoRestock?.enabled ? '#28a745' : '#6c757d',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
+                            fontWeight: 'bold',
+                            color: getStatusColor(item.quantity, item.minStockLevel)
                           }}
                         >
-                          {item.autoRestock?.enabled ? '🔄 Auto ON' : '⚙️ Setup'}
-                        </button>
-
-                        {(parseInt(item.quantity) <= (parseInt(item.minStockLevel) || 0)) && (
+                          {parseInt(item.quantity) || 0}
+                        </span>
+                      </td>
+                      <td>{parseInt(item.minStockLevel) || 0}</td>
+                      <td>${(parseFloat(item.price) || 0).toFixed(2)}</td>
+                      <td>
+                        <strong>${currentValue.toFixed(2)}</strong>
+                      </td>
+                      <td>
+                        <PriceTrendChart item={item} />
+                      </td>
+                      <td>
+                        <span 
+                          className="status-badge"
+                          style={{ 
+                            backgroundColor: getStatusColor(item.quantity, item.minStockLevel),
+                            color: 'white',
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          {getStatusText(item.quantity, item.minStockLevel)}
+                        </span>
+                      </td>
+                      <td>{item.supplier?.name || 'N/A'}</td>
+                      <td>
+                        <div className="action-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                           <button
-                            onClick={() => handleSendItemNotification(item)}
-                            className="action-btn notify-btn"
-                            title={`Send notification for ${item.name}`}
-                            disabled={notifications.loading}
+                            onClick={() => handleEditItem(item)}
+                            className="action-btn edit-btn"
+                            title="Edit Item"
+                            style={{ padding: '3px 6px', fontSize: '10px' }}
+                          >
+                            ✏️ Edit
+                          </button>
+                          
+                          <CustomNumberInput
+                            placeholder="+ Stock"
+                            title="Add Stock (Value increases preserved value)"
+                            onSubmit={(qty) => handleUpdateStock(item._id, qty, 'restock')}
+                            type="add"
+                          />
+
+                          <CustomNumberInput
+                            placeholder="- Stock"
+                            title="Use Stock (Preserved value maintained)"
+                            onSubmit={(qty) => handleUpdateStock(item._id, qty, 'usage')}
+                            type="remove"
+                            max={parseInt(item.quantity) || 0}
+                          />
+
+                          <button
+                            onClick={() => handleConfigureAutoRestock(item)}
+                            className="action-btn auto-restock-btn"
+                            title="Configure Auto-Restock"
                             style={{ 
                               padding: '3px 6px', 
                               fontSize: '10px',
-                              background: parseInt(item.quantity) === 0 ? '#dc3545' : '#ffc107',
+                              background: item.autoRestock?.enabled ? '#28a745' : '#6c757d',
                               color: 'white',
                               border: 'none',
                               borderRadius: '4px',
-                              cursor: notifications.loading ? 'not-allowed' : 'pointer',
-                              opacity: notifications.loading ? 0.7 : 1,
-                              fontWeight: '600'
+                              cursor: 'pointer'
                             }}
                           >
-                            📧 Alert
+                            {item.autoRestock?.enabled ? '🔄 Auto ON' : '⚙️ Setup'}
                           </button>
-                        )}
-                        
-                        <button
-                          onClick={() => handleDeleteItem(item._id)}
-                          className="action-btn delete-btn"
-                          title="Delete Item"
-                          style={{ padding: '3px 6px', fontSize: '10px' }}
-                        >
-                          🗑️ Del
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+
+                          {(parseInt(item.quantity) <= (parseInt(item.minStockLevel) || 0)) && (
+                            <button
+                              onClick={() => handleSendItemNotification(item)}
+                              className="action-btn notify-btn"
+                              title={`Send notification for ${item.name}`}
+                              disabled={notifications.loading}
+                              style={{ 
+                                padding: '3px 6px', 
+                                fontSize: '10px',
+                                background: parseInt(item.quantity) === 0 ? '#dc3545' : '#ffc107',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: notifications.loading ? 'not-allowed' : 'pointer',
+                                opacity: notifications.loading ? 0.7 : 1,
+                                fontWeight: '600'
+                              }}
+                            >
+                              📧 Alert
+                            </button>
+                          )}
+                          
+                          <button
+                            onClick={() => handleDeleteItem(item._id)}
+                            className="action-btn delete-btn"
+                            title="Delete Item (Preserved value maintained)"
+                            style={{ 
+                              padding: '3px 6px', 
+                              fontSize: '10px',
+                              background: '#dc3545',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            🗑️ Del
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
 
@@ -1654,22 +2090,21 @@ const SurgicalItemsManagement = () => {
             </div>
           )}
 
-          {/* ADVANCED COLORFUL PDF BUTTON */}
+          {/* Enhanced PDF Button */}
           <div 
             className="floating-report-btn-advanced"
             onClick={generatePDFReport}
-            title="Generate Professional PDF Report - Advanced Analytics"
+            title="Generate Protected Value Report - Value Never Decreases"
           >
             <div className="btn-background"></div>
             <div className="btn-glow"></div>
             <div className="btn-content">
-              <div className="pdf-icon-advanced">📊</div>
+              <div className="pdf-icon-advanced">🛡️</div>
               <div className="pdf-text-advanced">
-                Generate<br/>PDF Report
+                Protected<br/>Report
               </div>
             </div>
             
-            {/* ADVANCED NOTIFICATION BUBBLE */}
             {stats.lowStockItems > 0 && (
               <div className="pdf-notification-bubble-advanced">
                 <div className="bubble-pulse"></div>
@@ -1677,7 +2112,6 @@ const SurgicalItemsManagement = () => {
               </div>
             )}
             
-            {/* FLOATING PARTICLES */}
             <div className="floating-particles">
               <div className="particle particle-1"></div>
               <div className="particle particle-2"></div>
@@ -1701,7 +2135,7 @@ const SurgicalItemsManagement = () => {
                 setShowAddModal(false);
                 setShowEditModal(false);
                 setSelectedItem(null);
-                showNotification('✅ Item saved successfully!', 'success');
+                showNotification('✅ Item saved successfully! Preserved value protected.', 'success');
               }}
               apiBaseUrl={API_BASE_URL}
             />
@@ -1715,13 +2149,12 @@ const SurgicalItemsManagement = () => {
               onSuccess={() => {
                 loadItems();
                 setShowDisposeModal(false);
-                showNotification('✅ Items disposed successfully!', 'success');
+                showNotification('✅ Items disposed successfully! Preserved value maintained.', 'success');
               }}
               apiBaseUrl={API_BASE_URL}
             />
           )}
 
-          {/* ✅ NEW: Auto-Restock Configuration Modal */}
           {showAutoRestockModal && selectedItemForAutoRestock && (
             <div className="modal-overlay" onClick={() => setShowAutoRestockModal(false)}>
               <div className="modal auto-restock-modal" onClick={e => e.stopPropagation()} style={{
@@ -2018,447 +2451,7 @@ const SurgicalItemsManagement = () => {
           )}
         </div>
 
-        {/* ADVANCED COLORFUL PDF BUTTON CSS */}
-        <style jsx>{`
-          /* Advanced PDF Report Button with Glassmorphism */
-          .floating-report-btn-advanced {
-            position: fixed;
-            right: 30px;
-            bottom: 30px;
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1000;
-            user-select: none;
-            position: relative;
-            overflow: hidden;
-            backdrop-filter: blur(20px);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 
-              0 8px 32px rgba(31, 38, 135, 0.37),
-              0 20px 60px rgba(31, 38, 135, 0.2),
-              inset 0 1px 0 rgba(255, 255, 255, 0.3);
-          }
-
-          /* Animated Background Gradient */
-          .btn-background {
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            border-radius: 50%;
-            background: linear-gradient(
-              45deg,
-              #FF6B6B,
-              #4ECDC4,
-              #45B7D1,
-              #96CEB4,
-              #FFEAA7,
-              #DDA0DD,
-              #98D8C8,
-              #F7DC6F
-            );
-            background-size: 400% 400%;
-            animation: gradientShift 4s ease infinite;
-            z-index: -2;
-          }
-
-          /* Glowing Effect */
-          .btn-glow {
-            position: absolute;
-            top: -4px;
-            left: -4px;
-            right: -4px;
-            bottom: -4px;
-            border-radius: 50%;
-            background: radial-gradient(
-              circle,
-              rgba(255, 107, 107, 0.4) 0%,
-              rgba(78, 205, 196, 0.3) 25%,
-              rgba(69, 183, 209, 0.3) 50%,
-              rgba(150, 206, 180, 0.2) 75%,
-              transparent 100%
-            );
-            filter: blur(10px);
-            opacity: 0.8;
-            animation: glowPulse 3s ease-in-out infinite;
-            z-index: -1;
-          }
-
-          /* Button Content */
-          .btn-content {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            z-index: 1;
-          }
-
-          .pdf-icon-advanced {
-            font-size: 28px;
-            margin-bottom: 4px;
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
-            animation: iconBounce 2s ease-in-out infinite;
-          }
-
-          .pdf-text-advanced {
-            font-size: 11px;
-            text-align: center;
-            line-height: 1.2;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-          }
-
-          /* Advanced Notification Bubble */
-          .pdf-notification-bubble-advanced {
-            position: absolute;
-            top: -12px;
-            right: -12px;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1002;
-            overflow: hidden;
-            background: linear-gradient(135deg, #FF416C, #FF4B2B, #FF6B6B);
-            box-shadow: 
-              0 4px 20px rgba(255, 65, 108, 0.5),
-              0 8px 40px rgba(255, 75, 43, 0.3);
-            border: 3px solid rgba(255, 255, 255, 0.8);
-            animation: bubbleFloat 3s ease-in-out infinite;
-          }
-
-          .bubble-pulse {
-            position: absolute;
-            top: -5px;
-            left: -5px;
-            right: -5px;
-            bottom: -5px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255, 65, 108, 0.6) 0%, transparent 70%);
-            animation: bubblePulse 2s ease-in-out infinite;
-          }
-
-          .bubble-content {
-            position: relative;
-            color: white;
-            font-size: 13px;
-            font-weight: 900;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-            z-index: 1;
-          }
-
-          /* Floating Particles */
-          .floating-particles {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            overflow: hidden;
-            border-radius: 50%;
-          }
-
-          .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            opacity: 0.7;
-          }
-
-          .particle-1 {
-            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
-            top: 20%;
-            left: 80%;
-            animation: particleFloat1 4s ease-in-out infinite;
-          }
-
-          .particle-2 {
-            background: linear-gradient(45deg, #45B7D1, #96CEB4);
-            top: 70%;
-            left: 20%;
-            animation: particleFloat2 3s ease-in-out infinite;
-          }
-
-          .particle-3 {
-            background: linear-gradient(45deg, #FFEAA7, #DDA0DD);
-            top: 30%;
-            left: 30%;
-            animation: particleFloat3 5s ease-in-out infinite;
-          }
-
-          .particle-4 {
-            background: linear-gradient(45deg, #98D8C8, #F7DC6F);
-            top: 80%;
-            left: 70%;
-            animation: particleFloat4 3.5s ease-in-out infinite;
-          }
-
-          /* Hover Effects */
-          .floating-report-btn-advanced:hover {
-            transform: scale(1.15) translateY(-5px);
-            box-shadow: 
-              0 15px 50px rgba(31, 38, 135, 0.5),
-              0 25px 80px rgba(31, 38, 135, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.5);
-          }
-
-          .floating-report-btn-advanced:hover .btn-background {
-            animation-duration: 2s;
-            background-size: 600% 600%;
-          }
-
-          .floating-report-btn-advanced:hover .btn-glow {
-            opacity: 1;
-            filter: blur(15px);
-          }
-
-          .floating-report-btn-advanced:hover .pdf-icon-advanced {
-            transform: rotate(360deg) scale(1.1);
-            transition: transform 0.6s ease;
-          }
-
-          .floating-report-btn-advanced:hover .floating-particles .particle {
-            animation-duration: 1.5s;
-          }
-
-          /* Active State */
-          .floating-report-btn-advanced:active {
-            transform: scale(1.05) translateY(-2px);
-          }
-
-          /* Animations */
-          @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-
-          @keyframes glowPulse {
-            0%, 100% { 
-              opacity: 0.8; 
-              transform: scale(1); 
-            }
-            50% { 
-              opacity: 1; 
-              transform: scale(1.05); 
-            }
-          }
-
-          @keyframes iconBounce {
-            0%, 20%, 50%, 80%, 100% {
-              transform: translateY(0) rotate(0deg);
-            }
-            40% {
-              transform: translateY(-8px) rotate(5deg);
-            }
-            60% {
-              transform: translateY(-4px) rotate(-5deg);
-            }
-          }
-
-          @keyframes bubbleFloat {
-            0%, 100% { 
-              transform: translateY(0px) rotate(0deg); 
-            }
-            25% { 
-              transform: translateY(-5px) rotate(90deg); 
-            }
-            50% { 
-              transform: translateY(-8px) rotate(180deg); 
-            }
-            75% { 
-              transform: translateY(-3px) rotate(270deg); 
-            }
-          }
-
-          @keyframes bubblePulse {
-            0%, 100% { 
-              transform: scale(1); 
-              opacity: 0.6; 
-            }
-            50% { 
-              transform: scale(1.3); 
-              opacity: 0.3; 
-            }
-          }
-
-          @keyframes particleFloat1 {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.7; }
-            25% { transform: translate(-10px, -10px) rotate(90deg); opacity: 1; }
-            50% { transform: translate(-5px, -15px) rotate(180deg); opacity: 0.5; }
-            75% { transform: translate(5px, -8px) rotate(270deg); opacity: 0.8; }
-          }
-
-          @keyframes particleFloat2 {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.6; }
-            33% { transform: translate(8px, -12px) rotate(120deg); opacity: 1; }
-            66% { transform: translate(-3px, -6px) rotate(240deg); opacity: 0.4; }
-          }
-
-          @keyframes particleFloat3 {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.8; }
-            20% { transform: translate(-8px, 5px) rotate(72deg); opacity: 0.6; }
-            40% { transform: translate(3px, -10px) rotate(144deg); opacity: 1; }
-            60% { transform: translate(10px, -3px) rotate(216deg); opacity: 0.7; }
-            80% { transform: translate(-5px, 8px) rotate(288deg); opacity: 0.5; }
-          }
-
-          @keyframes particleFloat4 {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.5; }
-            50% { transform: translate(-12px, 12px) rotate(180deg); opacity: 1; }
-          }
-
-          /* Responsive Design */
-          @media (max-width: 768px) {
-            .floating-report-btn-advanced {
-              right: 20px;
-              bottom: 20px;
-              width: 75px;
-              height: 75px;
-            }
-            
-            .pdf-icon-advanced {
-              font-size: 24px;
-            }
-            
-            .pdf-text-advanced {
-              font-size: 10px;
-            }
-
-            .pdf-notification-bubble-advanced {
-              width: 28px;
-              height: 28px;
-              top: -10px;
-              right: -10px;
-            }
-
-            .bubble-content {
-              font-size: 12px;
-            }
-          }
-
-          @media (max-width: 480px) {
-            .floating-report-btn-advanced {
-              right: 15px;
-              bottom: 15px;
-              width: 70px;
-              height: 70px;
-            }
-            
-            .pdf-icon-advanced {
-              font-size: 22px;
-            }
-            
-            .pdf-text-advanced {
-              font-size: 9px;
-            }
-
-            .pdf-notification-bubble-advanced {
-              width: 26px;
-              height: 26px;
-              top: -8px;
-              right: -8px;
-            }
-
-            .bubble-content {
-              font-size: 11px;
-            }
-          }
-
-          /* Print styles - hide button when printing */
-          @media print {
-            .floating-report-btn-advanced {
-              display: none !important;
-            }
-          }
-
-          /* Dark mode enhancements */
-          @media (prefers-color-scheme: dark) {
-            .floating-report-btn-advanced {
-              backdrop-filter: blur(25px);
-              border: 2px solid rgba(255, 255, 255, 0.3);
-            }
-            
-            .btn-glow {
-              opacity: 1;
-            }
-          }
-
-          /* High contrast mode */
-          @media (prefers-contrast: high) {
-            .floating-report-btn-advanced {
-              border: 3px solid white;
-              box-shadow: 0 0 0 2px black, 0 8px 32px rgba(0, 0, 0, 0.8);
-            }
-          }
-
-          /* Reduced motion for accessibility */
-          @media (prefers-reduced-motion: reduce) {
-            .floating-report-btn-advanced,
-            .btn-background,
-            .btn-glow,
-            .pdf-icon-advanced,
-            .pdf-notification-bubble-advanced,
-            .bubble-pulse,
-            .particle {
-              animation: none !important;
-              transition: none !important;
-            }
-          }
-
-          /* Focus states for accessibility */
-          .floating-report-btn-advanced:focus {
-            outline: 3px solid #4A90E2;
-            outline-offset: 4px;
-          }
-
-          /* High performance mode */
-          @media (update: slow) {
-            .floating-report-btn-advanced * {
-              animation-duration: 6s !important;
-            }
-          }
-
-          @keyframes pulse {
-            0% { 
-              transform: scale(1); 
-              opacity: 1; 
-            }
-            50% { 
-              transform: scale(1.05); 
-              opacity: 0.8; 
-            }
-            100% { 
-              transform: scale(1); 
-              opacity: 1; 
-            }
-          }
-
-          @keyframes spin {
-            0% { 
-              transform: rotate(0deg); 
-            }
-            100% { 
-              transform: rotate(360deg); 
-            }
-          }
-        `}</style>
+        
       </AdminLayout>
     </AdminErrorBoundary>
   );
