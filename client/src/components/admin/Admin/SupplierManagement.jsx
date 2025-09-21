@@ -1,5 +1,5 @@
 // components/admin/Admin/SupplierManagement.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../Admin/styles/SupplierManagement.css';
@@ -19,6 +19,18 @@ const SupplierManagement = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Real-time cost metrics state
+  const [supplierCosts, setSupplierCosts] = useState({
+    totalCosts: 0,
+    monthlyCosts: 0,
+    recentOrders: [],
+    topSuppliers: []
+  });
+
+  // Auto-refresh states
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
   // Set axios base URL for port 7000
   axios.defaults.baseURL = 'http://localhost:7000';
@@ -44,9 +56,56 @@ const SupplierManagement = () => {
     items: [{ product: '', quantity: 1, unitPrice: 0 }],
     expectedDelivery: '',
     notes: '',
-    status: 'pending',  // ✅ NEW: Order status
-    rating: 3           // ✅ NEW: Supplier rating
+    status: 'pending',
+    rating: 3
   });
+
+  // Real-time cost calculation function
+  const calculateSupplierCosts = useCallback((orders, suppliersList) => {
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    
+    // Total costs across all orders
+    const totalCosts = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+    
+    // Monthly costs (current month)
+    const monthlyCosts = orders
+      .filter(order => {
+        const orderDate = new Date(order.orderDate || order.createdAt);
+        return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+      })
+      .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+    
+    // Recent orders (last 10)
+    const recentOrders = orders
+      .sort((a, b) => new Date(b.orderDate || b.createdAt) - new Date(a.orderDate || a.createdAt))
+      .slice(0, 10);
+    
+    // Top suppliers by spending
+    const supplierSpending = {};
+    orders.forEach(order => {
+      const supplierId = order.supplier?._id || order.supplier;
+      const supplier = suppliersList.find(s => s._id === supplierId);
+      if (supplier) {
+        if (!supplierSpending[supplier.name]) {
+          supplierSpending[supplier.name] = 0;
+        }
+        supplierSpending[supplier.name] += (order.totalAmount || 0);
+      }
+    });
+    
+    const topSuppliers = Object.entries(supplierSpending)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+      .map(([name, amount]) => ({ name, amount }));
+    
+    return {
+      totalCosts,
+      monthlyCosts,
+      recentOrders,
+      topSuppliers
+    };
+  }, []);
 
   // Validation helper functions
   const isValidEmail = (email) => {
@@ -122,7 +181,7 @@ const SupplierManagement = () => {
   const handleNumberInput = (value, index, field) => {
     const sanitized = value.replace(/[^0-9.]/g, '');
     const parts = sanitized.split('.');
-    let cleanValue = parts;
+    let cleanValue = parts[0];
     if (parts.length > 1) cleanValue += '.' + parts[1].slice(0, 2);
     const numValue = parseFloat(cleanValue) || 0;
     updateOrderItem(index, field, Math.max(0, numValue));
@@ -136,7 +195,6 @@ const SupplierManagement = () => {
     }));
   };
 
-  // ✅ NEW: Handle status input with validation
   const handleStatusInput = (value) => {
     const validStatuses = ['pending', 'approved', 'ordered', 'received', 'cancelled'];
     if (validStatuses.includes(value)) {
@@ -145,7 +203,6 @@ const SupplierManagement = () => {
     }
   };
 
-  // ✅ NEW: Handle rating input with validation
   const handleRatingInput = (value) => {
     let numValue = parseInt(value, 10);
     if (isNaN(numValue) || numValue < 1) numValue = 1;
@@ -230,24 +287,51 @@ const SupplierManagement = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
+  // Fetch data with cost calculations
   const fetchData = async () => {
     try {
       const [suppliersRes, ordersRes] = await Promise.all([
         axios.get('/api/suppliers'),
         axios.get('/api/purchase-orders')
       ]);
-      setSuppliers(suppliersRes.data.suppliers || []);
-      setPurchaseOrders(ordersRes.data.orders || []);
+      
+      const suppliersData = suppliersRes.data.suppliers || [];
+      const ordersData = ordersRes.data.orders || [];
+      
+      setSuppliers(suppliersData);
+      setPurchaseOrders(ordersData);
+      
+      // Calculate real-time costs
+      const costs = calculateSupplierCosts(ordersData, suppliersData);
+      setSupplierCosts(costs);
+      
       setLoading(false);
     } catch (error) {
       console.error('❌ Error fetching data:', error);
-      console.error('❌ Error response:', error.response?.data);
       setLoading(false);
     }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const interval = setInterval(() => {
+      fetchData();
+      setLastUpdated(new Date());
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [autoRefresh]);
+
+  // Manual refresh handler
+  const handleManualRefresh = () => {
+    setLoading(true);
+    fetchData();
+    setLastUpdated(new Date());
   };
 
   const handleSupplierSubmit = async (e) => {
@@ -398,7 +482,7 @@ const SupplierManagement = () => {
     return <span className="error-message">{error}</span>;
   };
 
-  // ---------------- PDF: Suppliers List ----------------
+  // Generate PDF Report
   const generateSuppliersPDF = () => {
     try {
       if (!suppliers || suppliers.length === 0) {
@@ -406,55 +490,43 @@ const SupplierManagement = () => {
         return;
       }
 
-      // Helpers
       const safe = (v, alt = '-') => (v === null || v === undefined || v === '' ? alt : v);
       const cap = (s) => safe(s, '-').replace(/_/g, ' ');
-      const dmy = (v) => {
-        if (!v) return '-';
-        const d = new Date(v);
-        if (isNaN(d.getTime())) return '-';
-        return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' });
-      };
 
-      // Summary metrics
       const activeCount = suppliers.filter(s => s.status === 'active').length;
       const inactiveCount = suppliers.filter(s => s.status === 'inactive').length;
       const blacklistedCount = suppliers.filter(s => s.status === 'blacklisted').length;
       const highRatedCount = suppliers.filter(s => (s.rating || 0) >= 4).length;
 
-      // Category breakdown
-      const catMap = new Map();
+      const categoryMap = new Map();
       suppliers.forEach(s => {
         const k = s.category || 'other';
-        catMap.set(k, (catMap.get(k) || 0) + 1);
+        categoryMap.set(k, (categoryMap.get(k) || 0) + 1);
       });
-      const categoryRows = Array.from(catMap.entries())
+      const categoryRows = Array.from(categoryMap.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 8)
         .map(([name, count]) => [cap(name).substring(0, 24), String(count)]);
 
-      // Build table rows
       const rows = suppliers.map((s, i) => {
         const city = safe(s?.address?.city);
         const state = safe(s?.address?.state);
         const country = safe(s?.address?.country);
         const location = [city, state].filter(Boolean).join(', ');
         return [
-          String(i + 1).padStart(3, '0'),                       // S/N
-          safe(s.name, 'Unknown').substring(0, 30),             // Name
-          safe(s.email, '-').substring(0, 28),                  // Email
-          safe(s.phone, '-').substring(0, 18),                  // Phone
-          cap(s.category).substring(0, 18),                     // Category
-          safe(s.status, '-').substring(0, 12),                 // Status
-          String(s.rating ?? 0),                                // Rating
-          location.substring(0, 26),                            // City/State
-          country.substring(0, 18)                              // Country
+          String(i + 1).padStart(3, '0'),
+          safe(s.name, 'Unknown').substring(0, 30),
+          safe(s.email, '-').substring(0, 28),
+          safe(s.phone, '-').substring(0, 18),
+          cap(s.category).substring(0, 18),
+          safe(s.status, '-').substring(0, 12),
+          String(s.rating ?? 0),
+          location.substring(0, 26),
+          country.substring(0, 18)
         ];
       });
 
-      // Create PDF (A4 landscape, mm)
       const doc = new jsPDF('landscape', 'mm', 'a4');
-
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       let y = 15;
@@ -474,13 +546,11 @@ const SupplierManagement = () => {
       doc.setFontSize(10);
       doc.text('Procurement and Supplier Management', pageWidth / 2, y, { align: 'center' });
 
-      // Separator
       y += 6;
       doc.setDrawColor(0, 0, 0);
       doc.setLineWidth(0.8);
       doc.line(15, y, pageWidth - 15, y);
 
-      // Metadata
       y += 8;
       doc.setFontSize(9);
       const now = new Date();
@@ -497,7 +567,6 @@ const SupplierManagement = () => {
         pageWidth / 2, y, { align: 'center' }
       );
 
-      // Summary band
       y += 10;
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
@@ -523,7 +592,6 @@ const SupplierManagement = () => {
         doc.text(txt, x, y + 1);
       });
 
-      // Category mini-table (optional)
       y += 14;
       if (categoryRows.length > 0) {
         autoTable(doc, {
@@ -560,7 +628,6 @@ const SupplierManagement = () => {
         y = (doc.lastAutoTable?.finalY || y) + 8;
       }
 
-      // Main suppliers table
       autoTable(doc, {
         startY: y,
         head: [[
@@ -598,15 +665,15 @@ const SupplierManagement = () => {
           cellPadding: { top: 2, right: 1, bottom: 2, left: 1 }
         },
         columnStyles: {
-          0: { cellWidth: 10, halign: 'center', fontStyle: 'bold' }, // S/N
-          1: { cellWidth: 48, halign: 'left' },                       // Name
-          2: { cellWidth: 58, halign: 'left' },                       // Email
-          3: { cellWidth: 26, halign: 'left' },                       // Phone
-          4: { cellWidth: 28, halign: 'center' },                     // Category
-          5: { cellWidth: 22, halign: 'center' },                     // Status
-          6: { cellWidth: 16, halign: 'right' },                      // Rating
-          7: { cellWidth: 38, halign: 'left' },                       // City/State
-          8: { cellWidth: 24, halign: 'left' },                       // Country
+          0: { cellWidth: 10, halign: 'center', fontStyle: 'bold' },
+          1: { cellWidth: 48, halign: 'left' },
+          2: { cellWidth: 58, halign: 'left' },
+          3: { cellWidth: 26, halign: 'left' },
+          4: { cellWidth: 28, halign: 'center' },
+          5: { cellWidth: 22, halign: 'center' },
+          6: { cellWidth: 16, halign: 'right' },
+          7: { cellWidth: 38, halign: 'left' },
+          8: { cellWidth: 24, halign: 'left' },
         },
         didParseCell: (data) => {
           const rowIndex = data.row.index;
@@ -629,8 +696,6 @@ const SupplierManagement = () => {
       });
 
       const finalY = doc.lastAutoTable?.finalY || (y + 10);
-
-      // Verification box if space allows
       const spaceLeft = pageHeight - finalY;
       if (spaceLeft > 28) {
         const boxY = finalY + 6;
@@ -655,7 +720,6 @@ const SupplierManagement = () => {
         doc.text('Date: ____________', boxX + 120, lineY + 7);
       }
 
-      // Footer and save
       const footerY = pageHeight - 10;
       doc.setFontSize(7);
       doc.setTextColor(100, 100, 100);
@@ -665,7 +729,7 @@ const SupplierManagement = () => {
         pageWidth / 2, footerY, { align: 'center' }
       );
 
-      const timestamp = now.toISOString().replace(/[:.]/g, '-').split('T');
+      const timestamp = now.toISOString().replace(/[:.]/g, '-').split('T')[0];
       const filename = `HealX_Suppliers_List_${timestamp}.pdf`;
       doc.save(filename);
     } catch (err) {
@@ -673,13 +737,21 @@ const SupplierManagement = () => {
       alert(`Failed to generate PDF: ${err.message}`);
     }
   };
-  // ----------------------------------------------------
+
+  if (loading) {
+    return (
+      <div className="loading-state">
+        <div className="spinner"></div>
+        <p>Loading supplier data from port 7000...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="procurement-page">
-      {/* Page Header */}
-      <div className="page-header">
-        <div className="header-left">
+      {/* Header & Controls */}
+      <div className="order-page-header">
+        <div className="order-header-left">
           <div className="page-icon">📦</div>
           <div>
             <h1>Procurement & Suppliers</h1>
@@ -689,6 +761,20 @@ const SupplierManagement = () => {
         </div>
 
         <div className="header-actions">
+          <button onClick={handleManualRefresh} className="action-btn refresh">
+            🔄 Refresh Now
+          </button>
+          <label className="auto-refresh-toggle">
+            <input
+              type="checkbox"
+              checked={autoRefresh}
+              onChange={e => setAutoRefresh(e.target.checked)}
+            />
+            Auto-Refresh
+          </label>
+          <span className="last-updated">
+            Last Updated: {lastUpdated.toLocaleTimeString()}
+          </span>
           <button
             className="action-btn primary"
             onClick={() => {
@@ -699,7 +785,6 @@ const SupplierManagement = () => {
           >
             + Add Supplier
           </button>
-
           <button
             className="action-btn secondary"
             onClick={() => {
@@ -710,15 +795,124 @@ const SupplierManagement = () => {
           >
             + New Order
           </button>
-
-          {/* NEW: Export PDF */}
           <button
             className="action-btn tertiary"
             onClick={generateSuppliersPDF}
             title="Export Suppliers PDF"
           >
-            📄 Export Suppliers PDF
+            📄 Export PDF
           </button>
+        </div>
+      </div>
+
+      {/* Real-Time Supplier Costs Dashboard */}
+      <div className="supplier-costs-section">
+        <div className="section-header">
+          <h2>💰 Real-Time Supplier Costs</h2>
+          <div className="refresh-indicator">
+            <span className="live-dot"></span>
+            <span>Live Data</span>
+          </div>
+        </div>
+
+        <div className="cost-metrics-grid">
+          {/* Total Spending */}
+          <div className="cost-metric-card total">
+            <div className="metric-header">
+              <h3>Total Supplier Spending</h3>
+              <span className="trend-up">↗</span>
+            </div>
+            <div className="metric-value">
+              ${supplierCosts.totalCosts.toLocaleString()}
+            </div>
+            <div className="metric-subtitle">
+              All-time spending across {suppliers.length} suppliers
+            </div>
+          </div>
+
+          {/* Monthly Spending */}
+          <div className="cost-metric-card monthly">
+            <div className="metric-header">
+              <h3>This Month</h3>
+              <span className="period">
+                {new Date().toLocaleString('default', { month: 'long' })}
+              </span>
+            </div>
+            <div className="metric-value">
+              ${supplierCosts.monthlyCosts.toLocaleString()}
+            </div>
+            <div className="metric-subtitle">
+              {supplierCosts.monthlyCosts > 0 
+                ? `${((supplierCosts.monthlyCosts / supplierCosts.totalCosts) * 100).toFixed(1)}% of total spending`
+                : 'No orders this month'
+              }
+            </div>
+          </div>
+
+          {/* Average Order Value */}
+          <div className="cost-metric-card average">
+            <div className="metric-header">
+              <h3>Average Order Value</h3>
+              <span className="calculation">📊</span>
+            </div>
+            <div className="metric-value">
+              ${purchaseOrders.length > 0 
+                ? (supplierCosts.totalCosts / purchaseOrders.length).toFixed(0) 
+                : '0'
+              }
+            </div>
+            <div className="metric-subtitle">
+              Based on {purchaseOrders.length} orders
+            </div>
+          </div>
+        </div>
+
+        {/* Top Suppliers by Spending */}
+        <div className="top-suppliers-spending">
+          <h3>🏆 Top Suppliers by Spending</h3>
+          <div className="suppliers-spending-list">
+            {supplierCosts.topSuppliers.map((supplier, index) => (
+              <div key={supplier.name} className="supplier-spending-item">
+                <div className="supplier-rank">#{index + 1}</div>
+                <div className="supplier-info">
+                  <span className="supplier-name">{supplier.name}</span>
+                  <span className="spending-amount">${supplier.amount.toLocaleString()}</span>
+                </div>
+                <div className="spending-bar">
+                  <div 
+                    className="spending-fill" 
+                    style={{ 
+                      width: `${(supplier.amount / supplierCosts.topSuppliers[0]?.amount * 100) || 0}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Orders Feed */}
+        <div className="recent-orders-feed">
+          <h3>🔄 Recent Orders & Costs</h3>
+          <div className="orders-feed-container">
+            {supplierCosts.recentOrders.slice(0, 5).map((order) => (
+              <div key={order._id} className="recent-order-item">
+                <div className="order-info">
+                  <span className="order-number">#{order.orderNumber}</span>
+                  <span className="supplier-name">{order.supplier?.name || 'Unknown'}</span>
+                </div>
+                <div className="order-details">
+                  <span className="order-amount">${(order.totalAmount || 0).toLocaleString()}</span>
+                  <span className="order-date">
+                    {new Date(order.orderDate || order.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="order-status">
+                  <span className={`status-badge ${order.status}`}>{order.status}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -746,234 +940,224 @@ const SupplierManagement = () => {
 
       {/* Content Area */}
       <div className="content-area">
-        {loading ? (
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Loading procurement data from port 7000...</p>
-          </div>
-        ) : (
-          <>
-            {activeTab === 'suppliers' && (
-              <div className="suppliers-section">
-                <div className="section-stats">
-                  <div className="stat-card">
-                    <h3>{suppliers.filter(s => s.status === 'active').length}</h3>
-                    <p>Active Suppliers</p>
-                  </div>
-                  <div className="stat-card">
-                    <h3>{suppliers.filter(s => s.rating >= 4).length}</h3>
-                    <p>High Rated (4+ ⭐)</p>
-                  </div>
-                  <div className="stat-card">
-                    <h3>{suppliers.filter(s => s.category === 'medical_equipment').length}</h3>
-                    <p>Equipment Suppliers</p>
-                  </div>
-                </div>
-
-                <div className="suppliers-grid">
-                  {suppliers.length === 0 ? (
-                    <div className="empty-state">
-                      <p>No suppliers found. Add your first supplier to get started!</p>
-                    </div>
-                  ) : (
-                    suppliers.map((supplier) => (
-                      <div key={supplier._id} className="supplier-card">
-                        <div className="card-header">
-                          <h3>{supplier.name}</h3>
-                          <span className={`status-badge ${supplier.status}`}>
-                            {supplier.status}
-                          </span>
-                        </div>
-
-                        <div className="card-content">
-                          <p><strong>Email:</strong> {supplier.email}</p>
-                          <p><strong>Phone:</strong> {supplier.phone}</p>
-                          <p><strong>Category:</strong>{' '}
-                            <span className="category-tag">{supplier.category?.replace('_', ' ')}</span>
-                          </p>
-                          <p><strong>Rating:</strong>
-                            <span className="rating-stars">
-                              {'⭐'.repeat(supplier.rating || 3)}
-                              <span className="rating-text">({supplier.rating || 3}/5)</span>
-                            </span>
-                          </p>
-                          {supplier.address?.city && (
-                            <p><strong>Location:</strong> {supplier.address.city}, {supplier.address.state}</p>
-                          )}
-                        </div>
-
-                        <div className="card-actions">
-                          <button
-                            className="btn-edit"
-                            onClick={() => {
-                              setEditingItem(supplier);
-                              setSupplierForm(supplier);
-                              setModalType('supplier');
-                              setShowModal(true);
-                              setErrors({});
-                            }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="btn-delete"
-                            onClick={() => handleDelete('supplier', supplier._id)}
-                          >
-                            Delete
-                          </button>
-                          <button
-                            className="btn-order"
-                            onClick={() => {
-                              setOrderForm({ ...orderForm, supplier: supplier._id });
-                              setModalType('order');
-                              setShowModal(true);
-                              setErrors({});
-                            }}
-                          >
-                            Create Order
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+        {activeTab === 'suppliers' && (
+          <div className="suppliers-section">
+            <div className="section-stats">
+              <div className="stat-card">
+                <h3>{suppliers.filter(s => s.status === 'active').length}</h3>
+                <p>Active Suppliers</p>
               </div>
-            )}
-
-            {activeTab === 'orders' && (
-              <div className="orders-section">
-                <div className="section-stats">
-                  <div className="stat-card">
-                    <h3>{purchaseOrders.filter(o => o.status === 'pending').length}</h3>
-                    <p>Pending Orders</p>
-                  </div>
-                  <div className="stat-card">
-                    <h3>{purchaseOrders.filter(o => o.status === 'received').length}</h3>
-                    <p>Completed Orders</p>
-                  </div>
-                  <div className="stat-card">
-                    <h3>${purchaseOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0).toLocaleString()}</h3>
-                    <p>Total Value</p>
-                  </div>
-                </div>
-
-                <div className="orders-table">
-                  {purchaseOrders.length === 0 ? (
-                    <div className="empty-state">
-                      <p>No purchase orders found. Create your first order!</p>
-                    </div>
-                  ) : (
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Order Number</th>
-                          <th>Supplier</th>
-                          <th>Items</th>
-                          <th>Total Amount</th>
-                          <th>Status</th>
-                          <th>Rating</th>
-                          <th>Order Date</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {purchaseOrders.map((order) => (
-                          <tr key={order._id}>
-                            <td><strong>{order.orderNumber}</strong></td>
-                            <td>{order.supplier?.name || 'Unknown Supplier'}</td>
-                            <td><span className="items-count">{order.items?.length || 0} items</span></td>
-                            <td><strong>${(order.totalAmount || 0).toLocaleString()}</strong></td>
-                            <td><span className={`status-badge ${order.status}`}>{order.status}</span></td>
-                            <td><span className="rating-display">{'⭐'.repeat(order.rating || 3)} ({order.rating || 3}/5)</span></td>
-                            <td>{new Date(order.orderDate || order.createdAt).toLocaleDateString()}</td>
-                            <td>
-                              <div className="table-actions">
-                                <button
-                                  className="btn-view"
-                                  onClick={() => {
-                                    alert(`Order Details:\n\nOrder: ${order.orderNumber}\nSupplier: ${order.supplier?.name}\nRating: ${order.rating}/5 ⭐\nStatus: ${order.status}\nTotal: $${order.totalAmount}\nItems: ${order.items?.length}`);
-                                  }}
-                                >
-                                  View
-                                </button>
-                                <button
-                                  className="btn-delete"
-                                  onClick={() => handleDelete('purchase-order', order._id)}
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
+              <div className="stat-card">
+                <h3>{suppliers.filter(s => s.rating >= 4).length}</h3>
+                <p>High Rated (4+ ⭐)</p>
               </div>
-            )}
+              <div className="stat-card">
+                <h3>{suppliers.filter(s => s.category === 'medical_equipment').length}</h3>
+                <p>Equipment Suppliers</p>
+              </div>
+            </div>
 
-            {activeTab === 'analytics' && (
-              <div className="analytics-section">
-                <div className="analytics-cards">
-                  <div className="analytics-card">
-                    <h3>Top Suppliers</h3>
-                    <div className="supplier-ranking">
-                      {suppliers
-                        .filter(s => s.rating >= 4)
-                        .slice(0, 5)
-                        .map((supplier, index) => (
-                          <div key={supplier._id} className="rank-item">
-                            <span className="rank">#{index + 1}</span>
-                            <span className="name">{supplier.name}</span>
-                            <span className="rating">{'⭐'.repeat(supplier.rating || 3)}</span>
-                          </div>
-                        ))
-                      }
-                      {suppliers.filter(s => s.rating >= 4).length === 0 && (
-                        <p>No high-rated suppliers yet.</p>
+            <div className="suppliers-grid">
+              {suppliers.length === 0 ? (
+                <div className="empty-state">
+                  <p>No suppliers found. Add your first supplier to get started!</p>
+                </div>
+              ) : (
+                suppliers.map((supplier) => (
+                  <div key={supplier._id} className="supplier-card">
+                    <div className="card-header">
+                      <h3>{supplier.name}</h3>
+                      <span className={`status-badge ${supplier.status}`}>
+                        {supplier.status}
+                      </span>
+                    </div>
+                    <div className="card-content">
+                      <p><strong>Email:</strong> {supplier.email}</p>
+                      <p><strong>Phone:</strong> {supplier.phone}</p>
+                      <p><strong>Category:</strong>{' '}
+                        <span className="category-tag">{supplier.category?.replace('_', ' ')}</span>
+                      </p>
+                      <p><strong>Rating:</strong>
+                        <span className="rating-stars">
+                          {'⭐'.repeat(supplier.rating || 3)}
+                          <span className="rating-text">({supplier.rating || 3}/5)</span>
+                        </span>
+                      </p>
+                      {supplier.address?.city && (
+                        <p><strong>Location:</strong> {supplier.address.city}, {supplier.address.state}</p>
                       )}
                     </div>
-                  </div>
 
-                  <div className="analytics-card">
-                    <h3>Category Distribution</h3>
-                    <div className="category-stats">
-                      {['medical_equipment', 'pharmaceuticals', 'consumables', 'services'].map(category => {
-                        const count = suppliers.filter(s => s.category === category).length;
-                        const percentage = suppliers.length > 0 ? ((count / suppliers.length) * 100).toFixed(1) : 0;
-                        return (
-                          <div key={category} className="category-stat">
-                            <span className="category-name">{category.replace('_', ' ')}</span>
-                            <div className="progress-bar">
-                              <div className="progress-fill" style={{ width: `${percentage}%` }}></div>
-                            </div>
-                            <span className="percentage">{percentage}%</span>
-                          </div>
-                        );
-                      })}
+                    <div className="card-actions">
+                      <button
+                        className="btn-edit"
+                        onClick={() => {
+                          setEditingItem(supplier);
+                          setSupplierForm(supplier);
+                          setModalType('supplier');
+                          setShowModal(true);
+                          setErrors({});
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="btn-delete"
+                        onClick={() => handleDelete('supplier', supplier._id)}
+                      >
+                        Delete
+                      </button>
+                      <button
+                        className="btn-order"
+                        onClick={() => {
+                          setOrderForm({ ...orderForm, supplier: supplier._id });
+                          setModalType('order');
+                          setShowModal(true);
+                          setErrors({});
+                        }}
+                      >
+                        Create Order
+                      </button>
                     </div>
                   </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
-                  <div className="analytics-card">
-                    <h3>Order Status Overview</h3>
-                    <div className="status-overview">
-                      {['pending', 'approved', 'ordered', 'received', 'cancelled'].map(status => {
-                        const count = purchaseOrders.filter(o => o.status === status).length;
-                        return (
-                          <div key={status} className="status-item">
-                            <span className={`status-indicator ${status}`}></span>
-                            <span className="status-name">{status}</span>
-                            <span className="status-count">{count}</span>
+        {activeTab === 'orders' && (
+          <div className="orders-section">
+            <div className="section-stats">
+              <div className="stat-card">
+                <h3>{purchaseOrders.filter(o => o.status === 'pending').length}</h3>
+                <p>Pending Orders</p>
+              </div>
+              <div className="stat-card">
+                <h3>{purchaseOrders.filter(o => o.status === 'received').length}</h3>
+                <p>Completed Orders</p>
+              </div>
+              <div className="stat-card">
+                <h3>${purchaseOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0).toLocaleString()}</h3>
+                <p>Total Value</p>
+              </div>
+            </div>
+
+            <div className="orders-table">
+              {purchaseOrders.length === 0 ? (
+                <div className="empty-state">
+                  <p>No purchase orders found. Create your first order!</p>
+                </div>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Order Number</th>
+                      <th>Supplier</th>
+                      <th>Items</th>
+                      <th>Total Amount</th>
+                      <th>Status</th>
+                      <th>Rating</th>
+                      <th>Order Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {purchaseOrders.map((order) => (
+                      <tr key={order._id}>
+                        <td><strong>{order.orderNumber}</strong></td>
+                        <td>{order.supplier?.name || 'Unknown Supplier'}</td>
+                        <td><span className="items-count">{order.items?.length || 0} items</span></td>
+                        <td><strong>${(order.totalAmount || 0).toLocaleString()}</strong></td>
+                        <td><span className={`status-badge ${order.status}`}>{order.status}</span></td>
+                        <td><span className="rating-display">{'⭐'.repeat(order.rating || 3)} ({order.rating || 3}/5)</span></td>
+                        <td>{new Date(order.orderDate || order.createdAt).toLocaleDateString()}</td>
+                        <td>
+                          <div className="table-actions">
+                            <button
+                              className="btn-view"
+                              onClick={() => {
+                                alert(`Order Details:\n\nOrder: ${order.orderNumber}\nSupplier: ${order.supplier?.name}\nRating: ${order.rating}/5 ⭐\nStatus: ${order.status}\nTotal: $${order.totalAmount}\nItems: ${order.items?.length}`);
+                              }}
+                            >
+                              View
+                            </button>
+                            <button
+                              className="btn-delete"
+                              onClick={() => handleDelete('purchase-order', order._id)}
+                            >
+                              Delete
+                            </button>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="analytics-section">
+            <div className="analytics-cards">
+              <div className="analytics-card">
+                <h3>Top Suppliers</h3>
+                <div className="supplier-ranking">
+                  {suppliers
+                    .filter(s => s.rating >= 4)
+                    .slice(0, 5)
+                    .map((supplier, index) => (
+                      <div key={supplier._id} className="rank-item">
+                        <span className="rank">#{index + 1}</span>
+                        <span className="name">{supplier.name}</span>
+                        <span className="rating">{'⭐'.repeat(supplier.rating || 3)}</span>
+                      </div>
+                    ))
+                  }
+                  {suppliers.filter(s => s.rating >= 4).length === 0 && (
+                    <p>No high-rated suppliers yet.</p>
+                  )}
                 </div>
               </div>
-            )}
-          </>
+
+              <div className="analytics-card">
+                <h3>Category Distribution</h3>
+                <div className="category-stats">
+                  {['medical_equipment', 'pharmaceuticals', 'consumables', 'services'].map(category => {
+                    const count = suppliers.filter(s => s.category === category).length;
+                    const percentage = suppliers.length > 0 ? ((count / suppliers.length) * 100).toFixed(1) : 0;
+                    return (
+                      <div key={category} className="category-stat">
+                        <span className="category-name">{category.replace('_', ' ')}</span>
+                        <div className="progress-bar">
+                          <div className="progress-fill" style={{ width: `${percentage}%` }}></div>
+                        </div>
+                        <span className="percentage">{percentage}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="analytics-card">
+                <h3>Order Status Overview</h3>
+                <div className="status-overview">
+                  {['pending', 'approved', 'ordered', 'received', 'cancelled'].map(status => {
+                    const count = purchaseOrders.filter(o => o.status === status).length;
+                    return (
+                      <div key={status} className="status-item">
+                        <span className={`status-indicator ${status}`}></span>
+                        <span className="status-name">{status}</span>
+                        <span className="status-count">{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
@@ -1179,7 +1363,6 @@ const SupplierManagement = () => {
                     <ErrorMessage error={errors.supplier} />
                   </div>
 
-                  {/* ✅ NEW: Order Status Field */}
                   <div className="form-group">
                     <label>Order Status *</label>
                     <select
@@ -1198,7 +1381,6 @@ const SupplierManagement = () => {
                     <small className="field-help">Select the current status of this order</small>
                   </div>
 
-                  {/* ✅ NEW: Rating Field */}
                   <div className="form-group">
                     <label>Supplier Rating *</label>
                     <div className="rating-input-container">
@@ -1229,7 +1411,7 @@ const SupplierManagement = () => {
                         if (isValidDate(e.target.value)) setErrors(prev => ({ ...prev, expectedDelivery: '' }));
                       }}
                       className={errors.expectedDelivery ? 'error' : ''}
-                      min={new Date().toISOString().split('T')}
+                      min={new Date().toISOString().split('T')[0]}
                     />
                     <ErrorMessage error={errors.expectedDelivery} />
                   </div>

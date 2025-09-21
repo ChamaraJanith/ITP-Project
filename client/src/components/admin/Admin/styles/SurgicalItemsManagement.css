@@ -1660,3 +1660,337 @@ body {
   .surgical-items-management {
     background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
   }}
+
+/* ===== FLOATING PDF REPORT BUTTON ===== */
+          .floating-report-btn-advanced {
+            position: fixed;
+            right: 30px;
+            bottom: 30px;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 
+              0 8px 32px rgba(31, 38, 135, 0.37),
+              0 20px 60px rgba(31, 38, 135, 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.3);
+          }
+
+          .btn-background {
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 50%;
+            background: linear-gradient(
+              45deg,
+              #28a745,
+              #20c997,
+              #17a2b8,
+              #6f42c1,
+              #28a745
+            );
+            background-size: 400% 400%;
+            animation: gradientShift 4s ease infinite;
+            z-index: -2;
+          }
+
+          .btn-glow {
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 50%;
+            background: radial-gradient(
+              circle,
+              rgba(40, 167, 69, 0.4) 0%,
+              rgba(32, 201, 151, 0.3) 25%,
+              rgba(23, 162, 184, 0.3) 50%,
+              rgba(111, 66, 193, 0.2) 75%,
+              transparent 100%
+            );
+            filter: blur(10px);
+            opacity: 0.8;
+            animation: glowPulse 3s ease-in-out infinite;
+            z-index: -1;
+          }
+
+          .btn-content {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            z-index: 1;
+          }
+
+          .pdf-icon-advanced {
+            font-size: 28px;
+            margin-bottom: 4px;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+            animation: iconBounce 2s ease-in-out infinite;
+          }
+
+          .pdf-text-advanced {
+            font-size: 11px;
+            text-align: center;
+            line-height: 1.2;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+          }
+
+          .pdf-notification-bubble-advanced {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1002;
+            overflow: hidden;
+            background: linear-gradient(135deg, #FF416C, #FF4B2B, #FF6B6B);
+            box-shadow: 
+              0 4px 20px rgba(255, 65, 108, 0.5),
+              0 8px 40px rgba(255, 75, 43, 0.3);
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            animation: bubbleFloat 3s ease-in-out infinite;
+          }
+
+          .bubble-pulse {
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 65, 108, 0.6) 0%, transparent 70%);
+            animation: bubblePulse 2s ease-in-out infinite;
+          }
+
+          .bubble-content {
+            position: relative;
+            color: white;
+            font-size: 13px;
+            font-weight: 900;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 1;
+          }
+
+          .floating-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            border-radius: 50%;
+          }
+
+          .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            opacity: 0.7;
+          }
+
+          .particle-1 {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            top: 20%;
+            left: 80%;
+            animation: particleFloat1 4s ease-in-out infinite;
+          }
+
+          .particle-2 {
+            background: linear-gradient(45deg, #17a2b8, #6f42c1);
+            top: 70%;
+            left: 20%;
+            animation: particleFloat2 3s ease-in-out infinite;
+          }
+
+          .particle-3 {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+            top: 30%;
+            left: 30%;
+            animation: particleFloat3 5s ease-in-out infinite;
+          }
+
+          .particle-4 {
+            background: linear-gradient(45deg, #e83e8c, #6f42c1);
+            top: 80%;
+            left: 70%;
+            animation: particleFloat4 3.5s ease-in-out infinite;
+          }
+
+          .floating-report-btn-advanced:hover {
+            transform: scale(1.15) translateY(-5px);
+            box-shadow: 
+              0 15px 50px rgba(31, 38, 135, 0.5),
+              0 25px 80px rgba(31, 38, 135, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.5);
+          }
+
+          .floating-report-btn-advanced:hover .btn-background {
+            animation-duration: 2s;
+            background-size: 600% 600%;
+          }
+
+          .floating-report-btn-advanced:hover .btn-glow {
+            opacity: 1;
+            filter: blur(15px);
+          }
+
+          .floating-report-btn-advanced:hover .pdf-icon-advanced {
+            transform: rotate(360deg) scale(1.1);
+            transition: transform 0.6s ease;
+          }
+
+          .floating-report-btn-advanced:hover .floating-particles .particle {
+            animation-duration: 1.5s;
+          }
+
+          .floating-report-btn-advanced:active {
+            transform: scale(1.05) translateY(-2px);
+          }
+
+          @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+
+          @keyframes glowPulse {
+            0%, 100% { 
+              opacity: 0.8; 
+              transform: scale(1); 
+            }
+            50% { 
+              opacity: 1; 
+              transform: scale(1.05); 
+            }
+          }
+
+          @keyframes iconBounce {
+            0%, 20%, 50%, 80%, 100% {
+              transform: translateY(0) rotate(0deg);
+            }
+            40% {
+              transform: translateY(-8px) rotate(5deg);
+            }
+            60% {
+              transform: translateY(-4px) rotate(-5deg);
+            }
+          }
+
+          @keyframes bubbleFloat {
+            0%, 100% { 
+              transform: translateY(0px) rotate(0deg); 
+            }
+            25% { 
+              transform: translateY(-5px) rotate(90deg); 
+            }
+            50% { 
+              transform: translateY(-8px) rotate(180deg); 
+            }
+            75% { 
+              transform: translateY(-3px) rotate(270deg); 
+            }
+          }
+
+          @keyframes bubblePulse {
+            0%, 100% { 
+              transform: scale(1); 
+              opacity: 0.6; 
+            }
+            50% { 
+              transform: scale(1.3); 
+              opacity: 0.3; 
+            }
+          }
+
+          @keyframes particleFloat1 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.7; }
+            25% { transform: translate(-10px, -10px) rotate(90deg); opacity: 1; }
+            50% { transform: translate(-5px, -15px) rotate(180deg); opacity: 0.5; }
+            75% { transform: translate(5px, -8px) rotate(270deg); opacity: 0.8; }
+          }
+
+          @keyframes particleFloat2 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.6; }
+            33% { transform: translate(8px, -12px) rotate(120deg); opacity: 1; }
+            66% { transform: translate(-3px, -6px) rotate(240deg); opacity: 0.4; }
+          }
+
+          @keyframes particleFloat3 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.8; }
+            20% { transform: translate(-8px, 5px) rotate(72deg); opacity: 0.6; }
+            40% { transform: translate(3px, -10px) rotate(144deg); opacity: 1; }
+            60% { transform: translate(10px, -3px) rotate(216deg); opacity: 0.7; }
+            80% { transform: translate(-5px, 8px) rotate(288deg); opacity: 0.5; }
+          }
+
+          @keyframes particleFloat4 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.5; }
+            50% { transform: translate(-12px, 12px) rotate(180deg); opacity: 1; }
+          }
+
+          @keyframes pulse {
+            0% { 
+              transform: scale(1); 
+              opacity: 1; 
+            }
+            50% { 
+              transform: scale(1.05); 
+              opacity: 0.8; 
+            }
+            100% { 
+              transform: scale(1); 
+              opacity: 1; 
+            }
+          }
+
+          @keyframes spin {
+            0% { 
+              transform: rotate(0deg); 
+            }
+            100% { 
+              transform: rotate(360deg); 
+            }
+          }
+
+          @media (max-width: 768px) {
+            .floating-report-btn-advanced {
+              right: 20px;
+              bottom: 20px;
+              width: 75px;
+              height: 75px;
+            }
+            
+            .pdf-icon-advanced {
+              font-size: 24px;
+            }
+            
+            .pdf-text-advanced {
+              font-size: 10px;
+            }
+          }
