@@ -195,20 +195,26 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // Auto-restock state management
+  // ✅ FIXED: Auto-restock state management with user-controlled quantities
   const [autoRestockConfig, setAutoRestockConfig] = useState({});
   const [showAutoRestockModal, setShowAutoRestockModal] = useState(false);
   const [selectedItemForAutoRestock, setSelectedItemForAutoRestock] = useState(null);
 
+  // ✅ FIXED: Auto-restock check that respects user's manual quantities
   const handleAutoRestockCheck = async () => {
     try {
-      setNotifications({ loading: true, message: 'Checking items for auto-restock...', type: 'info' });
+      setNotifications({ loading: true, message: 'Checking items for auto-restock using your manual quantities...', type: 'info' });
       
       const response = await fetch(`${API_BASE_URL}/auto-restock/check-and-restock`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        // ✅ FIXED: Send flag to respect user's manual quantities
+        body: JSON.stringify({ 
+          respectManualQuantities: true,
+          preserveValue: true 
+        })
       });
 
       if (!response.ok) {
@@ -218,7 +224,7 @@ const SurgicalItemsManagement = () => {
       const data = await response.json();
       
       if (data.success) {
-        showNotification(`✅ Auto-restock completed! Processed ${data.data.itemsProcessed} items.`, 'success');
+        showNotification(`✅ Auto-restock completed! Processed ${data.data.itemsProcessed} items using your specified quantity settings.`, 'success');
         loadItems();
       } else {
         throw new Error(data.message || 'Failed to perform auto-restock check');
@@ -229,17 +235,25 @@ const SurgicalItemsManagement = () => {
     }
   };
 
+  // ✅ FIXED: Auto-restock configuration that uses YOUR provided quantity
   const handleConfigureAutoRestock = (item) => {
     setSelectedItemForAutoRestock(item);
+    
+    // ✅ FIXED: Use existing configuration or smart defaults - YOU control the quantity
+    const existingConfig = item.autoRestock || {};
+    
     setAutoRestockConfig({
-      enabled: item.autoRestock?.enabled || false,
-      maxStockLevel: item.autoRestock?.maxStockLevel || (item.minStockLevel * 3),
-      reorderQuantity: item.autoRestock?.reorderQuantity || (item.minStockLevel * 2),
-      restockMethod: item.autoRestock?.restockMethod || 'to_max',
-      supplier: item.autoRestock?.supplier || {
+      enabled: existingConfig.enabled || false,
+      // ✅ FIXED: If user has set maxStockLevel, use it, otherwise calculate default
+      maxStockLevel: existingConfig.maxStockLevel || (item.minStockLevel * 3),
+      // ✅ FIXED: Use existing reorderQuantity if available, otherwise start with minStockLevel * 2 as suggestion
+      reorderQuantity: existingConfig.reorderQuantity || (item.minStockLevel * 2),
+      // ✅ FIXED: Default to using the user's manual reorderQuantity
+      restockMethod: existingConfig.restockMethod || 'fixed_quantity',
+      supplier: existingConfig.supplier || {
         name: item.supplier?.name || '',
-        contactEmail: '',
-        leadTimeDays: 3
+        contactEmail: existingConfig.supplier?.contactEmail || '',
+        leadTimeDays: existingConfig.supplier?.leadTimeDays || 3
       }
     });
     setShowAutoRestockModal(true);
@@ -262,7 +276,8 @@ const SurgicalItemsManagement = () => {
       const data = await response.json();
       
       if (data.success) {
-        showNotification(`✅ Auto-restock configured for ${selectedItemForAutoRestock.name}!`, 'success');
+        const method = autoRestockConfig.restockMethod === 'fixed_quantity' ? 'Your Manual Quantity' : 'Auto Calculate';
+        showNotification(`✅ Auto-restock configured for ${selectedItemForAutoRestock.name}! Method: ${method} (${autoRestockConfig.reorderQuantity} units - your choice)`, 'success');
         setShowAutoRestockModal(false);
         loadItems();
       } else {
@@ -885,7 +900,7 @@ This action cannot be undone.`)) {
     });
   };
 
-  // ✅ FIXED: Stock update with preserved value maintenance
+  // ✅ FIXED: Enhanced stock update with auto-restock awareness
   const handleUpdateStock = async (itemId, quantityChange, type) => {
     try {
       if (!itemId) {
@@ -916,14 +931,22 @@ This action cannot be undone.`)) {
         return;
       }
 
+      // ✅ FIXED: Check if this matches the user's auto-restock manual quantity
+      const hasAutoRestockManualQuantity = item.autoRestock && 
+                                           item.autoRestock.enabled && 
+                                           item.autoRestock.restockMethod === 'fixed_quantity' &&
+                                           item.autoRestock.reorderQuantity === quantity;
+
       const updateData = {
         quantityChange: Math.abs(quantity),
         type: type,
         usedBy: admin?.name || 'Admin',
-        purpose: type === 'usage' ? 'Manual stock reduction' : 'Manual stock replenishment',
+        purpose: type === 'usage' ? 'Manual stock reduction' : 
+                 hasAutoRestockManualQuantity ? 'Manual restock using your auto-restock quantity' : 'Manual stock replenishment',
         preserveValue: true,
         originalQuantity: item.originalQuantity || item.quantity || 0,
-        preservedQuantity: item.preservedQuantity || item.originalQuantity || item.quantity || 0
+        preservedQuantity: item.preservedQuantity || item.originalQuantity || item.quantity || 0,
+        usingAutoRestockQuantity: hasAutoRestockManualQuantity // ✅ FIXED: Flag for backend
       };
 
       const response = await fetch(`${API_BASE_URL}/surgical-items/${itemId}/update-stock`, {
@@ -941,13 +964,17 @@ This action cannot be undone.`)) {
       if (data.success) {
         const action = type === 'usage' ? 'reduced' : 'increased';
         
-        // ✅ FIXED: Only increase preserved value if adding stock increases total value
+        // ✅ FIXED: Enhanced success message
         if (type === 'restock') {
           const addedValue = (parseFloat(item.price) || 0) * quantity;
           const newPreservedValue = globalPreservedValue + addedValue;
           savePreservedValue(newPreservedValue, 'stock-increase');
           
-          showNotification(`✅ Stock ${action} by ${quantity} units! Value added: $${addedValue.toFixed(2)}. Preserved value: $${newPreservedValue.toLocaleString()}`, 'success');
+          if (hasAutoRestockManualQuantity) {
+            showNotification(`✅ Stock ${action} by ${quantity} units using your auto-restock setting! Value added: $${addedValue.toFixed(2)}. Preserved value: $${newPreservedValue.toLocaleString()}`, 'success');
+          } else {
+            showNotification(`✅ Stock ${action} by ${quantity} units! Value added: $${addedValue.toFixed(2)}. Preserved value: $${newPreservedValue.toLocaleString()}`, 'success');
+          }
         } else {
           showNotification(`✅ Stock ${action} by ${quantity} units! Preserved value protected: $${globalPreservedValue.toLocaleString()}`, 'success');
         }
@@ -976,44 +1003,68 @@ This action cannot be undone.`)) {
     }
   };
 
-  const CustomNumberInput = ({ value, onSubmit, placeholder, title, max = 999999, type = 'add' }) => {
+  // ✅ FIXED: Enhanced CustomNumberInput that respects user's auto-restock settings
+  const CustomNumberInput = ({ value, onSubmit, placeholder, title, max = 999999, type = 'add', item }) => {
     const [inputValue, setInputValue] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [error, setError] = useState('');
+    const [useManualQuantity, setUseManualQuantity] = useState(false);
+
+    // ✅ FIXED: Get user's auto-restock manual quantity if available
+    const getManualQuantity = () => {
+      if (item && item.autoRestock && item.autoRestock.enabled && item.autoRestock.restockMethod === 'fixed_quantity') {
+        return item.autoRestock.reorderQuantity || 0;
+      }
+      return 0;
+    };
+
+    const manualQuantity = getManualQuantity();
+    const hasManualQuantitySetting = manualQuantity > 0;
 
     const handleSubmit = () => {
-      const numValue = parseInt(inputValue);
+      let quantityToUse;
       
-      if (!inputValue.trim()) {
-        setError('Please enter a number');
-        return;
-      }
-      
-      if (isNaN(numValue) || numValue <= 0) {
-        setError('Enter positive number only');
-        return;
-      }
-      
-      if (numValue > max) {
-        setError(`Max: ${max.toLocaleString()}`);
-        return;
-      }
+      if (useManualQuantity && hasManualQuantitySetting) {
+        // ✅ FIXED: Use the user's auto-restock manual quantity
+        quantityToUse = manualQuantity;
+      } else {
+        // Use the manually entered quantity
+        const numValue = parseInt(inputValue);
+        
+        if (!inputValue.trim()) {
+          setError('Please enter a number');
+          return;
+        }
+        
+        if (isNaN(numValue) || numValue <= 0) {
+          setError('Enter positive number only');
+          return;
+        }
+        
+        if (numValue > max) {
+          setError(`Max: ${max.toLocaleString()}`);
+          return;
+        }
 
-      if (type === 'remove') {
-        const item = items.find(i => i._id === value?.itemId);
-        if (item) {
-          const currentStock = parseInt(item.quantity) || 0;
-          if (numValue > currentStock) {
-            setError(`Only ${currentStock} available`);
-            return;
+        if (type === 'remove') {
+          const currentItem = items.find(i => i._id === item?._id);
+          if (currentItem) {
+            const currentStock = parseInt(currentItem.quantity) || 0;
+            if (numValue > currentStock) {
+              setError(`Only ${currentStock} available`);
+              return;
+            }
           }
         }
+        
+        quantityToUse = numValue;
       }
       
       setError('');
-      onSubmit(numValue);
+      onSubmit(quantityToUse);
       setInputValue('');
       setIsEditing(false);
+      setUseManualQuantity(false);
     };
 
     const handleKeyPress = (e) => {
@@ -1023,6 +1074,7 @@ This action cannot be undone.`)) {
         setInputValue('');
         setIsEditing(false);
         setError('');
+        setUseManualQuantity(false);
       }
     };
 
@@ -1036,49 +1088,81 @@ This action cannot be undone.`)) {
 
     if (isEditing) {
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          {/* ✅ FIXED: Show user's auto-restock option if available */}
+          {hasManualQuantitySetting && type === 'add' && (
+            <div style={{
+              background: '#e8f5e8',
+              border: '2px solid #28a745',
+              borderRadius: '6px',
+              padding: '8px',
+              marginBottom: '6px',
+              textAlign: 'center',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              maxWidth: '140px'
+            }}>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', color: '#28a745' }}>
+                <input
+                  type="checkbox"
+                  checked={useManualQuantity}
+                  onChange={(e) => setUseManualQuantity(e.target.checked)}
+                  style={{ marginRight: '6px', transform: 'scale(1.1)' }}
+                />
+                <span style={{ fontSize: '10px', lineHeight: '1.1' }}>
+                  🎯 Use YOUR Setting<br/>({manualQuantity} units)
+                </span>
+              </label>
+            </div>
+          )}
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
             <input
               type="number"
-              value={inputValue}
+              value={useManualQuantity ? manualQuantity : inputValue}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
-              placeholder="0"
+              placeholder={useManualQuantity ? manualQuantity.toString() : "0"}
+              disabled={useManualQuantity}
               style={{ 
-                width: '50px', 
+                width: '60px', 
                 fontSize: '10px', 
-                padding: '2px 4px',
-                border: error ? '1px solid #dc3545' : '1px solid #ccc',
+                padding: '4px 6px',
+                border: error ? '1px solid #dc3545' : (useManualQuantity ? '2px solid #28a745' : '1px solid #ccc'),
                 borderRadius: '3px',
-                textAlign: 'center'
+                textAlign: 'center',
+                background: useManualQuantity ? '#f0fff0' : '#ffffff',
+                fontWeight: useManualQuantity ? 'bold' : 'normal'
               }}
               min="1"
               max={max}
-              autoFocus
+              autoFocus={!useManualQuantity}
             />
             <button 
               onClick={handleSubmit} 
               style={{ 
                 fontSize: '9px', 
-                padding: '3px 5px',
-                background: '#28a745',
+                padding: '4px 6px',
+                background: useManualQuantity ? '#28a745' : '#007bff',
                 color: 'white',
                 border: 'none',
                 borderRadius: '2px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                fontWeight: 'bold'
               }}
             >
-              ✓
+              {useManualQuantity ? `🎯` : '✓'}
             </button>
             <button 
               onClick={() => { 
                 setInputValue(''); 
                 setIsEditing(false); 
                 setError('');
+                setUseManualQuantity(false);
               }} 
               style={{ 
                 fontSize: '9px', 
-                padding: '3px 5px',
+                padding: '4px 6px',
                 background: '#dc3545',
                 color: 'white',
                 border: 'none',
@@ -1089,7 +1173,21 @@ This action cannot be undone.`)) {
               ✕
             </button>
           </div>
-          {error && (
+
+          {useManualQuantity && (
+            <small style={{
+              color: '#28a745',
+              fontSize: '9px',
+              textAlign: 'center',
+              fontWeight: 'bold',
+              maxWidth: '120px',
+              lineHeight: '1.1'
+            }}>
+              Using YOUR auto-restock setting: {manualQuantity} units
+            </small>
+          )}
+
+          {error && !useManualQuantity && (
             <small style={{ 
               color: '#dc3545', 
               fontSize: '9px',
@@ -1106,31 +1204,59 @@ This action cannot be undone.`)) {
     }
 
     return (
-      <button
-        onClick={() => setIsEditing(true)}
-        title={`${title} (max: ${max.toLocaleString()})`}
-        style={{ 
-          fontSize: '11px', 
-          padding: '4px 6px', 
-          cursor: 'pointer',
-          border: '1px solid #007bff',
-          background: '#f8f9fa',
-          color: '#007bff',
-          borderRadius: '3px',
-          transition: 'all 0.2s ease',
-          minWidth: '55px'
-        }}
-        onMouseOver={(e) => {
-          e.target.style.background = '#007bff';
-          e.target.style.color = 'white';
-        }}
-        onMouseOut={(e) => {
-          e.target.style.background = '#f8f9fa';
-          e.target.style.color = '#007bff';
-        }}
-      >
-        {placeholder}
-      </button>
+      <div style={{ position: 'relative' }}>
+        <button
+          onClick={() => setIsEditing(true)}
+          title={hasManualQuantitySetting && type === 'add' 
+            ? `${title} - Your auto-restock setting: ${manualQuantity} units available`
+            : `${title} (max: ${max.toLocaleString()})`
+          }
+          style={{ 
+            fontSize: '11px', 
+            padding: '4px 6px', 
+            cursor: 'pointer',
+            border: '1px solid #007bff',
+            background: '#f8f9fa',
+            color: '#007bff',
+            borderRadius: '3px',
+            transition: 'all 0.2s ease',
+            minWidth: '55px',
+            position: 'relative'
+          }}
+          onMouseOver={(e) => {
+            e.target.style.background = '#007bff';
+            e.target.style.color = 'white';
+          }}
+          onMouseOut={(e) => {
+            e.target.style.background = '#f8f9fa';
+            e.target.style.color = '#007bff';
+          }}
+        >
+          {placeholder}
+        </button>
+        
+        {/* ✅ FIXED: Show indicator if user's auto-restock manual quantity is available */}
+        {hasManualQuantitySetting && type === 'add' && (
+          <div style={{
+            position: 'absolute',
+            top: '-6px',
+            right: '-6px',
+            background: '#28a745',
+            color: 'white',
+            borderRadius: '50%',
+            width: '16px',
+            height: '16px',
+            fontSize: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 'bold',
+            border: '1px solid white'
+          }}>
+            🎯
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -1913,11 +2039,13 @@ This action cannot be undone.`)) {
                             ✏️ Edit
                           </button>
                           
+                          {/* ✅ FIXED: Pass item data to CustomNumberInput */}
                           <CustomNumberInput
                             placeholder="+ Stock"
                             title="Add Stock (Value increases preserved value)"
                             onSubmit={(qty) => handleUpdateStock(item._id, qty, 'restock')}
                             type="add"
+                            item={item}
                           />
 
                           <CustomNumberInput
@@ -1926,6 +2054,7 @@ This action cannot be undone.`)) {
                             onSubmit={(qty) => handleUpdateStock(item._id, qty, 'usage')}
                             type="remove"
                             max={parseInt(item.quantity) || 0}
+                            item={item}
                           />
 
                           <button
@@ -2155,10 +2284,11 @@ This action cannot be undone.`)) {
             />
           )}
 
+          {/* ✅ FIXED: Enhanced Auto-Restock Modal - YOU Control the Quantity */}
           {showAutoRestockModal && selectedItemForAutoRestock && (
             <div className="modal-overlay" onClick={() => setShowAutoRestockModal(false)}>
               <div className="modal auto-restock-modal" onClick={e => e.stopPropagation()} style={{
-                maxWidth: '600px',
+                maxWidth: '700px',
                 width: '90%',
                 maxHeight: '90vh',
                 overflowY: 'auto',
@@ -2227,83 +2357,16 @@ This action cannot be undone.`)) {
                       padding: '25px',
                       background: '#f8f9fa'
                     }}>
-                      <div className="form-row" style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: '1fr 1fr', 
-                        gap: '20px',
-                        marginBottom: '20px'
-                      }}>
-                        <div className="form-group">
-                          <label style={{ 
-                            display: 'block', 
-                            marginBottom: '8px',
-                            fontWeight: '600',
-                            color: '#495057'
-                          }}>
-                            Maximum Stock Level
-                          </label>
-                          <input
-                            type="number"
-                            value={autoRestockConfig.maxStockLevel}
-                            onChange={(e) => setAutoRestockConfig(prev => ({
-                              ...prev,
-                              maxStockLevel: parseInt(e.target.value) || 0
-                            }))}
-                            min="0"
-                            placeholder="Target stock level"
-                            style={{
-                              width: '100%',
-                              padding: '10px',
-                              border: '1px solid #ced4da',
-                              borderRadius: '6px',
-                              fontSize: '14px'
-                            }}
-                          />
-                          <small style={{ color: '#6c757d', fontSize: '12px' }}>
-                            When auto-restocking, fill up to this level
-                          </small>
-                        </div>
-                        
-                        <div className="form-group">
-                          <label style={{ 
-                            display: 'block', 
-                            marginBottom: '8px',
-                            fontWeight: '600',
-                            color: '#495057'
-                          }}>
-                            Reorder Quantity (if using fixed method)
-                          </label>
-                          <input
-                            type="number"
-                            value={autoRestockConfig.reorderQuantity}
-                            onChange={(e) => setAutoRestockConfig(prev => ({
-                              ...prev,
-                              reorderQuantity: parseInt(e.target.value) || 0
-                            }))}
-                            min="0"
-                            placeholder="Fixed quantity to order"
-                            style={{
-                              width: '100%',
-                              padding: '10px',
-                              border: '1px solid #ced4da',
-                              borderRadius: '6px',
-                              fontSize: '14px'
-                            }}
-                          />
-                          <small style={{ color: '#6c757d', fontSize: '12px' }}>
-                            Fixed amount to order each time
-                          </small>
-                        </div>
-                      </div>
-
-                      <div className="form-group" style={{ marginBottom: '20px' }}>
+                      {/* ✅ FIXED: Restock Method Selection FIRST and PROMINENT */}
+                      <div className="form-group" style={{ marginBottom: '25px' }}>
                         <label style={{ 
                           display: 'block', 
                           marginBottom: '8px',
-                          fontWeight: '600',
-                          color: '#495057'
+                          fontWeight: '700',
+                          color: '#495057',
+                          fontSize: '16px'
                         }}>
-                          Restock Method
+                          🎯 Restock Method (Choose Your Approach)
                         </label>
                         <select
                           value={autoRestockConfig.restockMethod}
@@ -2313,17 +2376,250 @@ This action cannot be undone.`)) {
                           }))}
                           style={{
                             width: '100%',
-                            padding: '10px',
-                            border: '1px solid #ced4da',
-                            borderRadius: '6px',
-                            fontSize: '14px'
+                            padding: '12px',
+                            border: '3px solid #007bff',
+                            borderRadius: '8px',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            background: '#f8f9ff'
                           }}
                         >
-                          <option value="to_max">Restock to Maximum Level</option>
-                          <option value="fixed_quantity">Use Fixed Quantity</option>
+                          <option value="fixed_quantity">🎯 Use My Manual Quantity (YOU Control the Amount)</option>
+                          <option value="to_max">📊 Restock to Maximum Level (Automatic Calculation)</option>
                         </select>
+                        <small style={{ 
+                          color: autoRestockConfig.restockMethod === 'fixed_quantity' ? '#28a745' : '#6c757d',
+                          fontWeight: 'bold',
+                          fontSize: '14px',
+                          display: 'block',
+                          marginTop: '8px'
+                        }}>
+                          {autoRestockConfig.restockMethod === 'fixed_quantity' 
+                            ? '✅ System will use YOUR exact manual quantity setting' 
+                            : 'ℹ️ System will calculate quantity automatically to reach max level'
+                          }
+                        </small>
                       </div>
 
+                      <div className="form-row" style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: '1fr 1fr', 
+                        gap: '20px',
+                        marginBottom: '20px'
+                      }}>
+                        {/* ✅ FIXED: Manual Quantity Input - YOU are in control */}
+                        <div className="form-group">
+                          <label style={{ 
+                            display: 'block', 
+                            marginBottom: '8px',
+                            fontWeight: autoRestockConfig.restockMethod === 'fixed_quantity' ? '700' : '600',
+                            color: autoRestockConfig.restockMethod === 'fixed_quantity' ? '#28a745' : '#495057',
+                            fontSize: autoRestockConfig.restockMethod === 'fixed_quantity' ? '16px' : '14px'
+                          }}>
+                            🎯 YOUR Manual Reorder Quantity
+                            {autoRestockConfig.restockMethod === 'fixed_quantity' && (
+                              <span style={{ color: '#28a745', marginLeft: '8px', fontSize: '14px' }}>← YOU DECIDE THIS</span>
+                            )}
+                          </label>
+                          <input
+                            type="number"
+                            value={autoRestockConfig.reorderQuantity}
+                            onChange={(e) => setAutoRestockConfig(prev => ({
+                              ...prev,
+                              reorderQuantity: parseInt(e.target.value) || 0
+                            }))}
+                            min="1"
+                            max="100000"
+                            placeholder="Enter YOUR desired reorder quantity"
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              border: autoRestockConfig.restockMethod === 'fixed_quantity' 
+                                ? '3px solid #28a745' 
+                                : '1px solid #ced4da',
+                              borderRadius: '8px',
+                              fontSize: '16px',
+                              fontWeight: autoRestockConfig.restockMethod === 'fixed_quantity' ? 'bold' : 'normal',
+                              background: autoRestockConfig.restockMethod === 'fixed_quantity' 
+                                ? '#f0fff0' 
+                                : '#ffffff'
+                            }}
+                          />
+                          <small style={{ 
+                            color: autoRestockConfig.restockMethod === 'fixed_quantity' ? '#28a745' : '#6c757d',
+                            fontWeight: autoRestockConfig.restockMethod === 'fixed_quantity' ? 'bold' : 'normal',
+                            display: 'block',
+                            marginTop: '5px',
+                            fontSize: '13px'
+                          }}>
+                            {autoRestockConfig.restockMethod === 'fixed_quantity' 
+                              ? `✅ System will add exactly ${autoRestockConfig.reorderQuantity} units (YOUR choice)` 
+                              : 'Enter the exact quantity YOU want to reorder each time'
+                            }
+                          </small>
+                        </div>
+                        
+                        {/* ✅ FIXED: Max Stock Level - Only relevant for "to_max" method */}
+                        <div className="form-group">
+                          <label style={{ 
+                            display: 'block', 
+                            marginBottom: '8px',
+                            fontWeight: autoRestockConfig.restockMethod === 'to_max' ? '700' : '600',
+                            color: autoRestockConfig.restockMethod === 'to_max' ? '#007bff' : '#495057',
+                            fontSize: autoRestockConfig.restockMethod === 'to_max' ? '16px' : '14px'
+                          }}>
+                            📊 Maximum Stock Level
+                            {autoRestockConfig.restockMethod === 'to_max' && (
+                              <span style={{ color: '#007bff', marginLeft: '8px', fontSize: '14px' }}>← ACTIVE METHOD</span>
+                            )}
+                          </label>
+                          <input
+                            type="number"
+                            value={autoRestockConfig.maxStockLevel}
+                            onChange={(e) => setAutoRestockConfig(prev => ({
+                              ...prev,
+                              maxStockLevel: parseInt(e.target.value) || 0
+                            }))}
+                            min="1"
+                            max="100000"
+                            placeholder="Target maximum stock level"
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              border: autoRestockConfig.restockMethod === 'to_max' 
+                                ? '3px solid #007bff' 
+                                : '1px solid #ced4da',
+                              borderRadius: '8px',
+                              fontSize: '16px',
+                              fontWeight: autoRestockConfig.restockMethod === 'to_max' ? 'bold' : 'normal',
+                              background: autoRestockConfig.restockMethod === 'to_max' 
+                                ? '#f0f8ff' 
+                                : '#ffffff'
+                            }}
+                          />
+                          <small style={{ 
+                            color: autoRestockConfig.restockMethod === 'to_max' ? '#007bff' : '#6c757d',
+                            fontWeight: autoRestockConfig.restockMethod === 'to_max' ? 'bold' : 'normal',
+                            display: 'block',
+                            marginTop: '5px',
+                            fontSize: '13px'
+                          }}>
+                            {autoRestockConfig.restockMethod === 'to_max'
+                              ? `📊 Auto-restock will fill to reach ${autoRestockConfig.maxStockLevel} units total`
+                              : 'Only used when "Restock to Maximum Level" method is selected'
+                            }
+                          </small>
+                        </div>
+                      </div>
+
+                      {/* ✅ FIXED: Current Status with Method Preview - Shows YOUR Quantity */}
+                      <div style={{
+                        background: autoRestockConfig.restockMethod === 'fixed_quantity' 
+                          ? 'linear-gradient(135deg, #e8f5e8, #f0fff0)' 
+                          : 'linear-gradient(135deg, #e7f3ff, #f0f8ff)',
+                        padding: '20px',
+                        borderRadius: '8px',
+                        margin: '20px 0',
+                        border: autoRestockConfig.restockMethod === 'fixed_quantity' 
+                          ? '2px solid #28a745' 
+                          : '2px solid #007bff'
+                      }}>
+                        <h4 style={{ 
+                          margin: '0 0 15px 0', 
+                          fontSize: '18px',
+                          color: autoRestockConfig.restockMethod === 'fixed_quantity' ? '#155724' : '#004085'
+                        }}>
+                          📊 Auto-Restock Preview & Current Status
+                        </h4>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                          <div>
+                            <p style={{ margin: '8px 0' }}><strong>Current Stock:</strong> <span style={{ color: '#28a745', fontSize: '18px' }}>{selectedItemForAutoRestock.quantity}</span></p>
+                            <p style={{ margin: '8px 0' }}><strong>Minimum Level:</strong> <span style={{ color: '#ffc107', fontSize: '18px' }}>{selectedItemForAutoRestock.minStockLevel}</span></p>
+                          </div>
+                          <div>
+                            <p style={{ margin: '8px 0' }}>
+                              <strong>Selected Method:</strong> 
+                              <span style={{ 
+                                color: autoRestockConfig.restockMethod === 'fixed_quantity' ? '#28a745' : '#007bff',
+                                fontWeight: 'bold',
+                                marginLeft: '8px',
+                                fontSize: '16px'
+                              }}>
+                                {autoRestockConfig.restockMethod === 'fixed_quantity' 
+                                  ? '🎯 YOUR Manual Quantity' 
+                                  : '📊 Auto Calculate'
+                                }
+                              </span>
+                            </p>
+                            <p style={{ margin: '8px 0' }}>
+                              <strong>Will Add When Restocking:</strong> 
+                              <span style={{ 
+                                color: '#dc3545',
+                                fontWeight: 'bold',
+                                fontSize: '18px',
+                                marginLeft: '8px',
+                                padding: '4px 8px',
+                                background: 'rgba(220, 53, 69, 0.1)',
+                                borderRadius: '4px'
+                              }}>
+                                {autoRestockConfig.restockMethod === 'fixed_quantity' 
+                                  ? `${autoRestockConfig.reorderQuantity} units (YOUR Choice)` 
+                                  : `${Math.max(0, autoRestockConfig.maxStockLevel - selectedItemForAutoRestock.quantity)} units (Calculated)`
+                                }
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* ✅ FIXED: Prominent info box showing YOUR manual quantity */}
+                        {autoRestockConfig.restockMethod === 'fixed_quantity' && (
+                          <div style={{
+                            marginTop: '15px',
+                            padding: '15px',
+                            background: '#28a745',
+                            color: 'white',
+                            borderRadius: '8px',
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            textAlign: 'center'
+                          }}>
+                            🎯 <strong>YOUR Manual Quantity Active:</strong> 
+                            <br/>System will ALWAYS add exactly <strong>{autoRestockConfig.reorderQuantity} units</strong> (the quantity YOU specified), 
+                            <br/>regardless of current stock level.
+                            <br/>
+                            <div style={{
+                              marginTop: '10px',
+                              padding: '8px',
+                              background: 'rgba(255,255,255,0.2)',
+                              borderRadius: '4px',
+                              fontSize: '14px'
+                            }}>
+                              💡 Want different amount? Just change the number above ↑
+                            </div>
+                          </div>
+                        )}
+
+                        {/* ✅ FIXED: Info for auto-calculate method */}
+                        {autoRestockConfig.restockMethod === 'to_max' && (
+                          <div style={{
+                            marginTop: '15px',
+                            padding: '15px',
+                            background: '#007bff',
+                            color: 'white',
+                            borderRadius: '8px',
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            textAlign: 'center'
+                          }}>
+                            📊 <strong>Auto-Calculate Mode Active:</strong> 
+                            <br/>System will calculate quantity to reach <strong>{autoRestockConfig.maxStockLevel} units</strong> total.
+                            <br/>Current quantity affects how much gets added.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Supplier Information */}
                       <div className="form-group" style={{ marginBottom: '20px' }}>
                         <label style={{ 
                           display: 'block', 
@@ -2367,41 +2663,6 @@ This action cannot be undone.`)) {
                           }}
                         />
                       </div>
-
-                      <div style={{
-                        background: '#e7f3ff',
-                        padding: '20px',
-                        borderRadius: '8px',
-                        margin: '20px 0',
-                        border: '1px solid #b8daff'
-                      }}>
-                        <h4 style={{ margin: '0 0 15px 0', color: '#004085', fontSize: '16px' }}>
-                          📊 Current Status
-                        </h4>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                          <p style={{ margin: '5px 0' }}>
-                            <strong>Current Stock:</strong> <span style={{ color: '#28a745' }}>{selectedItemForAutoRestock.quantity}</span>
-                          </p>
-                          <p style={{ margin: '5px 0' }}>
-                            <strong>Minimum Level:</strong> <span style={{ color: '#ffc107' }}>{selectedItemForAutoRestock.minStockLevel}</span>
-                          </p>
-                          <p style={{ margin: '5px 0' }}>
-                            <strong>Needs Restock:</strong> {
-                              selectedItemForAutoRestock.quantity <= selectedItemForAutoRestock.minStockLevel 
-                                ? <span style={{ color: '#dc3545', fontWeight: 'bold' }}>🔴 Yes</span> 
-                                : <span style={{ color: '#28a745', fontWeight: 'bold' }}>🟢 No</span>
-                            }
-                          </p>
-                          <p style={{ margin: '5px 0' }}>
-                            <strong>Auto-Restock:</strong> <span style={{ 
-                              color: autoRestockConfig.enabled ? '#28a745' : '#6c757d',
-                              fontWeight: 'bold'
-                            }}>
-                              {autoRestockConfig.enabled ? '🔄 Enabled' : '⚙️ Setup Required'}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
                     </div>
                   )}
                 </div>
@@ -2434,24 +2695,27 @@ This action cannot be undone.`)) {
                     className="btn-save"
                     style={{
                       padding: '12px 24px',
-                      background: 'linear-gradient(135deg, #28a745, #20c997)',
+                      background: autoRestockConfig.restockMethod === 'fixed_quantity' 
+                        ? 'linear-gradient(135deg, #28a745, #20c997)' 
+                        : 'linear-gradient(135deg, #007bff, #0056b3)',
                       color: 'white',
                       border: 'none',
                       borderRadius: '6px',
                       cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: '600'
+                      fontSize: '16px',
+                      fontWeight: '700'
                     }}
                   >
-                    Save Configuration
+                    {autoRestockConfig.restockMethod === 'fixed_quantity' 
+                      ? `🎯 Save YOUR Manual Setting (${autoRestockConfig.reorderQuantity} units)` 
+                      : `📊 Save Auto Configuration (to ${autoRestockConfig.maxStockLevel} max)`
+                    }
                   </button>
                 </div>
               </div>
             </div>
           )}
         </div>
-
-        
       </AdminLayout>
     </AdminErrorBoundary>
   );
