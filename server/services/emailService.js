@@ -46,18 +46,18 @@ class EmailService {
       throw new Error(error);
     }
 
-    try {
-      this.transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT),
-        secure: false,
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
-        },
-        debug: process.env.NODE_ENV === 'development',
-        logger: process.env.NODE_ENV === 'development'
-      });
+   try {
+  this.transporter = nodemailer.createTransport({  // ← Fixed: removed 'r'
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT),
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    },
+    debug: process.env.NODE_ENV === 'development',
+    logger: process.env.NODE_ENV === 'development'
+  });
 
       console.log('✅ Transporter created, verifying connection...');
       await this.transporter.verify();
@@ -85,7 +85,7 @@ class EmailService {
     }
   }
 
-  // ✅ NEW: Send prescription PDF to patient
+  // ✅ EXISTING: Send prescription PDF to patient
   async sendPrescriptionToPatient(prescriptionData, pdfBuffer, isUpdate = false) {
     console.log('📧 sendPrescriptionToPatient called for:', prescriptionData.patientEmail);
     
@@ -295,7 +295,6 @@ class EmailService {
             contentType: 'application/pdf'
           }
         ],
-        // Fix: Use base64 encoding instead of quoted-printable
         textEncoding: 'base64',
         headers: {
           'Content-Type': 'text/html; charset=utf-8'
@@ -320,7 +319,7 @@ class EmailService {
     }
   }
 
-  // Keep existing methods...
+  // ✅ EXISTING: All other existing methods remain unchanged...
   async sendTestEmail() {
     console.log('📧 sendTestEmail called');
     
@@ -362,7 +361,6 @@ class EmailService {
             </div>
           </div>
         `,
-        // Fix: Use base64 encoding instead of quoted-printable
         textEncoding: 'base64',
         headers: {
           'Content-Type': 'text/html; charset=utf-8'
@@ -380,6 +378,7 @@ class EmailService {
     }
   }
 
+  // ✅ EXISTING: Low stock alert method (unchanged)
   async sendLowStockAlert(items = []) {
     console.log('📧 sendLowStockAlert called with', items.length, 'items');
     
@@ -478,7 +477,6 @@ class EmailService {
             </div>
           </div>
         `,
-        // Fix: Use base64 encoding instead of quoted-printable
         textEncoding: 'base64',
         headers: {
           'Content-Type': 'text/html; charset=utf-8'
@@ -496,6 +494,7 @@ class EmailService {
     }
   }
 
+  // ✅ EXISTING: All other methods remain unchanged (sendNoLowStockEmail, sendSupplierRestockOrder, etc.)
   async sendNoLowStockEmail() {
     const mailOptions = {
       from: `HealX Healthcare <${process.env.EMAIL_USER}>`,
@@ -516,7 +515,6 @@ class EmailService {
           </div>
         </div>
       `,
-      // Fix: Use base64 encoding instead of quoted-printable
       textEncoding: 'base64',
       headers: {
         'Content-Type': 'text/html; charset=utf-8'
@@ -528,7 +526,7 @@ class EmailService {
     return result;
   }
 
-  // Keep other existing methods...
+  // ✅ EXISTING: Supplier restock methods (unchanged)
   async sendSupplierRestockOrder(item, restockQuantity, orderDetails = {}) {
     console.log(`📧 sendSupplierRestockOrder called for ${item.name}`);
     
@@ -689,7 +687,6 @@ class EmailService {
           'Importance': 'high',
           'Content-Type': 'text/html; charset=utf-8'
         },
-        // Fix: Use base64 encoding instead of quoted-printable
         textEncoding: 'base64'
       });
 
@@ -712,6 +709,7 @@ class EmailService {
     }
   }
 
+  // ✅ EXISTING: Admin confirmation method (unchanged)
   async sendRestockConfirmationToAdmin(item, restockQuantity, supplierEmailResult) {
     console.log('📧 Sending admin confirmation for auto-restock');
     
@@ -784,7 +782,6 @@ class EmailService {
         to: adminEmail,
         subject: subject,
         html: htmlMessage,
-        // Fix: Use base64 encoding instead of quoted-printable
         textEncoding: 'base64',
         headers: {
           'Content-Type': 'text/html; charset=utf-8'
@@ -798,6 +795,202 @@ class EmailService {
     }
   }
 
+  // ✅ NEW: Send financial reports with PDF attachments
+  async sendFinancialReports(recipients, subject, message, attachments, priority = 'normal') {
+    console.log('📧 sendFinancialReports called for:', recipients.length, 'recipients with', attachments.length, 'attachments');
+    
+    try {
+      await this.ensureInitialized();
+    } catch (error) {
+      console.error('❌ Failed to initialize EmailService:', error.message);
+      throw new Error(`Email system not ready: ${error.message}`);
+    }
+
+    // Validate inputs
+    if (!recipients || recipients.length === 0) {
+      throw new Error('At least one recipient is required');
+    }
+
+    if (!subject || !message) {
+      throw new Error('Subject and message are required');
+    }
+
+    if (!attachments || attachments.length === 0) {
+      throw new Error('At least one PDF attachment is required');
+    }
+
+    try {
+      // Determine priority settings
+      const prioritySettings = {
+        normal: {
+          icon: '📊',
+          urgencyText: 'Regular',
+          headerColor: '#667eea',
+          priority: 'normal'
+        },
+        high: {
+          icon: '⚠️',
+          urgencyText: 'High Priority',
+          headerColor: '#ffc107',
+          priority: 'high'
+        },
+        urgent: {
+          icon: '🚨',
+          urgencyText: 'URGENT',
+          headerColor: '#dc3545',
+          priority: 'high'
+        }
+      };
+
+      const currentPriority = prioritySettings[priority] || prioritySettings.normal;
+      const currentDate = new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      // Create HTML email content
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Financial Reports - HealX Healthcare</title>
+        </head>
+        <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f8f9fa;">
+          <div style="max-width: 800px; margin: 0 auto; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, ${currentPriority.headerColor}, ${currentPriority.headerColor}); color: white; padding: 40px 30px; text-align: center; position: relative; overflow: hidden;">
+              <div style="position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+              <div style="position: absolute; bottom: -30px; left: -30px; width: 60px; height: 60px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+              <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700;">HealX Healthcare Center</h1>
+              <p style="margin: 0; font-size: 18px; opacity: 0.9;">${currentPriority.icon} Financial Reports</p>
+              <div style="margin-top: 20px; padding: 10px 20px; background: rgba(255,255,255,0.2); border-radius: 25px; display: inline-block;">
+                <span style="font-size: 14px; font-weight: 500;">${currentPriority.urgencyText} • ${currentDate}</span>
+              </div>
+            </div>
+
+            <!-- Content Section -->
+            <div style="padding: 40px 30px;">
+              
+              <!-- Priority Alert (for high/urgent) -->
+              ${priority !== 'normal' ? `
+                <div style="background: linear-gradient(135deg, ${priority === 'urgent' ? '#ff6b6b, #ffeaa7' : '#ffeaa7, #fab1a0'}); padding: 20px; border-radius: 12px; margin-bottom: 30px; text-align: center;">
+                  <h2 style="margin: 0 0 10px 0; color: ${priority === 'urgent' ? '#d63031' : '#e17055'}; font-size: 24px;">${currentPriority.icon} ${currentPriority.urgencyText}</h2>
+                  <p style="margin: 0; color: #636e72; font-size: 16px;">This financial report requires ${priority === 'urgent' ? 'immediate attention' : 'priority review'}.</p>
+                </div>
+              ` : ''}
+
+              <!-- Main Message -->
+              <div style="background: #f8f9fa; padding: 25px; border-radius: 12px; border-left: 5px solid ${currentPriority.headerColor}; margin-bottom: 30px;">
+                <div style="white-space: pre-wrap; font-size: 16px; line-height: 1.6; color: #2c3e50;">${message}</div>
+              </div>
+
+              <!-- Attachments Info -->
+              <div style="background: #e8f4f8; padding: 25px; border-radius: 12px; border-left: 5px solid #3498db; margin-bottom: 30px;">
+                <h3 style="margin: 0 0 15px 0; color: #2c3e50; font-size: 20px;">📎 Attached Reports (${attachments.length})</h3>
+                <ul style="margin: 0; padding-left: 20px;">
+                  ${attachments.map(att => `<li style="color: #34495e; margin-bottom: 8px;"><strong>📄 ${att.filename}</strong></li>`).join('')}
+                </ul>
+                <p style="margin: 15px 0 0 0; color: #7f8c8d; font-size: 14px;">
+                  <strong>Note:</strong> These reports contain sensitive financial information. Please handle with confidentiality.
+                </p>
+              </div>
+
+              <!-- Instructions -->
+              <div style="background: #fff2e6; padding: 25px; border-radius: 12px; border-left: 5px solid #f39c12; margin-bottom: 30px;">
+                <h3 style="margin: 0 0 15px 0; color: #e67e22; font-size: 20px;">📋 Next Steps</h3>
+                <ul style="margin: 0; color: #d35400; line-height: 1.8; padding-left: 20px;">
+                  <li><strong>Download and review</strong> all attached financial reports</li>
+                  <li><strong>Verify data accuracy</strong> and cross-reference with your records</li>
+                  <li><strong>Contact financial team</strong> if you have any questions or concerns</li>
+                  <li><strong>Respond within 24-48 hours</strong> with any feedback or approval</li>
+                  <li><strong>Store documents securely</strong> following data protection protocols</li>
+                </ul>
+              </div>
+
+              <!-- Contact Information -->
+              <div style="background: #e8f8f5; padding: 25px; border-radius: 12px; border-left: 5px solid #27ae60; margin-bottom: 30px;">
+                <h3 style="margin: 0 0 15px 0; color: #229954; font-size: 20px;">📞 Contact Financial Team</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                  <div>
+                    <p style="margin: 0 0 10px 0; font-weight: 600; color: #27ae60;">Financial Department</p>
+                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">📍 HealX Healthcare Center</p>
+                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">📞 Phone: (555) 123-4567</p>
+                    <p style="margin: 0; color: #2e7d5b;">📧 Email: finance@healx.com</p>
+                  </div>
+                  <div>
+                    <p style="margin: 0 0 10px 0; font-weight: 600; color: #27ae60;">Report Support</p>
+                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">🆘 Support: (555) 123-4568</p>
+                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">⏰ Hours: 9 AM - 6 PM</p>
+                    <p style="margin: 0; color: #2e7d5b;">💬 Chat: support.healx.com</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 30px; text-align: center;">
+              <p style="margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">Thank you for your attention to these financial reports</p>
+              <p style="margin: 0 0 20px 0; font-size: 14px; opacity: 0.9;">
+                Your review and feedback help ensure accurate financial management and reporting.
+              </p>
+              <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px; margin-top: 20px;">
+                <p style="margin: 0; font-size: 12px; opacity: 0.7;">
+                  This email was sent from HealX Healthcare Management System.<br>
+                  Generated on ${new Date().toLocaleString()} | Priority: ${currentPriority.urgencyText}
+                </p>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Send emails to all recipients
+      const mailPromises = recipients.map(async (recipient) => {
+        const mailOptions = {
+          from: `"HealX Healthcare Financial Team" <${process.env.EMAIL_USER}>`,
+          to: recipient,
+          subject: subject,
+          html: htmlContent,
+          attachments: attachments,
+          priority: currentPriority.priority,
+          headers: {
+            'X-Priority': priority === 'urgent' ? '1' : priority === 'high' ? '2' : '3',
+            'X-MSMail-Priority': priority === 'urgent' ? 'High' : 'Normal',
+            'Importance': priority === 'urgent' ? 'high' : 'normal'
+          }
+          // Removed textEncoding and Content-Type headers that were causing issues
+        };
+
+        return this.transporter.sendMail(mailOptions);
+      });
+
+      console.log(`📧 Sending financial reports to ${recipients.length} recipients...`);
+      const results = await Promise.all(mailPromises);
+
+      console.log('✅ All financial report emails sent successfully!');
+
+      return {
+        success: true,
+        messageIds: results.map(result => result.messageId),
+        recipients: recipients,
+        attachmentCount: attachments.length,
+        priority: currentPriority.urgencyText,
+        sentAt: new Date().toISOString()
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to send financial reports:', error);
+      throw new Error(`Failed to send financial reports: ${error.message}`);
+    }
+  }
+
+  // ✅ EXISTING: Utility methods remain unchanged
   isReady() {
     return this.initialized && this.transporter !== null;
   }
@@ -814,7 +1007,7 @@ class EmailService {
 // Create singleton instance
 const emailService = new EmailService();
 
-// Utility functions
+// ✅ EXISTING: Utility functions remain unchanged
 export async function sendCriticalStockAlert(criticalItems) {
   try {
     await emailService.ensureInitialized();
@@ -844,7 +1037,6 @@ export async function sendCriticalStockAlert(criticalItems) {
       to: ['admin@hospital.com', 'inventory@hospital.com', 'chamarasweed44@gmail.com'],
       subject: subject,
       html: html,
-      // Fix: Use base64 encoding instead of quoted-printable
       textEncoding: 'base64',
       headers: {
         'Content-Type': 'text/html; charset=utf-8'
@@ -887,7 +1079,6 @@ export async function sendRestockSummary(items) {
       to: ['procurement@hospital.com', 'chamarasweed44@gmail.com'],
       subject: subject,
       html: html,
-      // Fix: Use base64 encoding instead of quoted-printable
       textEncoding: 'base64',
       headers: {
         'Content-Type': 'text/html; charset=utf-8'
