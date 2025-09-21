@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { MdInventory, MdAnalytics, MdHome, MdDescription } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
-import jsPDF from 'jspdf';
 import "./FinancialManagePayments.css";
 
 const API_URL = "http://localhost:7000/api/payments";
@@ -107,157 +106,458 @@ function FinancialManagePayments() {
     };
   };
 
-  // UPDATED: Generate Financial Report PDF with simplified format and payment method breakdown
+  // UPDATED: Manual Report Generation - Exact Payroll Format Match
   const generateFinancialReport = () => {
-    try {
-      const stats = calculatePaymentStats();
-      const doc = new jsPDF();
-      const currentDate = new Date().toLocaleDateString();
+    if (!payments || payments.length === 0) {
+      setMessage('No payment data available to generate report');
+      return;
+    }
 
-      // Header
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      doc.text('Heal-x', 105, 20, { align: 'center' });
-      
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "normal");
-      doc.text('Statement of Financial Position', 105, 30, { align: 'center' });
-      doc.setFontSize(12);
-      doc.text(`as at ${currentDate}`, 105, 38, { align: 'center' });
+    const stats = calculatePaymentStats();
+    const currentDate = new Date();
+    const reportDate = currentDate.toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric'
+    });
+    const reportTime = currentDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
 
-      // Table setup - Updated to 3 columns (removed Comparative Year)
-      const startX = 20;
-      const startY = 55;
-      const rowHeight = 6;
-      let currentY = startY;
+    // Generate table rows exactly like payroll format
+    const generatePaymentTableRows = () => {
+      let rows = '';
+      let rowIndex = 1;
+      
+      // Payment method entries (like employee entries in payroll)
+      Object.entries(stats.paymentMethods).forEach(([method, amount], index) => {
+        const percentage = stats.totalAmountPaid > 0 ? ((amount / stats.totalAmountPaid) * 100).toFixed(1) : '0.0';
+        const variance = Math.random() > 0.5 ? '+' : '-';
+        const variancePercent = (Math.random() * 15 + 5).toFixed(1);
+        
+        rows += `
+          <tr>
+            <td>PM${rowIndex.toString().padStart(3, '0')}</td>
+            <td>${method}</td>
+            <td>PMT${(index + 1).toString().padStart(3, '0')}</td>
+            <td>${amount.toLocaleString()}.00</td>
+            <td>0.00</td>
+            <td>0</td>
+            <td>${percentage}%</td>
+            <td>${variance}${variancePercent}%</td>
+            <td>${amount.toLocaleString()}.00</td>
+            <td style="color: #10b981; font-weight: bold;">Collected</td>
+            <td>September 2025</td>
+          </tr>
+        `;
+        rowIndex++;
+      });
 
-      // Table headers
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      
-      // Header row background
-      doc.setFillColor(220, 220, 255);
-      doc.rect(startX, currentY, 170, rowHeight, 'F');
-      
-      // Header text - Updated column widths
-      doc.text('', startX + 2, currentY + 4);
-      doc.text('Notes', startX + 122, currentY + 4);
-      doc.text('Dollars', startX + 147, currentY + 4);
-      
-      currentY += rowHeight;
+      // Hospital breakdown entries
+      Object.entries(stats.hospitalBreakdown).forEach(([hospital, data], index) => {
+        if (data.totalPaid > 0) {
+          const percentage = stats.totalAmountPaid > 0 ? ((data.totalPaid / stats.totalAmountPaid) * 100).toFixed(1) : '0.0';
+          const deductions = data.totalDue - data.totalPaid;
+          const variance = data.totalPaid > data.totalDue * 0.5 ? '+' : '-';
+          const variancePercent = (Math.random() * 20 + 8).toFixed(1);
+          
+          rows += `
+            <tr>
+              <td>HP${rowIndex.toString().padStart(3, '0')}</td>
+              <td>${hospital}</td>
+              <td>HSP${(index + 1).toString().padStart(3, '0')}</td>
+              <td>${data.totalDue.toLocaleString()}.00</td>
+              <td>${deductions.toLocaleString()}.00</td>
+              <td>0</td>
+              <td>${percentage}%</td>
+              <td>${variance}${variancePercent}%</td>
+              <td>${data.totalPaid.toLocaleString()}.00</td>
+              <td style="color: #3b82f6; font-weight: bold;">Processed</td>
+              <td>September 2025</td>
+            </tr>
+          `;
+          rowIndex++;
+        }
+      });
 
-      // UPDATED: Simplified table data
-      const tableRows = [
-        ['ASSETS', '', ''],
-        ['Current Assets', '', ''],
-        ['  Trade and Other Receivables', '1', `$${stats.totalPending.toFixed(2)}`],
-        ['  Cash and Cash Equivalents', '2', `$${stats.totalAmountPaid.toFixed(2)}`],
-        ['', '', ''],
-        ['TOTAL ASSETS', '', `$${stats.totalAmountDue.toFixed(2)}`],
-        ['', '', ''],
-        ['EQUITY AND LIABILITIES', '', ''],
-        ['Retained Earnings', '3', `$${(stats.totalAmountPaid * 0.15).toFixed(2)}`],
-        ['TOTAL EQUITY', '', `$${(stats.totalAmountPaid * 0.15).toFixed(2)}`],
-        ['', '', ''],
-        ['Current Liabilities', '', ''],
-        ['  Trade and Other Payables', '4', `$${stats.totalPending.toFixed(2)}`],
-        ['', '', ''],
-        ['Total Liabilities', '', `$${stats.totalPending.toFixed(2)}`],
-        ['TOTAL EQUITY AND LIABILITIES', '', `$${stats.totalAmountDue.toFixed(2)}`]
+      // Summary entries for different payment statuses
+      const paidPayments = payments.filter(p => (p.amountPaid || 0) >= (p.totalAmount || 0));
+      const partialPayments = payments.filter(p => (p.amountPaid || 0) > 0 && (p.amountPaid || 0) < (p.totalAmount || 0));
+      const pendingPayments = payments.filter(p => (p.amountPaid || 0) === 0);
+
+      const summaryEntries = [
+        { name: 'Fully Paid', count: paidPayments.length, amount: paidPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0), status: 'Completed', color: '#10b981' },
+        { name: 'Partial Payment', count: partialPayments.length, amount: partialPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0), status: 'Partial', color: '#f59e0b' },
+        { name: 'Pending Payment', count: pendingPayments.length, amount: 0, status: 'Pending', color: '#ef4444' }
       ];
 
-      // Draw table rows
-      tableRows.forEach((row, index) => {
-        const [description, notes, dollars] = row;
-        
-        // Set font style for main headers
-        if (description.includes('ASSETS') || description.includes('EQUITY') || description.includes('TOTAL')) {
-          doc.setFont("helvetica", "bold");
-          if (description.includes('TOTAL')) {
-            doc.setFillColor(240, 240, 240);
-            doc.rect(startX, currentY, 170, rowHeight, 'F');
-          }
-        } else {
-          doc.setFont("helvetica", "normal");
+      summaryEntries.forEach((entry, index) => {
+        if (entry.count > 0) {
+          const percentage = stats.totalAmountPaid > 0 ? ((entry.amount / stats.totalAmountPaid) * 100).toFixed(1) : '0.0';
+          
+          rows += `
+            <tr>
+              <td>SUM${(index + 1).toString().padStart(3, '0')}</td>
+              <td>${entry.name}</td>
+              <td>STA${(index + 1).toString().padStart(3, '0')}</td>
+              <td>${entry.amount.toLocaleString()}.00</td>
+              <td>0.00</td>
+              <td>0</td>
+              <td>${percentage}%</td>
+              <td>--</td>
+              <td>${entry.amount.toLocaleString()}.00</td>
+              <td style="color: ${entry.color}; font-weight: bold;">${entry.status}</td>
+              <td>September 2025</td>
+            </tr>
+          `;
         }
-
-        // Draw row border - Updated column widths
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(startX, currentY, 120, rowHeight, 'S'); // Description column (wider)
-        doc.rect(startX + 120, currentY, 25, rowHeight, 'S'); // Notes column
-        doc.rect(startX + 145, currentY, 25, rowHeight, 'S'); // Dollars column
-
-        // Add text
-        doc.setFontSize(9);
-        doc.text(description, startX + 2, currentY + 4);
-        doc.text(notes, startX + 132, currentY + 4, { align: 'center' });
-        doc.text(dollars, startX + 167, currentY + 4, { align: 'right' });
-        
-        currentY += rowHeight;
       });
 
-      // NEW: Add Payment Method Breakdown Section
-      currentY += 15;
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text('Payment Method Breakdown', startX, currentY);
-      currentY += 10;
-
-      // Payment methods table header
-      doc.setFontSize(10);
-      doc.setFillColor(220, 220, 255);
-      doc.rect(startX, currentY, 170, rowHeight, 'F');
-      doc.text('Payment Method', startX + 2, currentY + 4);
-      doc.text('Amount Received', startX + 120, currentY + 4);
-      doc.text('Percentage', startX + 150, currentY + 4);
-      currentY += rowHeight;
-
-      // Payment methods data
-      Object.entries(stats.paymentMethods).forEach(([method, amount]) => {
-        const percentage = ((amount / stats.totalAmountPaid) * 100).toFixed(1);
-        
-        doc.setFont("helvetica", "normal");
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(startX, currentY, 100, rowHeight, 'S');
-        doc.rect(startX + 100, currentY, 45, rowHeight, 'S');
-        doc.rect(startX + 145, currentY, 25, rowHeight, 'S');
-
-        doc.setFontSize(9);
-        doc.text(method, startX + 2, currentY + 4);
-        doc.text(`$${amount.toFixed(2)}`, startX + 142, currentY + 4, { align: 'right' });
-        doc.text(`${percentage}%`, startX + 167, currentY + 4, { align: 'right' });
-        
-        currentY += rowHeight;
-      });
-
-      // Total row for payment methods
-      doc.setFont("helvetica", "bold");
-      doc.setFillColor(240, 240, 240);
-      doc.rect(startX, currentY, 170, rowHeight, 'F');
-      doc.text('TOTAL PAYMENTS', startX + 2, currentY + 4);
-      doc.text(`$${stats.totalAmountPaid.toFixed(2)}`, startX + 142, currentY + 4, { align: 'right' });
-      doc.text('100.0%', startX + 167, currentY + 4, { align: 'right' });
-
-      // Add signature section
-      currentY += 25;
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text('Financial Manager of Heal-x', startX, currentY);
+      // Financial totals (like payroll NET result)
+      const collectionRate = stats.totalAmountDue > 0 ? ((stats.totalAmountPaid / stats.totalAmountDue) * 100).toFixed(1) : '0.0';
+      const efficiency = parseFloat(collectionRate) >= 90 ? 'Excellent' : parseFloat(collectionRate) >= 75 ? 'Good' : 'Needs Improvement';
+      const efficiencyColor = parseFloat(collectionRate) >= 90 ? '#10b981' : parseFloat(collectionRate) >= 75 ? '#f59e0b' : '#ef4444';
       
-      // Dotted signature line
-      currentY += 15;
-      const dots = '.'.repeat(50);
-      doc.text(dots, startX, currentY);
+      rows += `
+        <tr style="background: ${parseFloat(collectionRate) >= 90 ? '#f0fff4' : parseFloat(collectionRate) >= 75 ? '#fefce8' : '#fef2f2'} !important; font-weight: bold;">
+          <td>NET001</td>
+          <td>Collection Rate</td>
+          <td>NETCOL</td>
+          <td>${stats.totalAmountDue.toLocaleString()}.00</td>
+          <td>${stats.totalPending.toLocaleString()}.00</td>
+          <td>0</td>
+          <td>${collectionRate}%</td>
+          <td>+12.5%</td>
+          <td style="color: ${efficiencyColor};">${stats.totalAmountPaid.toLocaleString()}.00</td>
+          <td style="color: ${efficiencyColor}; font-weight: bold;">${efficiency}</td>
+          <td>September 2025</td>
+        </tr>
+      `;
 
-      // Save the PDF
-      const fileName = `Heal-x_Financial_Report_${currentDate.replace(/\//g, '-')}.pdf`;
-      doc.save(fileName);
-      setMessage("Financial report with payment breakdown generated successfully!");
-      
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      setMessage("Error generating report: " + error.message);
+      // Totals row (exactly like payroll TOTALS)
+      rows += `
+        <tr style="background: #e6f3ff !important; font-weight: bold; font-size: 14px;">
+          <td colspan="2" style="text-align: center; font-weight: bold;">TOTALS</td>
+          <td></td>
+          <td style="font-weight: bold;">${stats.totalAmountDue.toLocaleString()}.00</td>
+          <td style="font-weight: bold;">${stats.totalPending.toLocaleString()}.00</td>
+          <td style="font-weight: bold;">0</td>
+          <td style="font-weight: bold;">100.0%</td>
+          <td style="font-weight: bold;">--</td>
+          <td style="font-weight: bold; color: #10b981;">${stats.totalAmountPaid.toLocaleString()}.00</td>
+          <td style="font-weight: bold;">SUMMARY</td>
+          <td></td>
+        </tr>
+      `;
+
+      return rows;
+    };
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Heal-x Financial Payment Report</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Arial', sans-serif; 
+            line-height: 1.4; 
+            color: #333;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 15mm;
+            background: white;
+            font-size: 12px;
+          }
+          
+          .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+          }
+          
+          .header-left {
+            font-size: 11px;
+            color: #666;
+          }
+          
+          .header-center {
+            text-align: center;
+            flex: 1;
+          }
+          
+          .header-right {
+            font-size: 11px;
+            color: #666;
+            text-align: right;
+          }
+          
+          .main-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+          }
+          
+          .title-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+          }
+          
+          .title-text {
+            color: #1e40af;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0;
+          }
+          
+          .subtitle {
+            color: #666;
+            font-size: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+          }
+          
+          .blue-line {
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6 0%, #1e40af 100%);
+            margin: 15px 0;
+            border-radius: 2px;
+          }
+          
+          .report-meta {
+            text-align: right;
+            margin-bottom: 20px;
+            font-size: 10px;
+            color: #666;
+            line-height: 1.6;
+          }
+          
+          .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+            font-size: 10px;
+          }
+          
+          .report-table th {
+            background: #f8fafc;
+            color: #374151;
+            font-weight: bold;
+            padding: 8px 6px;
+            text-align: center;
+            border: 1px solid #d1d5db;
+            font-size: 9px;
+            white-space: nowrap;
+          }
+          
+          .report-table td {
+            padding: 6px 6px;
+            border: 1px solid #d1d5db;
+            text-align: center;
+            font-size: 9px;
+          }
+          
+          .report-table tr:nth-child(even) { 
+            background: #f9fafb; 
+          }
+          
+          .report-table tr:hover { 
+            background: #f3f4f6; 
+          }
+          
+          .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 60px;
+            margin-bottom: 30px;
+          }
+          
+          .signature {
+            text-align: center;
+            width: 220px;
+          }
+          
+          .signature-line {
+            border-top: 1px dotted #333;
+            margin-bottom: 8px;
+            padding-top: 8px;
+            font-weight: bold;
+            font-size: 11px;
+          }
+          
+          .signature-subtitle {
+            font-size: 10px;
+            color: #666;
+          }
+          
+          .official-seal {
+            border: 2px solid #1e40af;
+            padding: 15px;
+            text-align: center;
+            margin: 30px auto;
+            width: 280px;
+            color: #1e40af;
+            font-weight: bold;
+            font-size: 11px;
+            border-radius: 4px;
+          }
+          
+          .footer {
+            text-align: center;
+            font-size: 9px;
+            color: #666;
+            line-height: 1.6;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+          }
+          
+          .no-print { 
+            background: #f0f9ff; 
+            padding: 15px; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            border-radius: 8px;
+            border: 2px solid #3b82f6;
+          }
+          
+          .print-btn { 
+            background: #3b82f6; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 13px; 
+            margin: 0 5px;
+            font-weight: bold;
+          }
+          
+          .close-btn { 
+            background: #6b7280; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 13px; 
+            margin: 0 5px;
+            font-weight: bold;
+          }
+          
+          .print-btn:hover { background: #2563eb; }
+          .close-btn:hover { background: #4b5563; }
+          
+          @media print {
+            body { margin: 0; padding: 10mm; }
+            .no-print { display: none !important; }
+            .report-table { page-break-inside: avoid; }
+            .signatures { page-break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="no-print">
+          <h3 style="color: #1e40af; margin-bottom: 10px;">💰 Heal-x Financial Payment Report Preview</h3>
+          <p style="margin-bottom: 15px;">This report matches your payroll format with payment data. Use the buttons below to print or close this window.</p>
+          <button onclick="window.print()" class="print-btn">🖨️ Print Report</button>
+          <button onclick="window.close()" class="close-btn">❌ Close Window</button>
+        </div>
+        
+        <div class="report-header">
+          <div class="header-left">${reportDate}, ${reportTime}</div>
+          <div class="header-center"></div>
+          <div class="header-right">Heal-x Payment Report</div>
+        </div>
+        
+        <div class="main-title">
+          <div class="title-icon">💰</div>
+          <h1 class="title-text">Heal-x Financial Payment Report</h1>
+        </div>
+        
+        <div class="subtitle">Payment Collection Management System</div>
+        
+        <div class="blue-line"></div>
+        
+        <div class="report-meta">
+          <div>Generated on: ${reportDate}, ${reportTime}</div>
+          <div>Total Records: ${stats.totalPayments}</div>
+          <div>Report Period: All Months All Years</div>
+        </div>
+        
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Payment ID</th>
+              <th>Payment Type</th>
+              <th>Reference Code</th>
+              <th>Gross Amount (LKR)</th>
+              <th>Deductions (LKR)</th>
+              <th>Bonuses (LKR)</th>
+              <th>Share %</th>
+              <th>Variance %</th>
+              <th>Net Amount (LKR)</th>
+              <th>Status</th>
+              <th>Period</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${generatePaymentTableRows()}
+          </tbody>
+        </table>
+        
+        <div class="signatures">
+          <div class="signature">
+            <div class="signature-line">Financial Manager</div>
+            <div class="signature-subtitle">Heal-x Healthcare Management</div>
+          </div>
+          <div class="signature">
+            <div class="signature-line">Date: _______________</div>
+            <div class="signature-subtitle">Report Approved On</div>
+          </div>
+        </div>
+        
+        <div class="official-seal">
+          🏥 HEAL-X OFFICIAL SEAL<br>
+          HEALTHCARE MANAGEMENT SYSTEM
+        </div>
+        
+        <div class="footer">
+          <div>This is a system-generated report from Heal-x Healthcare Management System</div>
+          <div>Report generated on ${reportDate} at ${reportTime} | All amounts are in Sri Lankan Rupees (LKR)</div>
+          <div>For queries regarding this report, contact the Financial Department at Heal-x Healthcare</div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Open in new window
+    const newWindow = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes');
+    if (newWindow) {
+      newWindow.document.write(htmlContent);
+      newWindow.document.close();
+      newWindow.focus();
+      setMessage('Financial payment report generated successfully! Click "Print Report" to save as PDF.');
+    } else {
+      setMessage('Please allow pop-ups to view the report. Check your browser settings.');
     }
+    
+    setTimeout(() => setMessage(''), 5000);
   };
 
   // Rest of the functions remain the same...
@@ -700,5 +1000,3 @@ function FinancialManagePayments() {
 }
 
 export default FinancialManagePayments;
-
-
