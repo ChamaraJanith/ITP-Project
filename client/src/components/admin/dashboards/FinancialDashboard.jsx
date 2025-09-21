@@ -251,8 +251,8 @@ const FinancialDashboard = () => {
         });
         break;
 
-      case "track_revenue":
-        navigate("/revenue");
+      case "profit_or_loss":
+        navigate("/admin/financial/profit-loss");
         break;
 
       case "payroll_processing":
@@ -563,9 +563,9 @@ const FinancialDashboard = () => {
 
                 <button
                   className="fd-feature-button"
-                  onClick={() => handleFinancialFeatureClick("track_revenue")}
+                  onClick={() => handleFinancialFeatureClick("profit_or_loss")}
                 >
-                  TRACK REVENUE
+                  PROFIT OR LOSS
                 </button>
 
                 <button
