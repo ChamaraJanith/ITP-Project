@@ -28,6 +28,8 @@ import prescriptionRouter from './routes/prescriptionRoutes.js';
 import payrollrouter from './routes/FinancialPayrollRoutes.js';  
 import prescriptionNotificationRouter from './routes/prescriptionNotifications.js'
 import emergencyAlertRouter from './routes/emergencyAlertRoutes.js';
+import financemailrouter from './routes/emails.js';
+
 
 
 
@@ -148,6 +150,7 @@ app.use("/api/payments", financialPayRoutes);
 app.use("/api/prescription", consultationRouter);
 app.use("/api/doctor/prescriptions", prescriptionRouter);
 app.use("/api/payrolls", payrollrouter);
+app.use("/api/emails", financemailrouter);
 
 console.log('🚨 Mounting emergency alerts router at /api/doctor/emergency-alerts');
 app.use('/api/doctor/emergency-alerts', emergencyAlertRouter);

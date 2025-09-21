@@ -39,6 +39,7 @@ import InventoryReports from './components/admin/Admin/InventoryReports';
 import PatientRecordsPage from './components/admin/Doctor/PatientRecordsPage';
 import ExploreTrends from './components/admin/Financial_Manager/ExploreTrends'; //new  
 import ProfitOrLoss from './components/admin/Financial_Manager/ProfitOrLoss'; 
+import SendEmail from './components/admin/Financial_Manager/SendEmail';
 
 
 
@@ -445,6 +446,11 @@ function App() {
         <Route 
               path="/admin/financial/profit-loss" 
               element={<ProfitOrLoss />} 
+          />
+
+        <Route 
+              path="/admin/financial/send-email" 
+              element={<SendEmail />} 
           />
 
 

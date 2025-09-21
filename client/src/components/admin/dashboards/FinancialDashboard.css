@@ -1,31 +1,4 @@
-/* src/components/admin/dashboards/FinancialDashboard.css */
 
-.financial-dashboard {
-  padding: 2rem 0;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-/* Dashboard Header */
-.dashboard-header {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-
-.dashboard-header h1 {
-  font-size: 2.5rem;
-  color: #1f2937;
-  margin-bottom: 0.5rem;
-  font-weight: 700;
-}
-
-.dashboard-header p {
-  color: #6b7280;
-  font-size: 1.1rem;
-  margin: 0;
-}
-
-/* ===== FINANCIAL DASHBOARD SCOPED STYLES ===== */
 .fd-container {
   padding: 2rem 0;
   max-width: 1400px;
@@ -55,7 +28,7 @@
   margin: 0 0 1rem 0;
 }
 
-/* NEW: Refresh Button */
+/* Refresh Button */
 .fd-refresh-btn {
   background: linear-gradient(135deg, #10B981 0%, #059669 100%);
   color: white;
@@ -103,7 +76,7 @@
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
 }
 
-/* Stats Grid - Enhanced */
+/* Stats Grid */
 .fd-stats-grid {
   background-color: transparent;
   color: black;
@@ -149,7 +122,7 @@
   width: 6px;
 }
 
-/* NEW: Individual Card Color Coding */
+/* Individual Card Color Coding */
 .fd-today-revenue::before {
   background: linear-gradient(135deg, #10B981 0%, #059669 100%);
 }
@@ -190,7 +163,6 @@
   font-weight: 600;
 }
 
-/* NEW: Small text for additional info */
 .fd-stat-info small {
   color: #d1d5db;
   font-size: 0.8rem;
@@ -276,22 +248,41 @@
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.12);
 }
 
-/* Features Section */
+/* Financial Features Section */
 .fd-features-section {
-  background: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 2.5rem;
   border-radius: 20px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 25px rgba(79, 70, 229, 0.2);
   margin-bottom: 3rem;
-  border: 1px solid #f3f4f6;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.fd-features-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #ec4899 0%, #f97316 100%);
+}
+
+.fd-features-section:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 40px rgba(79, 70, 229, 0.3);
 }
 
 .fd-features-section h2 {
-  color: #1f2937;
+  color: #ffffff;
   margin-bottom: 2rem;
   text-align: center;
   font-size: 1.75rem;
   font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .fd-features-grid {
@@ -301,8 +292,8 @@
 }
 
 .fd-feature-button {
-  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-  color: white;
+  background: rgba(255, 255, 255, 0.95);
+  color: #4a5568;
   border: none;
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
@@ -310,11 +301,16 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 65px;
 }
 
 .fd-feature-button::before {
@@ -324,7 +320,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.1), transparent);
   transition: left 0.5s;
 }
 
@@ -333,83 +329,197 @@
 }
 
 .fd-feature-button:hover {
-  background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4);
+  background: #ffffff;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  color: #2d3748;
 }
 
 .fd-feature-button:active {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Operational Tasks Section */
+.fd-operational-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+  margin-bottom: 3rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.fd-operational-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.fd-operational-section:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
+}
+
+.fd-operational-section h2 {
+  color: #ffffff;
+  margin-bottom: 2rem;
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.fd-operational-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.fd-operational-button {
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #4a5568;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 65px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.fd-operational-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.fd-operational-button:hover::before {
+  left: 100%;
+}
+
+.fd-operational-button:hover {
+  background: #ffffff;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  color: #2d3748;
+}
+
+.fd-operational-button:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* Activity Section */
 .fd-activity-section {
-  background: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 2.5rem;
   border-radius: 20px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 25px rgba(5, 150, 105, 0.2);
   margin-bottom: 2rem;
-  border: 1px solid #f3f4f6;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.fd-activity-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #14b8a6 0%, #06b6d4 100%);
+}
+
+.fd-activity-section:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 40px rgba(5, 150, 105, 0.3);
 }
 
 .fd-activity-section h2 {
-  color: #1f2937;
-  margin-bottom: 1.5rem;
+  color: #ffffff;
+  margin-bottom: 2rem;
+  text-align: center;
   font-size: 1.75rem;
   font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .fd-activity-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(880px, 1fr));
   gap: 1rem;
 }
 
 .fd-activity-item {
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  background: rgba(255, 255, 255, 0.95);
   padding: 1.25rem;
   border-radius: 12px;
   transition: all 0.3s ease;
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .fd-activity-item::before {
   content: '';
   position: absolute;
-  left: 0;
   top: 0;
-  width: 3px;
+  left: -100%;
+  width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-  transition: width 0.3s ease;
-}
-
-.fd-activity-item:hover {
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-  transform: translateX(8px);
-  border-color: #d1d5db;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(90deg, transparent, rgba(5, 150, 105, 0.1), transparent);
+  transition: left 0.5s;
 }
 
 .fd-activity-item:hover::before {
-  width: 5px;
+  left: 100%;
+}
+
+.fd-activity-item:hover {
+  background: #ffffff;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .fd-activity-item p {
   margin: 0;
-  color: #374151;
+  color: #4a5568;
   transition: color 0.3s ease;
   font-weight: 500;
   line-height: 1.5;
 }
 
 .fd-activity-item:hover p {
-  color: #1f2937;
+  color: #2d3748;
 }
 
-/* Billing Modal - Enhanced */
+/* Billing Modal */
 .fd-billing-modal {
   position: fixed;
   top: 0;
@@ -496,7 +606,7 @@
   transform: translateY(-2px);
 }
 
-/* Analytics Modal - Enhanced */
+/* Analytics Modal */
 .fd-analytics-modal {
   position: fixed;
   top: 0;
@@ -531,7 +641,7 @@
   text-align: center;
 }
 
-.fd-analytics-modal-content p {
+.fd-analytics-modal-content > p {
   color: #6b7280;
   margin-bottom: 2rem;
   text-align: center;
@@ -617,7 +727,6 @@
   line-height: 1.4;
 }
 
-/* NEW: Small text for option details */
 .fd-option-details small {
   color: #9ca3af;
   font-size: 0.8rem;
@@ -655,7 +764,6 @@
   gap: 1rem;
 }
 
-/* NEW: Loading Spinner */
 .fd-loading-spinner {
   width: 32px;
   height: 32px;
@@ -690,13 +798,17 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Responsive Design - Enhanced */
+/* Responsive Design */
 @media (max-width: 1024px) {
   .fd-stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
   
   .fd-features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .fd-operational-grid {
     grid-template-columns: repeat(2, 1fr);
   }
   
@@ -753,8 +865,13 @@ html {
     grid-template-columns: 1fr;
   }
   
+  .fd-operational-grid {
+    grid-template-columns: 1fr;
+  }
+  
   .fd-features-section,
-  .fd-activity-section {
+  .fd-activity-section,
+  .fd-operational-section {
     padding: 2rem;
   }
   
@@ -762,6 +879,7 @@ html {
   .fd-billing-content {
     padding: 2rem;
     margin: 1rem;
+    width: calc(100% - 2rem);
   }
   
   .fd-analytics-options {
@@ -770,6 +888,10 @@ html {
   
   .fd-analytics-option {
     padding: 1.25rem;
+  }
+  
+  .fd-activity-list {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -798,7 +920,8 @@ html {
   }
   
   .fd-features-section,
-  .fd-activity-section {
+  .fd-activity-section,
+  .fd-operational-section {
     padding: 1.5rem;
   }
   
@@ -806,6 +929,7 @@ html {
   .fd-analytics-modal-content {
     padding: 1.5rem;
     width: 95%;
+    margin: 0.5rem;
   }
   
   .fd-analytics-option {
@@ -837,9 +961,27 @@ html {
     padding: 1rem 1.25rem;
     font-size: 0.85rem;
   }
+  
+  .fd-operational-button {
+    padding: 1rem 1.25rem;
+    font-size: 0.85rem;
+    min-height: 55px;
+  }
+  
+  .fd-activity-list {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* Additional Enhancements */
+/* Focus states for accessibility */
+.fd-operational-button:focus,
+.fd-feature-button:focus,
+.fd-analytics-option:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
@@ -857,9 +999,13 @@ html {
   .fd-feature-button {
     border: 2px solid #fff;
   }
+  
+  .fd-operational-button {
+    border: 2px solid #667eea;
+  }
 }
 
-/* Dark mode support (optional) */
+/* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .fd-error-banner {
     background: #7f1d1d;
@@ -872,6 +1018,7 @@ html {
 @media print {
   .fd-refresh-btn,
   .fd-feature-button,
+  .fd-operational-button,
   .fd-billing-modal,
   .fd-analytics-modal {
     display: none;
@@ -886,5 +1033,12 @@ html {
     break-inside: avoid;
     box-shadow: none;
     border: 1px solid #ccc;
+  }
+  
+  .fd-operational-section,
+  .fd-features-section,
+  .fd-activity-section {
+    background: #f3f4f6 !important;
+    color: #000 !important;
   }
 }
