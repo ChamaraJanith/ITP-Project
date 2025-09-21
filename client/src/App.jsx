@@ -37,6 +37,7 @@ import ExpenseTracking from './components/admin/Financial_Manager/ExpenseTrackin
 import InventoryReports from './components/admin/Admin/InventoryReports';
 import PatientRecordsPage from './components/admin/Doctor/PatientRecordsPage';
 import ExploreTrends from './components/admin/Financial_Manager/ExploreTrends'; //new  
+import ProfitOrLoss from './components/admin/Financial_Manager/ProfitOrLoss'; 
 
 
 
@@ -429,6 +430,11 @@ function App() {
               path="/admin/financial/trends" 
               element={<ExploreTrends />} 
         />
+
+        <Route 
+              path="/admin/financial/profit-loss" 
+              element={<ProfitOrLoss />} 
+          />
 
 
               <Route 
