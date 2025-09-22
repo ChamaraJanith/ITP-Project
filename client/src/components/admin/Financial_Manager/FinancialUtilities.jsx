@@ -1,16 +1,575 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './FinancialUtilities.css';
 
-const FinancialUtilities = () => {
-  // State management
+// Custom hook for API operations
+const useFinancialUtilities = () => {
   const [utilities, setUtilities] = useState([]);
-  const [filteredUtilities, setFilteredUtilities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
-  
-  // Modal and form states
+
+  const API_BASE = 'http://localhost:7000/api/financial-utilities';
+
+  const fetchUtilities = useCallback(async (page = 1, filterParams = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '10',
+        ...filterParams
+      });
+
+      const response = await axios.get(`${API_BASE}?${params}`);
+      
+      if (response.data.success) {
+        return {
+          utilities: response.data.data.utilities,
+          pagination: response.data.data.pagination
+        };
+      }
+      throw new Error('Failed to fetch utilities');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch utilities');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/stats`);
+      if (response.data.success) {
+        setStats(response.data.data);
+      }
+    } catch (err) {
+      console.error('Stats fetch error:', err);
+    }
+  }, []);
+
+  const generateUniqueId = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/generate-id`);
+      if (response.data.success) {
+        return response.data.data.id;
+      }
+    } catch (err) {
+      console.error('ID generation error:', err);
+    }
+  }, []);
+
+  const createUtility = useCallback(async (formData) => {
+    setLoading(true);
+    try {
+      const response = await axios.post(API_BASE, formData);
+      if (response.data.success) {
+        return response.data;
+      }
+      throw new Error('Failed to create utility');
+    } catch (err) {
+      throw new Error(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateUtility = useCallback(async (utilityId, formData) => {
+    setLoading(true);
+    try {
+      const response = await axios.put(`${API_BASE}/${utilityId}`, formData);
+      if (response.data.success) {
+        return response.data;
+      }
+      throw new Error('Failed to update utility');
+    } catch (err) {
+      throw new Error(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const deleteUtility = useCallback(async (utilityId) => {
+    setLoading(true);
+    try {
+      const response = await axios.delete(`${API_BASE}/${utilityId}`);
+      if (response.data.success) {
+        return response.data;
+      }
+      throw new Error('Failed to delete utility');
+    } catch (err) {
+      throw new Error(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    utilities,
+    setUtilities,
+    loading,
+    error,
+    stats,
+    fetchUtilities,
+    fetchStats,
+    generateUniqueId,
+    createUtility,
+    updateUtility,
+    deleteUtility
+  };
+};
+
+// Custom hook for form management
+const useUtilityForm = (initialData = {}) => {
+  const [formData, setFormData] = useState({
+    utilityId: '',
+    category: 'Electricity',
+    description: '',
+    amount: '',
+    billing_period_start: '',
+    billing_period_end: '',
+    payment_status: 'Pending',
+    vendor_name: '',
+    invoice_number: '',
+    ...initialData
+  });
+
+  const handleFormChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }, []);
+
+  const resetForm = useCallback(() => {
+    setFormData({
+      utilityId: '',
+      category: 'Electricity',
+      description: '',
+      amount: '',
+      billing_period_start: '',
+      billing_period_end: '',
+      payment_status: 'Pending',
+      vendor_name: '',
+      invoice_number: ''
+    });
+  }, []);
+
+  const setFormValue = useCallback((name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }, []);
+
+  return {
+    formData,
+    handleFormChange,
+    resetForm,
+    setFormData,
+    setFormValue
+  };
+};
+
+// Constants
+const UTILITY_CATEGORIES = [
+  'Electricity',
+  'Water & Sewage', 
+  'Waste Management',
+  'Internet & Communication',
+  'Generator Fuel',
+  'Other'
+];
+
+const PAYMENT_STATUSES = ['Pending', 'Paid', 'Overdue'];
+
+// Sub-components
+const StatisticsCard = ({ icon, title, value, subtitle, className = '' }) => (
+  <article className={`fu-statistics__card fu-statistics__card--${className}`}>
+    <div className="fu-statistics__icon">
+      <i className={`fas ${icon}`} aria-hidden="true"></i>
+    </div>
+    <div className="fu-statistics__content">
+      <h3 className="fu-statistics__title">{title}</h3>
+      <p className="fu-statistics__value">{value}</p>
+      <small className="fu-statistics__subtitle">{subtitle}</small>
+    </div>
+  </article>
+);
+
+const FilterGroup = ({ label, children, className = '' }) => (
+  <div className={`fu-filters__group ${className}`}>
+    <label className="fu-filters__label">{label}:</label>
+    {children}
+  </div>
+);
+
+const LoadingSpinner = ({ message = 'Loading...' }) => (
+  <div className="fu-loading" role="status" aria-live="polite">
+    <i className="fas fa-spinner fa-spin fu-loading__icon" aria-hidden="true"></i>
+    <span className="fu-loading__text">{message}</span>
+  </div>
+);
+
+const ErrorAlert = ({ message, onDismiss }) => (
+  <div className="fu-alert fu-alert--error" role="alert">
+    <i className="fas fa-exclamation-triangle fu-alert__icon" aria-hidden="true"></i>
+    <span className="fu-alert__message">{message}</span>
+    {onDismiss && (
+      <button 
+        className="fu-alert__dismiss" 
+        onClick={onDismiss}
+        aria-label="Dismiss error"
+      >
+        <i className="fas fa-times"></i>
+      </button>
+    )}
+  </div>
+);
+
+const UtilityTableRow = ({ 
+  utility, 
+  onEdit, 
+  onDelete, 
+  formatCurrency, 
+  formatDate, 
+  getPaymentStatusBadge 
+}) => (
+  <tr className="fu-table__row">
+    <td className="fu-table__cell fu-table__cell--utility-id">
+      <code className="fu-utility__id">{utility.utilityId}</code>
+    </td>
+    <td className="fu-table__cell">
+      <span className={`fu-category-badge fu-category-badge--${utility.category.toLowerCase().replace(/\s+/g, '-')}`}>
+        {utility.category}
+      </span>
+    </td>
+    <td className="fu-table__cell fu-table__cell--description" title={utility.description}>
+      {utility.description}
+    </td>
+    <td className="fu-table__cell fu-table__cell--amount">
+      <span className="fu-amount">{formatCurrency(utility.amount)}</span>
+    </td>
+    <td className="fu-table__cell fu-table__cell--billing-period">
+      <div className="fu-date-range">
+        <time className="fu-date-range__start" dateTime={utility.billing_period_start}>
+          {formatDate(utility.billing_period_start)}
+        </time>
+        <span className="fu-date-range__separator" aria-label="to">→</span>
+        <time className="fu-date-range__end" dateTime={utility.billing_period_end}>
+          {formatDate(utility.billing_period_end)}
+        </time>
+      </div>
+    </td>
+    <td className="fu-table__cell fu-table__cell--vendor">
+      <span className="fu-vendor">{utility.vendor_name}</span>
+    </td>
+    <td className="fu-table__cell fu-table__cell--status">
+      <span className={`fu-status-badge fu-status-badge--${getPaymentStatusBadge(utility.payment_status)}`}>
+        {utility.payment_status}
+      </span>
+    </td>
+    <td className="fu-table__cell fu-table__cell--invoice">
+      <span className="fu-invoice">{utility.invoice_number || 'N/A'}</span>
+    </td>
+    <td className="fu-table__cell fu-table__cell--actions">
+      <div className="fu-actions">
+        <button 
+          className="fu-button fu-button--small fu-button--secondary"
+          onClick={() => onEdit(utility)}
+          aria-label={`Edit utility ${utility.utilityId}`}
+        >
+          <i className="fas fa-edit" aria-hidden="true"></i>
+        </button>
+        <button 
+          className="fu-button fu-button--small fu-button--danger"
+          onClick={() => onDelete(utility.utilityId)}
+          aria-label={`Delete utility ${utility.utilityId}`}
+        >
+          <i className="fas fa-trash" aria-hidden="true"></i>
+        </button>
+      </div>
+    </td>
+  </tr>
+);
+
+const Pagination = ({ currentPage, totalPages, totalRecords, onPageChange }) => {
+  const pages = useMemo(() => {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }, [totalPages]);
+
+  if (totalPages <= 1) return null;
+
+  return (
+    <nav className="fu-pagination" aria-label="Utility records pagination">
+      <div className="fu-pagination__controls">
+        <button 
+          className="fu-pagination__button fu-pagination__button--prev"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          aria-label="Go to previous page"
+        >
+          <i className="fas fa-chevron-left" aria-hidden="true"></i>
+          Previous
+        </button>
+        
+        <div className="fu-pagination__pages">
+          {pages.map(page => (
+            <button 
+              key={page}
+              className={`fu-pagination__button fu-pagination__button--page ${
+                currentPage === page ? 'fu-pagination__button--active' : ''
+              }`}
+              onClick={() => onPageChange(page)}
+              aria-label={`Go to page ${page}`}
+              aria-current={currentPage === page ? 'page' : undefined}
+            >
+              {page}
+            </button>
+          ))}
+        </div>
+        
+        <button 
+          className="fu-pagination__button fu-pagination__button--next"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          aria-label="Go to next page"
+        >
+          Next
+          <i className="fas fa-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+      
+      <div className="fu-pagination__info">
+        <span className="fu-pagination__text">
+          Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalRecords)} of {totalRecords} entries
+        </span>
+      </div>
+    </nav>
+  );
+};
+
+const UtilityModal = ({ 
+  isOpen, 
+  onClose, 
+  title, 
+  mode = 'create',
+  formData, 
+  onFormChange, 
+  onSubmit, 
+  loading 
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fu-modal__overlay" role="dialog" aria-modal="true" aria-labelledby="fu-modal-title">
+      <div className="fu-modal__container">
+        <header className="fu-modal__header">
+          <h2 id="fu-modal-title" className="fu-modal__title">
+            <i className={`fas ${mode === 'create' ? 'fa-plus' : 'fa-edit'}`} aria-hidden="true"></i>
+            {title}
+          </h2>
+          <button 
+            className="fu-modal__close"
+            onClick={onClose}
+            aria-label="Close modal"
+          >
+            <i className="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </header>
+        
+        <form className="fu-form" onSubmit={onSubmit}>
+          <div className="fu-modal__body">
+            <div className="fu-form__grid">
+              <div className="fu-form__field">
+                <label className="fu-form__label" htmlFor="fu-utility-id">Utility ID:</label>
+                <input 
+                  id="fu-utility-id"
+                  type="text" 
+                  name="utilityId"
+                  value={formData.utilityId}
+                  onChange={onFormChange}
+                  className="fu-form__input fu-form__input--readonly"
+                  required
+                  readOnly
+                />
+              </div>
+
+              <div className="fu-form__field">
+                <label className="fu-form__label" htmlFor="fu-category">Category:</label>
+                <select 
+                  id="fu-category"
+                  name="category"
+                  value={formData.category}
+                  onChange={onFormChange}
+                  className="fu-form__select"
+                  required
+                >
+                  {UTILITY_CATEGORIES.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="fu-form__field fu-form__field--full-width">
+                <label className="fu-form__label" htmlFor="fu-description">Description:</label>
+                <textarea 
+                  id="fu-description"
+                  name="description"
+                  value={formData.description}
+                  onChange={onFormChange}
+                  className="fu-form__textarea"
+                  required
+                  rows="3"
+                  placeholder="Enter utility description..."
+                />
+              </div>
+
+              <div className="fu-form__field">
+                <label className="fu-form__label" htmlFor="fu-amount">Amount (LKR):</label>
+                <input 
+                  id="fu-amount"
+                  type="number" 
+                  name="amount"
+                  value={formData.amount}
+                  onChange={onFormChange}
+                  className="fu-form__input"
+                  required
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="fu-form__field">
+                <label className="fu-form__label" htmlFor="fu-start-date">Billing Period Start:</label>
+                <input 
+                  id="fu-start-date"
+                  type="date" 
+                  name="billing_period_start"
+                  value={formData.billing_period_start}
+                  onChange={onFormChange}
+                  className="fu-form__input"
+                  required
+                />
+              </div>
+
+              <div className="fu-form__field">
+                <label className="fu-form__label" htmlFor="fu-end-date">Billing Period End:</label>
+                <input 
+                  id="fu-end-date"
+                  type="date" 
+                  name="billing_period_end"
+                  value={formData.billing_period_end}
+                  onChange={onFormChange}
+                  className="fu-form__input"
+                  required
+                />
+              </div>
+
+              <div className="fu-form__field">
+                <label className="fu-form__label" htmlFor="fu-payment-status">Payment Status:</label>
+                <select 
+                  id="fu-payment-status"
+                  name="payment_status"
+                  value={formData.payment_status}
+                  onChange={onFormChange}
+                  className="fu-form__select"
+                  required
+                >
+                  {PAYMENT_STATUSES.map(status => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="fu-form__field">
+                <label className="fu-form__label" htmlFor="fu-vendor">Vendor Name:</label>
+                <input 
+                  id="fu-vendor"
+                  type="text" 
+                  name="vendor_name"
+                  value={formData.vendor_name}
+                  onChange={onFormChange}
+                  className="fu-form__input"
+                  required
+                  placeholder="Enter vendor name..."
+                />
+              </div>
+
+              <div className="fu-form__field">
+                <label className="fu-form__label" htmlFor="fu-invoice">Invoice Number:</label>
+                <input 
+                  id="fu-invoice"
+                  type="text" 
+                  name="invoice_number"
+                  value={formData.invoice_number}
+                  onChange={onFormChange}
+                  className="fu-form__input"
+                  placeholder="Enter invoice number (optional)..."
+                />
+              </div>
+            </div>
+          </div>
+          
+          <footer className="fu-modal__footer">
+            <button 
+              type="button" 
+              className="fu-button fu-button--secondary"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="fu-button fu-button--primary"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <i className="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                  {mode === 'create' ? 'Creating...' : 'Updating...'}
+                </>
+              ) : (
+                <>
+                  <i className={`fas ${mode === 'create' ? 'fa-save' : 'fa-save'}`} aria-hidden="true"></i>
+                  {mode === 'create' ? 'Create Utility' : 'Update Utility'}
+                </>
+              )}
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Main Component
+const FinancialUtilities = () => {
+  // Navigation hook
+  const navigate = useNavigate();
+
+  // Custom hooks
+  const {
+    utilities,
+    setUtilities,
+    loading,
+    error,
+    stats,
+    fetchUtilities,
+    fetchStats,
+    generateUniqueId,
+    createUtility,
+    updateUtility,
+    deleteUtility
+  } = useFinancialUtilities();
+
+  const {
+    formData,
+    handleFormChange,
+    resetForm,
+    setFormData
+  } = useUtilityForm();
+
+  // State management
+  const [filteredUtilities, setFilteredUtilities] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUtility, setSelectedUtility] = useState(null);
@@ -28,190 +587,86 @@ const FinancialUtilities = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
-  
-  // Form data state
-  const [formData, setFormData] = useState({
-    utilityId: '',
-    category: 'Electricity',
-    description: '',
-    amount: '',
-    billing_period_start: '',
-    billing_period_end: '',
-    payment_status: 'Pending',
-    vendor_name: '',
-    invoice_number: ''
-  });
 
-  const API_BASE = 'http://localhost:7000/api/financial-utilities';
+  // Utility functions
+  const formatCurrency = useCallback((amount) => {
+    return new Intl.NumberFormat('en-LK', {
+      style: 'currency',
+      currency: 'LKR',
+      minimumFractionDigits: 2
+    }).format(amount);
+  }, []);
 
-  // Utility categories
-  const categories = [
-    'Electricity',
-    'Water & Sewage',
-    'Waste Management',
-    'Internet & Communication',
-    'Generator Fuel',
-    'Other'
-  ];
+  const formatDate = useCallback((dateString) => {
+    return new Date(dateString).toLocaleDateString('en-GB');
+  }, []);
 
-  const paymentStatuses = ['Pending', 'Paid', 'Overdue'];
+  const getPaymentStatusBadge = useCallback((status) => {
+    switch (status) {
+      case 'Paid': return 'success';
+      case 'Overdue': return 'danger';
+      case 'Pending': return 'warning';
+      default: return 'secondary';
+    }
+  }, []);
 
-  // Fetch utilities
-  const fetchUtilities = async (page = 1, filterParams = {}) => {
-    setLoading(true);
+  // Navigation handler
+  const handleNavigateToFinancialDashboard = useCallback(() => {
+    navigate('/admin/financial');
+  }, [navigate]);
+
+  // Event handlers
+  const handleFetchUtilities = useCallback(async (page = 1, filterParams = {}) => {
     try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '10',
-        ...filterParams
-      });
-
-      const response = await axios.get(`${API_BASE}?${params}`);
-      
-      if (response.data.success) {
-        setUtilities(response.data.data.utilities);
-        setFilteredUtilities(response.data.data.utilities);
-        setCurrentPage(response.data.data.pagination.current_page);
-        setTotalPages(response.data.data.pagination.total_pages);
-        setTotalRecords(response.data.data.pagination.total_records);
-      }
+      const result = await fetchUtilities(page, filterParams);
+      setUtilities(result.utilities);
+      setFilteredUtilities(result.utilities);
+      setCurrentPage(result.pagination.current_page);
+      setTotalPages(result.pagination.total_pages);
+      setTotalRecords(result.pagination.total_records);
     } catch (err) {
-      setError('Failed to fetch utilities');
-      console.error('Fetch error:', err);
+      console.error('Failed to fetch utilities:', err);
     }
-    setLoading(false);
-  };
+  }, [fetchUtilities, setUtilities]);
 
-  // Fetch statistics
-  const fetchStats = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/stats`);
-      if (response.data.success) {
-        setStats(response.data.data);
-      }
-    } catch (err) {
-      console.error('Stats fetch error:', err);
-    }
-  };
-
-  // Generate unique ID
-  const generateUniqueId = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/generate-id`);
-      if (response.data.success) {
-        setFormData(prev => ({ ...prev, utilityId: response.data.data.id }));
-      }
-    } catch (err) {
-      console.error('ID generation error:', err);
-    }
-  };
-
-  // Create utility
-  const createUtility = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      const response = await axios.post(API_BASE, formData);
-      
-      if (response.data.success) {
-        setShowCreateModal(false);
-        resetForm();
-        fetchUtilities(currentPage, filters);
-        fetchStats();
-        alert('Utility record created successfully!');
-      }
-    } catch (err) {
-      alert('Failed to create utility record: ' + (err.response?.data?.message || err.message));
-    }
-    setLoading(false);
-  };
-
-  // Update utility
-  const updateUtility = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      const updateData = { ...formData };
-      delete updateData.utilityId; // Remove utilityId from update data
-      
-      const response = await axios.put(`${API_BASE}/${selectedUtility.utilityId}`, updateData);
-      
-      if (response.data.success) {
-        setShowEditModal(false);
-        resetForm();
-        fetchUtilities(currentPage, filters);
-        fetchStats();
-        alert('Utility record updated successfully!');
-      }
-    } catch (err) {
-      alert('Failed to update utility record: ' + (err.response?.data?.message || err.message));
-    }
-    setLoading(false);
-  };
-
-  // Delete utility
-  const deleteUtility = async (utilityId) => {
-    if (!window.confirm('Are you sure you want to delete this utility record?')) {
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      const response = await axios.delete(`${API_BASE}/${utilityId}`);
-      
-      if (response.data.success) {
-        fetchUtilities(currentPage, filters);
-        fetchStats();
-        alert('Utility record deleted successfully!');
-      }
-    } catch (err) {
-      alert('Failed to delete utility record: ' + (err.response?.data?.message || err.message));
-    }
-    setLoading(false);
-  };
-
-  // Handle form changes
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  // Handle filter changes
-  const handleFilterChange = (e) => {
+  const handleFilterChange = useCallback((e) => {
     const { name, value } = e.target;
     const newFilters = { ...filters, [name]: value };
     setFilters(newFilters);
     setCurrentPage(1);
-    fetchUtilities(1, newFilters);
-  };
+    handleFetchUtilities(1, newFilters);
+  }, [filters, handleFetchUtilities]);
 
-  // Reset form
-  const resetForm = () => {
-    setFormData({
-      utilityId: '',
-      category: 'Electricity',
-      description: '',
-      amount: '',
-      billing_period_start: '',
-      billing_period_end: '',
-      payment_status: 'Pending',
+  const handlePageChange = useCallback((page) => {
+    setCurrentPage(page);
+    handleFetchUtilities(page, filters);
+  }, [filters, handleFetchUtilities]);
+
+  const clearFilters = useCallback(() => {
+    const emptyFilters = {
+      category: '',
+      payment_status: '',
       vendor_name: '',
-      invoice_number: ''
-    });
-    setSelectedUtility(null);
-  };
+      start_date: '',
+      end_date: ''
+    };
+    setFilters(emptyFilters);
+    setCurrentPage(1);
+    handleFetchUtilities(1, {});
+  }, [handleFetchUtilities]);
 
-  // Open create modal
-  const openCreateModal = () => {
+  const openCreateModal = useCallback(async () => {
     resetForm();
-    generateUniqueId();
+    try {
+      const id = await generateUniqueId();
+      setFormData(prev => ({ ...prev, utilityId: id }));
+    } catch (err) {
+      console.error('Failed to generate ID:', err);
+    }
     setShowCreateModal(true);
-  };
+  }, [resetForm, generateUniqueId, setFormData]);
 
-  // Open edit modal
-  const openEditModal = (utility) => {
+  const openEditModal = useCallback((utility) => {
     setSelectedUtility(utility);
     setFormData({
       utilityId: utility.utilityId,
@@ -225,288 +680,282 @@ const FinancialUtilities = () => {
       invoice_number: utility.invoice_number || ''
     });
     setShowEditModal(true);
-  };
+  }, [setFormData]);
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-LK', {
-      style: 'currency',
-      currency: 'LKR',
-      minimumFractionDigits: 2
-    }).format(amount);
-  };
-
-  // Format date
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-GB');
-  };
-
-  // Get payment status badge class
-  const getPaymentStatusBadge = (status) => {
-    switch (status) {
-      case 'Paid': return 'badge-success';
-      case 'Overdue': return 'badge-danger';
-      case 'Pending': return 'badge-warning';
-      default: return 'badge-secondary';
+  const handleCreateUtility = useCallback(async (e) => {
+    e.preventDefault();
+    try {
+      await createUtility(formData);
+      setShowCreateModal(false);
+      resetForm();
+      await handleFetchUtilities(currentPage, filters);
+      await fetchStats();
+      alert('Utility record created successfully!');
+    } catch (err) {
+      alert('Failed to create utility record: ' + err.message);
     }
-  };
+  }, [formData, createUtility, resetForm, handleFetchUtilities, currentPage, filters, fetchStats]);
 
-  // Pagination
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    fetchUtilities(page, filters);
-  };
+  const handleUpdateUtility = useCallback(async (e) => {
+    e.preventDefault();
+    try {
+      const updateData = { ...formData };
+      delete updateData.utilityId;
+      
+      await updateUtility(selectedUtility.utilityId, updateData);
+      setShowEditModal(false);
+      resetForm();
+      await handleFetchUtilities(currentPage, filters);
+      await fetchStats();
+      alert('Utility record updated successfully!');
+    } catch (err) {
+      alert('Failed to update utility record: ' + err.message);
+    }
+  }, [formData, selectedUtility, updateUtility, resetForm, handleFetchUtilities, currentPage, filters, fetchStats]);
 
-  // Clear filters
-  const clearFilters = () => {
-    const emptyFilters = {
-      category: '',
-      payment_status: '',
-      vendor_name: '',
-      start_date: '',
-      end_date: ''
-    };
-    setFilters(emptyFilters);
-    setCurrentPage(1);
-    fetchUtilities(1, {});
-  };
+  const handleDeleteUtility = useCallback(async (utilityId) => {
+    if (!window.confirm('Are you sure you want to delete this utility record?')) {
+      return;
+    }
+    
+    try {
+      await deleteUtility(utilityId);
+      await handleFetchUtilities(currentPage, filters);
+      await fetchStats();
+      alert('Utility record deleted successfully!');
+    } catch (err) {
+      alert('Failed to delete utility record: ' + err.message);
+    }
+  }, [deleteUtility, handleFetchUtilities, currentPage, filters, fetchStats]);
 
   // Initial data fetch
   useEffect(() => {
-    fetchUtilities();
+    handleFetchUtilities();
     fetchStats();
   }, []);
 
+  // Calculate statistics
+  const statisticsData = useMemo(() => {
+    if (!stats) return null;
+    
+    return [
+      {
+        icon: 'fa-chart-line',
+        title: 'Total Expenses',
+        value: formatCurrency(stats.total_expenses),
+        subtitle: `${stats.total_records} records`,
+        className: 'total-expenses'
+      },
+      {
+        icon: 'fa-clock',
+        title: 'Pending Payments',
+        value: stats.payment_status_breakdown.find(s => s._id === 'Pending')?.count || 0,
+        subtitle: 'Awaiting payment',
+        className: 'pending-payments'
+      },
+      {
+        icon: 'fa-exclamation-triangle',
+        title: 'Overdue Payments',
+        value: stats.payment_status_breakdown.find(s => s._id === 'Overdue')?.count || 0,
+        subtitle: 'Requires attention',
+        className: 'overdue-payments'
+      },
+      {
+        icon: 'fa-check-circle',
+        title: 'Paid Utilities',
+        value: stats.payment_status_breakdown.find(s => s._id === 'Paid')?.count || 0,
+        subtitle: 'Completed payments',
+        className: 'paid-utilities'
+      }
+    ];
+  }, [stats, formatCurrency]);
+
   return (
-    <div className="financial-utilities-container">
-      {/* Header */}
-      <div className="utilities-header">
-        <div className="header-content">
-          <h1 className="page-title">
-            <i className="fas fa-bolt"></i>
+    <div className="fu-container">
+      {/* Header Section */}
+      <header className="fu-header">
+        <div className="fu-header__content">
+          <h1 className="fu-header__title">
+            <i className="fas fa-bolt fu-header__icon" aria-hidden="true"></i>
             Financial Utilities Management
           </h1>
-          <p className="page-subtitle">
+          <p className="fu-header__subtitle">
             Manage electricity, water, waste management, and other utility expenses
           </p>
         </div>
-        <button 
-          className="btn btn-primary create-btn"
-          onClick={openCreateModal}
-        >
-          <i className="fas fa-plus"></i>
-          Add New Utility
-        </button>
-      </div>
-
-      {/* Statistics Cards */}
-      {stats && (
-        <div className="stats-grid">
-          <div className="stat-card total-expenses">
-            <div className="stat-icon">
-              <i className="fas fa-chart-line"></i>
-            </div>
-            <div className="stat-content">
-              <h3>Total Expenses</h3>
-              <p className="stat-number">{formatCurrency(stats.total_expenses)}</p>
-              <small>{stats.total_records} records</small>
-            </div>
-          </div>
-
-          <div className="stat-card pending-payments">
-            <div className="stat-icon">
-              <i className="fas fa-clock"></i>
-            </div>
-            <div className="stat-content">
-              <h3>Pending Payments</h3>
-              <p className="stat-number">
-                {stats.payment_status_breakdown.find(s => s._id === 'Pending')?.count || 0}
-              </p>
-              <small>Awaiting payment</small>
-            </div>
-          </div>
-
-          <div className="stat-card overdue-payments">
-            <div className="stat-icon">
-              <i className="fas fa-exclamation-triangle"></i>
-            </div>
-            <div className="stat-content">
-              <h3>Overdue Payments</h3>
-              <p className="stat-number">
-                {stats.payment_status_breakdown.find(s => s._id === 'Overdue')?.count || 0}
-              </p>
-              <small>Requires attention</small>
-            </div>
-          </div>
-
-          <div className="stat-card paid-utilities">
-            <div className="stat-icon">
-              <i className="fas fa-check-circle"></i>
-            </div>
-            <div className="stat-content">
-              <h3>Paid Utilities</h3>
-              <p className="stat-number">
-                {stats.payment_status_breakdown.find(s => s._id === 'Paid')?.count || 0}
-              </p>
-              <small>Completed payments</small>
-            </div>
-          </div>
+        
+        <div className="fu-header__actions">
+          <button 
+            className="fu-button fu-button--secondary fu-header__nav-btn"
+            onClick={handleNavigateToFinancialDashboard}
+            type="button"
+          >
+            <i className="fas fa-chart-pie" aria-hidden="true"></i>
+            Financial Dashboard
+          </button>
+          <button 
+            className="fu-button fu-button--primary fu-header__action"
+            onClick={openCreateModal}
+            type="button"
+          >
+            <i className="fas fa-plus" aria-hidden="true"></i>
+            Add New Utility
+          </button>
         </div>
+      </header>
+
+      {/* Statistics Section */}
+      {statisticsData && (
+        <section className="fu-statistics" aria-labelledby="fu-statistics-title">
+          <h2 id="fu-statistics-title" className="fu-visually-hidden">Utility Statistics</h2>
+          <div className="fu-statistics__grid">
+            {statisticsData.map((stat, index) => (
+              <StatisticsCard key={index} {...stat} />
+            ))}
+          </div>
+        </section>
       )}
 
-      {/* Filters */}
-      <div className="filters-section">
-        <div className="filters-grid">
-          <div className="filter-group">
-            <label>Category:</label>
+      {/* Filters Section */}
+      <section className="fu-filters" aria-labelledby="fu-filters-title">
+        <header className="fu-filters__header">
+          <h2 id="fu-filters-title" className="fu-filters__title">
+            <i className="fas fa-filter" aria-hidden="true"></i>
+            Filter Options
+          </h2>
+        </header>
+        
+        <div className="fu-filters__container">
+          <FilterGroup label="Category">
             <select 
               name="category" 
               value={filters.category} 
               onChange={handleFilterChange}
+              className="fu-filters__select"
+              aria-label="Filter by category"
             >
               <option value="">All Categories</option>
-              {categories.map(category => (
+              {UTILITY_CATEGORIES.map(category => (
                 <option key={category} value={category}>{category}</option>
               ))}
             </select>
-          </div>
+          </FilterGroup>
 
-          <div className="filter-group">
-            <label>Payment Status:</label>
+          <FilterGroup label="Payment Status">
             <select 
               name="payment_status" 
               value={filters.payment_status} 
               onChange={handleFilterChange}
+              className="fu-filters__select"
+              aria-label="Filter by payment status"
             >
               <option value="">All Statuses</option>
-              {paymentStatuses.map(status => (
+              {PAYMENT_STATUSES.map(status => (
                 <option key={status} value={status}>{status}</option>
               ))}
             </select>
-          </div>
+          </FilterGroup>
 
-          <div className="filter-group">
-            <label>Vendor:</label>
+          <FilterGroup label="Vendor">
             <input 
               type="text" 
               name="vendor_name" 
               value={filters.vendor_name} 
               onChange={handleFilterChange}
+              className="fu-filters__input"
               placeholder="Search vendor..."
+              aria-label="Filter by vendor name"
             />
-          </div>
+          </FilterGroup>
 
-          <div className="filter-group">
-            <label>Start Date:</label>
+          <FilterGroup label="Start Date">
             <input 
               type="date" 
               name="start_date" 
               value={filters.start_date} 
               onChange={handleFilterChange}
+              className="fu-filters__input"
+              aria-label="Filter by start date"
             />
-          </div>
+          </FilterGroup>
 
-          <div className="filter-group">
-            <label>End Date:</label>
+          <FilterGroup label="End Date">
             <input 
               type="date" 
               name="end_date" 
               value={filters.end_date} 
               onChange={handleFilterChange}
+              className="fu-filters__input"
+              aria-label="Filter by end date"
             />
-          </div>
+          </FilterGroup>
 
-          <div className="filter-group">
-            <button className="btn btn-secondary" onClick={clearFilters}>
-              <i className="fas fa-times"></i>
+          <FilterGroup label=" " className="fu-filters__group--actions">
+            <button 
+              className="fu-button fu-button--secondary fu-filters__clear"
+              onClick={clearFilters}
+              type="button"
+            >
+              <i className="fas fa-times" aria-hidden="true"></i>
               Clear Filters
             </button>
-          </div>
+          </FilterGroup>
         </div>
-      </div>
+      </section>
 
-      {/* Error Message */}
-      {error && (
-        <div className="alert alert-danger">
-          <i className="fas fa-exclamation-triangle"></i>
-          {error}
-        </div>
-      )}
+      {/* Error Display */}
+      {error && <ErrorAlert message={error} />}
 
-      {/* Loading Spinner */}
-      {loading && (
-        <div className="loading-spinner">
-          <i className="fas fa-spinner fa-spin"></i>
-          Loading...
-        </div>
-      )}
+      {/* Loading Display */}
+      {loading && <LoadingSpinner />}
 
-      {/* Utilities Table */}
-      <div className="utilities-table-container">
-        <div className="table-header">
-          <h3>Utilities Records ({totalRecords})</h3>
-        </div>
+      {/* Data Table Section */}
+      <section className="fu-data-table" aria-labelledby="fu-table-title">
+        <header className="fu-data-table__header">
+          <h2 id="fu-table-title" className="fu-data-table__title">
+            <i className="fas fa-table" aria-hidden="true"></i>
+            Utilities Records ({totalRecords})
+          </h2>
+        </header>
         
-        <div className="table-responsive">
-          <table className="utilities-table">
-            <thead>
-              <tr>
-                <th>Utility ID</th>
-                <th>Category</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Billing Period</th>
-                <th>Vendor</th>
-                <th>Status</th>
-                <th>Invoice</th>
-                <th>Actions</th>
+        <div className="fu-table-container">
+          <table className="fu-table" role="table">
+            <thead className="fu-table__head">
+              <tr className="fu-table__row fu-table__row--header">
+                <th className="fu-table__header" scope="col">Utility ID</th>
+                <th className="fu-table__header" scope="col">Category</th>
+                <th className="fu-table__header" scope="col">Description</th>
+                <th className="fu-table__header" scope="col">Amount</th>
+                <th className="fu-table__header" scope="col">Billing Period</th>
+                <th className="fu-table__header" scope="col">Vendor</th>
+                <th className="fu-table__header" scope="col">Status</th>
+                <th className="fu-table__header" scope="col">Invoice</th>
+                <th className="fu-table__header" scope="col">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="fu-table__body">
               {filteredUtilities.length > 0 ? (
                 filteredUtilities.map(utility => (
-                  <tr key={utility.utilityId}>
-                    <td className="utility-id">{utility.utilityId}</td>
-                    <td>
-                      <span className={`category-badge ${utility.category.toLowerCase().replace(/\s+/g, '-')}`}>
-                        {utility.category}
-                      </span>
-                    </td>
-                    <td className="description">{utility.description}</td>
-                    <td className="amount">{formatCurrency(utility.amount)}</td>
-                    <td className="billing-period">
-                      {formatDate(utility.billing_period_start)} - {formatDate(utility.billing_period_end)}
-                    </td>
-                    <td className="vendor">{utility.vendor_name}</td>
-                    <td>
-                      <span className={`badge ${getPaymentStatusBadge(utility.payment_status)}`}>
-                        {utility.payment_status}
-                      </span>
-                    </td>
-                    <td className="invoice">{utility.invoice_number || 'N/A'}</td>
-                    <td className="actions">
-                      <button 
-                        className="btn btn-sm btn-info"
-                        onClick={() => openEditModal(utility)}
-                        title="Edit"
-                      >
-                        <i className="fas fa-edit"></i>
-                      </button>
-                      <button 
-                        className="btn btn-sm btn-danger"
-                        onClick={() => deleteUtility(utility.utilityId)}
-                        title="Delete"
-                      >
-                        <i className="fas fa-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
+                  <UtilityTableRow
+                    key={utility.utilityId}
+                    utility={utility}
+                    onEdit={openEditModal}
+                    onDelete={handleDeleteUtility}
+                    formatCurrency={formatCurrency}
+                    formatDate={formatDate}
+                    getPaymentStatusBadge={getPaymentStatusBadge}
+                  />
                 ))
               ) : (
-                <tr>
-                  <td colSpan="9" className="no-data">
-                    <i className="fas fa-inbox"></i>
-                    <p>No utility records found</p>
+                <tr className="fu-table__row">
+                  <td className="fu-table__cell fu-table__cell--no-data" colSpan="9">
+                    <div className="fu-no-data">
+                      <i className="fas fa-inbox fu-no-data__icon" aria-hidden="true"></i>
+                      <h3 className="fu-no-data__title">No utility records found</h3>
+                      <p className="fu-no-data__subtitle">
+                        Try adjusting your filter criteria or add a new utility record
+                      </p>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -515,366 +964,37 @@ const FinancialUtilities = () => {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="pagination-container">
-            <div className="pagination">
-              <button 
-                className="btn btn-sm"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                <i className="fas fa-chevron-left"></i>
-                Previous
-              </button>
-              
-              {[...Array(totalPages)].map((_, index) => {
-                const page = index + 1;
-                return (
-                  <button 
-                    key={page}
-                    className={`btn btn-sm ${currentPage === page ? 'active' : ''}`}
-                    onClick={() => handlePageChange(page)}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
-              
-              <button 
-                className="btn btn-sm"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                Next
-                <i className="fas fa-chevron-right"></i>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalRecords={totalRecords}
+          onPageChange={handlePageChange}
+        />
+      </section>
 
       {/* Create Modal */}
-      {showCreateModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>
-                <i className="fas fa-plus"></i>
-                Add New Utility
-              </h2>
-              <button 
-                className="close-btn"
-                onClick={() => setShowCreateModal(false)}
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            
-            <form onSubmit={createUtility}>
-              <div className="modal-body">
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label>Utility ID:</label>
-                    <input 
-                      type="text" 
-                      name="utilityId"
-                      value={formData.utilityId}
-                      onChange={handleFormChange}
-                      required
-                      readOnly
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Category:</label>
-                    <select 
-                      name="category"
-                      value={formData.category}
-                      onChange={handleFormChange}
-                      required
-                    >
-                      {categories.map(category => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group full-width">
-                    <label>Description:</label>
-                    <textarea 
-                      name="description"
-                      value={formData.description}
-                      onChange={handleFormChange}
-                      required
-                      rows="3"
-                      placeholder="Enter utility description..."
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Amount (LKR):</label>
-                    <input 
-                      type="number" 
-                      name="amount"
-                      value={formData.amount}
-                      onChange={handleFormChange}
-                      required
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Billing Period Start:</label>
-                    <input 
-                      type="date" 
-                      name="billing_period_start"
-                      value={formData.billing_period_start}
-                      onChange={handleFormChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Billing Period End:</label>
-                    <input 
-                      type="date" 
-                      name="billing_period_end"
-                      value={formData.billing_period_end}
-                      onChange={handleFormChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Payment Status:</label>
-                    <select 
-                      name="payment_status"
-                      value={formData.payment_status}
-                      onChange={handleFormChange}
-                      required
-                    >
-                      {paymentStatuses.map(status => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Vendor Name:</label>
-                    <input 
-                      type="text" 
-                      name="vendor_name"
-                      value={formData.vendor_name}
-                      onChange={handleFormChange}
-                      required
-                      placeholder="Enter vendor name..."
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Invoice Number:</label>
-                    <input 
-                      type="text" 
-                      name="invoice_number"
-                      value={formData.invoice_number}
-                      onChange={handleFormChange}
-                      placeholder="Enter invoice number (optional)..."
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary"
-                  onClick={() => setShowCreateModal(false)}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin"></i>
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-save"></i>
-                      Create Utility
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <UtilityModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Add New Utility"
+        mode="create"
+        formData={formData}
+        onFormChange={handleFormChange}
+        onSubmit={handleCreateUtility}
+        loading={loading}
+      />
 
       {/* Edit Modal */}
-      {showEditModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>
-                <i className="fas fa-edit"></i>
-                Edit Utility - {selectedUtility?.utilityId}
-              </h2>
-              <button 
-                className="close-btn"
-                onClick={() => setShowEditModal(false)}
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            
-            <form onSubmit={updateUtility}>
-              <div className="modal-body">
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label>Utility ID:</label>
-                    <input 
-                      type="text" 
-                      value={formData.utilityId}
-                      readOnly
-                      className="readonly-input"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Category:</label>
-                    <select 
-                      name="category"
-                      value={formData.category}
-                      onChange={handleFormChange}
-                      required
-                    >
-                      {categories.map(category => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group full-width">
-                    <label>Description:</label>
-                    <textarea 
-                      name="description"
-                      value={formData.description}
-                      onChange={handleFormChange}
-                      required
-                      rows="3"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Amount (LKR):</label>
-                    <input 
-                      type="number" 
-                      name="amount"
-                      value={formData.amount}
-                      onChange={handleFormChange}
-                      required
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Billing Period Start:</label>
-                    <input 
-                      type="date" 
-                      name="billing_period_start"
-                      value={formData.billing_period_start}
-                      onChange={handleFormChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Billing Period End:</label>
-                    <input 
-                      type="date" 
-                      name="billing_period_end"
-                      value={formData.billing_period_end}
-                      onChange={handleFormChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Payment Status:</label>
-                    <select 
-                      name="payment_status"
-                      value={formData.payment_status}
-                      onChange={handleFormChange}
-                      required
-                    >
-                      {paymentStatuses.map(status => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Vendor Name:</label>
-                    <input 
-                      type="text" 
-                      name="vendor_name"
-                      value={formData.vendor_name}
-                      onChange={handleFormChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Invoice Number:</label>
-                    <input 
-                      type="text" 
-                      name="invoice_number"
-                      value={formData.invoice_number}
-                      onChange={handleFormChange}
-                      placeholder="Enter invoice number (optional)..."
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary"
-                  onClick={() => setShowEditModal(false)}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin"></i>
-                      Updating...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-save"></i>
-                      Update Utility
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <UtilityModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title={`Edit Utility - ${selectedUtility?.utilityId}`}
+        mode="edit"
+        formData={formData}
+        onFormChange={handleFormChange}
+        onSubmit={handleUpdateUtility}
+        loading={loading}
+      />
     </div>
   );
 };
