@@ -490,10 +490,10 @@ const PatientRecords = () => {
               <div class="info-grid">
                 <div class="info-row">
                   <div class="info-label">Name:</div>
-                  <div class="info-value">Dr. ${prescription.doctorName}</div>
+                  <div class="info-value"> ${prescription.doctorName}</div>
                 </div>
                 <div class="info-row">
-                  <div class="info-label">Department:</div>
+                  <div class="info-label">Specialization:</div>
                   <div class="info-value">${prescription.doctorSpecialization || 'General Medicine'}</div>
                 </div>
                 <div class="info-row">
@@ -501,7 +501,7 @@ const PatientRecords = () => {
                   <div class="info-value">REG${Math.floor(Math.random() * 10000) + 10000}</div>
                 </div>
                 <div class="info-row">
-                  <div class="info-label">Date:</div>
+                  <div class="info-label">Consultation Date:</div>
                   <div class="info-value">${new Date(prescription.date).toLocaleDateString()}</div>
                 </div>
               </div>
@@ -562,7 +562,7 @@ const PatientRecords = () => {
             <div class="signature-box">
               <div class="signature-label">Doctor's Signature</div>
               <div class="signature-line"></div>
-              <div class="doctor-name">Dr. ${prescription.doctorName}</div>
+              <div class="doctor-name"> ${prescription.doctorName}</div>
               <div class="doctor-title">${prescription.doctorSpecialization || 'General Medicine'}</div>
             </div>
             <div class="signature-box">
@@ -920,7 +920,7 @@ const PatientRecords = () => {
                           </button>
                           <button
                             className="pr-action-btn pr-pdf-btn"
-                            title="Generate PDF"
+                            title="Print Prescription"
                             onClick={(e) => {
                               e.stopPropagation();
                               generatePDF(prescription);
@@ -1302,7 +1302,7 @@ const PatientRecords = () => {
                 className="pr-modal-pdf-btn"
                 onClick={() => generatePDF(selectedPatient)}
               >
-                <Download size={16} /> Generate PDF
+                <Download size={16} /> Print Prescription
               </button>
             </div>
           </div>
