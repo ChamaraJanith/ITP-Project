@@ -4,7 +4,7 @@ import './LoadingSpinner.css';
 
 const LoadingSpinner = ({ size = 'small' }) => {
   return (
-    <div className={`loading-spinner ${size}`}>
+    <div className={`loading-spinnerr ${size}`}>
       <div className="spinner-circle"></div>
     </div>
   );
