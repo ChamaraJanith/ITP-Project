@@ -23,7 +23,11 @@ const FinancialPayroll = () => {
     pages: 1
   });
 
-  // ✅ Safe form state
+  // ✅ Get current date - ONLY CURRENT MONTH AND YEAR ALLOWED
+  const getCurrentMonth = () => new Date().toLocaleString('default', { month: 'long' });
+  const getCurrentYear = () => new Date().getFullYear();
+
+  // ✅ Safe form state with FIXED month and year
   const [formData, setFormData] = useState({
     payrollId: '',
     employeeId: '',
@@ -31,8 +35,8 @@ const FinancialPayroll = () => {
     grossSalary: '',
     deductions: '',
     bonuses: '',
-    payrollMonth: '',
-    payrollYear: new Date().getFullYear()
+    payrollMonth: getCurrentMonth(), // FIXED TO CURRENT MONTH
+    payrollYear: getCurrentYear()    // FIXED TO CURRENT YEAR
   });
 
   // ✅ Form validation errors state
@@ -249,7 +253,9 @@ const FinancialPayroll = () => {
         ...formData,
         epf: preview.epf,
         etf: preview.etf,
-        netSalary: preview.netSalary
+        netSalary: preview.netSalary,
+        payrollMonth: getCurrentMonth(), // ALWAYS CURRENT MONTH
+        payrollYear: getCurrentYear()    // ALWAYS CURRENT YEAR
       };
 
       console.log('Sending payload with calculated values:', payloadData);
@@ -302,7 +308,7 @@ const FinancialPayroll = () => {
     }
   };
 
-  // ✅ UPDATED: Reset form with validation errors
+  // ✅ UPDATED: Reset form with validation errors and FIXED month/year
   const resetForm = () => {
     setFormData({
       payrollId: '',
@@ -311,8 +317,8 @@ const FinancialPayroll = () => {
       grossSalary: '',
       deductions: '',
       bonuses: '',
-      payrollMonth: '',
-      payrollYear: new Date().getFullYear()
+      payrollMonth: getCurrentMonth(), // ALWAYS CURRENT MONTH
+      payrollYear: getCurrentYear()    // ALWAYS CURRENT YEAR
     });
     setValidationErrors({
       payrollId: '',
@@ -335,8 +341,8 @@ const FinancialPayroll = () => {
       grossSalary: payroll.grossSalary,
       deductions: payroll.deductions || 0,
       bonuses: payroll.bonuses || 0,
-      payrollMonth: payroll.payrollMonth,
-      payrollYear: payroll.payrollYear
+      payrollMonth: getCurrentMonth(), // FORCE CURRENT MONTH
+      payrollYear: getCurrentYear()    // FORCE CURRENT YEAR
     });
     setEditingPayroll(payroll);
     setShowForm(true);
@@ -944,34 +950,41 @@ const FinancialPayroll = () => {
 
             <div className="fp-form-row">
               <div className="fp-form-group">
-                <label>Month: <span className="fp-required">*</span></label>
-                <select
-                  value={formData.payrollMonth}
-                  onChange={(e) => setFormData({...formData, payrollMonth: e.target.value})}
-                  required
-                  disabled={loading}
+                <label>Month: <span className="fp-required">*</span> 🔒</label>
+                {/* LOCKED TO CURRENT MONTH - NO DROPDOWN */}
+                <div 
+                  style={{
+                    padding: '10px',
+                    border: '2px solid #ddd',
+                    borderRadius: '4px',
+                    backgroundColor: '#f8f9fa',
+                    color: '#495057',
+                    fontWeight: 'bold',
+                    fontSize: '14px'
+                  }}
                 >
-                  <option value="">Select Month</option>
-                  {['January', 'February', 'March', 'April', 'May', 'June',
-                    'July', 'August', 'September', 'October', 'November', 'December']
-                    .map(month => (
-                    <option key={month} value={month}>{month}</option>
-                  ))}
-                </select>
+                  {getCurrentMonth()} (Current Month Only)
+                </div>
+                <small style={{ color: '#6c757d' }}>🔒 Fixed to current month</small>
               </div>
               
               <div className="fp-form-group">
-                <label>Year: <span className="fp-required">*</span></label>
-                <input
-                  type="number"
-                  value={formData.payrollYear}
-                  onChange={(e) => setFormData({...formData, payrollYear: e.target.value})}
-                  required
-                  min={new Date().getFullYear()}
-                  max="2030"
-                  disabled={loading}
-                />
-                <small className="fp-field-hint">Current year or future years only</small>
+                <label>Year: <span className="fp-required">*</span> 🔒</label>
+                {/* LOCKED TO CURRENT YEAR - NO INPUT */}
+                <div 
+                  style={{
+                    padding: '10px',
+                    border: '2px solid #ddd',
+                    borderRadius: '4px',
+                    backgroundColor: '#f8f9fa',
+                    color: '#495057',
+                    fontWeight: 'bold',
+                    fontSize: '14px'
+                  }}
+                >
+                  {getCurrentYear()} (Current Year Only)
+                </div>
+                <small style={{ color: '#6c757d' }}>🔒 Fixed to current year</small>
               </div>
               
               <div className="fp-form-group">
