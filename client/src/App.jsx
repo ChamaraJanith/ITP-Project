@@ -39,6 +39,7 @@ import PatientDetails from './components/admin/Reciptionist/PatientDetails';
 
 // ✅ NEW: Procurement & Suppliers Component
 import SupplierManagement from './components/admin/Admin/SupplierManagement';
+import BookAppointment from './components/appointments/BookAppointment';
 import DoctorInventoryPage from './components/admin/Doctor/DoctorInventoryPage';
 
 // ---- NEW: Force scroll top on route change ----
@@ -205,12 +206,13 @@ function App() {
             {/* ✅ Healthcare Service Routes */}
             <Route path="/hospitals" element={<HospitalsPage />} />
             <Route path="/emergency" element={<EmergencyPage />} />
-            <Route path="/book-appointment" element={<BookAppointmentPage />} />
-            <Route path="/appointments" element={<AppointmentsPage />} />
+            <Route path="/book-appointment" element={<BookAppointment />} />
+            <Route path="/book-appointment" element={<AppointmentsPage />} />
             <Route path="/medical-records" element={<MedicalRecordsPage />} />
             <Route path="/doctors" element={<DoctorsPage />} />
             <Route path="/specialty/:id" element={<SpecialtyPage />} />
             <Route path="/search" element={<SearchPage />} />
+            //<Route path="/book-appointment" element={<BookAppointment />} />
 
             {/* ✅ Admin Portal Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
