@@ -1,21 +1,21 @@
 /* LoadingSpinner.css */
-.loading-spinner {
+.loading-spinnerr {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-.loading-spinner.small {
+.loading-spinnerr.small {
   width: 16px;
   height: 16px;
 }
 
-.loading-spinner.medium {
+.loading-spinnerr.medium {
   width: 24px;
   height: 24px;
 }
 
-.loading-spinner.large {
+.loading-spinnerr.large {
   width: 32px;
   height: 32px;
 }
