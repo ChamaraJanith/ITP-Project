@@ -267,6 +267,10 @@ const FinancialDashboard = () => {
         navigate("/admin/financial/trends");
         break;
 
+      case "utility_management":
+        navigate("/admin/financial/utities");
+        break;
+
       case "payroll_analytics":
         navigate("/admin/financial/payrolls/total-view", {
           state: {
@@ -542,6 +546,13 @@ const FinancialDashboard = () => {
                   onClick={() => handleFinancialFeatureClick("explore_trends")}
                 >
                   EXPLORE TRENDS
+                </button>
+
+                <button
+                  className="fd-feature-button"
+                  onClick={() => handleFinancialFeatureClick("utility_management")}
+                >
+                  MANAGE UTILITIES
                 </button>
               </div>
             </div>

@@ -40,6 +40,7 @@ import PatientRecordsPage from './components/admin/Doctor/PatientRecordsPage';
 import ExploreTrends from './components/admin/Financial_Manager/ExploreTrends'; //new  
 import ProfitOrLoss from './components/admin/Financial_Manager/ProfitOrLoss'; 
 import SendEmail from './components/admin/Financial_Manager/SendEmail';
+import FinancialUtilities from './components/admin/Financial_Manager/FinancialUtilities';
 
 
 
@@ -453,6 +454,10 @@ function App() {
               element={<SendEmail />} 
           />
 
+        <Route 
+              path="/admin/financial/utities" 
+              element={<FinancialUtilities />} 
+        />
 
               <Route 
   path="/admin/procurement" 
