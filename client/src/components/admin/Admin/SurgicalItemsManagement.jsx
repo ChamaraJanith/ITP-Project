@@ -40,18 +40,16 @@ const SurgicalItemsManagement = () => {
   const [stats, setStats] = useState({});
   const [showDisposeModal, setShowDisposeModal] = useState(false);
   
-  // Separate preserved value tracking
-  const [globalPreservedValue, setGlobalPreservedValue] = useState(0);
-  const [preservedValueHistory, setPreservedValueHistory] = useState([]);
+  // Cumulative purchase tracking
+  const [cumulativePurchases, setCumulativePurchases] = useState(0);
+  const [purchaseHistory, setPurchaseHistory] = useState([]);
   
-  // Enhanced stats with true preserved inventory value
+  // Enhanced stats
   const [inventoryStats, setInventoryStats] = useState({
     currentValue: 0,
-    originalValue: 0,
-    preservedValue: 0,      // This will NEVER decrease
-    totalInvestment: 0,
+    cumulativePurchases: 0,
     usedValue: 0,
-    deletedValue: 0         // Track value of deleted items
+    deletedValue: 0
   });
   
   // Supplier spending state
@@ -90,57 +88,79 @@ const SurgicalItemsManagement = () => {
     setTimeout(() => {
       setNotifications({ loading: false, message: '', type: '' });
     }, duration);
-  };
+  }
 
-  // Load preserved value from localStorage
-  const loadPreservedValue = () => {
+  // Load cumulative purchases from localStorage
+  const loadCumulativePurchases = () => {
     try {
-      const stored = localStorage.getItem('healx_preserved_inventory_value');
+      const stored = localStorage.getItem('healx_cumulative_purchases');
       if (stored) {
         const data = JSON.parse(stored);
-        setGlobalPreservedValue(data.value || 0);
-        setPreservedValueHistory(data.history || []);
+        setCumulativePurchases(data.value || 0);
+        setPurchaseHistory(data.history || []);
         return data.value || 0;
       }
       return 0;
     } catch (error) {
-      console.error('Error loading preserved value:', error);
+      console.error('Error loading cumulative purchases:', error);
       return 0;
     }
   };
 
-  // Save preserved value to localStorage
-  const savePreservedValue = (value, action = 'update') => {
+  // Save cumulative purchases to localStorage
+  const saveCumulativePurchases = (value, action = 'update', details = {}) => {
     try {
       const data = {
         value: value,
         history: [
-          ...preservedValueHistory,
+          ...purchaseHistory,
           {
             action,
             value,
             timestamp: new Date().toISOString(),
-            admin: admin?.name || 'System'
+            admin: admin?.name || 'System',
+            ...details
           }
         ].slice(-100) // Keep last 100 entries
       };
       
-      localStorage.setItem('healx_preserved_inventory_value', JSON.stringify(data));
-      setGlobalPreservedValue(value);
-      setPreservedValueHistory(data.history);
+      localStorage.setItem('healx_cumulative_purchases', JSON.stringify(data));
+      setCumulativePurchases(value);
+      setPurchaseHistory(data.history);
     } catch (error) {
-      console.error('Error saving preserved value:', error);
+      console.error('Error saving cumulative purchases:', error);
     }
   };
 
-  // Initialize preserved value only if higher than current
-  const initializePreservedValue = (currentValue) => {
-    const storedValue = loadPreservedValue();
-    if (currentValue > storedValue) {
-      savePreservedValue(currentValue, 'initialize');
-      return currentValue;
+  // Add to cumulative purchases (NEVER decreases)
+  const addToCumulativePurchases = (amount, action = 'purchase', details = {}) => {
+    const newValue = cumulativePurchases + amount;
+    saveCumulativePurchases(newValue, action, details);
+    return newValue;
+  };
+
+  // Initialize cumulative purchases from existing items
+  const initializeCumulativePurchases = () => {
+    const storedValue = loadCumulativePurchases();
+    
+    // Calculate current total investment from items
+    const currentTotalInvestment = items.reduce((sum, item) => {
+      const price = parseFloat(item.price || 0);
+      const totalPurchased = parseInt(item.totalPurchased || item.originalQuantity || item.quantity || 0);
+      return sum + (price * totalPurchased);
+    }, 0);
+    
+    // Use the higher of stored value or current calculation
+    const newValue = Math.max(storedValue, currentTotalInvestment);
+    
+    if (newValue > storedValue) {
+      saveCumulativePurchases(newValue, 'initialize', { 
+        reason: 'Calculated from existing items',
+        itemCount: items.length
+      });
     }
-    return storedValue;
+    
+    return newValue;
   };
 
   // Fetch supplier spending data
@@ -290,7 +310,7 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // Calculate stats with true preserved value
+  // Calculate stats with cumulative purchase tracking
   const calculateInventoryStats = (itemsArray) => {
     if (!Array.isArray(itemsArray)) {
       return { 
@@ -298,9 +318,7 @@ const SurgicalItemsManagement = () => {
         totalQuantity: 0, 
         lowStockItems: 0, 
         currentValue: 0,
-        originalValue: 0,
-        preservedValue: globalPreservedValue, // Use stored preserved value
-        totalInvestment: 0,
+        cumulativePurchases: cumulativePurchases,
         usedValue: 0,
         deletedValue: 0
       };
@@ -325,39 +343,17 @@ const SurgicalItemsManagement = () => {
       return sum + (price * quantity);
     }, 0);
 
-    // Original value calculation
-    const originalValue = itemsArray.reduce((sum, item) => {
-      const price = parseFloat(item.price) || 0;
-      const originalQuantity = parseInt(item.originalQuantity) || parseInt(item.quantity) || 0;
-      return sum + (price * originalQuantity);
-    }, 0);
-
-    // Total investment
-    const totalInvestment = itemsArray.reduce((sum, item) => {
-      const price = parseFloat(item.price) || 0;
-      const totalPurchased = parseInt(item.totalPurchased) || parseInt(item.originalQuantity) || parseInt(item.quantity) || 0;
-      return sum + (price * totalPurchased);
-    }, 0);
-
     // Used value
-    const usedValue = itemsArray.reduce((sum, item) => {
-      const price = parseFloat(item.price) || 0;
-      const originalQuantity = parseInt(item.originalQuantity) || parseInt(item.quantity) || 0;
-      const currentQuantity = parseInt(item.quantity) || 0;
-      const usedQuantity = Math.max(0, originalQuantity - currentQuantity);
-      return sum + (price * usedQuantity);
-    }, 0);
+    const usedValue = Math.max(0, cumulativePurchases - currentValue);
 
     return {
       totalItems,
       totalQuantity,
       lowStockItems,
       currentValue,
-      originalValue,
-      preservedValue: globalPreservedValue, // Always use stored value
-      totalInvestment: Math.max(totalInvestment, originalValue),
+      cumulativePurchases: cumulativePurchases,
       usedValue,
-      deletedValue: Math.max(0, globalPreservedValue - currentValue - usedValue) // Calculate deleted value
+      deletedValue: 0 // We don't track deleted items separately since cumulative never decreases
     };
   };
 
@@ -369,107 +365,176 @@ const SurgicalItemsManagement = () => {
     return months[monthNumber - 1];
   };
 
-// Replace the existing exportToPDF function with this new implementation
-const generateSurgicalItemsPDF = () => {
-  try {
-    if (items.length === 0) {
-      setError('No surgical items data to export');
-      return;
-    }
+  // Replace the existing exportToPDF function with this new implementation
+  const generateSurgicalItemsPDF = () => {
+    try {
+      if (items.length === 0) {
+        setError('No surgical items data to export');
+        return;
+      }
 
-    // Calculate current totals
-    const totalItems = items.length;
-    const totalCurrentValue = items.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0)), 0);
-    const totalPreservedValue = globalPreservedValue;
-    const lowStockCount = items.filter(item => (parseInt(item.quantity) || 0) <= (parseInt(item.minStockLevel) || 0)).length;
-    const outOfStockCount = items.filter(item => (parseInt(item.quantity) || 0) === 0).length;
+      // Calculate current totals
+      const totalItems = items.length;
+      const totalCurrentValue = items.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0)), 0);
+      const totalCumulativePurchases = cumulativePurchases;
+      const lowStockCount = items.filter(item => (parseInt(item.quantity) || 0) <= (parseInt(item.minStockLevel) || 0)).length;
+      const outOfStockCount = items.filter(item => (parseInt(item.quantity) || 0) === 0).length;
 
-    // Create PDF document
-    const doc = new jsPDF('landscape', 'mm', 'a4');
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    let y = 15;
+      // Create PDF document
+      const doc = new jsPDF('landscape', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let y = 15;
 
-    // Header
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('HealX Healthcare Center', pageWidth / 2, y, { align: 'center' });
-
-    y += 6;
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Surgical Items Inventory Report', pageWidth / 2, y, { align: 'center' });
-
-    y += 5;
-    doc.setFontSize(10);
-    doc.text('Inventory Management System', pageWidth / 2, y, { align: 'center' });
-
-    y += 6;
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.8);
-    doc.line(15, y, pageWidth - 15, y);
-
-    y += 8;
-    doc.setFontSize(9);
-    const now = new Date();
-    const dateString = now.toLocaleDateString('en-US', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-    });
-    const timeString = now.toLocaleTimeString('en-US', {
-      hour: '2-digit', minute: '2-digit', hour12: true
-    }) + ' IST';
-    const reportId = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
-    doc.setFont('helvetica', 'normal');
-    doc.text(
-      `Report Date: ${dateString} | Time: ${timeString} | Items: ${totalItems} | Report ID: ${reportId}`,
-      pageWidth / 2, y, { align: 'center' }
-    );
-
-    y += 10;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('SUMMARY', 20, y);
-
-    const bandY = y + 2;
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.5);
-    doc.rect(20, bandY, pageWidth - 40, 16);
-
-    y += 7;
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    const line1 = [
-      `Total Items: ${totalItems}`,
-      `Current Value: $${totalCurrentValue.toLocaleString()}`,
-      `Protected Value: $${totalPreservedValue.toLocaleString()}`,
-      `Low Stock: ${lowStockCount}`
-    ];
-    line1.forEach((txt, i) => {
-      const x = 25 + i * 75;
+      // Header
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      doc.text(txt, x, y + 1);
-    });
+      doc.setTextColor(0, 0, 0);
+      doc.text('HealX Healthcare Center', pageWidth / 2, y, { align: 'center' });
 
-    y += 14;
-    
-    // Category distribution
-    const categoryMap = new Map();
-    items.forEach(item => {
-      const category = item.category || 'Other';
-      categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
-    });
-    
-    const categoryRows = Array.from(categoryMap.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([name, count]) => [name.substring(0, 24), String(count)]);
+      y += 6;
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Surgical Items Inventory Report', pageWidth / 2, y, { align: 'center' });
 
-    if (categoryRows.length > 0) {
+      y += 5;
+      doc.setFontSize(10);
+      doc.text('Inventory Management System', pageWidth / 2, y, { align: 'center' });
+
+      y += 6;
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.8);
+      doc.line(15, y, pageWidth - 15, y);
+
+      y += 8;
+      doc.setFontSize(9);
+      const now = new Date();
+      const dateString = now.toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      });
+      const timeString = now.toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit', hour12: true
+      }) + ' IST';
+      const reportId = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+      doc.setFont('helvetica', 'normal');
+      doc.text(
+        `Report Date: ${dateString} | Time: ${timeString} | Items: ${totalItems} | Report ID: ${reportId}`,
+        pageWidth / 2, y, { align: 'center' }
+      );
+
+      y += 10;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('SUMMARY', 20, y);
+
+      const bandY = y + 2;
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.5);
+      doc.rect(20, bandY, pageWidth - 40, 16);
+
+      y += 7;
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      const line1 = [
+        `Total Items: ${totalItems}`,
+        `Current Value: $${totalCurrentValue.toLocaleString()}`,
+        `Total Purchases: $${totalCumulativePurchases.toLocaleString()}`,
+        `Low Stock: ${lowStockCount}`
+      ];
+      line1.forEach((txt, i) => {
+        const x = 25 + i * 75;
+        doc.setFont('helvetica', 'bold');
+        doc.text(txt, x, y + 1);
+      });
+
+      y += 14;
+      
+      // Category distribution
+      const categoryMap = new Map();
+      items.forEach(item => {
+        const category = item.category || 'Other';
+        categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
+      });
+      
+      const categoryRows = Array.from(categoryMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([name, count]) => [name.substring(0, 24), String(count)]);
+
+      if (categoryRows.length > 0) {
+        autoTable(doc, {
+          startY: y,
+          head: [['Category', 'Items']],
+          body: categoryRows,
+          theme: 'plain',
+          headStyles: {
+            fillColor: [240, 240, 240],
+            textColor: [0, 0, 0],
+            fontStyle: 'bold',
+            fontSize: 8,
+            halign: 'center',
+            valign: 'middle',
+            lineColor: [0, 0, 0],
+            lineWidth: 0.4,
+            cellPadding: { top: 1, right: 1, bottom: 1, left: 1 },
+          },
+          bodyStyles: {
+            fontSize: 7,
+            halign: 'center',
+            valign: 'middle',
+            lineColor: [0, 0, 0],
+            lineWidth: 0.2,
+            cellPadding: { top: 1, right: 1, bottom: 1, left: 1 }
+          },
+          columnStyles: {
+            0: { cellWidth: 70, halign: 'left' },
+            1: { cellWidth: 24, halign: 'right' }
+          },
+          margin: { left: 20 },
+          tableWidth: 94
+        });
+        y = (doc.lastAutoTable?.finalY || y) + 8;
+      }
+
+      // Prepare data for the main table
+      const tableData = items.map((item, index) => {
+        const quantity = parseInt(item.quantity) || 0;
+        const minStock = parseInt(item.minStockLevel) || 0;
+        const price = parseFloat(item.price) || 0;
+        const currentValue = price * quantity;
+        
+        let statusText = 'Available';
+        if (quantity === 0) statusText = 'Out of Stock';
+        else if (quantity <= minStock) statusText = 'Low Stock';
+        
+        return [
+          String(index + 1).padStart(3, '0'),
+          item.name || 'Unknown Item',
+          item.category || 'Other',
+          String(quantity),
+          String(minStock),
+          `$${price.toFixed(2)}`,
+          `$${currentValue.toFixed(2)}`,
+          statusText,
+          item.supplier?.name || 'N/A'
+        ];
+      });
+
+      // Create the main table
       autoTable(doc, {
         startY: y,
-        head: [['Category', 'Items']],
-        body: categoryRows,
+        head: [[
+          'S/N',
+          'Item Name',
+          'Category',
+          'Quantity',
+          'Min Stock',
+          'Unit Price',
+          'Current Value',
+          'Status',
+          'Supplier'
+        ]],
+        body: tableData,
         theme: 'plain',
         headStyles: {
           fillColor: [240, 240, 240],
@@ -479,171 +544,100 @@ const generateSurgicalItemsPDF = () => {
           halign: 'center',
           valign: 'middle',
           lineColor: [0, 0, 0],
-          lineWidth: 0.4,
-          cellPadding: { top: 1, right: 1, bottom: 1, left: 1 },
+          lineWidth: 0.5,
+          cellPadding: { top: 2, right: 1, bottom: 2, left: 1 }
         },
         bodyStyles: {
+          fillColor: [255, 255, 255],
+          textColor: [0, 0, 0],
           fontSize: 7,
           halign: 'center',
           valign: 'middle',
           lineColor: [0, 0, 0],
-          lineWidth: 0.2,
-          cellPadding: { top: 1, right: 1, bottom: 1, left: 1 }
+          lineWidth: 0.3,
+          cellPadding: { top: 2, right: 1, bottom: 2, left: 1 }
         },
         columnStyles: {
-          0: { cellWidth: 70, halign: 'left' },
-          1: { cellWidth: 24, halign: 'right' }
+          0: { cellWidth: 10, halign: 'center', fontStyle: 'bold' },
+          1: { cellWidth: 48, halign: 'left' },
+          2: { cellWidth: 28, halign: 'center' },
+          3: { cellWidth: 16, halign: 'center' },
+          4: { cellWidth: 16, halign: 'center' },
+          5: { cellWidth: 20, halign: 'right' },
+          6: { cellWidth: 22, halign: 'right' },
+          7: { cellWidth: 22, halign: 'center' },
+          8: { cellWidth: 30, halign: 'left' },
         },
-        margin: { left: 20 },
-        tableWidth: 94
+        didParseCell: (data) => {
+          const rowIndex = data.row.index;
+          data.cell.styles.fillColor = rowIndex % 2 === 0 ? [248, 248, 248] : [255, 255, 255];
+          data.cell.styles.textColor = [0, 0, 0];
+          data.cell.styles.lineColor = [0, 0, 0];
+        },
+        margin: { top: 10, left: 15, right: 15, bottom: 20 },
+        styles: {
+          overflow: 'linebreak',
+          fontSize: 7,
+          cellPadding: { top: 2, right: 1, bottom: 2, left: 1 },
+          fillColor: [255, 255, 255],
+          textColor: [0, 0, 0],
+          lineColor: [0, 0, 0],
+          lineWidth: 0.3
+        },
+        showHead: 'firstPage',
+        showFoot: 'never'
       });
-      y = (doc.lastAutoTable?.finalY || y) + 8;
-    }
 
-    // Prepare data for the main table
-    const tableData = items.map((item, index) => {
-      const quantity = parseInt(item.quantity) || 0;
-      const minStock = parseInt(item.minStockLevel) || 0;
-      const price = parseFloat(item.price) || 0;
-      const currentValue = price * quantity;
-      
-      let statusText = 'Available';
-      if (quantity === 0) statusText = 'Out of Stock';
-      else if (quantity <= minStock) statusText = 'Low Stock';
-      
-      return [
-        String(index + 1).padStart(3, '0'),
-        item.name || 'Unknown Item',
-        item.category || 'Other',
-        String(quantity),
-        String(minStock),
-        `$${price.toFixed(2)}`,
-        `$${currentValue.toFixed(2)}`,
-        statusText,
-        item.supplier?.name || 'N/A'
-      ];
-    });
+      const finalY = doc.lastAutoTable?.finalY || (y + 10);
+      const spaceLeft = pageHeight - finalY;
+      if (spaceLeft > 28) {
+        const boxY = finalY + 6;
+        const boxX = 15;
+        const boxW = pageWidth - 30;
+        const boxH = 18;
 
-    // Create the main table
-    autoTable(doc, {
-      startY: y,
-      head: [[
-        'S/N',
-        'Item Name',
-        'Category',
-        'Quantity',
-        'Min Stock',
-        'Unit Price',
-        'Current Value',
-        'Status',
-        'Supplier'
-      ]],
-      body: tableData,
-      theme: 'plain',
-      headStyles: {
-        fillColor: [240, 240, 240],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-        fontSize: 8,
-        halign: 'center',
-        valign: 'middle',
-        lineColor: [0, 0, 0],
-        lineWidth: 0.5,
-        cellPadding: { top: 2, right: 1, bottom: 2, left: 1 }
-      },
-      bodyStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontSize: 7,
-        halign: 'center',
-        valign: 'middle',
-        lineColor: [0, 0, 0],
-        lineWidth: 0.3,
-        cellPadding: { top: 2, right: 1, bottom: 2, left: 1 }
-      },
-      columnStyles: {
-        0: { cellWidth: 10, halign: 'center', fontStyle: 'bold' },
-        1: { cellWidth: 48, halign: 'left' },
-        2: { cellWidth: 28, halign: 'center' },
-        3: { cellWidth: 16, halign: 'center' },
-        4: { cellWidth: 16, halign: 'center' },
-        5: { cellWidth: 20, halign: 'right' },
-        6: { cellWidth: 22, halign: 'right' },
-        7: { cellWidth: 22, halign: 'center' },
-        8: { cellWidth: 30, halign: 'left' },
-      },
-      didParseCell: (data) => {
-        const rowIndex = data.row.index;
-        data.cell.styles.fillColor = rowIndex % 2 === 0 ? [248, 248, 248] : [255, 255, 255];
-        data.cell.styles.textColor = [0, 0, 0];
-        data.cell.styles.lineColor = [0, 0, 0];
-      },
-      margin: { top: 10, left: 15, right: 15, bottom: 20 },
-      styles: {
-        overflow: 'linebreak',
-        fontSize: 7,
-        cellPadding: { top: 2, right: 1, bottom: 2, left: 1 },
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.3
-      },
-      showHead: 'firstPage',
-      showFoot: 'never'
-    });
-
-    const finalY = doc.lastAutoTable?.finalY || (y + 10);
-    const spaceLeft = pageHeight - finalY;
-    if (spaceLeft > 28) {
-      const boxY = finalY + 6;
-      const boxX = 15;
-      const boxW = pageWidth - 30;
-      const boxH = 18;
-
-      doc.setDrawColor(0, 0, 0);
-      doc.setLineWidth(0.5);
-      doc.rect(boxX, boxY, boxW, boxH);
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
+        doc.rect(boxX, boxY, boxW, boxH);
 
 
-      doc.setFontSize(9);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        const lineY = boxY + 6;
+        doc.text('Prepared by: ______________________', boxX + 4, lineY);
+        doc.text('Reviewed by: ______________________', boxX + 120, lineY);
+        doc.text('Date: ____________', boxX + 4, lineY + 7);
+        doc.text('Date: ____________', boxX + 120, lineY + 7);
+      }
+
+      const footerY = pageHeight - 10;
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
       doc.setFont('helvetica', 'normal');
-      const lineY = boxY + 6;
-      doc.text('Prepared by: ______________________', boxX + 4, lineY);
-      doc.text('Reviewed by: ______________________', boxX + 120, lineY);
-      doc.text('Date: ____________', boxX + 4, lineY + 7);
-      doc.text('Date: ____________', boxX + 120, lineY + 7);
+      doc.text(
+        `HealX Healthcare Center - Confidential | Page 1 of 1 | Generated: ${now.toLocaleDateString()}`,
+        pageWidth / 2, footerY, { align: 'center' }
+      );
+
+      // Add cumulative purchase tracking note
+      doc.setFontSize(8);
+      doc.setTextColor(40, 167, 69);
+      doc.setFont('helvetica', 'bold');
+      doc.text(
+        `🛡 Total Purchases: $${totalCumulativePurchases.toLocaleString()} - Current Stock Value: $${totalCurrentValue.toLocaleString()}`,
+        pageWidth / 2, footerY - 5, { align: 'center' }
+      );
+
+      const timestamp = now.toISOString().replace(/[:.]/g, '-').split('T')[0];
+      const filename = `HealX_SurgicalItems_Inventory_${timestamp}.pdf`;
+      doc.save(filename);
+      
+      showNotification('✅ Surgical items inventory report generated successfully!', 'success');
+    } catch (err) {
+      console.error('Surgical Items PDF generation error:', err);
+      showNotification(`❌ Failed to generate PDF: ${err.message}`, 'error');
     }
-
-    const footerY = pageHeight - 10;
-    doc.setFontSize(7);
-    doc.setTextColor(100, 100, 100);
-    doc.setFont('helvetica', 'normal');
-    doc.text(
-      `HealX Healthcare Center - Confidential | Page 1 of 1 | Generated: ${now.toLocaleDateString()}`,
-      pageWidth / 2, footerY, { align: 'center' }
-    );
-
-    // Add value protection note
-    doc.setFontSize(8);
-    doc.setTextColor(40, 167, 69);
-    doc.setFont('helvetica', 'bold');
-    doc.text(
-      `🛡 Protected Value: $${totalPreservedValue.toLocaleString()} - Value Protection System Active`,
-      pageWidth / 2, footerY - 5, { align: 'center' }
-    );
-
-    const timestamp = now.toISOString().replace(/[:.]/g, '-').split('T')[0];
-    const filename = `HealX_SurgicalItems_Inventory_${timestamp}.pdf`;
-    doc.save(filename);
-    
-    showNotification('✅ Surgical items inventory report generated successfully!', 'success');
-  } catch (err) {
-    console.error('Surgical Items PDF generation error:', err);
-    showNotification(`❌ Failed to generate PDF: ${err.message}`, 'error');
-  }
-};
-
-
+  };
 
   const handleTestEmail = async () => {
     try {
@@ -787,18 +781,15 @@ const generateSurgicalItemsPDF = () => {
     }
   };
 
-  // Updated calculateStats to use preserved value
+  // Updated calculateStats to use cumulative purchase tracking
   const calculateStats = (itemsArray) => {
     const inventoryData = calculateInventoryStats(itemsArray);
     return {
       totalItems: inventoryData.totalItems,
       totalQuantity: inventoryData.totalQuantity,
       lowStockItems: inventoryData.lowStockItems,
-      totalValue: inventoryData.preservedValue, // Always use preserved value
       currentValue: inventoryData.currentValue,
-      originalValue: inventoryData.originalValue,
-      preservedValue: inventoryData.preservedValue,
-      totalInvestment: inventoryData.totalInvestment,
+      cumulativePurchases: inventoryData.cumulativePurchases,
       usedValue: inventoryData.usedValue,
       deletedValue: inventoryData.deletedValue
     };
@@ -813,23 +804,20 @@ const generateSurgicalItemsPDF = () => {
       const calculatedStats = calculateStats(items);
       setStats(calculatedStats);
       
-      // Only update preserved value if current value is higher
-      const currentValue = calculatedStats.currentValue || 0;
-      if (currentValue > globalPreservedValue) {
-        savePreservedValue(currentValue, 'auto-increase');
-      }
+      // Initialize cumulative purchases
+      initializeCumulativePurchases();
       
       const inventoryData = calculateInventoryStats(items);
       setInventoryStats(inventoryData);
     }
-  }, [items, globalPreservedValue]);
+  }, [items, cumulativePurchases]);
 
   const initializeComponent = async () => {
     try {
       setLoading(true);
       
-      // Load preserved value first
-      loadPreservedValue();
+      // Load cumulative purchases first
+      loadCumulativePurchases();
       
       const adminData = localStorage.getItem('admin');
       if (adminData) {
@@ -877,22 +865,15 @@ const generateSurgicalItemsPDF = () => {
         const enhancedItems = data.data.items.map(item => ({
           ...item,
           originalQuantity: item.originalQuantity || item.quantity || 0,
-          preservedQuantity: item.preservedQuantity || item.originalQuantity || item.quantity || 0,
           totalPurchased: item.totalPurchased || item.originalQuantity || item.quantity || 0
         }));
         
         setItems(enhancedItems);
         
-        // Initialize preserved value only if current value is higher
-        const currentValue = enhancedItems.reduce((sum, item) => {
-          const price = parseFloat(item.price) || 0;
-          const quantity = parseInt(item.quantity) || 0;
-          return sum + (price * quantity);
-        }, 0);
-        
-        if (currentValue > globalPreservedValue) {
-          initializePreservedValue(currentValue);
-        }
+        // Initialize cumulative purchases after loading items
+        setTimeout(() => {
+          initializeCumulativePurchases();
+        }, 100);
         
       } else {
         throw new Error(data.message || 'Failed to fetch items');
@@ -926,7 +907,7 @@ const generateSurgicalItemsPDF = () => {
     setShowEditModal(true);
   };
 
-  // Delete item without affecting preserved value
+  // Delete item without affecting cumulative purchases
   const handleDeleteItem = async (itemId) => {
     if (!itemId) {
       showNotification('❌ Invalid item selected for deletion', 'error');
@@ -945,7 +926,7 @@ const generateSurgicalItemsPDF = () => {
 
 ⚠️ IMPORTANT: 
 - Item will be removed from inventory
-- Preserved value will remain protected: $${globalPreservedValue.toLocaleString()}
+- Total purchases will remain tracked: $${cumulativePurchases.toLocaleString()}
 - Item value: $${itemValue.toFixed(2)}
 
 This action cannot be undone.`)) {
@@ -960,31 +941,31 @@ This action cannot be undone.`)) {
         
         const data = await response.json();
         if (data.success) {
-          // Preserved value is NOT changed when deleting
-          showNotification(`✅ Item "${itemToDelete.name}" deleted successfully! Preserved value protected: $${globalPreservedValue.toLocaleString()}`, 'success');
+          // Cumulative purchases is NOT changed when deleting
+          showNotification(`✅ Item "${itemToDelete.name}" deleted successfully! Total purchases tracked: $${cumulativePurchases.toLocaleString()}`, 'success');
           loadItems();
           
-          // Log the deletion in preserved value history
+          // Log the deletion in purchase history
           const updatedHistory = [
-            ...preservedValueHistory,
+            ...purchaseHistory,
             {
               action: 'item-deleted',
-              value: globalPreservedValue, // Same value
+              value: cumulativePurchases,
               itemName: itemToDelete.name,
               itemValue: itemValue,
               timestamp: new Date().toISOString(),
               admin: admin?.name || 'System',
-              note: `Item deleted but preserved value maintained`
+              note: `Item deleted but total purchases maintained`
             }
           ].slice(-100);
           
           const data = {
-            value: globalPreservedValue, // Keep same value
+            value: cumulativePurchases,
             history: updatedHistory
           };
           
-          localStorage.setItem('healx_preserved_inventory_value', JSON.stringify(data));
-          setPreservedValueHistory(updatedHistory);
+          localStorage.setItem('healx_cumulative_purchases', JSON.stringify(data));
+          setPurchaseHistory(updatedHistory);
           
         } else {
           throw new Error(data.message);
@@ -1002,12 +983,12 @@ This action cannot be undone.`)) {
         stats: stats,
         items: items,
         admin: admin,
-        preservedValue: globalPreservedValue
+        cumulativePurchases: cumulativePurchases
       }
     });
   };
 
-  // Enhanced stock update with auto-restock awareness
+  // Enhanced stock update with cumulative purchase tracking
   const handleUpdateStock = async (itemId, quantityChange, type) => {
     try {
       if (!itemId) {
@@ -1052,7 +1033,6 @@ This action cannot be undone.`)) {
                  hasAutoRestockManualQuantity ? 'Manual restock using your auto-restock quantity' : 'Manual stock replenishment',
         preserveValue: true,
         originalQuantity: item.originalQuantity || item.quantity || 0,
-        preservedQuantity: item.preservedQuantity || item.originalQuantity || item.quantity || 0,
         usingAutoRestockQuantity: hasAutoRestockManualQuantity // Flag for backend
       };
 
@@ -1071,19 +1051,24 @@ This action cannot be undone.`)) {
       if (data.success) {
         const action = type === 'usage' ? 'reduced' : 'increased';
         
-        // Enhanced success message
+        // Enhanced success message with cumulative purchase tracking
         if (type === 'restock') {
           const addedValue = (parseFloat(item.price) || 0) * quantity;
-          const newPreservedValue = globalPreservedValue + addedValue;
-          savePreservedValue(newPreservedValue, 'stock-increase');
+          
+          // KEY CHANGE: Always add to cumulative purchases when restocking
+          const newCumulativePurchases = addToCumulativePurchases(addedValue, 'restock', {
+            itemName: item.name,
+            quantity: quantity,
+            unitPrice: parseFloat(item.price) || 0
+          });
           
           if (hasAutoRestockManualQuantity) {
-            showNotification(`✅ Stock ${action} by ${quantity} units using your auto-restock setting! Value added: $${addedValue.toFixed(2)}. Preserved value: $${newPreservedValue.toLocaleString()}`, 'success');
+            showNotification(`✅ Stock ${action} by ${quantity} units using your auto-restock setting! Added $${addedValue.toFixed(2)} to total purchases. New total: $${newCumulativePurchases.toLocaleString()}`, 'success');
           } else {
-            showNotification(`✅ Stock ${action} by ${quantity} units! Value added: $${addedValue.toFixed(2)}. Preserved value: $${newPreservedValue.toLocaleString()}`, 'success');
+            showNotification(`✅ Stock ${action} by ${quantity} units! Added $${addedValue.toFixed(2)} to total purchases. New total: $${newCumulativePurchases.toLocaleString()}`, 'success');
           }
         } else {
-          showNotification(`✅ Stock ${action} by ${quantity} units! Preserved value protected: $${globalPreservedValue.toLocaleString()}`, 'success');
+          showNotification(`✅ Stock ${action} by ${quantity} units! Total purchases maintained: $${cumulativePurchases.toLocaleString()}`, 'success');
         }
         
         loadItems();
@@ -1096,17 +1081,20 @@ This action cannot be undone.`)) {
     }
   };
 
-  // Reset Preserved Value function (for admin use)
-  const handleResetPreservedValue = () => {
-    if (window.confirm(`Are you sure you want to reset the preserved value?
+  // Reset Cumulative Purchases function (for admin use)
+  const handleResetCumulativePurchases = () => {
+    if (window.confirm(`Are you sure you want to reset the total purchases?
 
-Current preserved value: $${globalPreservedValue.toLocaleString()}
-This will set it to current inventory value: $${inventoryStats.currentValue.toLocaleString()}
+Current total purchases: $${cumulativePurchases.toLocaleString()}
+This will recalculate from current inventory value: $${inventoryStats.currentValue.toLocaleString()}
 
 This action cannot be undone.`)) {
       const newValue = inventoryStats.currentValue;
-      savePreservedValue(newValue, 'admin-reset');
-      showNotification(`✅ Preserved value reset to $${newValue.toLocaleString()}`, 'success');
+      saveCumulativePurchases(newValue, 'admin-reset', { 
+        reason: 'Reset to current inventory value',
+        previousValue: cumulativePurchases
+      });
+      showNotification(`✅ Total purchases reset to $${newValue.toLocaleString()}`, 'success');
     }
   };
 
@@ -1677,7 +1665,7 @@ This action cannot be undone.`)) {
             </div>
           </div>
 
-          {/* True Inventory Value Protection Section */}
+          {/* Cumulative Purchase Tracking Section */}
           <div className="inventory-value-section" style={{
             background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
             color: 'white',
@@ -1687,7 +1675,7 @@ This action cannot be undone.`)) {
             boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, fontSize: '20px' }}>🛡️ True Value Protection System</h3>
+              <h3 style={{ margin: 0, fontSize: '20px' }}>🛡️ Total Purchase Tracking System</h3>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <div style={{ 
                   background: 'rgba(255,255,255,0.2)', 
@@ -1700,7 +1688,7 @@ This action cannot be undone.`)) {
                 </div>
                 {admin?.role === 'admin' && (
                   <button
-                    onClick={handleResetPreservedValue}
+                    onClick={handleResetCumulativePurchases}
                     style={{
                       background: 'rgba(255,193,7,0.3)',
                       border: '1px solid rgba(255,193,7,0.5)',
@@ -1711,7 +1699,7 @@ This action cannot be undone.`)) {
                       fontSize: '11px'
                     }}
                   >
-                    🔧 Reset Value
+                    🔧 Reset
                   </button>
                 )}
               </div>
@@ -1752,10 +1740,10 @@ This action cannot be undone.`)) {
                 }}></div>
                 <div style={{ position: 'relative', zIndex: 1 }}>
                   <div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '5px' }}>
-                    ${globalPreservedValue?.toLocaleString() || '0'}
+                    ${cumulativePurchases?.toLocaleString() || '0'}
                   </div>
-                  <div style={{ fontSize: '16px', opacity: 0.95, fontWeight: 'bold' }}>🛡️ PRESERVED VALUE</div>
-                  <small style={{ fontSize: '12px', opacity: 0.9 }}>PROTECTED FOREVER</small>
+                  <div style={{ fontSize: '16px', opacity: 0.95, fontWeight: 'bold' }}>🛡️ TOTAL PURCHASES</div>
+                  <small style={{ fontSize: '12px', opacity: 0.9 }}>ALL BUYING TRACKED</small>
                 </div>
               </div>
 
@@ -1766,10 +1754,10 @@ This action cannot be undone.`)) {
                 textAlign: 'center'
               }}>
                 <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '5px' }}>
-                  ${inventoryStats.deletedValue?.toLocaleString() || '0'}
+                  ${Math.max(0, cumulativePurchases - inventoryStats.currentValue)?.toLocaleString() || '0'}
                 </div>
-                <div style={{ fontSize: '14px', opacity: 0.9 }}>Deleted Items Value</div>
-                <small style={{ fontSize: '12px', opacity: 0.8 }}>Still protected</small>
+                <div style={{ fontSize: '14px', opacity: 0.9 }}>Used/Deleted Value</div>
+                <small style={{ fontSize: '12px', opacity: '0.8' }}>Still tracked</small>
               </div>
 
               <div style={{
@@ -1779,10 +1767,10 @@ This action cannot be undone.`)) {
                 textAlign: 'center'
               }}>
                 <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '5px' }}>
-                  100%
+                  {cumulativePurchases > 0 ? '100%' : '0%'}
                 </div>
-                <div style={{ fontSize: '14px', opacity: 0.9 }}>Protection Rate</div>
-                <small style={{ fontSize: '12px', opacity: 0.8 }}>Always protected</small>
+                <div style={{ fontSize: '14px', opacity: 0.9 }}>Investment Tracking</div>
+                <small style={{ fontSize: '12px', opacity: 0.8 }}>Complete history</small>
               </div>
             </div>
 
@@ -1793,13 +1781,19 @@ This action cannot be undone.`)) {
               borderRadius: '8px',
               fontSize: '14px'
             }}>
-              <strong>🛡️ True Value Protection:</strong> Your preserved inventory value of <strong>${globalPreservedValue?.toLocaleString()}</strong> will NEVER decrease, 
-              even when items are deleted or used. This ensures accurate financial tracking and permanent asset value protection.
+              <strong>🛡️ Total Purchase Tracking:</strong> Your system tracks <strong>ALL</strong> inventory purchases made over time, 
+              creating a cumulative total of <strong>${cumulativePurchases?.toLocaleString()}</strong>. 
+              This value <strong>NEVER decreases</strong> - it only grows with each new purchase, providing an accurate 
+              record of your total spending on inventory regardless of usage or deletion.
               
-              {preservedValueHistory.length > 0 && (
+              <div style={{ marginTop: '10px', fontSize: '12px', opacity: 0.9 }}>
+                <strong>Formula:</strong> Total Purchases = Current Stock Value + All Restock Order Values
+              </div>
+              
+              {purchaseHistory.length > 0 && (
                 <div style={{ marginTop: '10px', fontSize: '12px', opacity: 0.9 }}>
-                  <strong>Last updated:</strong> {new Date(preservedValueHistory[preservedValueHistory.length - 1]?.timestamp).toLocaleString()} 
-                  by {preservedValueHistory[preservedValueHistory.length - 1]?.admin}
+                  <strong>Last updated:</strong> {new Date(purchaseHistory[purchaseHistory.length - 1]?.timestamp).toLocaleString()} 
+                  by {purchaseHistory[purchaseHistory.length - 1]?.admin}
                 </div>
               )}
             </div>
@@ -1939,7 +1933,7 @@ This action cannot be undone.`)) {
             )}
           </div>
 
-          {/* Stats grid with true preserved value */}
+          {/* Stats grid with cumulative purchase tracking */}
           <div className="supplier-stats-grid">
             <div className="supplier-stat-card">
               <div className="supplier-stat-icon">📦</div>
@@ -1983,7 +1977,7 @@ This action cannot be undone.`)) {
                 </small>
               </div>
             </div>
-            {/* Show true preserved inventory value */}
+            {/* Show cumulative purchases */}
             <div className="supplier-stat-card" style={{ 
               cursor: 'pointer',
               background: 'linear-gradient(135deg, #6f42c1, #8e44ad)',
@@ -2009,10 +2003,10 @@ This action cannot be undone.`)) {
               </div>
               <div className="supplier-stat-icon">💎</div>
               <div className="supplier-stat-info">
-                <h3>${globalPreservedValue?.toLocaleString() || '0'}</h3>
-                <p>Protected Value</p>
+                <h3>${cumulativePurchases?.toLocaleString() || '0'}</h3>
+                <p>Total Purchases</p>
                 <small style={{ fontSize: '12px', opacity: 0.9 }}>
-                  ✅ Never decreases
+                  ✅ All buying tracked
                 </small>
               </div>
             </div>
@@ -2149,7 +2143,7 @@ This action cannot be undone.`)) {
                           {/* Pass item data to CustomNumberInput */}
                           <CustomNumberInput
                             placeholder="+ Stock"
-                            title="Add Stock (Value increases preserved value)"
+                            title="Add Stock (Value added to total purchases)"
                             onSubmit={(qty) => handleUpdateStock(item._id, qty, 'restock')}
                             type="add"
                             item={item}
@@ -2157,7 +2151,7 @@ This action cannot be undone.`)) {
 
                           <CustomNumberInput
                             placeholder="- Stock"
-                            title="Use Stock (Preserved value maintained)"
+                            title="Use Stock (Total purchases maintained)"
                             onSubmit={(qty) => handleUpdateStock(item._id, qty, 'usage')}
                             type="remove"
                             max={parseInt(item.quantity) || 0}
@@ -2206,7 +2200,7 @@ This action cannot be undone.`)) {
                           <button
                             onClick={() => handleDeleteItem(item._id)}
                             className="action-btn delete-btn"
-                            title="Delete Item (Preserved value maintained)"
+                            title="Delete Item (Total purchases maintained)"
                             style={{ 
                               padding: '3px 6px', 
                               fontSize: '10px',
@@ -2371,7 +2365,7 @@ This action cannot be undone.`)) {
                 setShowAddModal(false);
                 setShowEditModal(false);
                 setSelectedItem(null);
-                showNotification('✅ Item saved successfully! Preserved value protected.', 'success');
+                showNotification('✅ Item saved successfully! Total purchase value tracked.', 'success');
               }}
               apiBaseUrl={API_BASE_URL}
             />
@@ -2385,7 +2379,7 @@ This action cannot be undone.`)) {
               onSuccess={() => {
                 loadItems();
                 setShowDisposeModal(false);
-                showNotification('✅ Items disposed successfully! Preserved value maintained.', 'success');
+                showNotification('✅ Items disposed successfully! Total purchases maintained.', 'success');
               }}
               apiBaseUrl={API_BASE_URL}
             />
