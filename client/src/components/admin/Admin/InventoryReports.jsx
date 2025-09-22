@@ -991,6 +991,7 @@ const generatePDFReport = () => {
                   <option value="Hemostatic Instruments">Hemostatic Instruments</option>
                   <option value="Retractors">Retractors</option>
                   <option value="Sutures">Sutures</option>
+                  <option value="Oxigen Delivery Equipment">Oxigen Delivery Equipment</option>
                 </select>
               </div>
               
