@@ -60,11 +60,23 @@ const SurgicalItemsManagement = () => {
     totalOrders: 0
   });
   
+  // Restock spending tracking
+  const [restockSpending, setRestockSpending] = useState({
+    totalRestockValue: 0,
+    monthlyRestockValue: 0,
+    restockHistory: []
+  });
+  
   const [notifications, setNotifications] = useState({
     loading: false,
     message: '',
     type: ''
   });
+
+  // Auto-restock state management with user-controlled quantities
+  const [autoRestockConfig, setAutoRestockConfig] = useState({});
+  const [showAutoRestockModal, setShowAutoRestockModal] = useState(false);
+  const [selectedItemForAutoRestock, setSelectedItemForAutoRestock] = useState(null);
 
   const API_BASE_URL = 'http://localhost:7000/api/inventory';
 
@@ -129,6 +141,64 @@ const SurgicalItemsManagement = () => {
       setPurchaseHistory(data.history);
     } catch (error) {
       console.error('Error saving cumulative purchases:', error);
+    }
+  };
+
+  // Load restock spending from localStorage
+  const loadRestockSpending = () => {
+    try {
+      const stored = localStorage.getItem('healx_restock_spending');
+      if (stored) {
+        const data = JSON.parse(stored);
+        setRestockSpending({
+          totalRestockValue: data.totalRestockValue || 0,
+          monthlyRestockValue: data.monthlyRestockValue || 0,
+          restockHistory: data.restockHistory || []
+        });
+        return data.totalRestockValue || 0;
+      }
+      return 0;
+    } catch (error) {
+      console.error('Error loading restock spending:', error);
+      return 0;
+    }
+  };
+
+  // Save restock spending to localStorage
+  const saveRestockSpending = (restockValue, action = 'restock', details = {}) => {
+    try {
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      
+      // Check if this restock is from current month
+      const isCurrentMonth = details.timestamp ? 
+        new Date(details.timestamp).getMonth() === currentMonth && 
+        new Date(details.timestamp).getFullYear() === currentYear : 
+        true;
+      
+      const updatedMonthlyValue = isCurrentMonth ? 
+        restockSpending.monthlyRestockValue + restockValue : 
+        restockSpending.monthlyRestockValue;
+      
+      const data = {
+        totalRestockValue: restockSpending.totalRestockValue + restockValue,
+        monthlyRestockValue: updatedMonthlyValue,
+        restockHistory: [
+          ...restockSpending.restockHistory,
+          {
+            action,
+            restockValue,
+            timestamp: new Date().toISOString(),
+            admin: admin?.name || 'System',
+            ...details
+          }
+        ].slice(-100) // Keep last 100 entries
+      };
+      
+      localStorage.setItem('healx_restock_spending', JSON.stringify(data));
+      setRestockSpending(data);
+    } catch (error) {
+      console.error('Error saving restock spending:', error);
     }
   };
 
@@ -216,25 +286,52 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // Auto-restock state management with user-controlled quantities
-  const [autoRestockConfig, setAutoRestockConfig] = useState({});
-  const [showAutoRestockModal, setShowAutoRestockModal] = useState(false);
-  const [selectedItemForAutoRestock, setSelectedItemForAutoRestock] = useState(null);
-
-  // Auto-restock check that respects user's manual quantities
+  // 🔥 ENHANCED Auto-restock check function with proper value tracking
   const handleAutoRestockCheck = async () => {
     try {
-      setNotifications({ loading: true, message: 'Checking items for auto-restock using your manual quantities...', type: 'info' });
+      setNotifications({ 
+        loading: true, 
+        message: 'Processing auto-restock for low stock items...', 
+        type: 'info' 
+      });
       
+      // Identify low stock items with valid prices
+      const lowStockItems = items
+        .filter(item => {
+          const quantity = parseInt(item.quantity) || 0;
+          const minStock = parseInt(item.minStockLevel) || 0;
+          const price = parseFloat(item.price) || 0;
+          return quantity <= minStock && price > 0 && item.autoRestock?.enabled;
+        })
+        .map(item => ({
+          itemId: item._id,
+          itemName: item.name || 'Unknown Item',
+          currentQuantity: parseInt(item.quantity) || 0,
+          minStockLevel: parseInt(item.minStockLevel) || 0,
+          price: parseFloat(item.price) || 0,
+          isOutOfStock: parseInt(item.quantity) === 0,
+          category: item.category || 'Other',
+          supplier: item.supplier?.name || 'N/A',
+          autoRestockConfig: item.autoRestock || null
+        }));
+
+      console.log(`🎯 Found ${lowStockItems.length} low stock items for auto-restock:`, lowStockItems);
+
+      if (lowStockItems.length === 0) {
+        showNotification('✅ All items are well-stocked or need price/auto-restock configuration!', 'success');
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/auto-restock/check-and-restock`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        // Send flag to respect user's manual quantities
         body: JSON.stringify({ 
           respectManualQuantities: true,
-          preserveValue: true 
+          preserveValue: true,
+          lowStockItems: lowStockItems,
+          processOnlyLowStock: true
         })
       });
 
@@ -243,10 +340,65 @@ const SurgicalItemsManagement = () => {
       }
 
       const data = await response.json();
+      console.log('🔍 Auto-restock response data:', data);
       
       if (data.success) {
-        showNotification(`✅ Auto-restock completed! Processed ${data.data.itemsProcessed} items using your specified quantity settings.`, 'success');
-        loadItems();
+        const results = data.data?.results || [];
+        const totalValue = data.data?.totalRestockValue || 0;
+        const itemsProcessed = data.data?.itemsProcessed || 0;
+        
+        console.log('📊 Processing results:', {
+          results,
+          totalValue,
+          itemsProcessed
+        });
+
+        // 🔥 IMPORTANT: Track restock spending in frontend
+        if (totalValue > 0) {
+          // Add to restock spending
+          saveRestockSpending(totalValue, 'auto-restock-bulk', {
+            itemCount: itemsProcessed,
+            timestamp: new Date().toISOString(),
+            source: 'auto-restock-check',
+            details: results.map(r => ({
+              name: r.itemName,
+              quantity: r.restockQuantity || 0,
+              value: r.restockValue || 0
+            }))
+          });
+
+          // Also add to cumulative purchases (since restocking means buying more inventory)
+          addToCumulativePurchases(totalValue, 'auto-restock', {
+            itemCount: itemsProcessed,
+            totalValue: totalValue,
+            source: 'auto-restock-check'
+          });
+        }
+
+        // Show detailed success message
+        let message = `✅ Auto-restock completed!\n`;
+        message += `📦 Processed: ${itemsProcessed} items\n`;
+        message += `💰 Total value: $${totalValue.toFixed(2)}\n`;
+        
+        if (results.length > 0) {
+          message += `\n📋 Details:\n`;
+          results.slice(0, 3).forEach(result => {
+            if (result.success) {
+              message += `• ${result.itemName}: +${result.restockQuantity || 0} units ($${(result.restockValue || 0).toFixed(2)})\n`;
+            }
+          });
+          if (results.length > 3) {
+            message += `• ...and ${results.length - 3} more items\n`;
+          }
+        }
+
+        showNotification(message, 'success');
+        
+        // Reload items to show updated quantities and values
+        await loadItems();
+        
+        console.log('✅ Auto-restock completed successfully with value tracking');
+        
       } else {
         throw new Error(data.message || 'Failed to perform auto-restock check');
       }
@@ -254,6 +406,169 @@ const SurgicalItemsManagement = () => {
       console.error('Auto-restock error:', error);
       showNotification(`❌ Auto-restock failed: ${error.message}`, 'error');
     }
+  };
+
+  // 🔥 NEW: Enhanced Restock Spending Section Component
+  const RestockSpendingSection = () => {
+    return (
+      <div className="restock-spending-section" style={{
+        background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        color: 'white',
+        padding: '25px',
+        borderRadius: '12px',
+        marginBottom: '25px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '20px'
+        }}>
+          <h3 style={{ margin: 0, fontSize: '20px' }}>Auto-Restock Value Tracking</h3>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{
+              background: 'rgba(255,255,255,0.2)',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '600'
+            }}>
+              LIVE TRACKING
+            </div>
+            {admin?.role === 'admin' && (
+              <button
+                onClick={handleResetRestockSpending}
+                style={{
+                  background: 'rgba(255,193,7,0.3)',
+                  border: '1px solid rgba(255,193,7,0.5)',
+                  color: 'white',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '11px'
+                }}
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: '20px'
+        }}>
+          {/* Total Restock Value */}
+          <div style={{
+            background: 'rgba(255,255,255,0.2)',
+            padding: '20px',
+            borderRadius: '10px',
+            textAlign: 'center',
+            border: restockSpending.totalRestockValue > 0 ? '3px solid rgba(40,167,69,0.6)' : 'none'
+          }}>
+            <div style={{
+              fontSize: '32px',
+              fontWeight: 'bold',
+              marginBottom: '8px',
+              color: restockSpending.totalRestockValue > 0 ? '#ffffff' : '#ffffff'
+            }}>
+              ${restockSpending.totalRestockValue.toLocaleString()}
+            </div>
+            <div style={{ opacity: 0.9, fontWeight: 'bold' }}>Total Auto-Restock Value</div>
+            <small style={{ opacity: 0.8 }}>All automatic restocking spending</small>
+          </div>
+
+          {/* Monthly Restock Value */}
+          <div style={{
+            background: 'rgba(255,255,255,0.2)',
+            padding: '20px',
+            borderRadius: '10px',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              fontSize: '28px',
+              fontWeight: 'bold',
+              marginBottom: '8px'
+            }}>
+              ${restockSpending.monthlyRestockValue.toLocaleString()}
+            </div>
+            <div style={{ opacity: 0.9, fontWeight: 'bold' }}>This Month Restock</div>
+            <small style={{ opacity: 0.8 }}>
+              {restockSpending.totalRestockValue > 0 
+                ? `${((restockSpending.monthlyRestockValue / restockSpending.totalRestockValue) * 100).toFixed(1)}% of total`
+                : 'No restock this month'
+              }
+            </small>
+          </div>
+
+          {/* Recent Activity */}
+          <div style={{
+            background: 'rgba(255,255,255,0.2)',
+            padding: '20px',
+            borderRadius: '10px'
+          }}>
+            <h4 style={{ margin: '0 0 15px 0', fontSize: '16px' }}>Recent Auto-Restock</h4>
+            {restockSpending.restockHistory.length > 0 ? (
+              <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                {restockSpending.restockHistory.slice(-3).map((entry, index) => (
+                  <div key={index} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '8px',
+                    padding: '8px',
+                    background: 'rgba(255,255,255,0.1)',
+                    borderRadius: '6px'
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold' }}>
+                        {entry.details?.itemCount || 1} items restocked
+                      </div>
+                      <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                        {new Date(entry.timestamp).toLocaleDateString()} by {entry.admin}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '16px' }}>
+                        +${(entry.restockValue || 0).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '20px', opacity: 0.8 }}>
+                No auto-restock history available
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Auto-restock Summary */}
+        <div style={{
+          marginTop: '20px',
+          padding: '15px',
+          background: 'rgba(255,255,255,0.1)',
+          borderRadius: '8px',
+          fontSize: '14px'
+        }}>
+          <strong>Auto-Restock Value Tracking:</strong> This system tracks all monetary values from automatic restocking operations. 
+          Each time auto-restock runs, the system calculates the total value of items added to inventory and records it here.
+          
+          <div style={{ marginTop: '10px', fontSize: '12px', opacity: 0.9 }}>
+            <strong>Formula:</strong> Restock Value = (Items Restocked × Unit Price) for each processed item
+          </div>
+          
+          {restockSpending.restockHistory.length > 0 && (
+            <div style={{ marginTop: '10px', fontSize: '12px', opacity: 0.9 }}>
+              <strong>Last auto-restock:</strong> {new Date(restockSpending.restockHistory[restockSpending.restockHistory.length - 1]?.timestamp).toLocaleString()} by {restockSpending.restockHistory[restockSpending.restockHistory.length - 1]?.admin}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   // Auto-restock configuration that uses YOUR provided quantity
@@ -377,6 +692,8 @@ const SurgicalItemsManagement = () => {
       const totalItems = items.length;
       const totalCurrentValue = items.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0)), 0);
       const totalCumulativePurchases = cumulativePurchases;
+      const totalRestockValue = restockSpending.totalRestockValue;
+      const totalUsedValue = Math.max(0, cumulativePurchases - totalCurrentValue);
       const lowStockCount = items.filter(item => (parseInt(item.quantity) || 0) <= (parseInt(item.minStockLevel) || 0)).length;
       const outOfStockCount = items.filter(item => (parseInt(item.quantity) || 0) === 0).length;
 
@@ -439,7 +756,7 @@ const SurgicalItemsManagement = () => {
         `Total Items: ${totalItems}`,
         `Current Value: $${totalCurrentValue.toLocaleString()}`,
         `Total Purchases: $${totalCumulativePurchases.toLocaleString()}`,
-        `Low Stock: ${lowStockCount}`
+        `Restock Value: $${totalRestockValue.toLocaleString()}`
       ];
       line1.forEach((txt, i) => {
         const x = 25 + i * 75;
@@ -600,7 +917,6 @@ const SurgicalItemsManagement = () => {
         doc.setLineWidth(0.5);
         doc.rect(boxX, boxY, boxW, boxH);
 
-
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         const lineY = boxY + 6;
@@ -624,7 +940,7 @@ const SurgicalItemsManagement = () => {
       doc.setTextColor(40, 167, 69);
       doc.setFont('helvetica', 'bold');
       doc.text(
-        `🛡 Total Purchases: $${totalCumulativePurchases.toLocaleString()} - Current Stock Value: $${totalCurrentValue.toLocaleString()}`,
+        `🛡 Total Purchases: $${totalCumulativePurchases.toLocaleString()} - Restock Value: $${totalRestockValue.toLocaleString()}`,
         pageWidth / 2, footerY - 5, { align: 'center' }
       );
 
@@ -819,6 +1135,9 @@ const SurgicalItemsManagement = () => {
       // Load cumulative purchases first
       loadCumulativePurchases();
       
+      // Load restock spending
+      loadRestockSpending();
+      
       const adminData = localStorage.getItem('admin');
       if (adminData) {
         try {
@@ -922,14 +1241,7 @@ const SurgicalItemsManagement = () => {
 
     const itemValue = (parseFloat(itemToDelete.price) || 0) * (parseInt(itemToDelete.quantity) || 0);
 
-    if (window.confirm(`Are you sure you want to delete "${itemToDelete.name}"? 
-
-⚠️ IMPORTANT: 
-- Item will be removed from inventory
-- Total purchases will remain tracked: $${cumulativePurchases.toLocaleString()}
-- Item value: $${itemValue.toFixed(2)}
-
-This action cannot be undone.`)) {
+    if (window.confirm(`Are you sure you want to delete "${itemToDelete.name}"? \n\n⚠️ IMPORTANT: \n- Item will be removed from inventory\n- Total purchases will remain tracked: $${cumulativePurchases.toLocaleString()}\n- Item value: $${itemValue.toFixed(2)}\n\nThis action cannot be undone.`)) {
       try {
         const response = await fetch(`${API_BASE_URL}/surgical-items/${itemId}`, {
           method: 'DELETE'
@@ -983,7 +1295,8 @@ This action cannot be undone.`)) {
         stats: stats,
         items: items,
         admin: admin,
-        cumulativePurchases: cumulativePurchases
+        cumulativePurchases: cumulativePurchases,
+        restockSpending: restockSpending
       }
     });
   };
@@ -1062,6 +1375,14 @@ This action cannot be undone.`)) {
             unitPrice: parseFloat(item.price) || 0
           });
           
+          // Add to restock spending tracking
+          saveRestockSpending(addedValue, 'restock', {
+            itemName: item.name,
+            quantity: quantity,
+            unitPrice: parseFloat(item.price) || 0,
+            timestamp: new Date().toISOString()
+          });
+          
           if (hasAutoRestockManualQuantity) {
             showNotification(`✅ Stock ${action} by ${quantity} units using your auto-restock setting! Added $${addedValue.toFixed(2)} to total purchases. New total: $${newCumulativePurchases.toLocaleString()}`, 'success');
           } else {
@@ -1083,18 +1404,28 @@ This action cannot be undone.`)) {
 
   // Reset Cumulative Purchases function (for admin use)
   const handleResetCumulativePurchases = () => {
-    if (window.confirm(`Are you sure you want to reset the total purchases?
-
-Current total purchases: $${cumulativePurchases.toLocaleString()}
-This will recalculate from current inventory value: $${inventoryStats.currentValue.toLocaleString()}
-
-This action cannot be undone.`)) {
+    if (window.confirm(`Are you sure you want to reset the total purchases?\n\nCurrent total purchases: $${cumulativePurchases.toLocaleString()}\nThis will recalculate from current inventory value: $${inventoryStats.currentValue.toLocaleString()}\n\nThis action cannot be undone.`)) {
       const newValue = inventoryStats.currentValue;
       saveCumulativePurchases(newValue, 'admin-reset', { 
         reason: 'Reset to current inventory value',
         previousValue: cumulativePurchases
       });
       showNotification(`✅ Total purchases reset to $${newValue.toLocaleString()}`, 'success');
+    }
+  };
+
+  // Reset Restock Spending function (for admin use)
+  const handleResetRestockSpending = () => {
+    if (window.confirm(`Are you sure you want to reset the restock spending?\n\nCurrent restock spending: $${restockSpending.totalRestockValue.toLocaleString()}\nThis will set all restock values to zero.\n\nThis action cannot be undone.`)) {
+      const data = {
+        totalRestockValue: 0,
+        monthlyRestockValue: 0,
+        restockHistory: []
+      };
+      
+      localStorage.setItem('healx_restock_spending', JSON.stringify(data));
+      setRestockSpending(data);
+      showNotification(`✅ Restock spending reset to $0`, 'success');
     }
   };
 
@@ -1575,6 +1906,162 @@ This action cannot be undone.`)) {
             )}
           </div>
 
+          {/* Enhanced notification section with restock value display */}
+          <div className="notification-section" style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            marginBottom: '20px',
+            boxShadow: '0 6px 20px rgba(0,0,0,0.15)'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '15px'
+            }}>
+              <div>
+                <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>HealX Auto-Restock Center</h3>
+                <p style={{ margin: 0, opacity: 0.9, fontSize: '14px' }}>
+                  Automated inventory management with value tracking
+                </p>
+                <small style={{ opacity: 0.8, fontSize: '12px' }}>
+                  Total items: {stats.totalItems} | Low stock: {stats.lowStockItems} | 
+                  Total restock value: <strong>${restockSpending.totalRestockValue.toLocaleString()}</strong>
+                </small>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={handleTestEmail}
+                  disabled={notifications.loading}
+                  style={{
+                    background: 'rgba(255,255,255,0.2)',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    color: 'white',
+                    padding: '10px 16px',
+                    borderRadius: '8px',
+                    cursor: notifications.loading ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    transition: 'all 0.3s ease',
+                    opacity: notifications.loading ? 0.7 : 1
+                  }}
+                >
+                  Test Email
+                </button>
+                
+                <button
+                  onClick={handleSendLowStockAlert}
+                  disabled={notifications.loading}
+                  style={{
+                    background: stats.lowStockItems > 0 ? '#ff4757' : 'rgba(255,255,255,0.2)',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    color: 'white',
+                    padding: '10px 16px',
+                    borderRadius: '8px',
+                    cursor: notifications.loading ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    transition: 'all 0.3s ease',
+                    opacity: notifications.loading ? 0.7 : 1,
+                    position: 'relative'
+                  }}
+                >
+                  Send Low Stock Alert
+                  {stats.lowStockItems > 0 && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '-8px',
+                      right: '-8px',
+                      background: '#ffc107',
+                      color: '#000',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 'bold',
+                      border: '2px solid white'
+                    }}>
+                      {stats.lowStockItems}
+                    </span>
+                  )}
+                </button>
+                
+                <button
+                  onClick={handleAutoRestockCheck}
+                  disabled={notifications.loading}
+                  style={{
+                    background: 'linear-gradient(135deg, #28a745, #20c997)',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    color: 'white',
+                    padding: '12px 20px',
+                    borderRadius: '8px',
+                    cursor: notifications.loading ? 'not-allowed' : 'pointer',
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    transition: 'all 0.3s ease',
+                    opacity: notifications.loading ? 0.7 : 1,
+                    position: 'relative',
+                    boxShadow: '0 4px 15px rgba(40, 167, 69, 0.3)'
+                  }}
+                >
+                  🚀 AUTO-RESTOCK CHECK
+                  <div style={{ fontSize: '12px', opacity: 0.9, marginTop: '2px' }}>
+                    With Value Tracking
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Enhanced notification display */}
+            {notifications.message && (
+              <div style={{
+                marginTop: '15px',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                background: notifications.type === 'success' 
+                  ? 'rgba(40, 167, 69, 0.2)' 
+                  : notifications.type === 'error' 
+                    ? 'rgba(220, 53, 69, 0.2)' 
+                    : 'rgba(255, 255, 255, 0.1)',
+                border: `2px solid ${
+                  notifications.type === 'success' 
+                    ? 'rgba(40, 167, 69, 0.4)' 
+                    : notifications.type === 'error' 
+                      ? 'rgba(220, 53, 69, 0.4)' 
+                      : 'rgba(255, 255, 255, 0.3)'
+                }`,
+                fontSize: '14px',
+                fontWeight: '500',
+                whiteSpace: 'pre-line' // This allows \n line breaks to display properly
+              }}>
+                {notifications.loading && (
+                  <span style={{ marginRight: '10px' }}>
+                    <div style={{
+                      display: 'inline-block',
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid rgba(255,255,255,0.3)',
+                      borderRadius: '50%',
+                      borderTopColor: 'white',
+                      animation: 'spin 1s ease-in-out infinite'
+                    }}></div>
+                  </span>
+                )}
+                {notifications.message}
+              </div>
+            )}
+          </div>
+
+          {/* 🔥 NEW: Use the RestockSpendingSection component */}
+          <RestockSpendingSection />
+
           {/* Supplier Spending Section */}
           <div className="supplier-spending-section" style={{
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -1770,7 +2257,7 @@ This action cannot be undone.`)) {
                   {cumulativePurchases > 0 ? '100%' : '0%'}
                 </div>
                 <div style={{ fontSize: '14px', opacity: 0.9 }}>Investment Tracking</div>
-                <small style={{ fontSize: '12px', opacity: 0.8 }}>Complete history</small>
+                <small style={{ fontSize: '12px', opacity: '0.8' }}>Always accurate</small>
               </div>
             </div>
 
@@ -1799,262 +2286,61 @@ This action cannot be undone.`)) {
             </div>
           </div>
 
-          <div className="notification-section" style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            padding: '20px',
-            borderRadius: '12px',
-            marginBottom: '20px',
-            boxShadow: '0 6px 20px rgba(0,0,0,0.15)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-              <div>
-                <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>📧 HealX Notification Center</h3>
-                <p style={{ margin: 0, opacity: 0.9, fontSize: '14px' }}>
-                  Monitor inventory and send alerts to: <strong>chamarasweed44@gmail.com</strong>
-                </p>
-                <small style={{ opacity: 0.8, fontSize: '12px' }}>
-                  Total items: {stats.totalItems} | Low stock: {stats.lowStockItems}
-                </small>
-              </div>
-              
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button
-                  onClick={handleTestEmail}
-                  disabled={notifications.loading}
-                  style={{
-                    background: 'rgba(255,255,255,0.2)',
-                    border: '2px solid rgba(255,255,255,0.3)',
-                    color: 'white',
-                    padding: '10px 16px',
-                    borderRadius: '8px',
-                    cursor: notifications.loading ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    transition: 'all 0.3s ease',
-                    opacity: notifications.loading ? 0.7 : 1
-                  }}
-                >
-                  📬 Test Email
-                </button>
-                
-                <button
-                  onClick={handleSendLowStockAlert}
-                  disabled={notifications.loading}
-                  style={{
-                    background: stats.lowStockItems > 0 ? '#ff4757' : 'rgba(255,255,255,0.2)',
-                    border: '2px solid rgba(255,255,255,0.3)',
-                    color: 'white',
-                    padding: '10px 16px',
-                    borderRadius: '8px',
-                    cursor: notifications.loading ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    transition: 'all 0.3s ease',
-                    opacity: notifications.loading ? 0.7 : 1,
-                    position: 'relative'
-                  }}
-                >
-                  🚨 Send Low Stock Alert
-                  {stats.lowStockItems > 0 && (
-                    <span style={{
-                      position: 'absolute',
-                      top: '-8px',
-                      right: '-8px',
-                      background: '#ffc107',
-                      color: '#000',
-                      borderRadius: '50%',
-                      width: '24px',
-                      height: '24px',
-                      fontSize: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 'bold',
-                      border: '2px solid white'
-                    }}>
-                      {stats.lowStockItems}
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  onClick={handleAutoRestockCheck}
-                  disabled={notifications.loading}
-                  style={{
-                    background: '#28a745',
-                    border: '2px solid rgba(255,255,255,0.3)',
-                    color: 'white',
-                    padding: '10px 16px',
-                    borderRadius: '8px',
-                    cursor: notifications.loading ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    transition: 'all 0.3s ease',
-                    opacity: notifications.loading ? 0.7 : 1
-                  }}
-                >
-                  🔄 Auto-Restock Check
-                </button>
-              </div>
+          {/* Stats Display */}
+          <div className="stats-grid">
+            <div className="stat-card">
+              <h3>Total Items</h3>
+              <span className="stat-number">{stats.totalItems || 0}</span>
             </div>
-
-            {notifications.message && (
-              <div style={{
-                marginTop: '15px',
-                padding: '12px 16px',
-                borderRadius: '8px',
-                background: notifications.type === 'success' ? 'rgba(40, 167, 69, 0.2)' :
-                           notifications.type === 'error' ? 'rgba(220, 53, 69, 0.2)' :
-                           'rgba(255, 255, 255, 0.1)',
-                border: `2px solid ${
-                  notifications.type === 'success' ? 'rgba(40, 167, 69, 0.4)' :
-                  notifications.type === 'error' ? 'rgba(220, 53, 69, 0.4)' :
-                  'rgba(255, 255, 255, 0.3)'
-                }`,
-                fontSize: '14px',
-                fontWeight: '500'
-              }}>
-                {notifications.loading && (
-                  <span style={{ marginRight: '10px' }}>
-                    <div style={{
-                      display: 'inline-block',
-                      width: '16px',
-                      height: '16px',
-                      border: '2px solid rgba(255,255,255,0.3)',
-                      borderRadius: '50%',
-                      borderTopColor: 'white',
-                      animation: 'spin 1s ease-in-out infinite'
-                    }}></div>
-                  </span>
-                )}
-                {notifications.message}
-              </div>
-            )}
+            <div className="stat-card">
+              <h3>Current Value</h3>
+              <span className="stat-number">${(stats.currentValue || 0).toLocaleString()}</span>
+            </div>
+            <div className="stat-card">
+              <h3>Low Stock Items</h3>
+              <span className="stat-number low-stock">{stats.lowStockItems || 0}</span>
+            </div>
+            <div className="stat-card">
+              <h3>Total Value</h3>
+              <span className="stat-number highlight">${(cumulativePurchases || 0).toLocaleString()}</span>
+            </div>
+            <button onClick={generateSurgicalItemsPDF} className="export-pdf-btn">
+              📄 Export PDF Report
+            </button>
           </div>
 
-          {/* Stats grid with cumulative purchase tracking */}
-          <div className="supplier-stats-grid">
-            <div className="supplier-stat-card">
-              <div className="supplier-stat-icon">📦</div>
-              <div className="supplier-stat-info">
-                <h3>{stats.totalItems || 0}</h3>
-                <p>Total Items</p>
-              </div>
-            </div>
-            <div className="supplier-stat-card">
-              <div className="supplier-stat-icon">📊</div>
-              <div className="supplier-stat-info">
-                <h3>{(stats.totalQuantity || 0).toLocaleString()}</h3>
-                <p>Total Quantity</p>
-              </div>
-            </div>
-            <div className="supplier-stat-card" style={{
-              background: stats.lowStockItems > 0 ? 'linear-gradient(135deg, #ff4757, #ff6b7a)' : undefined,
-              color: stats.lowStockItems > 0 ? 'white' : undefined,
-              animation: stats.lowStockItems > 0 ? 'pulse 2s infinite' : 'none'
-            }}>
-              <div className="supplier-stat-icon">⚠️</div>
-              <div className="supplier-stat-info">
-                <h3>{stats.lowStockItems || 0}</h3>
-                <p>Low Stock Items</p>
-                {stats.lowStockItems > 0 && (
-                  <small style={{ opacity: 0.9, fontWeight: '600' }}>Needs attention!</small>
-                )}
-              </div>
-            </div>
-            <div className="supplier-stat-card" style={{ 
-              background: 'linear-gradient(135deg, #28a745, #20c997)',
-              color: 'white',
-              cursor: 'pointer'
-            }} onClick={() => navigate('/admin/suppliers')}>
-              <div className="supplier-stat-icon">💰</div>
-              <div className="supplier-stat-info">
-                <h3>${supplierSpending.totalSpending.toLocaleString()}</h3>
-                <p>Total Supplier Spending</p>
-                <small style={{ fontSize: '12px', opacity: 0.9 }}>
-                  👆 Click to manage suppliers
-                </small>
-              </div>
-            </div>
-            {/* Show cumulative purchases */}
-            <div className="supplier-stat-card" style={{ 
-              cursor: 'pointer',
-              background: 'linear-gradient(135deg, #6f42c1, #8e44ad)',
-              color: 'white',
-              border: '3px solid rgba(255,255,255,0.3)',
-              position: 'relative',
-              overflow: 'hidden'
-            }} onClick={handleViewTotalValue}>
-              <div style={{
-                position: 'absolute',
-                top: '-2px',
-                right: '-2px',
-                background: 'linear-gradient(45deg, #28a745, #20c997)',
-                borderRadius: '50%',
-                width: '24px',
-                height: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px'
-              }}>
-                🛡️
-              </div>
-              <div className="supplier-stat-icon">💎</div>
-              <div className="supplier-stat-info">
-                <h3>${cumulativePurchases?.toLocaleString() || '0'}</h3>
-                <p>Total Purchases</p>
-                <small style={{ fontSize: '12px', opacity: 0.9 }}>
-                  ✅ All buying tracked
-                </small>
-              </div>
-            </div>
+          {/* Filters */}
+          <div className="filters-container">
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="filter-select"
+            >
+              <option value="all">All Categories</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="filter-select"
+            >
+              <option value="all">All Status</option>
+              <option value="Available">Available</option>
+              <option value="Low Stock">Low Stock</option>
+              <option value="Out of Stock">Out of Stock</option>
+            </select>
           </div>
 
-          <div className="filters-section">
-            <div className="search-box">
-              <input
-                type="text"
-                placeholder="🔍 Search items by name or description..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input"
-                maxLength="100"
-              />
-              <small style={{ color: '#666', fontSize: '12px', marginLeft: '10px' }}>
-                {filteredItems.length} of {items.length} items
-              </small>
-            </div>
-            <div className="filter-controls">
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="filter-select"
-              >
-                <option value="all">All Categories ({items.length})</option>
-                {categories.map(category => {
-                  const count = items.filter(item => item.category === category).length;
-                  return (
-                    <option key={category} value={category}>
-                      {category} ({count})
-                    </option>
-                  );
-                })}
-              </select>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="filter-select"
-              >
-                <option value="all">All Status</option>
-                <option value="Available">Available ({items.filter(item => getStatusText(item.quantity, item.minStockLevel) === 'Available').length})</option>
-                <option value="Low Stock">Low Stock ({items.filter(item => getStatusText(item.quantity, item.minStockLevel) === 'Low Stock').length})</option>
-                <option value="Out of Stock">Out of Stock ({items.filter(item => getStatusText(item.quantity, item.minStockLevel) === 'Out of Stock').length})</option>
-              </select>
-            </div>
-          </div>
-
+          {/* Items Table */}
           <div className="items-table-container">
             <table className="items-table">
               <thead>
@@ -2076,7 +2362,7 @@ This action cannot be undone.`)) {
                 {currentItems.map(item => {
                   const currentValue = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0);
                   
-                  return (
+                                    return (
                     <tr key={item._id} style={{
                       backgroundColor: getStatusText(item.quantity, item.minStockLevel) === 'Out of Stock' ? '#fff5f5' :
                                      getStatusText(item.quantity, item.minStockLevel) === 'Low Stock' ? '#fffbf0' : undefined
@@ -2086,37 +2372,67 @@ This action cannot be undone.`)) {
                           <strong>{item.name || 'Unknown Item'}</strong>
                           {item.description && (
                             <small style={{ display: 'block', color: '#666', marginTop: '2px' }}>
-                              {item.description.substring(0, 40)}{item.description.length > 40 ? '...' : ''}
+                              {item.description.substring(0, 40)}...
                             </small>
+                          )}
+                          {/* Auto-restock indicator */}
+                          {item.autoRestock?.enabled && (
+                            <div style={{
+                              display: 'inline-block',
+                              background: '#e8f5e8',
+                              color: '#28a745',
+                              padding: '2px 6px',
+                              borderRadius: '10px',
+                              fontSize: '9px',
+                              fontWeight: 'bold',
+                              marginTop: '4px',
+                              border: '1px solid #28a745'
+                            }}>
+                              🎯 AUTO-RESTOCK: {item.autoRestock.reorderQuantity || 0} units
+                            </div>
                           )}
                         </div>
                       </td>
-                      <td>{item.category || 'Other'}</td>
+                      <td>
+                        <span className="category-badge">{item.category || 'Other'}</span>
+                      </td>
                       <td>
                         <ItemStockChart item={item} />
                       </td>
                       <td>
-                        <span 
-                          style={{ 
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          justifyContent: 'center'
+                        }}>
+                          <span style={{
+                            fontSize: '16px',
                             fontWeight: 'bold',
-                            color: getStatusColor(item.quantity, item.minStockLevel)
-                          }}
-                        >
-                          {parseInt(item.quantity) || 0}
-                        </span>
+                            color: getStatusColor(item.quantity, item.minStockLevel),
+                            minWidth: '30px',
+                            textAlign: 'center'
+                          }}>
+                            {parseInt(item.quantity) || 0}
+                          </span>
+                        </div>
                       </td>
-                      <td>{parseInt(item.minStockLevel) || 0}</td>
-                      <td>${(parseFloat(item.price) || 0).toFixed(2)}</td>
-                      <td>
-                        <strong>${currentValue.toFixed(2)}</strong>
+                      <td style={{ textAlign: 'center', color: '#dc3545', fontWeight: 'bold' }}>
+                        {parseInt(item.minStockLevel) || 0}
                       </td>
-                      <td>
+                      <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                        ${(parseFloat(item.price) || 0).toFixed(2)}
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                        ${currentValue.toFixed(2)}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
                         <PriceTrendChart item={item} />
                       </td>
                       <td>
-                        <span 
+                        <span
                           className="status-badge"
-                          style={{ 
+                          style={{
                             backgroundColor: getStatusColor(item.quantity, item.minStockLevel),
                             color: 'white',
                             padding: '4px 8px',
@@ -2128,91 +2444,110 @@ This action cannot be undone.`)) {
                           {getStatusText(item.quantity, item.minStockLevel)}
                         </span>
                       </td>
-                      <td>{item.supplier?.name || 'N/A'}</td>
                       <td>
-                        <div className="action-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          <button
-                            onClick={() => handleEditItem(item)}
-                            className="action-btn edit-btn"
-                            title="Edit Item"
-                            style={{ padding: '3px 6px', fontSize: '10px' }}
-                          >
-                            ✏️ Edit
-                          </button>
-                          
-                          {/* Pass item data to CustomNumberInput */}
-                          <CustomNumberInput
-                            placeholder="+ Stock"
-                            title="Add Stock (Value added to total purchases)"
-                            onSubmit={(qty) => handleUpdateStock(item._id, qty, 'restock')}
-                            type="add"
-                            item={item}
-                          />
-
-                          <CustomNumberInput
-                            placeholder="- Stock"
-                            title="Use Stock (Total purchases maintained)"
-                            onSubmit={(qty) => handleUpdateStock(item._id, qty, 'usage')}
-                            type="remove"
-                            max={parseInt(item.quantity) || 0}
-                            item={item}
-                          />
-
-                          <button
-                            onClick={() => handleConfigureAutoRestock(item)}
-                            className="action-btn auto-restock-btn"
-                            title="Configure Auto-Restock"
-                            style={{ 
-                              padding: '3px 6px', 
-                              fontSize: '10px',
-                              background: item.autoRestock?.enabled ? '#28a745' : '#6c757d',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {item.autoRestock?.enabled ? '🔄 Auto ON' : '⚙️ Setup'}
-                          </button>
-
-                          {(parseInt(item.quantity) <= (parseInt(item.minStockLevel) || 0)) && (
-                            <button
-                              onClick={() => handleSendItemNotification(item)}
-                              className="action-btn notify-btn"
-                              title={`Send notification for ${item.name}`}
-                              disabled={notifications.loading}
-                              style={{ 
-                                padding: '3px 6px', 
-                                fontSize: '10px',
-                                background: parseInt(item.quantity) === 0 ? '#dc3545' : '#ffc107',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: notifications.loading ? 'not-allowed' : 'pointer',
-                                opacity: notifications.loading ? 0.7 : 1,
-                                fontWeight: '600'
-                              }}
-                            >
-                              📧 Alert
-                            </button>
+                        <div className="supplier-info">
+                          <strong>{item.supplier?.name || 'N/A'}</strong>
+                          {item.supplier?.email && (
+                            <small style={{ display: 'block', color: '#666' }}>
+                              {item.supplier.email}
+                            </small>
                           )}
-                          
-                          <button
-                            onClick={() => handleDeleteItem(item._id)}
-                            className="action-btn delete-btn"
-                            title="Delete Item (Total purchases maintained)"
-                            style={{ 
-                              padding: '3px 6px', 
-                              fontSize: '10px',
-                              background: '#dc3545',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            🗑️ Del
-                          </button>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="action-buttons">
+                          <div style={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            gap: '4px', 
+                            alignItems: 'center' 
+                          }}>
+                            {/* Stock Management */}
+                            <div style={{ display: 'flex', gap: '2px' }}>
+                              <CustomNumberInput
+                                onSubmit={(qty) => handleUpdateStock(item._id, qty, 'restock')}
+                                placeholder="+ Add"
+                                title="Add Stock"
+                                type="add"
+                                item={item}
+                              />
+                              <CustomNumberInput
+                                onSubmit={(qty) => handleUpdateStock(item._id, qty, 'usage')}
+                                placeholder="- Use"
+                                title="Remove Stock"
+                                max={parseInt(item.quantity) || 0}
+                                type="remove"
+                                item={item}
+                              />
+                            </div>
+                            
+                            {/* Action Buttons */}
+                            <div style={{ display: 'flex', gap: '2px' }}>
+                              <button
+                                onClick={() => handleEditItem(item)}
+                                title="Edit Item"
+                                style={{
+                                  fontSize: '10px',
+                                  padding: '3px 6px',
+                                  background: '#007bff',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '3px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                ✏️
+                              </button>
+                              
+                              <button
+                                onClick={() => handleConfigureAutoRestock(item)}
+                                title="Configure Auto-Restock"
+                                style={{
+                                  fontSize: '10px',
+                                  padding: '3px 6px',
+                                  background: item.autoRestock?.enabled ? '#28a745' : '#6c757d',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '3px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                🎯
+                              </button>
+                              
+                              <button
+                                onClick={() => handleSendItemNotification(item)}
+                                title="Send Alert"
+                                style={{
+                                  fontSize: '10px',
+                                  padding: '3px 6px',
+                                  background: getStatusText(item.quantity, item.minStockLevel) === 'Available' ? '#6c757d' : '#ffc107',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '3px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                📧
+                              </button>
+                              
+                              <button
+                                onClick={() => handleDeleteItem(item._id)}
+                                title="Delete Item"
+                                style={{
+                                  fontSize: '10px',
+                                  padding: '3px 6px',
+                                  background: '#dc3545',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '3px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -2220,154 +2555,89 @@ This action cannot be undone.`)) {
                 })}
               </tbody>
             </table>
-
-            {currentItems.length === 0 && (
-              <div className="no-items-message" style={{
-                textAlign: 'center',
-                padding: '40px 20px',
-                background: 'linear-gradient(135deg, #f8f9fa, #e9ecef)',
-                borderRadius: '12px',
-                margin: '20px 0'
-              }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📦</div>
-                <h3>No surgical items found</h3>
-                <p style={{ color: '#666', marginBottom: '20px' }}>
-                  {items.length === 0 
-                    ? "You haven't added any items yet." 
-                    : "No items match your current search criteria."}
-                </p>
-                {items.length === 0 ? (
-                  <button onClick={handleAddItem} className="add-first-item-btn" style={{
-                    background: 'linear-gradient(135deg, #007bff, #0056b3)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '12px 24px',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}>
-                    ➕ Add Your First Item
-                  </button>
-                ) : (
-                  <button onClick={() => { setSearchTerm(''); setFilterCategory('all'); setFilterStatus('all'); }} style={{
-                    background: 'linear-gradient(135deg, #6c757d, #495057)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '10px 20px',
-                    borderRadius: '6px',
-                    cursor: 'pointer'
-                  }}>
-                    Clear Filters
-                  </button>
-                )}
-              </div>
-            )}
           </div>
 
+          {/* Pagination */}
           {totalPages > 1 && (
-            <div className="pagination" style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '20px 0',
-              background: '#f8f9fa',
-              borderRadius: '8px',
-              margin: '20px 0'
-            }}>
-              <button
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="pagination-btn"
-                style={{ opacity: currentPage === 1 ? 0.5 : 1 }}
-              >
-                ⏮️ First
-              </button>
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="pagination-btn"
-                style={{ opacity: currentPage === 1 ? 0.5 : 1 }}
-              >
-                ← Previous
-              </button>
-              <span className="pagination-info" style={{
-                padding: '8px 16px',
-                background: '#007bff',
-                color: 'white',
-                borderRadius: '6px',
-                fontWeight: '600'
-              }}>
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="pagination-btn"
-                style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}
-              >
-                Next →
-              </button>
-              <button
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-                className="pagination-btn"
-                style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}
-              >
-                Last ⏭️
-              </button>
+            <div className="pagination-container">
+              <div className="pagination-info">
+                Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredItems.length)} of {filteredItems.length} items
+              </div>
+              <div className="pagination-buttons">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="pagination-btn"
+                >
+                  ← Previous
+                </button>
+                
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else {
+                    const start = Math.max(1, currentPage - 2);
+                    const end = Math.min(totalPages, start + 4);
+                    const adjustedStart = Math.max(1, end - 4);
+                    pageNum = adjustedStart + i;
+                  }
+                  
+                  if (pageNum <= totalPages) {
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`pagination-btn ${currentPage === pageNum ? 'active' : ''}`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  }
+                  return null;
+                }).filter(Boolean)}
+                
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="pagination-btn"
+                >
+                  Next →
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Enhanced PDF Button with new style */}
-          <div 
-            className="floating-report-btn-advanced"
-            onClick={generateSurgicalItemsPDF}
-            title="Generate Professional Inventory Report"
-          >
-            <div className="btn-background"></div>
-            <div className="btn-glow"></div>
-            <div className="btn-content">
-              <div className="pdf-icon-advanced">📄</div>
-              <div className="pdf-text-advanced">
-                Professional<br/>Report
-              </div>
-            </div>
-            
-            {stats.lowStockItems > 0 && (
-              <div className="pdf-notification-bubble-advanced">
-                <div className="bubble-pulse"></div>
-                <div className="bubble-content">{stats.lowStockItems}</div>
-              </div>
-            )}
-            
-            <div className="floating-particles">
-              <div className="particle particle-1"></div>
-              <div className="particle particle-2"></div>
-              <div className="particle particle-3"></div>
-              <div className="particle particle-4"></div>
-            </div>
-          </div>
-
-          {(showAddModal || showEditModal) && (
+          {/* Modals */}
+          {showAddModal && (
             <SurgicalItemModal
-              isOpen={showAddModal || showEditModal}
-              onClose={() => {
+              isOpen={showAddModal}
+              onClose={() => setShowAddModal(false)}
+              onSave={() => {
                 setShowAddModal(false);
+                loadItems();
+                // Add value to cumulative purchases if new item is added
+                const newItemValue = 0; // This would be calculated from the modal
+                // addToCumulativePurchases(newItemValue, 'new-item', { source: 'add-modal' });
+              }}
+              categories={categories}
+              suppliers={[]}
+              admin={admin}
+            />
+          )}
+
+          {showEditModal && selectedItem && (
+            <SurgicalItemModal
+              isOpen={showEditModal}
+              onClose={() => setShowEditModal(false)}
+              onSave={() => {
                 setShowEditModal(false);
-                setSelectedItem(null);
+                loadItems();
               }}
               item={selectedItem}
               categories={categories}
-              onSuccess={() => {
-                loadItems();
-                setShowAddModal(false);
-                setShowEditModal(false);
-                setSelectedItem(null);
-                showNotification('✅ Item saved successfully! Total purchase value tracked.', 'success');
-              }}
-              apiBaseUrl={API_BASE_URL}
+              suppliers={[]}
+              admin={admin}
             />
           )}
 
@@ -2376,64 +2646,64 @@ This action cannot be undone.`)) {
               isOpen={showDisposeModal}
               onClose={() => setShowDisposeModal(false)}
               items={items}
-              onSuccess={() => {
-                loadItems();
+              onDispose={() => {
                 setShowDisposeModal(false);
-                showNotification('✅ Items disposed successfully! Total purchases maintained.', 'success');
+                loadItems();
               }}
-              apiBaseUrl={API_BASE_URL}
+              admin={admin}
             />
           )}
 
-          {/* Enhanced Auto-Restock Modal - YOU Control the Quantity */}
+          {/* Auto-Restock Configuration Modal */}
           {showAutoRestockModal && selectedItemForAutoRestock && (
-            <div className="modal-overlay" onClick={() => setShowAutoRestockModal(false)}>
-              <div className="modal auto-restock-modal" onClick={e => e.stopPropagation()} style={{
-                maxWidth: '700px',
-                width: '90%',
-                maxHeight: '90vh',
-                overflowY: 'auto',
-                background: 'white',
-                borderRadius: '12px',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-              }}>
-                <div className="modal-header" style={{
-                  background: 'linear-gradient(135deg, #28a745, #20c997)',
-                  color: 'white',
-                  padding: '20px',
-                  borderRadius: '12px 12px 0 0',
+            <div className="modal-overlay">
+              <div className="modal-content" style={{ maxWidth: '600px', padding: '30px' }}>
+                <div style={{
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'center'
+                  alignItems: 'center',
+                  marginBottom: '25px',
+                  borderBottom: '2px solid #f0f0f0',
+                  paddingBottom: '15px'
                 }}>
-                  <h3 style={{ margin: 0, fontSize: '20px' }}>
-                    🔄 Configure Auto-Restock: {selectedItemForAutoRestock.name}
-                  </h3>
-                  <button 
-                    className="close-modal-btn"
+                  <h2 style={{ margin: 0, color: '#333', fontSize: '24px' }}>
+                    🎯 Configure Auto-Restock for {selectedItemForAutoRestock.name}
+                  </h2>
+                  <button
                     onClick={() => setShowAutoRestockModal(false)}
                     style={{
-                      background: 'rgba(255,255,255,0.2)',
+                      background: 'none',
                       border: 'none',
-                      color: 'white',
-                      borderRadius: '50%',
-                      width: '35px',
-                      height: '35px',
-                      fontSize: '18px',
-                      cursor: 'pointer'
+                      fontSize: '24px',
+                      cursor: 'pointer',
+                      color: '#666'
                     }}
                   >
                     ✕
                   </button>
                 </div>
-                
-                <div className="modal-body" style={{ padding: '30px' }}>
-                  <div className="form-group" style={{ marginBottom: '25px' }}>
+
+                <div style={{ marginBottom: '25px' }}>
+                  <div style={{
+                    background: '#f8f9fa',
+                    padding: '15px',
+                    borderRadius: '8px',
+                    marginBottom: '20px'
+                  }}>
+                    <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
+                      <strong>Current Status:</strong> Stock: {selectedItemForAutoRestock.quantity}, 
+                      Min Level: {selectedItemForAutoRestock.minStockLevel}, 
+                      Price: ${parseFloat(selectedItemForAutoRestock.price || 0).toFixed(2)}
+                    </p>
+                  </div>
+
+                  <div style={{ marginBottom: '20px' }}>
                     <label style={{ 
                       display: 'flex', 
-                      alignItems: 'center',
+                      alignItems: 'center', 
+                      gap: '10px',
                       fontSize: '16px',
-                      fontWeight: '600',
+                      fontWeight: 'bold',
                       cursor: 'pointer'
                     }}>
                       <input
@@ -2443,374 +2713,157 @@ This action cannot be undone.`)) {
                           ...prev,
                           enabled: e.target.checked
                         }))}
-                        style={{ marginRight: '12px', transform: 'scale(1.2)' }}
+                        style={{ transform: 'scale(1.2)' }}
                       />
-                      <span style={{ color: autoRestockConfig.enabled ? '#28a745' : '#6c757d' }}>
-                        Enable Auto-Restock for this item
-                      </span>
+                      🎯 Enable Auto-Restock
                     </label>
                   </div>
 
                   {autoRestockConfig.enabled && (
-                    <div style={{ 
-                      border: '2px solid #e9ecef', 
-                      borderRadius: '10px', 
-                      padding: '25px',
-                      background: '#f8f9fa'
-                    }}>
-                      {/* Restock Method Selection FIRST and PROMINENT */}
-                      <div className="form-group" style={{ marginBottom: '25px' }}>
-                        <label style={{ 
-                          display: 'block', 
-                          marginBottom: '8px',
-                          fontWeight: '700',
-                          color: '#495057',
-                          fontSize: '16px'
-                        }}>
-                          🎯 Restock Method (Choose Your Approach)
+                    <>
+                      <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                          📊 Maximum Stock Level
+                        </label>
+                        <input
+                          type="number"
+                          value={autoRestockConfig.maxStockLevel || ''}
+                          onChange={(e) => setAutoRestockConfig(prev => ({
+                            ...prev,
+                            maxStockLevel: parseInt(e.target.value) || 0
+                          }))}
+                          placeholder="Maximum stock to maintain"
+                          style={{
+                            width: '100%',
+                            padding: '10px',
+                            border: '2px solid #ddd',
+                            borderRadius: '6px',
+                            fontSize: '14px'
+                          }}
+                          min="1"
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                          🎯 YOUR Restock Quantity (YOU Control This!)
+                        </label>
+                        <input
+                          type="number"
+                          value={autoRestockConfig.reorderQuantity || ''}
+                          onChange={(e) => setAutoRestockConfig(prev => ({
+                            ...prev,
+                            reorderQuantity: parseInt(e.target.value) || 0
+                          }))}
+                          placeholder="How many units to add when restocking"
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '3px solid #28a745',
+                            borderRadius: '8px',
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            background: '#f8fff8'
+                          }}
+                          min="1"
+                        />
+                        <small style={{ color: '#28a745', fontSize: '12px', fontWeight: 'bold' }}>
+                          This is YOUR quantity - the system will use exactly this amount when auto-restocking
+                        </small>
+                      </div>
+
+                      <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                          ⚙️ Restock Method
                         </label>
                         <select
-                          value={autoRestockConfig.restockMethod}
+                          value={autoRestockConfig.restockMethod || 'fixed_quantity'}
                           onChange={(e) => setAutoRestockConfig(prev => ({
                             ...prev,
                             restockMethod: e.target.value
                           }))}
                           style={{
                             width: '100%',
-                            padding: '12px',
-                            border: '3px solid #007bff',
-                            borderRadius: '8px',
-                            fontSize: '16px',
-                            fontWeight: '600',
-                            background: '#f8f9ff'
+                            padding: '10px',
+                            border: '2px solid #ddd',
+                            borderRadius: '6px',
+                            fontSize: '14px'
                           }}
                         >
-                          <option value="fixed_quantity">🎯 Use My Manual Quantity (YOU Control the Amount)</option>
-                          <option value="to_max">📊 Restock to Maximum Level (Automatic Calculation)</option>
+                          <option value="fixed_quantity">🎯 Use My Fixed Quantity (Recommended)</option>
+                          <option value="to_max">📊 Calculate to Max Level</option>
                         </select>
-                        <small style={{ 
-                          color: autoRestockConfig.restockMethod === 'fixed_quantity' ? '#28a745' : '#6c757d',
-                          fontWeight: 'bold',
-                          fontSize: '14px',
-                          display: 'block',
-                          marginTop: '8px'
-                        }}>
-                          {autoRestockConfig.restockMethod === 'fixed_quantity' 
-                            ? '✅ System will use YOUR exact manual quantity setting' 
-                            : 'ℹ️ System will calculate quantity automatically to reach max level'
+                        <small style={{ color: '#666', fontSize: '12px' }}>
+                          {autoRestockConfig.restockMethod === 'fixed_quantity' ? 
+                            'Always use your specified quantity' : 
+                            'Calculate quantity to reach maximum level'
                           }
                         </small>
                       </div>
 
-                      <div className="form-row" style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: '1fr 1fr', 
-                        gap: '20px',
-                        marginBottom: '20px'
-                      }}>
-                        {/* Manual Quantity Input - YOU are in control */}
-                        <div className="form-group">
-                          <label style={{ 
-                            display: 'block', 
-                            marginBottom: '8px',
-                            fontWeight: autoRestockConfig.restockMethod === 'fixed_quantity' ? '700' : '600',
-                            color: autoRestockConfig.restockMethod === 'fixed_quantity' ? '#28a745' : '#495057',
-                            fontSize: autoRestockConfig.restockMethod === 'fixed_quantity' ? '16px' : '14px'
-                          }}>
-                            🎯 YOUR Manual Reorder Quantity
-                            {autoRestockConfig.restockMethod === 'fixed_quantity' && (
-                              <span style={{ color: '#28a745', marginLeft: '8px', fontSize: '14px' }}>← YOU DECIDE THIS</span>
-                            )}
-                          </label>
-                          <input
-                            type="number"
-                            value={autoRestockConfig.reorderQuantity}
-                            onChange={(e) => setAutoRestockConfig(prev => ({
-                              ...prev,
-                              reorderQuantity: parseInt(e.target.value) || 0
-                            }))}
-                            min="1"
-                            max="100000"
-                            placeholder="Enter YOUR desired reorder quantity"
-                            style={{
-                              width: '100%',
-                              padding: '12px',
-                              border: autoRestockConfig.restockMethod === 'fixed_quantity' 
-                                ? '3px solid #28a745' 
-                                : '1px solid #ced4da',
-                              borderRadius: '8px',
-                              fontSize: '16px',
-                              fontWeight: autoRestockConfig.restockMethod === 'fixed_quantity' ? 'bold' : 'normal',
-                              background: autoRestockConfig.restockMethod === 'fixed_quantity' 
-                                ? '#f0fff0' 
-                                : '#ffffff'
-                            }}
-                          />
-                          <small style={{ 
-                            color: autoRestockConfig.restockMethod === 'fixed_quantity' ? '#28a745' : '#6c757d',
-                            fontWeight: autoRestockConfig.restockMethod === 'fixed_quantity' ? 'bold' : 'normal',
-                            display: 'block',
-                            marginTop: '5px',
-                            fontSize: '13px'
-                          }}>
-                            {autoRestockConfig.restockMethod === 'fixed_quantity' 
-                              ? `✅ System will add exactly ${autoRestockConfig.reorderQuantity} units (YOUR choice)` 
-                              : 'Enter the exact quantity YOU want to reorder each time'
-                            }
-                          </small>
-                        </div>
-                        
-                        {/* Max Stock Level - Only relevant for "to_max" method */}
-                        <div className="form-group">
-                          <label style={{ 
-                            display: 'block', 
-                            marginBottom: '8px',
-                            fontWeight: autoRestockConfig.restockMethod === 'to_max' ? '700' : '600',
-                            color: autoRestockConfig.restockMethod === 'to_max' ? '#007bff' : '#495057',
-                            fontSize: autoRestockConfig.restockMethod === 'to_max' ? '16px' : '14px'
-                          }}>
-                            📊 Maximum Stock Level
-                            {autoRestockConfig.restockMethod === 'to_max' && (
-                              <span style={{ color: '#007bff', marginLeft: '8px', fontSize: '14px' }}>← ACTIVE METHOD</span>
-                            )}
-                          </label>
-                          <input
-                            type="number"
-                            value={autoRestockConfig.maxStockLevel}
-                            onChange={(e) => setAutoRestockConfig(prev => ({
-                              ...prev,
-                              maxStockLevel: parseInt(e.target.value) || 0
-                            }))}
-                            min="1"
-                            max="100000"
-                            placeholder="Target maximum stock level"
-                            style={{
-                              width: '100%',
-                              padding: '12px',
-                              border: autoRestockConfig.restockMethod === 'to_max' 
-                                ? '3px solid #007bff' 
-                                : '1px solid #ced4da',
-                              borderRadius: '8px',
-                              fontSize: '16px',
-                              fontWeight: autoRestockConfig.restockMethod === 'to_max' ? 'bold' : 'normal',
-                              background: autoRestockConfig.restockMethod === 'to_max' 
-                                ? '#f0f8ff' 
-                                : '#ffffff'
-                            }}
-                          />
-                          <small style={{ 
-                            color: autoRestockConfig.restockMethod === 'to_max' ? '#007bff' : '#6c757d',
-                            fontWeight: autoRestockConfig.restockMethod === 'to_max' ? 'bold' : 'normal',
-                            display: 'block',
-                            marginTop: '5px',
-                            fontSize: '13px'
-                          }}>
-                            {autoRestockConfig.restockMethod === 'to_max'
-                              ? `📊 Auto-restock will fill to reach ${autoRestockConfig.maxStockLevel} units total`
-                              : 'Only used when "Restock to Maximum Level" method is selected'
-                            }
-                          </small>
-                        </div>
-                      </div>
-
-                      {/* Current Status with Method Preview - Shows YOUR Quantity */}
-                      <div style={{
-                        background: autoRestockConfig.restockMethod === 'fixed_quantity' 
-                          ? 'linear-gradient(135deg, #e8f5e8, #f0fff0)' 
-                          : 'linear-gradient(135deg, #e7f3ff, #f0f8ff)',
-                        padding: '20px',
-                        borderRadius: '8px',
-                        margin: '20px 0',
-                        border: autoRestockConfig.restockMethod === 'fixed_quantity' 
-                          ? '2px solid #28a745' 
-                          : '2px solid #007bff'
-                      }}>
-                        <h4 style={{ 
-                          margin: '0 0 15px 0', 
-                          fontSize: '18px',
-                          color: autoRestockConfig.restockMethod === 'fixed_quantity' ? '#155724' : '#004085'
+                      {autoRestockConfig.reorderQuantity > 0 && (
+                        <div style={{
+                          background: '#e8f5e8',
+                          border: '2px solid #28a745',
+                          borderRadius: '8px',
+                          padding: '15px',
+                          marginBottom: '20px'
                         }}>
-                          📊 Auto-Restock Preview & Current Status
-                        </h4>
-                        
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                          <div>
-                            <p style={{ margin: '8px 0' }}><strong>Current Stock:</strong> <span style={{ color: '#28a745', fontSize: '18px' }}>{selectedItemForAutoRestock.quantity}</span></p>
-                            <p style={{ margin: '8px 0' }}><strong>Minimum Level:</strong> <span style={{ color: '#ffc107', fontSize: '18px' }}>{selectedItemForAutoRestock.minStockLevel}</span></p>
-                          </div>
-                          <div>
-                            <p style={{ margin: '8px 0' }}>
-                              <strong>Selected Method:</strong> 
-                              <span style={{ 
-                                color: autoRestockConfig.restockMethod === 'fixed_quantity' ? '#28a745' : '#007bff',
-                                fontWeight: 'bold',
-                                marginLeft: '8px',
-                                fontSize: '16px'
-                              }}>
-                                {autoRestockConfig.restockMethod === 'fixed_quantity' 
-                                  ? '🎯 YOUR Manual Quantity' 
-                                  : '📊 Auto Calculate'
-                                }
-                              </span>
-                            </p>
-                            <p style={{ margin: '8px 0' }}>
-                              <strong>Will Add When Restocking:</strong> 
-                              <span style={{ 
-                                color: '#dc3545',
-                                fontWeight: 'bold',
-                                fontSize: '18px',
-                                marginLeft: '8px',
-                                padding: '4px 8px',
-                                background: 'rgba(220, 53, 69, 0.1)',
-                                borderRadius: '4px'
-                              }}>
-                                {autoRestockConfig.restockMethod === 'fixed_quantity' 
-                                  ? `${autoRestockConfig.reorderQuantity} units (YOUR Choice)` 
-                                  : `${Math.max(0, autoRestockConfig.maxStockLevel - selectedItemForAutoRestock.quantity)} units (Calculated)`
-                                }
-                              </span>
-                            </p>
-                          </div>
+                          <h4 style={{ margin: '0 0 10px 0', color: '#28a745' }}>
+                            🎯 Your Auto-Restock Configuration:
+                          </h4>
+                          <p style={{ margin: '0 0 5px 0' }}>
+                            <strong>When stock ≤ {selectedItemForAutoRestock.minStockLevel}:</strong>
+                          </p>
+                          <p style={{ margin: '0 0 5px 0' }}>
+                            → Add exactly <strong>{autoRestockConfig.reorderQuantity} units</strong>
+                          </p>
+                          <p style={{ margin: 0 }}>
+                            → Cost: <strong>${((parseFloat(selectedItemForAutoRestock.price) || 0) * autoRestockConfig.reorderQuantity).toFixed(2)}</strong>
+                          </p>
                         </div>
-
-                        {/* Prominent info box showing YOUR manual quantity */}
-                        {autoRestockConfig.restockMethod === 'fixed_quantity' && (
-                          <div style={{
-                            marginTop: '15px',
-                            padding: '15px',
-                            background: '#28a745',
-                            color: 'white',
-                            borderRadius: '8px',
-                            fontSize: '16px',
-                            fontWeight: 'bold',
-                            textAlign: 'center'
-                          }}>
-                            🎯 <strong>YOUR Manual Quantity Active:</strong> 
-                            <br/>System will ALWAYS add exactly <strong>{autoRestockConfig.reorderQuantity} units</strong> (the quantity YOU specified), 
-                            <br/>regardless of current stock level.
-                            <br/>
-                            <div style={{
-                              marginTop: '10px',
-                              padding: '8px',
-                              background: 'rgba(255,255,255,0.2)',
-                              borderRadius: '4px',
-                              fontSize: '14px'
-                            }}>
-                              💡 Want different amount? Just change the number above ↑
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Info for auto-calculate method */}
-                        {autoRestockConfig.restockMethod === 'to_max' && (
-                          <div style={{
-                            marginTop: '15px',
-                            padding: '15px',
-                            background: '#007bff',
-                            color: 'white',
-                            borderRadius: '8px',
-                            fontSize: '16px',
-                            fontWeight: 'bold',
-                            textAlign: 'center'
-                          }}>
-                            📊 <strong>Auto-Calculate Mode Active:</strong> 
-                            <br/>System will calculate quantity to reach <strong>{autoRestockConfig.maxStockLevel} units</strong> total.
-                            <br/>Current quantity affects how much gets added.
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Supplier Information */}
-                      <div className="form-group" style={{ marginBottom: '20px' }}>
-                        <label style={{ 
-                          display: 'block', 
-                          marginBottom: '8px',
-                          fontWeight: '600',
-                          color: '#495057'
-                        }}>
-                          Supplier Information
-                        </label>
-                        <input
-                          type="text"
-                          value={autoRestockConfig.supplier.name}
-                          onChange={(e) => setAutoRestockConfig(prev => ({
-                            ...prev,
-                            supplier: { ...prev.supplier, name: e.target.value }
-                          }))}
-                          placeholder="Supplier name"
-                          style={{
-                            width: '100%',
-                            padding: '10px',
-                            border: '1px solid #ced4da',
-                            borderRadius: '6px',
-                            fontSize: '14px',
-                            marginBottom: '10px'
-                          }}
-                        />
-                        <input
-                          type="email"
-                          value={autoRestockConfig.supplier.contactEmail}
-                          onChange={(e) => setAutoRestockConfig(prev => ({
-                            ...prev,
-                            supplier: { ...prev.supplier, contactEmail: e.target.value }
-                          }))}
-                          placeholder="Supplier email"
-                          style={{
-                            width: '100%',
-                            padding: '10px',
-                            border: '1px solid #ced4da',
-                            borderRadius: '6px',
-                            fontSize: '14px'
-                          }}
-                        />
-                      </div>
-                    </div>
+                      )}
+                    </>
                   )}
                 </div>
-                
-                <div className="modal-actions" style={{
-                  padding: '20px 30px',
-                  borderTop: '1px solid #e9ecef',
-                  display: 'flex',
-                  gap: '15px',
-                  justifyContent: 'flex-end'
+
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '15px', 
+                  justifyContent: 'flex-end',
+                  borderTop: '1px solid #eee',
+                  paddingTop: '20px'
                 }}>
                   <button
                     onClick={() => setShowAutoRestockModal(false)}
-                    className="btn-cancel"
                     style={{
                       padding: '12px 24px',
-                      border: '1px solid #6c757d',
+                      border: '2px solid #6c757d',
                       background: 'white',
                       color: '#6c757d',
                       borderRadius: '6px',
                       cursor: 'pointer',
                       fontSize: '14px',
-                      fontWeight: '600'
+                      fontWeight: 'bold'
                     }}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={saveAutoRestockConfig}
-                    className="btn-save"
+                    disabled={autoRestockConfig.enabled && (!autoRestockConfig.reorderQuantity || autoRestockConfig.reorderQuantity <= 0)}
                     style={{
                       padding: '12px 24px',
-                      background: autoRestockConfig.restockMethod === 'fixed_quantity' 
-                        ? 'linear-gradient(135deg, #28a745, #20c997)' 
-                        : 'linear-gradient(135deg, #007bff, #0056b3)',
-                      color: 'white',
                       border: 'none',
+                      background: autoRestockConfig.enabled && autoRestockConfig.reorderQuantity > 0 ? '#28a745' : '#6c757d',
+                      color: 'white',
                       borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '16px',
-                      fontWeight: '700'
+                      cursor: autoRestockConfig.enabled && autoRestockConfig.reorderQuantity > 0 ? 'pointer' : 'not-allowed',
+                      fontSize: '14px',
+                      fontWeight: 'bold'
                     }}
                   >
-                    {autoRestockConfig.restockMethod === 'fixed_quantity' 
-                      ? `🎯 Save YOUR Manual Setting (${autoRestockConfig.reorderQuantity} units)` 
-                      : `📊 Save Auto Configuration (to ${autoRestockConfig.maxStockLevel} max)`
-                    }
+                    🎯 Save Configuration
                   </button>
                 </div>
               </div>
@@ -2823,3 +2876,8 @@ This action cannot be undone.`)) {
 };
 
 export default SurgicalItemsManagement;
+
+
+
+
+                      
