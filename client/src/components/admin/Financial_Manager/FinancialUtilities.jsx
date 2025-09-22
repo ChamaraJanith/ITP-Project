@@ -3,6 +3,173 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './FinancialUtilities.css';
 
+// Custom hook for form validation
+const useFormValidation = () => {
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  // Get current month date restrictions
+  const getCurrentMonthDateRange = useCallback(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
+    
+    return {
+      min: startDate.toISOString().split('T')[0],
+      max: endDate.toISOString().split('T')[0]
+    };
+  }, []);
+
+  // Validation rules
+  const validateField = useCallback((name, value, formData = {}) => {
+    let error = '';
+
+    switch (name) {
+      case 'amount':
+        if (!value || value === '') {
+          error = 'Amount is required';
+        } else if (isNaN(value) || parseFloat(value) <= 0) {
+          error = 'Amount must be a positive number';
+        } else if (parseFloat(value) > 999999999.99) {
+          error = 'Amount cannot exceed 999,999,999.99';
+        }
+        break;
+
+      case 'vendor_name':
+        if (!value || value.trim() === '') {
+          error = 'Vendor name is required';
+        } else if (!/^[a-zA-Z\s]+$/.test(value.trim())) {
+          error = 'Vendor name must contain only letters and spaces';
+        } else if (value.trim().length < 2) {
+          error = 'Vendor name must be at least 2 characters long';
+        } else if (value.trim().length > 50) {
+          error = 'Vendor name cannot exceed 50 characters';
+        }
+        break;
+
+      case 'invoice_number':
+        if (value && value.trim() !== '') {
+          const cleanValue = value.trim();
+          if (!/^[a-zA-Z0-9]{6}$/.test(cleanValue)) {
+            error = 'Invoice number must be exactly 6 characters (letters and numbers only)';
+          }
+        }
+        break;
+
+      case 'billing_period_start':
+        if (!value) {
+          error = 'Billing period start date is required';
+        } else {
+          const dateRange = getCurrentMonthDateRange();
+          if (value < dateRange.min || value > dateRange.max) {
+            error = 'Start date must be within the current month';
+          }
+        }
+        break;
+
+      case 'billing_period_end':
+        if (!value) {
+          error = 'Billing period end date is required';
+        } else {
+          const dateRange = getCurrentMonthDateRange();
+          if (value < dateRange.min || value > dateRange.max) {
+            error = 'End date must be within the current month';
+          } else if (formData.billing_period_start && value < formData.billing_period_start) {
+            error = 'End date must be after or equal to start date';
+          }
+        }
+        break;
+
+      case 'description':
+        if (!value || value.trim() === '') {
+          error = 'Description is required';
+        } else if (value.trim().length < 10) {
+          error = 'Description must be at least 10 characters long';
+        } else if (value.trim().length > 500) {
+          error = 'Description cannot exceed 500 characters';
+        }
+        break;
+
+      case 'category':
+        if (!value) {
+          error = 'Category is required';
+        }
+        break;
+
+      case 'payment_status':
+        if (!value) {
+          error = 'Payment status is required';
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    return error;
+  }, [getCurrentMonthDateRange]);
+
+  // Validate all fields
+  const validateForm = useCallback((formData) => {
+    const newErrors = {};
+    
+    Object.keys(formData).forEach(field => {
+      if (field !== 'utilityId') { // Skip readonly field
+        const error = validateField(field, formData[field], formData);
+        if (error) {
+          newErrors[field] = error;
+        }
+      }
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [validateField]);
+
+  // Validate single field
+  const validateSingleField = useCallback((name, value, formData = {}) => {
+    const error = validateField(name, value, formData);
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
+    return !error;
+  }, [validateField]);
+
+  // Mark field as touched
+  const touchField = useCallback((name) => {
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+  }, []);
+
+  // Clear all errors
+  const clearErrors = useCallback(() => {
+    setErrors({});
+    setTouched({});
+  }, []);
+
+  // Get error for field
+  const getFieldError = useCallback((name) => {
+    return touched[name] ? errors[name] : '';
+  }, [errors, touched]);
+
+  return {
+    errors,
+    touched,
+    validateForm,
+    validateSingleField,
+    touchField,
+    clearErrors,
+    getFieldError,
+    getCurrentMonthDateRange
+  };
+};
+
 // Custom hook for API operations
 const useFinancialUtilities = () => {
   const [utilities, setUtilities] = useState([]);
@@ -121,8 +288,8 @@ const useFinancialUtilities = () => {
   };
 };
 
-// Custom hook for form management
-const useUtilityForm = (initialData = {}) => {
+// Enhanced form management hook
+const useUtilityForm = (initialData = {}, validation) => {
   const [formData, setFormData] = useState({
     utilityId: '',
     category: 'Electricity',
@@ -138,8 +305,29 @@ const useUtilityForm = (initialData = {}) => {
 
   const handleFormChange = useCallback((e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  }, []);
+    
+    // Handle specific field formatting
+    let formattedValue = value;
+    
+    if (name === 'vendor_name') {
+      // Only allow letters and spaces, auto-capitalize words
+      formattedValue = value.replace(/[^a-zA-Z\s]/g, '')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    } else if (name === 'invoice_number') {
+      // Only allow alphanumeric, max 6 characters, uppercase
+      formattedValue = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6);
+    }
+    
+    setFormData(prev => ({ ...prev, [name]: formattedValue }));
+    
+    // Validate field on change if validation is provided
+    if (validation && validation.touchField && validation.validateSingleField) {
+      validation.touchField(name);
+      validation.validateSingleField(name, formattedValue, { ...formData, [name]: formattedValue });
+    }
+  }, [formData, validation]);
 
   const resetForm = useCallback(() => {
     setFormData({
@@ -153,7 +341,10 @@ const useUtilityForm = (initialData = {}) => {
       vendor_name: '',
       invoice_number: ''
     });
-  }, []);
+    if (validation && validation.clearErrors) {
+      validation.clearErrors();
+    }
+  }, [validation]);
 
   const setFormValue = useCallback((name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -224,6 +415,18 @@ const ErrorAlert = ({ message, onDismiss }) => (
   </div>
 );
 
+// New Validation Error Component
+const ValidationError = ({ error }) => {
+  if (!error) return null;
+  
+  return (
+    <div className="fu-form__error" role="alert">
+      <i className="fas fa-exclamation-circle fu-form__error-icon" aria-hidden="true"></i>
+      <span className="fu-form__error-text">{error}</span>
+    </div>
+  );
+};
+
 const UtilityTableRow = ({ 
   utility, 
   onEdit, 
@@ -276,6 +479,7 @@ const UtilityTableRow = ({
           onClick={() => onEdit(utility)}
           aria-label={`Edit utility ${utility.utilityId}`}
         >
+          Edit 
           <i className="fas fa-edit" aria-hidden="true"></i>
         </button>
         <button 
@@ -283,6 +487,7 @@ const UtilityTableRow = ({
           onClick={() => onDelete(utility.utilityId)}
           aria-label={`Delete utility ${utility.utilityId}`}
         >
+          Delete
           <i className="fas fa-trash" aria-hidden="true"></i>
         </button>
       </div>
@@ -346,6 +551,7 @@ const Pagination = ({ currentPage, totalPages, totalRecords, onPageChange }) => 
   );
 };
 
+// Enhanced Utility Modal with Validation
 const UtilityModal = ({ 
   isOpen, 
   onClose, 
@@ -354,8 +560,11 @@ const UtilityModal = ({
   formData, 
   onFormChange, 
   onSubmit, 
-  loading 
+  loading,
+  validation
 }) => {
+  const dateRange = validation ? validation.getCurrentMonthDateRange() : { min: '', max: '' };
+  
   if (!isOpen) return null;
 
   return (
@@ -375,7 +584,7 @@ const UtilityModal = ({
           </button>
         </header>
         
-        <form className="fu-form" onSubmit={onSubmit}>
+        <form className="fu-form" onSubmit={onSubmit} noValidate>
           <div className="fu-modal__body">
             <div className="fu-form__grid">
               <div className="fu-form__field">
@@ -399,69 +608,97 @@ const UtilityModal = ({
                   name="category"
                   value={formData.category}
                   onChange={onFormChange}
-                  className="fu-form__select"
+                  className={`fu-form__select ${validation && validation.getFieldError('category') ? 'fu-form__input--error' : ''}`}
                   required
                 >
                   {UTILITY_CATEGORIES.map(category => (
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
+                {validation && <ValidationError error={validation.getFieldError('category')} />}
               </div>
 
               <div className="fu-form__field fu-form__field--full-width">
-                <label className="fu-form__label" htmlFor="fu-description">Description:</label>
+                <label className="fu-form__label" htmlFor="fu-description">
+                  Description: <span className="fu-form__required">*</span>
+                </label>
                 <textarea 
                   id="fu-description"
                   name="description"
                   value={formData.description}
                   onChange={onFormChange}
-                  className="fu-form__textarea"
+                  className={`fu-form__textarea ${validation && validation.getFieldError('description') ? 'fu-form__input--error' : ''}`}
                   required
                   rows="3"
-                  placeholder="Enter utility description..."
+                  placeholder="Enter detailed utility description (minimum 10 characters)..."
+                  maxLength="500"
                 />
+                <div className="fu-form__helper-text">
+                  {formData.description.length}/500 characters
+                </div>
+                {validation && <ValidationError error={validation.getFieldError('description')} />}
               </div>
 
               <div className="fu-form__field">
-                <label className="fu-form__label" htmlFor="fu-amount">Amount (LKR):</label>
+                <label className="fu-form__label" htmlFor="fu-amount">
+                  Amount (LKR): <span className="fu-form__required">*</span>
+                </label>
                 <input 
                   id="fu-amount"
                   type="number" 
                   name="amount"
                   value={formData.amount}
                   onChange={onFormChange}
-                  className="fu-form__input"
+                  className={`fu-form__input ${validation && validation.getFieldError('amount') ? 'fu-form__input--error' : ''}`}
                   required
-                  min="0"
+                  min="0.01"
+                  max="999999999.99"
                   step="0.01"
                   placeholder="0.00"
                 />
+                {validation && <ValidationError error={validation.getFieldError('amount')} />}
               </div>
 
               <div className="fu-form__field">
-                <label className="fu-form__label" htmlFor="fu-start-date">Billing Period Start:</label>
+                <label className="fu-form__label" htmlFor="fu-start-date">
+                  Billing Period Start: <span className="fu-form__required">*</span>
+                </label>
                 <input 
                   id="fu-start-date"
                   type="date" 
                   name="billing_period_start"
                   value={formData.billing_period_start}
                   onChange={onFormChange}
-                  className="fu-form__input"
+                  className={`fu-form__input ${validation && validation.getFieldError('billing_period_start') ? 'fu-form__input--error' : ''}`}
                   required
+                  min={dateRange.min}
+                  max={dateRange.max}
                 />
+                <div className="fu-form__helper-text">
+                  Current month only: {dateRange.min} to {dateRange.max}
+                </div>
+                {validation && <ValidationError error={validation.getFieldError('billing_period_start')} />}
               </div>
 
               <div className="fu-form__field">
-                <label className="fu-form__label" htmlFor="fu-end-date">Billing Period End:</label>
+                <label className="fu-form__label" htmlFor="fu-end-date">
+                  Billing Period End: <span className="fu-form__required">*</span>
+                </label>
                 <input 
                   id="fu-end-date"
                   type="date" 
                   name="billing_period_end"
                   value={formData.billing_period_end}
                   onChange={onFormChange}
-                  className="fu-form__input"
+                  className={`fu-form__input ${validation && validation.getFieldError('billing_period_end') ? 'fu-form__input--error' : ''}`}
                   required
+                  min={dateRange.min}
+                  max={dateRange.max}
                 />
+                <div className="fu-form__helper-text">
+                  Current month only: {dateRange.min} to {dateRange.max}
+                </div>
+                {validation && <ValidationError error={validation.getFieldError('billing_period_end')} />}
               </div>
 
               <div className="fu-form__field">
@@ -471,40 +708,59 @@ const UtilityModal = ({
                   name="payment_status"
                   value={formData.payment_status}
                   onChange={onFormChange}
-                  className="fu-form__select"
+                  className={`fu-form__select ${validation && validation.getFieldError('payment_status') ? 'fu-form__input--error' : ''}`}
                   required
                 >
                   {PAYMENT_STATUSES.map(status => (
                     <option key={status} value={status}>{status}</option>
                   ))}
                 </select>
+                {validation && <ValidationError error={validation.getFieldError('payment_status')} />}
               </div>
 
               <div className="fu-form__field">
-                <label className="fu-form__label" htmlFor="fu-vendor">Vendor Name:</label>
+                <label className="fu-form__label" htmlFor="fu-vendor">
+                  Vendor Name: <span className="fu-form__required">*</span>
+                </label>
                 <input 
                   id="fu-vendor"
                   type="text" 
                   name="vendor_name"
                   value={formData.vendor_name}
                   onChange={onFormChange}
-                  className="fu-form__input"
+                  className={`fu-form__input ${validation && validation.getFieldError('vendor_name') ? 'fu-form__input--error' : ''}`}
                   required
-                  placeholder="Enter vendor name..."
+                  placeholder="Enter vendor name (letters only)..."
+                  maxLength="50"
+                  pattern="[A-Za-z\s]+"
+                  title="Only letters and spaces are allowed"
                 />
+                <div className="fu-form__helper-text">
+                  Letters and spaces only, 2-50 characters
+                </div>
+                {validation && <ValidationError error={validation.getFieldError('vendor_name')} />}
               </div>
 
               <div className="fu-form__field">
-                <label className="fu-form__label" htmlFor="fu-invoice">Invoice Number:</label>
+                <label className="fu-form__label" htmlFor="fu-invoice">
+                  Invoice Number: <span className="fu-form__optional">(Optional)</span>
+                </label>
                 <input 
                   id="fu-invoice"
                   type="text" 
                   name="invoice_number"
                   value={formData.invoice_number}
                   onChange={onFormChange}
-                  className="fu-form__input"
-                  placeholder="Enter invoice number (optional)..."
+                  className={`fu-form__input ${validation && validation.getFieldError('invoice_number') ? 'fu-form__input--error' : ''}`}
+                  placeholder="ABC123 (exactly 6 characters)"
+                  maxLength="6"
+                  pattern="[A-Za-z0-9]{6}"
+                  title="Exactly 6 characters (letters and numbers only)"
                 />
+                <div className="fu-form__helper-text">
+                  Exactly 6 characters: letters and numbers only ({formData.invoice_number.length}/6)
+                </div>
+                {validation && <ValidationError error={validation.getFieldError('invoice_number')} />}
               </div>
             </div>
           </div>
@@ -545,6 +801,9 @@ const UtilityModal = ({
 const FinancialUtilities = () => {
   // Navigation hook
   const navigate = useNavigate();
+  
+  // Form validation hook
+  const validation = useFormValidation();
 
   // Custom hooks
   const {
@@ -566,7 +825,7 @@ const FinancialUtilities = () => {
     handleFormChange,
     resetForm,
     setFormData
-  } = useUtilityForm();
+  } = useUtilityForm({}, validation);
 
   // State management
   const [filteredUtilities, setFilteredUtilities] = useState([]);
@@ -657,6 +916,7 @@ const FinancialUtilities = () => {
 
   const openCreateModal = useCallback(async () => {
     resetForm();
+    validation.clearErrors();
     try {
       const id = await generateUniqueId();
       setFormData(prev => ({ ...prev, utilityId: id }));
@@ -664,9 +924,10 @@ const FinancialUtilities = () => {
       console.error('Failed to generate ID:', err);
     }
     setShowCreateModal(true);
-  }, [resetForm, generateUniqueId, setFormData]);
+  }, [resetForm, generateUniqueId, setFormData, validation]);
 
   const openEditModal = useCallback((utility) => {
+    validation.clearErrors();
     setSelectedUtility(utility);
     setFormData({
       utilityId: utility.utilityId,
@@ -680,10 +941,19 @@ const FinancialUtilities = () => {
       invoice_number: utility.invoice_number || ''
     });
     setShowEditModal(true);
-  }, [setFormData]);
+  }, [setFormData, validation]);
 
   const handleCreateUtility = useCallback(async (e) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    const isValid = validation.validateForm(formData);
+    
+    if (!isValid) {
+      alert('Please fix all validation errors before submitting.');
+      return;
+    }
+    
     try {
       await createUtility(formData);
       setShowCreateModal(false);
@@ -694,10 +964,19 @@ const FinancialUtilities = () => {
     } catch (err) {
       alert('Failed to create utility record: ' + err.message);
     }
-  }, [formData, createUtility, resetForm, handleFetchUtilities, currentPage, filters, fetchStats]);
+  }, [formData, createUtility, resetForm, handleFetchUtilities, currentPage, filters, fetchStats, validation]);
 
   const handleUpdateUtility = useCallback(async (e) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    const isValid = validation.validateForm(formData);
+    
+    if (!isValid) {
+      alert('Please fix all validation errors before submitting.');
+      return;
+    }
+    
     try {
       const updateData = { ...formData };
       delete updateData.utilityId;
@@ -711,7 +990,7 @@ const FinancialUtilities = () => {
     } catch (err) {
       alert('Failed to update utility record: ' + err.message);
     }
-  }, [formData, selectedUtility, updateUtility, resetForm, handleFetchUtilities, currentPage, filters, fetchStats]);
+  }, [formData, selectedUtility, updateUtility, resetForm, handleFetchUtilities, currentPage, filters, fetchStats, validation]);
 
   const handleDeleteUtility = useCallback(async (utilityId) => {
     if (!window.confirm('Are you sure you want to delete this utility record?')) {
@@ -982,6 +1261,7 @@ const FinancialUtilities = () => {
         onFormChange={handleFormChange}
         onSubmit={handleCreateUtility}
         loading={loading}
+        validation={validation}
       />
 
       {/* Edit Modal */}
@@ -994,6 +1274,7 @@ const FinancialUtilities = () => {
         onFormChange={handleFormChange}
         onSubmit={handleUpdateUtility}
         loading={loading}
+        validation={validation}
       />
     </div>
   );
