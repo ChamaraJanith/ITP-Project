@@ -56,6 +56,7 @@ const SurgicalItemsManagement = () => {
     'Monitoring Equipment',
     'Anesthesia Equipment',
     'Sterilization Equipment',
+    'Oxigen Delivery Equipment',
     'Other'
   ];
 
