@@ -589,7 +589,7 @@ const SupplierManagement = () => {
       line1.forEach((txt, i) => {
         const x = 25 + i * 75;
         doc.setFont('helvetica', 'bold');
-        doc.text(txt, x, y + 1);
+        doc.text(txt, x-2, y + 1);
       });
 
       y += 14;
@@ -705,11 +705,8 @@ const SupplierManagement = () => {
 
         doc.setDrawColor(0, 0, 0);
         doc.setLineWidth(0.5);
-        doc.rect(boxX, boxY, boxW, boxH);
+        doc.rect(boxX, boxY+3, boxW, boxH);
 
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text('VERIFICATION', boxX + 4, boxY + 6);
 
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
@@ -783,6 +780,9 @@ const SupplierManagement = () => {
               resetForms();
             }}
           >
+            <button onClick={() => navigate('/admin/dashboard')} className="back-btn">
+                  ← Back to Dashboard
+                </button>
             + Add Supplier
           </button>
           <button
