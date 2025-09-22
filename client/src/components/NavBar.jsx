@@ -48,7 +48,7 @@ function AdvancedSearchBar({ isMobile = false }) {
     if (query.includes("doctor") || query.includes("specialist"))
       navigate("/doctors");
     else if (query.includes("appointment") || query.includes("booking"))
-      navigate("/appointments");
+      navigate("/book-appointment");
     else if (SPECIALTY_TO_ID[query])
       navigate(`/specialty/${SPECIALTY_TO_ID[query]}`);
     else if (query)

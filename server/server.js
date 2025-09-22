@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import mongoose from "mongoose";
 import { fileURLToPath } from 'url';
 import express from "express";
 import cors from "cors";
@@ -32,6 +33,9 @@ import financemailrouter from './routes/emails.js';
 import utilitiesrouter from './routes/FinancialUtilitiesRoutes.js';
 
 
+import appointmentRoutes from "./routes/appointment.js";
+
+app.use("/api/appointments", appointmentRoutes);
 
 
 // ✅ NEW: Import procurement routes
@@ -100,6 +104,14 @@ app.get('/health', (req, res) => {
       inventory: '/api/inventory',
       patients: '/api/patients'
     }
+  });
+});
+
+app.use((req, res, next) => {
+  console.log(`❌ 404 - Route not found: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.method} ${req.originalUrl} not found`,
   });
 });
 
