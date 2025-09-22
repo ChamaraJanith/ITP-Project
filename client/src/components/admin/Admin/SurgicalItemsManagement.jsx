@@ -40,7 +40,7 @@ const SurgicalItemsManagement = () => {
   const [stats, setStats] = useState({});
   const [showDisposeModal, setShowDisposeModal] = useState(false);
   
-  // ✅ FIXED: Separate preserved value tracking
+  // Separate preserved value tracking
   const [globalPreservedValue, setGlobalPreservedValue] = useState(0);
   const [preservedValueHistory, setPreservedValueHistory] = useState([]);
   
@@ -91,7 +91,7 @@ const SurgicalItemsManagement = () => {
     }, duration);
   };
 
-  // ✅ FIXED: Load preserved value from localStorage
+  // Load preserved value from localStorage
   const loadPreservedValue = () => {
     try {
       const stored = localStorage.getItem('healx_preserved_inventory_value');
@@ -108,7 +108,7 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // ✅ FIXED: Save preserved value to localStorage
+  // Save preserved value to localStorage
   const savePreservedValue = (value, action = 'update') => {
     try {
       const data = {
@@ -132,7 +132,7 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // ✅ FIXED: Initialize preserved value only if higher than current
+  // Initialize preserved value only if higher than current
   const initializePreservedValue = (currentValue) => {
     const storedValue = loadPreservedValue();
     if (currentValue > storedValue) {
@@ -195,12 +195,12 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // ✅ FIXED: Auto-restock state management with user-controlled quantities
+  // Auto-restock state management with user-controlled quantities
   const [autoRestockConfig, setAutoRestockConfig] = useState({});
   const [showAutoRestockModal, setShowAutoRestockModal] = useState(false);
   const [selectedItemForAutoRestock, setSelectedItemForAutoRestock] = useState(null);
 
-  // ✅ FIXED: Auto-restock check that respects user's manual quantities
+  // Auto-restock check that respects user's manual quantities
   const handleAutoRestockCheck = async () => {
     try {
       setNotifications({ loading: true, message: 'Checking items for auto-restock using your manual quantities...', type: 'info' });
@@ -210,7 +210,7 @@ const SurgicalItemsManagement = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        // ✅ FIXED: Send flag to respect user's manual quantities
+        // Send flag to respect user's manual quantities
         body: JSON.stringify({ 
           respectManualQuantities: true,
           preserveValue: true 
@@ -235,20 +235,20 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // ✅ FIXED: Auto-restock configuration that uses YOUR provided quantity
+  // Auto-restock configuration that uses YOUR provided quantity
   const handleConfigureAutoRestock = (item) => {
     setSelectedItemForAutoRestock(item);
     
-    // ✅ FIXED: Use existing configuration or smart defaults - YOU control the quantity
+    // Use existing configuration or smart defaults - YOU control the quantity
     const existingConfig = item.autoRestock || {};
     
     setAutoRestockConfig({
       enabled: existingConfig.enabled || false,
-      // ✅ FIXED: If user has set maxStockLevel, use it, otherwise calculate default
+      // If user has set maxStockLevel, use it, otherwise calculate default
       maxStockLevel: existingConfig.maxStockLevel || (item.minStockLevel * 3),
-      // ✅ FIXED: Use existing reorderQuantity if available, otherwise start with minStockLevel * 2 as suggestion
+      // Use existing reorderQuantity if available, otherwise start with minStockLevel * 2 as suggestion
       reorderQuantity: existingConfig.reorderQuantity || (item.minStockLevel * 2),
-      // ✅ FIXED: Default to using the user's manual reorderQuantity
+      // Default to using the user's manual reorderQuantity
       restockMethod: existingConfig.restockMethod || 'fixed_quantity',
       supplier: existingConfig.supplier || {
         name: item.supplier?.name || '',
@@ -289,7 +289,7 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // ✅ FIXED: Calculate stats with true preserved value
+  // Calculate stats with true preserved value
   const calculateInventoryStats = (itemsArray) => {
     if (!Array.isArray(itemsArray)) {
       return { 
@@ -368,107 +368,107 @@ const SurgicalItemsManagement = () => {
     return months[monthNumber - 1];
   };
 
-  // PDF generation
-  const generatePDFReport = () => {
-    try {
-      if (!items || items.length === 0) {
-        showNotification('❌ No items available to generate report', 'error');
-        return;
-      }
+// Replace the existing exportToPDF function with this new implementation
+const generateSurgicalItemsPDF = () => {
+  try {
+    if (items.length === 0) {
+      setError('No surgical items data to export');
+      return;
+    }
 
-      showNotification('📄 Generating preserved value report...', 'info');
+    // Calculate current totals
+    const totalItems = items.length;
+    const totalCurrentValue = items.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0)), 0);
+    const totalPreservedValue = globalPreservedValue;
+    const lowStockCount = items.filter(item => (parseInt(item.quantity) || 0) <= (parseInt(item.minStockLevel) || 0)).length;
+    const outOfStockCount = items.filter(item => (parseInt(item.quantity) || 0) === 0).length;
 
-      const doc = new jsPDF('landscape', 'mm', 'a4');
-      const pageWidth = doc.internal.pageSize.getWidth();
-      let currentY = 15;
-      
-      // Header
-      doc.setFontSize(18);
+    // Create PDF document
+    const doc = new jsPDF('landscape', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let y = 15;
+
+    // Header
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('HealX Healthcare Center', pageWidth / 2, y, { align: 'center' });
+
+    y += 6;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Surgical Items Inventory Report', pageWidth / 2, y, { align: 'center' });
+
+    y += 5;
+    doc.setFontSize(10);
+    doc.text('Inventory Management System', pageWidth / 2, y, { align: 'center' });
+
+    y += 6;
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.8);
+    doc.line(15, y, pageWidth - 15, y);
+
+    y += 8;
+    doc.setFontSize(9);
+    const now = new Date();
+    const dateString = now.toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const timeString = now.toLocaleTimeString('en-US', {
+      hour: '2-digit', minute: '2-digit', hour12: true
+    }) + ' IST';
+    const reportId = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+    doc.setFont('helvetica', 'normal');
+    doc.text(
+      `Report Date: ${dateString} | Time: ${timeString} | Items: ${totalItems} | Report ID: ${reportId}`,
+      pageWidth / 2, y, { align: 'center' }
+    );
+
+    y += 10;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('SUMMARY', 20, y);
+
+    const bandY = y + 2;
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.5);
+    doc.rect(20, bandY, pageWidth - 40, 16);
+
+    y += 7;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    const line1 = [
+      `Total Items: ${totalItems}`,
+      `Current Value: $${totalCurrentValue.toLocaleString()}`,
+      `Protected Value: $${totalPreservedValue.toLocaleString()}`,
+      `Low Stock: ${lowStockCount}`
+    ];
+    line1.forEach((txt, i) => {
+      const x = 25 + i * 75;
       doc.setFont('helvetica', 'bold');
-      doc.text('HealX Healthcare Center', pageWidth / 2, currentY, { align: 'center' });
-      
-      currentY += 6;
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Preserved Inventory Value Report', pageWidth / 2, currentY, { align: 'center' });
-      
-      currentY += 5;
-      doc.setFontSize(10);
-      doc.text('Asset Protection & Financial Integrity', pageWidth / 2, currentY, { align: 'center' });
-      
-      currentY += 8;
-      doc.setDrawColor(0, 0, 0);
-      doc.setLineWidth(0.8);
-      doc.line(15, currentY, pageWidth - 15, currentY);
-      
-      currentY += 10;
-      
-      // ✅ ENHANCED: Preserved Value Summary
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('PRESERVED VALUE PROTECTION SUMMARY', 20, currentY);
-      
-      const summaryBoxY = currentY + 2;
-      doc.setDrawColor(0, 0, 0);
-      doc.setLineWidth(0.5);
-      doc.rect(20, summaryBoxY, pageWidth - 40, 30);
-      
-      currentY += 8;
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      
-      // Value protection breakdown
-      const valueData = [
-        `Current Value: $${inventoryStats.currentValue?.toLocaleString() || '0'}`,
-        `Preserved Value: $${globalPreservedValue?.toLocaleString() || '0'}`,
-        `Deleted Value: $${inventoryStats.deletedValue?.toLocaleString() || '0'}`,
-        `Protection Rate: ${globalPreservedValue > 0 ? '100%' : '0%'}`
-      ];
+      doc.text(txt, x, y + 1);
+    });
 
-      valueData.forEach((text, index) => {
-        const x = 25 + (index * 65);
-        doc.setFont('helvetica', 'bold');
-        doc.text(text, x, currentY + 5);
-      });
-      
-      currentY += 15;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.text(`✅ Value Protection: ENABLED | Items Added/Deleted: Preserved value maintained | Last Updated: ${new Date().toLocaleString()}`, 25, currentY + 5);
-      
-      currentY += 35;
+    y += 14;
+    
+    // Category distribution
+    const categoryMap = new Map();
+    items.forEach(item => {
+      const category = item.category || 'Other';
+      categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
+    });
+    
+    const categoryRows = Array.from(categoryMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([name, count]) => [name.substring(0, 24), String(count)]);
 
-      // Table with preserved value info
-      const tableData = items.map((item, index) => {
-        const quantity = parseInt(item.quantity) || 0;
-        const price = parseFloat(item.price) || 0;
-        const currentValue = price * quantity;
-        
-        return [
-          String(index + 1).padStart(3, '0'),
-          (item.name || 'Unknown Item').substring(0, 30),
-          item.category ? item.category.substring(0, 15) : 'Other',
-          `$${price.toFixed(2)}`,
-          quantity.toString(),
-          `$${currentValue.toFixed(2)}`,
-          '✅ Protected',
-          getStatusText(item.quantity, item.minStockLevel)
-        ];
-      });
-
-      const tableConfig = {
-        startY: currentY,
-        head: [[
-          'S/N',
-          'Item Name',
-          'Category',
-          'Unit Price',
-          'Quantity',
-          'Current Value',
-          'Value Status',
-          'Stock Status'
-        ]],
-        body: tableData,
+    if (categoryRows.length > 0) {
+      autoTable(doc, {
+        startY: y,
+        head: [['Category', 'Items']],
+        body: categoryRows,
         theme: 'plain',
         headStyles: {
           fillColor: [240, 240, 240],
@@ -476,67 +476,173 @@ const SurgicalItemsManagement = () => {
           fontStyle: 'bold',
           fontSize: 8,
           halign: 'center',
-          valign: 'middle'
+          valign: 'middle',
+          lineColor: [0, 0, 0],
+          lineWidth: 0.4,
+          cellPadding: { top: 1, right: 1, bottom: 1, left: 1 },
         },
         bodyStyles: {
           fontSize: 7,
           halign: 'center',
-          valign: 'middle'
+          valign: 'middle',
+          lineColor: [0, 0, 0],
+          lineWidth: 0.2,
+          cellPadding: { top: 1, right: 1, bottom: 1, left: 1 }
         },
         columnStyles: {
-          0: { cellWidth: 15, halign: 'center' },
-          1: { cellWidth: 50, halign: 'left' },
-          2: { cellWidth: 25, halign: 'center' },
-          3: { cellWidth: 20, halign: 'right' },
-          4: { cellWidth: 20, halign: 'center' },
-          5: { cellWidth: 25, halign: 'right' },
-          6: { cellWidth: 25, halign: 'center', fillColor: [230, 255, 230] },
-          7: { cellWidth: 25, halign: 'center' }
+          0: { cellWidth: 70, halign: 'left' },
+          1: { cellWidth: 24, halign: 'right' }
         },
-        didParseCell: (data) => {
-          const colIndex = data.column.index;
-          const rowIndex = data.row.index;
-          
-          if (colIndex === 6) { // Value Status column
-            data.cell.styles.fillColor = [230, 255, 230]; // Light green
-            data.cell.styles.textColor = [0, 100, 0]; // Dark green
-            data.cell.styles.fontStyle = 'bold';
-          }
-          
-          if (rowIndex % 2 === 0) {
-            if (colIndex !== 6) data.cell.styles.fillColor = [248, 248, 248];
-          }
-        },
-        margin: { top: 10, left: 15, right: 15, bottom: 20 }
-      };
-
-      autoTable(doc, tableConfig);
-
-      // Add preserved value guarantee text
-      const finalY = doc.lastAutoTable?.finalY || 150;
-      const guaranteeY = finalY + 15;
-      
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 100, 0);
-      doc.text('🛡️ VALUE PROTECTION GUARANTEE', 20, guaranteeY);
-      
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Total Preserved Value: $${globalPreservedValue?.toLocaleString() || '0'} - This value will NEVER decrease, ensuring accurate financial records.`, 20, guaranteeY + 8);
-
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
-      const fileName = `HealX_Preserved_Value_Report_${timestamp}.pdf`;
-      
-      doc.save(fileName);
-      showNotification(`✅ Preserved value report "${fileName}" generated successfully!`, 'success', 6000);
-
-    } catch (error) {
-      console.error('PDF generation error:', error);
-      showNotification(`❌ Failed to generate PDF report: ${error.message}`, 'error', 8000);
+        margin: { left: 20 },
+        tableWidth: 94
+      });
+      y = (doc.lastAutoTable?.finalY || y) + 8;
     }
-  };
+
+    // Prepare data for the main table
+    const tableData = items.map((item, index) => {
+      const quantity = parseInt(item.quantity) || 0;
+      const minStock = parseInt(item.minStockLevel) || 0;
+      const price = parseFloat(item.price) || 0;
+      const currentValue = price * quantity;
+      
+      let statusText = 'Available';
+      if (quantity === 0) statusText = 'Out of Stock';
+      else if (quantity <= minStock) statusText = 'Low Stock';
+      
+      return [
+        String(index + 1).padStart(3, '0'),
+        item.name || 'Unknown Item',
+        item.category || 'Other',
+        String(quantity),
+        String(minStock),
+        `$${price.toFixed(2)}`,
+        `$${currentValue.toFixed(2)}`,
+        statusText,
+        item.supplier?.name || 'N/A'
+      ];
+    });
+
+    // Create the main table
+    autoTable(doc, {
+      startY: y,
+      head: [[
+        'S/N',
+        'Item Name',
+        'Category',
+        'Quantity',
+        'Min Stock',
+        'Unit Price',
+        'Current Value',
+        'Status',
+        'Supplier'
+      ]],
+      body: tableData,
+      theme: 'plain',
+      headStyles: {
+        fillColor: [240, 240, 240],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        fontSize: 8,
+        halign: 'center',
+        valign: 'middle',
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
+        cellPadding: { top: 2, right: 1, bottom: 2, left: 1 }
+      },
+      bodyStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontSize: 7,
+        halign: 'center',
+        valign: 'middle',
+        lineColor: [0, 0, 0],
+        lineWidth: 0.3,
+        cellPadding: { top: 2, right: 1, bottom: 2, left: 1 }
+      },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center', fontStyle: 'bold' },
+        1: { cellWidth: 48, halign: 'left' },
+        2: { cellWidth: 28, halign: 'center' },
+        3: { cellWidth: 16, halign: 'center' },
+        4: { cellWidth: 16, halign: 'center' },
+        5: { cellWidth: 20, halign: 'right' },
+        6: { cellWidth: 22, halign: 'right' },
+        7: { cellWidth: 22, halign: 'center' },
+        8: { cellWidth: 30, halign: 'left' },
+      },
+      didParseCell: (data) => {
+        const rowIndex = data.row.index;
+        data.cell.styles.fillColor = rowIndex % 2 === 0 ? [248, 248, 248] : [255, 255, 255];
+        data.cell.styles.textColor = [0, 0, 0];
+        data.cell.styles.lineColor = [0, 0, 0];
+      },
+      margin: { top: 10, left: 15, right: 15, bottom: 20 },
+      styles: {
+        overflow: 'linebreak',
+        fontSize: 7,
+        cellPadding: { top: 2, right: 1, bottom: 2, left: 1 },
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.3
+      },
+      showHead: 'firstPage',
+      showFoot: 'never'
+    });
+
+    const finalY = doc.lastAutoTable?.finalY || (y + 10);
+    const spaceLeft = pageHeight - finalY;
+    if (spaceLeft > 28) {
+      const boxY = finalY + 6;
+      const boxX = 15;
+      const boxW = pageWidth - 30;
+      const boxH = 18;
+
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.5);
+      doc.rect(boxX, boxY, boxW, boxH);
+
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      const lineY = boxY + 6;
+      doc.text('Prepared by: ______________________', boxX + 4, lineY);
+      doc.text('Reviewed by: ______________________', boxX + 120, lineY);
+      doc.text('Date: ____________', boxX + 4, lineY + 7);
+      doc.text('Date: ____________', boxX + 120, lineY + 7);
+    }
+
+    const footerY = pageHeight - 10;
+    doc.setFontSize(7);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont('helvetica', 'normal');
+    doc.text(
+      `HealX Healthcare Center - Confidential | Page 1 of 1 | Generated: ${now.toLocaleDateString()}`,
+      pageWidth / 2, footerY, { align: 'center' }
+    );
+
+    // Add value protection note
+    doc.setFontSize(8);
+    doc.setTextColor(40, 167, 69);
+    doc.setFont('helvetica', 'bold');
+    doc.text(
+      `🛡 Protected Value: $${totalPreservedValue.toLocaleString()} - Value Protection System Active`,
+      pageWidth / 2, footerY - 5, { align: 'center' }
+    );
+
+    const timestamp = now.toISOString().replace(/[:.]/g, '-').split('T')[0];
+    const filename = `HealX_SurgicalItems_Inventory_${timestamp}.pdf`;
+    doc.save(filename);
+    
+    showNotification('✅ Surgical items inventory report generated successfully!', 'success');
+  } catch (err) {
+    console.error('Surgical Items PDF generation error:', err);
+    showNotification(`❌ Failed to generate PDF: ${err.message}`, 'error');
+  }
+};
+
+
 
   const handleTestEmail = async () => {
     try {
@@ -680,7 +786,7 @@ const SurgicalItemsManagement = () => {
     }
   };
 
-  // ✅ FIXED: Updated calculateStats to use preserved value
+  // Updated calculateStats to use preserved value
   const calculateStats = (itemsArray) => {
     const inventoryData = calculateInventoryStats(itemsArray);
     return {
@@ -706,7 +812,7 @@ const SurgicalItemsManagement = () => {
       const calculatedStats = calculateStats(items);
       setStats(calculatedStats);
       
-      // ✅ FIXED: Only update preserved value if current value is higher
+      // Only update preserved value if current value is higher
       const currentValue = calculatedStats.currentValue || 0;
       if (currentValue > globalPreservedValue) {
         savePreservedValue(currentValue, 'auto-increase');
@@ -721,7 +827,7 @@ const SurgicalItemsManagement = () => {
     try {
       setLoading(true);
       
-      // ✅ FIXED: Load preserved value first
+      // Load preserved value first
       loadPreservedValue();
       
       const adminData = localStorage.getItem('admin');
@@ -776,7 +882,7 @@ const SurgicalItemsManagement = () => {
         
         setItems(enhancedItems);
         
-        // ✅ FIXED: Initialize preserved value only if current value is higher
+        // Initialize preserved value only if current value is higher
         const currentValue = enhancedItems.reduce((sum, item) => {
           const price = parseFloat(item.price) || 0;
           const quantity = parseInt(item.quantity) || 0;
@@ -819,7 +925,7 @@ const SurgicalItemsManagement = () => {
     setShowEditModal(true);
   };
 
-  // ✅ FIXED: Delete item without affecting preserved value
+  // Delete item without affecting preserved value
   const handleDeleteItem = async (itemId) => {
     if (!itemId) {
       showNotification('❌ Invalid item selected for deletion', 'error');
@@ -853,7 +959,7 @@ This action cannot be undone.`)) {
         
         const data = await response.json();
         if (data.success) {
-          // ✅ FIXED: Preserved value is NOT changed when deleting
+          // Preserved value is NOT changed when deleting
           showNotification(`✅ Item "${itemToDelete.name}" deleted successfully! Preserved value protected: $${globalPreservedValue.toLocaleString()}`, 'success');
           loadItems();
           
@@ -900,7 +1006,7 @@ This action cannot be undone.`)) {
     });
   };
 
-  // ✅ FIXED: Enhanced stock update with auto-restock awareness
+  // Enhanced stock update with auto-restock awareness
   const handleUpdateStock = async (itemId, quantityChange, type) => {
     try {
       if (!itemId) {
@@ -931,7 +1037,7 @@ This action cannot be undone.`)) {
         return;
       }
 
-      // ✅ FIXED: Check if this matches the user's auto-restock manual quantity
+      // Check if this matches the user's auto-restock manual quantity
       const hasAutoRestockManualQuantity = item.autoRestock && 
                                            item.autoRestock.enabled && 
                                            item.autoRestock.restockMethod === 'fixed_quantity' &&
@@ -946,7 +1052,7 @@ This action cannot be undone.`)) {
         preserveValue: true,
         originalQuantity: item.originalQuantity || item.quantity || 0,
         preservedQuantity: item.preservedQuantity || item.originalQuantity || item.quantity || 0,
-        usingAutoRestockQuantity: hasAutoRestockManualQuantity // ✅ FIXED: Flag for backend
+        usingAutoRestockQuantity: hasAutoRestockManualQuantity // Flag for backend
       };
 
       const response = await fetch(`${API_BASE_URL}/surgical-items/${itemId}/update-stock`, {
@@ -964,7 +1070,7 @@ This action cannot be undone.`)) {
       if (data.success) {
         const action = type === 'usage' ? 'reduced' : 'increased';
         
-        // ✅ FIXED: Enhanced success message
+        // Enhanced success message
         if (type === 'restock') {
           const addedValue = (parseFloat(item.price) || 0) * quantity;
           const newPreservedValue = globalPreservedValue + addedValue;
@@ -989,7 +1095,7 @@ This action cannot be undone.`)) {
     }
   };
 
-  // ✅ NEW: Reset Preserved Value function (for admin use)
+  // Reset Preserved Value function (for admin use)
   const handleResetPreservedValue = () => {
     if (window.confirm(`Are you sure you want to reset the preserved value?
 
@@ -1003,14 +1109,14 @@ This action cannot be undone.`)) {
     }
   };
 
-  // ✅ FIXED: Enhanced CustomNumberInput that respects user's auto-restock settings
+  // Enhanced CustomNumberInput that respects user's auto-restock settings
   const CustomNumberInput = ({ value, onSubmit, placeholder, title, max = 999999, type = 'add', item }) => {
     const [inputValue, setInputValue] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [error, setError] = useState('');
     const [useManualQuantity, setUseManualQuantity] = useState(false);
 
-    // ✅ FIXED: Get user's auto-restock manual quantity if available
+    // Get user's auto-restock manual quantity if available
     const getManualQuantity = () => {
       if (item && item.autoRestock && item.autoRestock.enabled && item.autoRestock.restockMethod === 'fixed_quantity') {
         return item.autoRestock.reorderQuantity || 0;
@@ -1025,7 +1131,7 @@ This action cannot be undone.`)) {
       let quantityToUse;
       
       if (useManualQuantity && hasManualQuantitySetting) {
-        // ✅ FIXED: Use the user's auto-restock manual quantity
+        // Use the user's auto-restock manual quantity
         quantityToUse = manualQuantity;
       } else {
         // Use the manually entered quantity
@@ -1089,7 +1195,7 @@ This action cannot be undone.`)) {
     if (isEditing) {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-          {/* ✅ FIXED: Show user's auto-restock option if available */}
+          {/* Show user's auto-restock option if available */}
           {hasManualQuantitySetting && type === 'add' && (
             <div style={{
               background: '#e8f5e8',
@@ -1235,7 +1341,7 @@ This action cannot be undone.`)) {
           {placeholder}
         </button>
         
-        {/* ✅ FIXED: Show indicator if user's auto-restock manual quantity is available */}
+        {/* Show indicator if user's auto-restock manual quantity is available */}
         {hasManualQuantitySetting && type === 'add' && (
           <div style={{
             position: 'absolute',
@@ -1455,7 +1561,7 @@ This action cannot be undone.`)) {
                 <button onClick={() => navigate('/admin/dashboard')} className="back-btn">
                   ← Back to Dashboard
                 </button>
-                <button onClick={() => navigate('/admin/suppliers')} className="supplier-btn">
+                <button onClick={() => navigate('/admin/Procurement')} className="supplier-btn">
                   👥 View Suppliers
                 </button>
                 <button onClick={handleAddItem} className="add-item-btn">
@@ -1570,7 +1676,7 @@ This action cannot be undone.`)) {
             </div>
           </div>
 
-          {/* ✅ FIXED: True Inventory Value Protection Section */}
+          {/* True Inventory Value Protection Section */}
           <div className="inventory-value-section" style={{
             background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
             color: 'white',
@@ -1832,7 +1938,7 @@ This action cannot be undone.`)) {
             )}
           </div>
 
-          {/* ✅ FIXED: Stats grid with true preserved value */}
+          {/* Stats grid with true preserved value */}
           <div className="supplier-stats-grid">
             <div className="supplier-stat-card">
               <div className="supplier-stat-icon">📦</div>
@@ -1876,7 +1982,7 @@ This action cannot be undone.`)) {
                 </small>
               </div>
             </div>
-            {/* ✅ FIXED: Show true preserved inventory value */}
+            {/* Show true preserved inventory value */}
             <div className="supplier-stat-card" style={{ 
               cursor: 'pointer',
               background: 'linear-gradient(135deg, #6f42c1, #8e44ad)',
@@ -2039,7 +2145,7 @@ This action cannot be undone.`)) {
                             ✏️ Edit
                           </button>
                           
-                          {/* ✅ FIXED: Pass item data to CustomNumberInput */}
+                          {/* Pass item data to CustomNumberInput */}
                           <CustomNumberInput
                             placeholder="+ Stock"
                             title="Add Stock (Value increases preserved value)"
@@ -2219,18 +2325,18 @@ This action cannot be undone.`)) {
             </div>
           )}
 
-          {/* Enhanced PDF Button */}
+          {/* Enhanced PDF Button with new style */}
           <div 
             className="floating-report-btn-advanced"
-            onClick={generatePDFReport}
-            title="Generate Protected Value Report - Value Never Decreases"
+            onClick={generateSurgicalItemsPDF}
+            title="Generate Professional Inventory Report"
           >
             <div className="btn-background"></div>
             <div className="btn-glow"></div>
             <div className="btn-content">
-              <div className="pdf-icon-advanced">🛡️</div>
+              <div className="pdf-icon-advanced">📄</div>
               <div className="pdf-text-advanced">
-                Protected<br/>Report
+                Professional<br/>Report
               </div>
             </div>
             
@@ -2284,7 +2390,7 @@ This action cannot be undone.`)) {
             />
           )}
 
-          {/* ✅ FIXED: Enhanced Auto-Restock Modal - YOU Control the Quantity */}
+          {/* Enhanced Auto-Restock Modal - YOU Control the Quantity */}
           {showAutoRestockModal && selectedItemForAutoRestock && (
             <div className="modal-overlay" onClick={() => setShowAutoRestockModal(false)}>
               <div className="modal auto-restock-modal" onClick={e => e.stopPropagation()} style={{
@@ -2357,7 +2463,7 @@ This action cannot be undone.`)) {
                       padding: '25px',
                       background: '#f8f9fa'
                     }}>
-                      {/* ✅ FIXED: Restock Method Selection FIRST and PROMINENT */}
+                      {/* Restock Method Selection FIRST and PROMINENT */}
                       <div className="form-group" style={{ marginBottom: '25px' }}>
                         <label style={{ 
                           display: 'block', 
@@ -2407,7 +2513,7 @@ This action cannot be undone.`)) {
                         gap: '20px',
                         marginBottom: '20px'
                       }}>
-                        {/* ✅ FIXED: Manual Quantity Input - YOU are in control */}
+                        {/* Manual Quantity Input - YOU are in control */}
                         <div className="form-group">
                           <label style={{ 
                             display: 'block', 
@@ -2459,7 +2565,7 @@ This action cannot be undone.`)) {
                           </small>
                         </div>
                         
-                        {/* ✅ FIXED: Max Stock Level - Only relevant for "to_max" method */}
+                        {/* Max Stock Level - Only relevant for "to_max" method */}
                         <div className="form-group">
                           <label style={{ 
                             display: 'block', 
@@ -2512,7 +2618,7 @@ This action cannot be undone.`)) {
                         </div>
                       </div>
 
-                      {/* ✅ FIXED: Current Status with Method Preview - Shows YOUR Quantity */}
+                      {/* Current Status with Method Preview - Shows YOUR Quantity */}
                       <div style={{
                         background: autoRestockConfig.restockMethod === 'fixed_quantity' 
                           ? 'linear-gradient(135deg, #e8f5e8, #f0fff0)' 
@@ -2572,7 +2678,7 @@ This action cannot be undone.`)) {
                           </div>
                         </div>
 
-                        {/* ✅ FIXED: Prominent info box showing YOUR manual quantity */}
+                        {/* Prominent info box showing YOUR manual quantity */}
                         {autoRestockConfig.restockMethod === 'fixed_quantity' && (
                           <div style={{
                             marginTop: '15px',
@@ -2600,7 +2706,7 @@ This action cannot be undone.`)) {
                           </div>
                         )}
 
-                        {/* ✅ FIXED: Info for auto-calculate method */}
+                        {/* Info for auto-calculate method */}
                         {autoRestockConfig.restockMethod === 'to_max' && (
                           <div style={{
                             marginTop: '15px',
