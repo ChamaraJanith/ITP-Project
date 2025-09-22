@@ -44,14 +44,17 @@
 }
 
 /* Modal Header */
-.profile-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #eaeaea;
-  background-color: #f8f9fa;
-  border-radius: 12px 12px 0 0;
+/* Add this to your SurgicalItemModal.css */
+.modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  padding: 25px 30px !important;
+  border-radius: 16px 16px 0 0 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  border-bottom: none !important;
+  margin-top: 120px !important; /* ADD THIS LINE */
 }
 
 .profile-modal-header h2 {

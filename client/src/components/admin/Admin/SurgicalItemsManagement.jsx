@@ -2642,17 +2642,20 @@ const SurgicalItemsManagement = () => {
           )}
 
           {showDisposeModal && (
-            <DisposeModal
-              isOpen={showDisposeModal}
-              onClose={() => setShowDisposeModal(false)}
-              items={items}
-              onDispose={() => {
-                setShowDisposeModal(false);
-                loadItems();
-              }}
-              admin={admin}
-            />
-          )}
+  <DisposeModal
+    isOpen={showDisposeModal}
+    onClose={() => setShowDisposeModal(false)}
+    items={items}
+    onSuccess={() => {
+      setShowDisposeModal(false);
+      loadItems(); // Refresh items
+    }}
+    admin={admin}
+    apiBaseUrl={API_BASE_URL}
+    showNotification={showNotification} // Pass notification function
+  />
+)}
+
 
           {/* Auto-Restock Configuration Modal */}
           {showAutoRestockModal && selectedItemForAutoRestock && (
