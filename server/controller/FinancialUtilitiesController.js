@@ -218,7 +218,7 @@ export const getUtilityById = async (req, res) => {
   }
 };
 
-// Update a utility expense record
+// Update a utility expense record - FIXED VERSION
 export const updateUtility = async (req, res) => {
   try {
     let { id } = req.params;
@@ -230,6 +230,15 @@ export const updateUtility = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Invalid ID format. ID must be exactly 6 characters long and contain only uppercase letters and numbers'
+      });
+    }
+
+    // Get existing utility record first for validation
+    const existingUtility = await FinancialUtilities.findByUtilityId(id);
+    if (!existingUtility) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utility record not found'
       });
     }
 
@@ -246,6 +255,27 @@ export const updateUtility = async (req, res) => {
       updateData.billing_period_end = new Date(updateData.billing_period_end);
     }
 
+    // **CROSS-FIELD VALIDATION: Check billing period dates**
+    const startDate = updateData.billing_period_start || existingUtility.billing_period_start;
+    const endDate = updateData.billing_period_end || existingUtility.billing_period_end;
+
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Billing period end date must be after start date',
+        error: 'INVALID_DATE_RANGE'
+      });
+    }
+
+    // **FUTURE DATE VALIDATION: Check if start date is in the future**
+    if (updateData.billing_period_start && new Date(updateData.billing_period_start) > new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Billing period start date cannot be in the future',
+        error: 'FUTURE_START_DATE'
+      });
+    }
+
     // Convert amount to number if provided
     if (updateData.amount !== undefined) {
       updateData.amount = parseFloat(updateData.amount);
@@ -257,7 +287,45 @@ export const updateUtility = async (req, res) => {
       }
     }
 
-    const updatedUtility = await FinancialUtilities.updateByUtilityId(id, updateData);
+    // **VALIDATE REQUIRED FIELDS**
+    if (updateData.description !== undefined && (!updateData.description || updateData.description.trim().length < 5)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Description must be at least 5 characters long'
+      });
+    }
+
+    if (updateData.vendor_name !== undefined && (!updateData.vendor_name || updateData.vendor_name.trim().length < 2)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vendor name must be at least 2 characters long'
+      });
+    }
+
+    if (updateData.category && !['Electricity', 'Water & Sewage', 'Waste Management', 'Internet & Communication', 'Generator Fuel', 'Other'].includes(updateData.category)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid category selected'
+      });
+    }
+
+    if (updateData.payment_status && !['Pending', 'Paid', 'Overdue'].includes(updateData.payment_status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid payment status selected'
+      });
+    }
+
+    // Perform the update
+    const updatedUtility = await FinancialUtilities.findOneAndUpdate(
+      { utilityId: id },
+      updateData,
+      {
+        new: true,
+        runValidators: false, // We're handling validation manually above
+        context: 'query'
+      }
+    );
 
     if (!updatedUtility) {
       return res.status(404).json({
@@ -275,12 +343,29 @@ export const updateUtility = async (req, res) => {
   } catch (error) {
     console.error('Update utility error:', error);
 
+    // Handle specific MongoDB errors
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Duplicate key error - this value already exists',
+        error: 'DUPLICATE_KEY'
+      });
+    }
+
     if (error.name === 'ValidationError') {
       const validationErrors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
         errors: validationErrors
+      });
+    }
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid data format provided',
+        error: 'INVALID_DATA_FORMAT'
       });
     }
 
