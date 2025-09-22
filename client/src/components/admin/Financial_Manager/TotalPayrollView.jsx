@@ -34,7 +34,7 @@ const TotalPayrollView = () => {
   const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState("");
-  const [viewType, setViewType] = useState("overview"); // overview, employee, department, trends
+  const [viewType, setViewType] = useState("overview");
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -178,26 +178,42 @@ const TotalPayrollView = () => {
       else salaryRanges["200K+"]++;
     });
 
-    // Top employees by salary
+    // ✅ FIXED: Top employees by salary - Better calculation
     const employeeSalaries = {};
+    
     filteredPayrolls.forEach(p => {
-      if (!employeeSalaries[p.employeeId]) {
-        employeeSalaries[p.employeeId] = {
-          employeeId: p.employeeId,
-          employeeName: p.employeeName,
+      const empId = p.employeeId;
+      const empName = p.employeeName || 'Unknown';
+      
+      if (!employeeSalaries[empId]) {
+        employeeSalaries[empId] = {
+          employeeId: empId,
+          employeeName: empName,
           totalGross: 0,
           totalNet: 0,
-          payrollCount: 0
+          payrollCount: 0,
+          averageGross: 0
         };
       }
-      employeeSalaries[p.employeeId].totalGross += (p.grossSalary || 0);
-      employeeSalaries[p.employeeId].totalNet += (p.netSalary || 0);
-      employeeSalaries[p.employeeId].payrollCount++;
+      
+      employeeSalaries[empId].totalGross += parseFloat(p.grossSalary || 0);
+      employeeSalaries[empId].totalNet += parseFloat(p.netSalary || 0);
+      employeeSalaries[empId].payrollCount++;
     });
 
+    // Calculate averages and sort
     const topEmployees = Object.values(employeeSalaries)
+      .filter(emp => emp.employeeName && emp.employeeName !== 'Unknown' && emp.totalGross > 0)
+      .map(emp => ({
+        ...emp,
+        averageGross: emp.payrollCount > 0 ? emp.totalGross / emp.payrollCount : 0
+      }))
       .sort((a, b) => b.totalGross - a.totalGross)
       .slice(0, 10);
+
+    console.log("🔍 Debug - Raw payrolls:", filteredPayrolls.slice(0, 3));
+    console.log("🔍 Debug - Employee salaries object:", Object.keys(employeeSalaries).length);
+    console.log("🔍 Debug - Top employees:", topEmployees);
 
     setAnalytics({
       summary: {
@@ -279,8 +295,6 @@ const TotalPayrollView = () => {
         { name: "ETF (3%)", value: analytics.costBreakdown.etf },
       ]
     : [];
-
-  const topEmployeesData = analytics?.topEmployees?.slice(0, 5) || [];
 
   return (
     <AdminLayout admin={admin} title="Payroll Analytics">
@@ -520,45 +534,113 @@ const TotalPayrollView = () => {
 
             {viewType === 'employee' && (
               <div className="tpv-employee-section">
+                {/* ✅ REPLACED CHART WITH STYLED LIST */}
                 <div className="tpv-chart-card">
                   <h3>🏆 Top 5 Employees by Gross Salary</h3>
-                  <ResponsiveContainer width="100%" height={400}>
-                    <BarChart data={topEmployeesData} layout="horizontal">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                      <YAxis type="category" dataKey="employeeName" width={100} />
-                      <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
-                      <Bar dataKey="totalGross" fill="#0088FE" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {analytics.topEmployees && analytics.topEmployees.length > 0 ? (
+                    <div className="tpv-employee-list">
+                      {analytics.topEmployees.slice(0, 5).map((emp, index) => (
+                        <div key={emp.employeeId} className="tpv-employee-item">
+                          <div className="tpv-employee-rank">
+                            <span className={`tpv-rank-badge rank-${index + 1}`}>
+                              #{index + 1}
+                            </span>
+                          </div>
+                          <div className="tpv-employee-info">
+                            <h4>{emp.employeeName}</h4>
+                            <p>ID: {emp.employeeId}</p>
+                          </div>
+                          <div className="tpv-employee-salary">
+                            <div className="tpv-gross-salary">
+                              <strong>${emp.totalGross.toLocaleString()}</strong>
+                              <span>Total Gross</span>
+                            </div>
+                            <div className="tpv-avg-salary">
+                              <span>${Math.round(emp.averageGross).toLocaleString()}</span>
+                              <small>Avg per month</small>
+                            </div>
+                            <div className="tpv-payroll-count">
+                              <span>{emp.payrollCount}</span>
+                              <small>Records</small>
+                            </div>
+                          </div>
+                          <div className="tpv-salary-bar">
+                            <div 
+                              className="tpv-salary-progress"
+                              style={{
+                                width: `${(emp.totalGross / Math.max(...analytics.topEmployees.map(e => e.totalGross))) * 100}%`,
+                                backgroundColor: PAYROLL_COLORS[index % PAYROLL_COLORS.length]
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="tpv-no-data">
+                      <div style={{ 
+                        height: '200px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        color: '#666',
+                        fontSize: '16px',
+                        flexDirection: 'column'
+                      }}>
+                        <div>📊 No employee salary data available</div>
+                        <small style={{ marginTop: '10px', color: '#999' }}>
+                          Add some payroll records to see employee rankings
+                        </small>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="tpv-employee-table">
                   <h3>👥 Employee Salary Summary</h3>
-                  <table className="tpv-table">
-                    <thead>
-                      <tr>
-                        <th>Employee ID</th>
-                        <th>Employee Name</th>
-                        <th>Total Gross</th>
-                        <th>Total Net</th>
-                        <th>Payroll Count</th>
-                        <th>Avg Gross</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {analytics.topEmployees.map((emp, index) => (
-                        <tr key={emp.employeeId}>
-                          <td>{emp.employeeId}</td>
-                          <td>{emp.employeeName}</td>
-                          <td>${emp.totalGross.toLocaleString()}</td>
-                          <td>${emp.totalNet.toLocaleString()}</td>
-                          <td>{emp.payrollCount}</td>
-                          <td>${Math.round(emp.totalGross / emp.payrollCount).toLocaleString()}</td>
+                  <div className="tpv-table-container">
+                    <table className="tpv-table">
+                      <thead>
+                        <tr>
+                          <th>Rank</th>
+                          <th>Employee ID</th>
+                          <th>Employee Name</th>
+                          <th>Total Gross</th>
+                          <th>Total Net</th>
+                          <th>Payroll Count</th>
+                          <th>Avg Gross</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {analytics.topEmployees && analytics.topEmployees.length > 0 ? (
+                          analytics.topEmployees.map((emp, index) => (
+                            <tr key={emp.employeeId || index}>
+                              <td>
+                                <span className={`tpv-table-rank rank-${index + 1}`}>
+                                  #{index + 1}
+                                </span>
+                              </td>
+                              <td><strong>{emp.employeeId || 'N/A'}</strong></td>
+                              <td>{emp.employeeName || 'N/A'}</td>
+                              <td className="tpv-currency">${(emp.totalGross || 0).toLocaleString()}</td>
+                              <td className="tpv-currency">${(emp.totalNet || 0).toLocaleString()}</td>
+                              <td className="tpv-center">{emp.payrollCount || 0}</td>
+                              <td className="tpv-currency">${Math.round(emp.averageGross || 0).toLocaleString()}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="7" style={{ textAlign: 'center', color: '#666', padding: '40px' }}>
+                              <div>📋 No employee salary data available</div>
+                              <small style={{ display: 'block', marginTop: '10px', color: '#999' }}>
+                                Create some payroll records to see employee statistics
+                              </small>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -576,17 +658,20 @@ const TotalPayrollView = () => {
                 <button 
                   className="tpv-action-btn tpv-success"
                   onClick={() => {
-                    // Export analytics data
-                    const csvData = analytics.topEmployees.map(emp => 
-                      `${emp.employeeId},${emp.employeeName},${emp.totalGross},${emp.totalNet},${emp.payrollCount}`
-                    ).join('\n');
-                    const blob = new Blob([`Employee ID,Name,Total Gross,Total Net,Payroll Count\n${csvData}`], 
-                      { type: 'text/csv' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `payroll-analytics-${new Date().toISOString().split('T')[0]}.csv`;
-                    a.click();
+                    if (analytics?.topEmployees && analytics.topEmployees.length > 0) {
+                      const csvData = analytics.topEmployees.map(emp => 
+                        `${emp.employeeId || ''},${emp.employeeName || ''},${emp.totalGross || 0},${emp.totalNet || 0},${emp.payrollCount || 0}`
+                      ).join('\n');
+                      const blob = new Blob([`Employee ID,Name,Total Gross,Total Net,Payroll Count\n${csvData}`], 
+                        { type: 'text/csv' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `payroll-analytics-${new Date().toISOString().split('T')[0]}.csv`;
+                      a.click();
+                    } else {
+                      alert('No data available to export');
+                    }
                   }}
                 >
                   📊 Export Analytics
@@ -600,6 +685,29 @@ const TotalPayrollView = () => {
               </div>
             </div>
           </>
+        )}
+
+        {!analytics && !loading && (
+          <div className="tpv-no-analytics">
+            <div style={{ 
+              textAlign: 'center', 
+              color: '#666', 
+              padding: '60px 20px',
+              fontSize: '18px'
+            }}>
+              <div>📊 No payroll data available for analytics</div>
+              <p style={{ margin: '20px 0', color: '#999', fontSize: '14px' }}>
+                Create some payroll records first to see comprehensive analytics and employee insights.
+              </p>
+              <button 
+                className="tpv-action-btn tpv-primary"
+                onClick={() => navigate("/admin/financial/payrolls")}
+                style={{ marginTop: '20px' }}
+              >
+                📋 Go to Payroll Management
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </AdminLayout>
