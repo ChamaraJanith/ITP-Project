@@ -21,6 +21,7 @@ const surgicalItemSchema = new mongoose.Schema({
       'Monitoring Equipment',
       'Anesthesia Equipment',
       'Sterilization Equipment',
+      'Oxigen Delivery Equipment',
       'Other'
     ]
   },
