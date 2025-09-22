@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import mongoose from "mongoose";
 import { fileURLToPath } from 'url';
 import express from "express";
 import cors from "cors";
@@ -33,9 +32,6 @@ import financemailrouter from './routes/emails.js';
 import utilitiesrouter from './routes/FinancialUtilitiesRoutes.js';
 
 
-import appointmentRoutes from "./routes/appointment.js";
-
-app.use("/api/appointments", appointmentRoutes);
 
 
 // ✅ NEW: Import procurement routes
@@ -62,7 +58,7 @@ app.use(cookieParser());
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'http://localhost:5173', 
+    'http://localhost:5173',
     'http://localhost:5174',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
@@ -91,8 +87,8 @@ app.use((req, res, next) => {
 
 // Health check route
 app.get('/health', (req, res) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: 'HealX Healthcare Server is running on port 7000',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
@@ -107,17 +103,9 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.use((req, res, next) => {
-  console.log(`❌ 404 - Route not found: ${req.method} ${req.originalUrl}`);
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.method} ${req.originalUrl} not found`,
-  });
-});
-
 // Root route
 app.get("/", (req, res) => {
-  res.json({ 
+  res.json({
     message: "🏥 HealX Healthcare Server is running on port 7000!",
     version: "1.0.0",
     timestamp: new Date().toISOString(),
@@ -193,7 +181,7 @@ app.use((req, res, next) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('❌ Server Error:', err);
-  
+ 
   if (err.name === 'ValidationError') {
     return res.status(400).json({
       success: false,
@@ -201,21 +189,21 @@ app.use((err, req, res, next) => {
       details: Object.values(err.errors).map(e => e.message)
     });
   }
-  
+ 
   if (err.name === 'CastError') {
     return res.status(400).json({
       success: false,
       message: 'Invalid ID format'
     });
   }
-  
+ 
   if (err.code === 11000) {
     return res.status(409).json({
       success: false,
       message: 'Duplicate entry found'
     });
   }
-  
+ 
   res.status(500).json({
     success: false,
     message: 'Internal server error',
