@@ -147,6 +147,48 @@ const surgicalItemSchema = new mongoose.Schema({
       }
     }]
   },
+
+  disposalHistory: [{
+    quantityDisposed: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    reason: {
+      type: String,
+      required: true,
+      maxLength: 500
+    },
+    disposedBy: {
+      type: String,
+      required: true,
+      maxLength: 100
+    },
+    disposalDate: {
+      type: Date,
+      default: Date.now
+    },
+    previousQuantity: {
+      type: Number,
+      required: true
+    },
+    remainingQuantity: {
+      type: Number,
+      required: true
+    },
+    disposalType: {
+      type: String,
+      enum: ['manual', 'bulk', 'auto', 'expired'],
+      default: 'manual'
+    },
+    operation: String,
+    purpose: String,
+    notes: String,
+    timestamp: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   
   // 🔥 NEW: Restock tracking for complete inventory lifecycle
   restock: {
