@@ -269,7 +269,12 @@ const FinancialDashboard = () => {
 
       case "utility_management":
         navigate("/admin/financial/utities");
+        break; 
+        
+      case "budget_plan":
+        navigate("/admin/financial/budget-planning");
         break;
+        
 
       case "payroll_analytics":
         navigate("/admin/financial/payrolls/total-view", {
@@ -546,6 +551,13 @@ const FinancialDashboard = () => {
                   onClick={() => handleFinancialFeatureClick("profit_or_loss")}
                 >
                   PROFIT OR LOSS
+                </button>
+
+                <button
+                  className="fd-feature-button"
+                  onClick={() => handleFinancialFeatureClick("budget_plan")}
+                >
+                  BUDGET PLAN
                 </button>
 
                  <button

@@ -1,0 +1,879 @@
+/* Financial Budget Planning - Unique CSS with fbp- prefix */
+
+.fbp-financial-budget-planning {
+  padding: 20px;
+  background: #f8fafc;
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Header Styles */
+.fbp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.fbp-header-left h1 {
+  color: #1e40af;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.fbp-header-left p {
+  color: #64748b;
+  font-size: 14px;
+  margin: 0;
+}
+
+.fbp-header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Navigation Tabs */
+.fbp-nav-tabs {
+  display: flex;
+  background: white;
+  border-radius: 12px;
+  padding: 6px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.fbp-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.fbp-tab:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.fbp-tab.fbp-active {
+  background: #1e40af;
+  color: white;
+}
+
+/* Button Styles */
+.fbp-btn-primary {
+  background: #1e40af;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.fbp-btn-primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.fbp-btn-outline {
+  background: transparent;
+  color: #1e40af;
+  border: 2px solid #e2e8f0;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.fbp-btn-outline:hover {
+  border-color: #1e40af;
+  background: #f8fafc;
+}
+
+.fbp-btn-danger {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fbp-btn-danger:hover {
+  background: #b91c1c;
+}
+
+/* Metrics Grid */
+.fbp-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.fbp-metric-card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition: transform 0.2s ease;
+}
+
+.fbp-metric-card:hover {
+  transform: translateY(-2px);
+}
+
+.fbp-metric-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.fbp-metric-card.fbp-revenue .fbp-metric-icon {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.fbp-metric-card.fbp-expenses .fbp-metric-icon {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.fbp-metric-card.fbp-profit .fbp-metric-icon {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.fbp-metric-card.fbp-collection .fbp-metric-icon {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.fbp-metric-content h3 {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+}
+
+.fbp-metric-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.fbp-metric-change {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.fbp-metric-change.fbp-positive {
+  color: #059669;
+}
+
+.fbp-metric-change.fbp-negative {
+  color: #dc2626;
+}
+
+/* Charts Grid */
+.fbp-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 25px;
+  margin-bottom: 30px;
+}
+
+.fbp-chart-container {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.fbp-chart-container h3 {
+  color: #374151;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+}
+
+/* Budget Plans */
+.fbp-active-budget-plans {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.fbp-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.fbp-section-header h3 {
+  color: #374151;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.fbp-budget-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.fbp-budget-plan-card {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.fbp-budget-plan-card:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.fbp-budget-plan-card.fbp-active {
+  border-color: #1e40af;
+  background: #f0f9ff;
+}
+
+.fbp-plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+}
+
+.fbp-plan-header h4 {
+  color: #374151;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+}
+
+.fbp-plan-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.fbp-plan-actions button {
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+.fbp-plan-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fbp-plan-period {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.fbp-plan-type {
+  color: #374151;
+  font-size: 13px;
+}
+
+.fbp-status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.fbp-status-badge.fbp-active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* Create Form */
+.fbp-create-budget-form-container {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.fbp-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.fbp-form-header h3 {
+  color: #374151;
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.fbp-budget-form {
+  margin-bottom: 30px;
+}
+
+.fbp-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.fbp-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fbp-form-group.fbp-full-width {
+  grid-column: 1 / -1;
+}
+
+.fbp-form-group label {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.fbp-form-group input,
+.fbp-form-group select,
+.fbp-form-group textarea {
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+  font-family: inherit;
+}
+
+.fbp-form-group input:focus,
+.fbp-form-group select:focus,
+.fbp-form-group textarea:focus {
+  outline: none;
+  border-color: #1e40af;
+}
+
+.fbp-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Budget Template Preview */
+.fbp-budget-template-preview {
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.fbp-budget-template-preview h4 {
+  color: #374151;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.fbp-template-info p {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0 0 12px 0;
+}
+
+.fbp-template-info ul {
+  color: #6b7280;
+  font-size: 13px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.fbp-template-info li {
+  margin-bottom: 4px;
+}
+
+/* Quarterly Review */
+.fbp-quarterly-review-container {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.fbp-quarter-selector {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.fbp-quarter-selector h3 {
+  color: #374151;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.fbp-selector-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.fbp-selector-controls select {
+  padding: 8px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.fbp-quarterly-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.fbp-quarter-metric-card {
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+.fbp-quarter-metric-card h4 {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+}
+
+.fbp-quarter-metric-card .fbp-metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.fbp-variance {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.fbp-variance.fbp-positive {
+  color: #059669;
+}
+
+.fbp-variance.fbp-negative {
+  color: #dc2626;
+}
+
+/* Budget Breakdown */
+.fbp-budget-breakdown-section {
+  margin-top: 30px;
+}
+
+.fbp-budget-breakdown-section h4 {
+  color: #374151;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 15px 0;
+}
+
+.fbp-breakdown-table {
+  overflow-x: auto;
+  margin-bottom: 25px;
+}
+
+.fbp-breakdown-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.fbp-breakdown-table th {
+  background: #f8fafc;
+  color: #374151;
+  font-weight: 600;
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 13px;
+}
+
+.fbp-breakdown-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+}
+
+.fbp-breakdown-table td.fbp-positive {
+  color: #059669;
+}
+
+.fbp-breakdown-table td.fbp-negative {
+  color: #dc2626;
+}
+
+/* Messages */
+.fbp-message {
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.fbp-message.fbp-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.fbp-message.fbp-error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.fbp-message button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: inherit;
+  padding: 0;
+  margin-left: 10px;
+}
+
+/* Floating Action Button */
+.fbp-fab-button {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 56px;
+  height: 56px;
+  background: #1e40af;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.4);
+  transition: all 0.3s ease;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fbp-fab-button:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(30, 64, 175, 0.6);
+}
+
+/* Loading States */
+.fbp-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #6b7280;
+}
+
+.fbp-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #1e40af;
+  border-radius: 50%;
+  animation: fbp-spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes fbp-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.fbp-no-data-message {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.fbp-comparison-view {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.fbp-comparison-view h3 {
+  color: #374151;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 15px 0;
+}
+
+.fbp-comparison-view p {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0;
+}
+
+.fbp-main-content {
+  min-height: 400px;
+}
+
+.fbp-overview-container {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .fbp-header {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .fbp-header-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .fbp-nav-tabs {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .fbp-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fbp-charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fbp-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fbp-quarterly-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .fbp-quarter-selector {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .fbp-fab-button {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .fbp-financial-budget-planning {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fbp-quarterly-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .fbp-budget-plans-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fbp-breakdown-table {
+    font-size: 12px;
+  }
+
+  .fbp-breakdown-table th,
+  .fbp-breakdown-table td {
+    padding: 8px;
+    font-size: 11px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .fbp-fab-button,
+  .fbp-header-actions,
+  .fbp-nav-tabs {
+    display: none !important;
+  }
+  
+  .fbp-financial-budget-planning {
+    padding: 0;
+    background: white;
+  }
+  
+  .fbp-chart-container,
+  .fbp-metric-card,
+  .fbp-active-budget-plans {
+    box-shadow: none;
+    border: 1px solid #e2e8f0;
+  }
+}
+
+/* Dark Mode Support (Optional) */
+@media (prefers-color-scheme: dark) {
+  .fbp-financial-budget-planning {
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+  
+  .fbp-header,
+  .fbp-chart-container,
+  .fbp-active-budget-plans,
+  .fbp-create-budget-form-container,
+  .fbp-quarterly-review-container {
+    background: #1e293b;
+    border: 1px solid #334155;
+  }
+  
+  .fbp-nav-tabs {
+    background: #1e293b;
+    border: 1px solid #334155;
+  }
+  
+  .fbp-tab {
+    color: #94a3b8;
+  }
+  
+  .fbp-tab.fbp-active {
+    background: #3b82f6;
+    color: white;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .fbp-btn-primary {
+    background: #000;
+    border: 2px solid #000;
+  }
+  
+  .fbp-btn-outline {
+    border: 2px solid #000;
+    color: #000;
+  }
+  
+  .fbp-metric-card {
+    border: 2px solid #000;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .fbp-metric-card,
+  .fbp-budget-plan-card,
+  .fbp-btn-primary,
+  .fbp-btn-outline,
+  .fbp-fab-button {
+    transition: none;
+  }
+  
+  .fbp-loading-spinner {
+    animation: none;
+  }
+}
+
+/* Add these styles to your existing CSS file */
+
+.fbp-data-summary {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 25px;
+}
+
+.fbp-data-indicators {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.fbp-indicator {
+  background: #f8fafc;
+  color: #374151;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+}
+
+.fbp-loading-detail {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 8px;
+}
+
