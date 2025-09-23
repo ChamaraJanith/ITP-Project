@@ -974,7 +974,7 @@ const SurgicalItemsManagement = () => {
       const data = await response.json();
       
       if (data.success) {
-        showNotification('✅ Test email sent successfully to chamarasweed44@gmail.com!', 'success');
+        showNotification('✅ Test email sent successfully to cjtmadmhealx@gmail.com!', 'success');
       } else {
         throw new Error(data.message || 'Failed to send test email');
       }

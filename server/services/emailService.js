@@ -330,7 +330,7 @@ class EmailService {
     try {
       const mailOptions = {
         from: `HealX Healthcare <${process.env.EMAIL_USER}>`,
-        to: 'chamarasweed44@gmail.com',
+        to: 'cjtmadmhealx@gmail.com',
         subject: '✅ Test Email - HealX Healthcare System',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 2px solid #4CAF50; border-radius: 10px;">
@@ -347,7 +347,7 @@ class EmailService {
               
               <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50;">
                 <h3 style="margin: 0 0 10px 0; color: #333;">📧 Test Details:</h3>
-                <p style="margin: 5px 0;"><strong>Recipient:</strong> chamarasweed44@gmail.com</p>
+                <p style="margin: 5px 0;"><strong>Recipient:</strong> cjtmadmhealx@gmail.com</p>
                 <p style="margin: 5px 0;"><strong>Sent:</strong> ${new Date().toLocaleString()}</p>
                 <p style="margin: 5px 0;"><strong>Status:</strong> Delivered Successfully</p>
               </div>
@@ -364,7 +364,7 @@ class EmailService {
         }
       };
 
-      console.log('📧 Sending test email to chamarasweed44@gmail.com...');
+      console.log('📧 Sending test email to cjtmadmhealx@gmail.com...');
       const result = await this.transporter.sendMail(mailOptions);
       console.log('✅ Test email sent successfully! MessageId:', result.messageId);
       return result;
@@ -418,7 +418,7 @@ class EmailService {
 
       const mailOptions = {
         from: `HealX Healthcare <${process.env.EMAIL_USER}>`,
-        to: 'chamarasweed44@gmail.com',
+        to: 'cjtmadmhealx@gmail.com',
         subject: alertTitle,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; border: 2px solid #d32f2f; border-radius: 10px;">
@@ -495,7 +495,7 @@ class EmailService {
   async sendNoLowStockEmail() {
     const mailOptions = {
       from: `HealX Healthcare <${process.env.EMAIL_USER}>`,
-      to: 'chamarasweed44@gmail.com',
+      to: 'cjtmadmhealx@gmail.com',
       subject: '✅ Inventory Status: All Items Well Stocked',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #4CAF50; border-radius: 10px;">
@@ -536,7 +536,7 @@ class EmailService {
 
     try {
       const supplierEmail = item.autoRestock?.supplier?.contactEmail || item.supplier?.email;
-      const emailToSend = supplierEmail || 'chamarasweed44@gmail.com';
+      const emailToSend = supplierEmail || 'cjtmadmhealx@gmail.com';
       
       console.log(`📧 Preparing supplier email for ${item.name} to ${emailToSend}`);
 
@@ -713,7 +713,7 @@ class EmailService {
     try {
       await this.ensureInitialized();
       
-      const adminEmail = 'chamarasweed44@gmail.com';
+      const adminEmail = 'cjtmadmhealx@gmail.com';
       const subject = `✅ Auto-Restock Completed: ${item.name}`;
       
       const htmlMessage = `
@@ -1031,7 +1031,7 @@ export async function sendCriticalStockAlert(criticalItems) {
 
     const mailOptions = {
       from: `HealX Healthcare <${process.env.EMAIL_USER}>`,
-      to: ['admin@hospital.com', 'inventory@hospital.com', 'chamarasweed44@gmail.com'],
+      to: ['admin@hospital.com', 'inventory@hospital.com', 'cjtmadmhealx@gmail.com'],
       subject: subject,
       html: html,
       textEncoding: 'base64',
@@ -1073,7 +1073,7 @@ export async function sendRestockSummary(items) {
 
     const mailOptions = {
       from: `HealX Healthcare <${process.env.EMAIL_USER}>`,
-      to: ['procurement@hospital.com', 'chamarasweed44@gmail.com'],
+      to: ['procurement@hospital.com', 'cjtmadmhealx@gmail.com'],
       subject: subject,
       html: html,
       textEncoding: 'base64',
