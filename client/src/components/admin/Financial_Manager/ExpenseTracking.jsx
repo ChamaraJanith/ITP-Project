@@ -24,7 +24,7 @@ import "./ExpenseTracking.css";
 const EXPENSE_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d", "#FF6B6B", "#4ECDC4"];
 const PAYROLL_API = "http://localhost:7000/api/payrolls";
 const SURGICAL_ITEMS_API = "http://localhost:7000/api/inventory/surgical-items";
-const UTILITIES_API = "http://localhost:7000/api/financial-utilities"; // NEW: Utilities API
+const UTILITIES_API = "http://localhost:7000/api/financial-utilities";  
 
 const ExpenseTracking = () => {
   const [admin, setAdmin] = useState(null);
