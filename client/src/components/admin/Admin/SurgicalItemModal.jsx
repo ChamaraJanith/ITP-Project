@@ -1,21 +1,201 @@
 import React, { useState, useEffect } from 'react';
 import '../Admin/styles/SurgicalItemModal.css';
 
+// ✅ FINAL: CompanyNameDropdown perfectly matched to your API response
+const CompanyNameDropdown = ({ 
+  selectedCompany, 
+  onCompanyChange, 
+  className = '',
+  placeholder = "Select Company Name",
+  required = false 
+}) => {
+  const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const fetchCompanies = async () => {
+    try {
+      setLoading(true);
+      
+      const response = await fetch('http://localhost:7000/api/suppliers', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Suppliers API Response:', data);
+      
+      if (!data.success) {
+        throw new Error(data.message || 'API returned success: false');
+      }
+      
+      // ✅ Process your exact API response structure
+      const activeCompanies = data.suppliers
+        .filter(supplier => supplier.status === 'active')
+        .map(supplier => ({
+          id: supplier._id,
+          name: supplier.name,
+          email: supplier.email,
+          phone: supplier.phone,
+          category: supplier.category,
+          address: supplier.address
+        }));
+      
+      console.log('✅ Active companies processed:', activeCompanies);
+      setCompanies(activeCompanies);
+      setError('');
+      
+    } catch (fetchError) {
+      console.error('❌ Error fetching companies:', fetchError);
+      setError(fetchError.message);
+      setCompanies([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="company-dropdown-loading">
+        <select disabled className={className} style={{ width: '100%', padding: '10px 12px', border: '1px solid #ced4da', borderRadius: '4px' }}>
+          <option>🔄 Loading companies...</option>
+        </select>
+        <small style={{ color: '#007bff', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+          Fetching suppliers from API...
+        </small>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || companies.length === 0) {
+    return (
+      <div className="company-dropdown-error">
+        <select disabled className={className} style={{ width: '100%', padding: '10px 12px', border: '2px solid #dc3545', borderRadius: '4px' }}>
+          <option>❌ {error || 'No companies available'}</option>
+        </select>
+        <div style={{ 
+          color: '#721c24', 
+          fontSize: '12px', 
+          marginTop: '8px', 
+          padding: '12px',
+          backgroundColor: '#f8d7da',
+          border: '1px solid #f5c6cb',
+          borderRadius: '6px'
+        }}>
+          <strong>⚠️ Company Loading Failed</strong><br/>
+          Error: {error}<br/>
+          API: http://localhost:7000/api/suppliers<br/>
+          <br/>
+          <button 
+            onClick={fetchCompanies}
+            style={{
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              cursor: 'pointer'
+            }}
+          >
+            🔄 Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Success state - Your 3 companies will show here!
+  return (
+    <div className="company-dropdown-container">
+      <select
+        value={selectedCompany}
+        onChange={(e) => {
+          const companyId = e.target.value;
+          const companyData = companies.find(c => c.id === companyId);
+          console.log('Company selected:', companyId, companyData);
+          onCompanyChange(companyId, companyData);
+        }}
+        className={className}
+        required={required}
+        style={{ 
+          width: '100%', 
+          padding: '10px 12px', 
+          border: '1px solid #ced4da', 
+          borderRadius: '4px',
+          fontSize: '14px'
+        }}
+      >
+        <option value="">{placeholder}</option>
+        {companies.map(company => (
+          <option key={company.id} value={company.id}>
+            {company.name} ({company.category.replace('_', ' ')})
+          </option>
+        ))}
+      </select>
+      
+      <small style={{ 
+        color: '#28a745', 
+        fontSize: '12px', 
+        marginTop: '6px', 
+        display: 'block',
+        fontWeight: '600'
+      }}>
+        ✅ {companies.length} companies loaded successfully!
+      </small>
+      
+      {/* Display your companies */}
+      <div style={{ 
+        marginTop: '10px',
+        padding: '12px',
+        backgroundColor: '#d4edda',
+        border: '1px solid #c3e6cb',
+        borderRadius: '6px',
+        fontSize: '12px',
+        color: '#155724'
+      }}>
+        <strong>🏢 Available Companies:</strong><br/>
+        {companies.map((company, index) => (
+          <div key={company.id} style={{ marginTop: index > 0 ? '8px' : '4px' }}>
+            <strong>{index + 1}. {company.name}</strong><br/>
+            <span style={{ fontSize: '11px', color: '#0c5b31' }}>
+              📧 {company.email} | 📞 {company.phone}<br/>
+              🏷️ {company.category.replace('_', ' ')} | 📍 {company.address.city}, {company.address.state}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ✅ COMPLETE: Full SurgicalItemModal with working company dropdown
 const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBaseUrl }) => {
-  // ✅ FIXED: Updated formData structure with autoRestock object
   const [formData, setFormData] = useState({
     name: '',
     category: '',
     description: '',
     quantity: 0,
     price: 0,
-    // ✅ FIXED: Nested autoRestock object to match backend schema
     autoRestock: {
       minStockLevel: 10,
       maxStockLevel: 50,
       reorderQuantity: 25,
       isEnabled: true
     },
+    companyId: '',
     supplier: {
       name: '',
       contact: '',
@@ -33,387 +213,182 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [selectedCountry, setSelectedCountry] = useState('LK');
-  const [phoneNumber, setPhoneNumber] = useState('');
 
-  // Country-specific phone number configurations with exact lengths
-  const phoneCountries = [
-    { code: 'LK', name: 'Sri Lanka', dialCode: '+94', flag: '🇱🇰', length: 9, format: 'XX XXX XXXX', example: '77 123 4567', validPrefixes: ['70', '71', '72', '75', '76', '77', '78'] },
-    { code: 'US', name: 'United States', dialCode: '+1', flag: '🇺🇸', length: 10, format: 'XXX XXX-XXXX', example: '213 373-4253', validPrefixes: [] },
-    { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: '🇬🇧', length: 10, format: 'XX XXXX XXXX', example: '20 7946 0958', validPrefixes: [] },
-    { code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳', length: 10, format: 'XXXXX XXXXX', example: '98765 43210', validPrefixes: ['6', '7', '8', '9'] },
-    { code: 'AU', name: 'Australia', dialCode: '+61', flag: '🇦🇺', length: 9, format: 'XXX XXX XXX', example: '412 345 678', validPrefixes: ['4'] },
-    { code: 'CA', name: 'Canada', dialCode: '+1', flag: '🇨🇦', length: 10, format: 'XXX XXX-XXXX', example: '416 555-0123', validPrefixes: [] },
-    { code: 'SG', name: 'Singapore', dialCode: '+65', flag: '🇸🇬', length: 8, format: 'XXXX XXXX', example: '9123 4567', validPrefixes: ['8', '9'] },
-    { code: 'MY', name: 'Malaysia', dialCode: '+60', flag: '🇲🇾', length: 9, format: 'XX-XXX XXXX', example: '12-345 6789', validPrefixes: ['1'] }
-  ];
-
-  const currentCountry = phoneCountries.find(c => c.code === selectedCountry) || phoneCountries[0];
-
-  // Enhanced input filters
-  const inputFilters = {
-    name: (value) => value.replace(/[^A-Za-z\s]/g, '').slice(0, 100),
-    supplierName: (value) => value.replace(/[^A-Za-z\s]/g, '').slice(0, 100),
-    description: (value) => value.slice(0, 500),
-    email: (value) => value.replace(/[^a-zA-Z0-9@.\-_]/g, '').slice(0, 254),
-    location: (value) => value.replace(/[^a-zA-Z0-9\-\s]/g, '').slice(0, 20),
-    batchSerial: (value) => value.replace(/[^a-zA-Z0-9\-\.]/g, '').slice(0, 25),
-    number: (value) => value.replace(/[^0-9]/g, ''),
-    price: (value) => {
-      const cleaned = value.replace(/[^0-9\.]/g, '');
-      const parts = cleaned.split('.');
-      if (parts.length > 2) return parts[0] + '.' + parts.slice(1).join('');
-      if (parts[1] && parts[1].length > 2) parts[1] = parts[1].slice(0, 2);
-      return parts.join('.');
-    }
-  };
-
-  // Format phone number based on country
-  const formatPhoneNumber = (digits, country) => {
-    if (!digits) return '';
+  // Handle company selection from dropdown
+  const handleCompanyChange = (companyId, companyData) => {
+    console.log('🏢 Company selected:', companyData);
     
-    switch (country.code) {
-      case 'LK': // Sri Lanka: XX XXX XXXX
-        if (digits.length <= 2) return digits;
-        if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
-        return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
-      
-      case 'US': // USA: XXX XXX-XXXX
-      case 'CA': // Canada: XXX XXX-XXXX
-        if (digits.length <= 3) return digits;
-        if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
-        return `${digits.slice(0, 3)} ${digits.slice(3, 6)}-${digits.slice(6)}`;
-      
-      case 'GB': // UK: XX XXXX XXXX
-        if (digits.length <= 2) return digits;
-        if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
-        return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6)}`;
-      
-      case 'IN': // India: XXXXX XXXXX
-        if (digits.length <= 5) return digits;
-        return `${digits.slice(0, 5)} ${digits.slice(5)}`;
-      
-      case 'AU': // Australia: XXX XXX XXX
-        if (digits.length <= 3) return digits;
-        if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
-        return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
-      
-      case 'SG': // Singapore: XXXX XXXX
-        if (digits.length <= 4) return digits;
-        return `${digits.slice(0, 4)} ${digits.slice(4)}`;
-      
-      case 'MY': // Malaysia: XX-XXX XXXX
-        if (digits.length <= 2) return digits;
-        if (digits.length <= 5) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
-        return `${digits.slice(0, 2)}-${digits.slice(2, 5)} ${digits.slice(5)}`;
-      
-      default:
-        return digits;
+    setFormData(prev => ({
+      ...prev,
+      companyId: companyId,
+      supplier: {
+        name: companyData ? companyData.name : '',
+        contact: companyData ? companyData.phone : '',
+        email: companyData ? companyData.email : ''
+      }
+    }));
+    
+    // Clear company error
+    if (errors.companyId) {
+      setErrors(prev => ({ ...prev, companyId: '' }));
     }
   };
 
-  // Validate phone number based on country-specific rules
-  const validatePhoneNumber = (digits, country) => {
-    // Check exact length
-    if (digits.length !== country.length) {
-      return { isValid: false, message: `Must be exactly ${country.length} digits` };
-    }
-
-    // Check country-specific prefixes
-    if (country.validPrefixes.length > 0) {
-      const hasValidPrefix = country.validPrefixes.some(prefix => digits.startsWith(prefix));
-      if (!hasValidPrefix) {
-        return { isValid: false, message: `Must start with ${country.validPrefixes.join(', ')}` };
-      }
-    }
-
-    return { isValid: true, message: 'Valid number' };
-  };
-
-  // ✅ FIXED: Updated handleInputChange to handle autoRestock fields
-  const handleInputChange = (field, value, filterType = null) => {
-    let filteredValue = value;
-
-    // Apply filters for non-phone fields
-    if (field !== 'supplier.contact') {
-      switch (filterType) {
-        case 'name':
-          filteredValue = inputFilters.name(value);
-          break;
-        case 'supplierName':
-          filteredValue = inputFilters.supplierName(value);
-          break;
-        case 'description':
-          filteredValue = inputFilters.description(value);
-          break;
-        case 'email':
-          filteredValue = inputFilters.email(value);
-          break;
-        case 'location':
-          filteredValue = inputFilters.location(value);
-          break;
-        case 'batchSerial':
-          filteredValue = inputFilters.batchSerial(value);
-          break;
-        case 'number':
-          filteredValue = inputFilters.number(value);
-          const numValue = parseInt(filteredValue);
-          if (field === 'quantity' && numValue > 999999) filteredValue = '999999';
-          if (field === 'autoRestock.minStockLevel' && numValue > 100000) filteredValue = '100000';
-          if (field === 'autoRestock.maxStockLevel' && numValue > 100000) filteredValue = '100000';
-          if (field === 'autoRestock.reorderQuantity' && numValue > 100000) filteredValue = '100000';
-          break;
-        case 'price':
-          filteredValue = inputFilters.price(value);
-          const priceValue = parseFloat(filteredValue);
-          if (priceValue > 1000000) filteredValue = '1000000';
-          break;
-        default:
-          break;
-      }
-    }
-
-    // Handle nested field updates
+  // Handle input changes
+  const handleInputChange = (field, value) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setFormData(prev => ({
         ...prev,
         [parent]: {
           ...prev[parent],
-          [child]: (field.includes('autoRestock') && (child === 'minStockLevel' || child === 'maxStockLevel' || child === 'reorderQuantity')) ? 
-                   parseInt(filteredValue) || 0 : 
-                   (child === 'isEnabled') ? 
-                   filteredValue === 'true' || filteredValue === true : 
-                   filteredValue
+          [child]: value
         }
       }));
     } else {
       setFormData(prev => ({
         ...prev,
-        [field]: (field === 'quantity') ? parseInt(filteredValue) || 0 : 
-                 (field === 'price') ? parseFloat(filteredValue) || 0 : filteredValue
+        [field]: value
       }));
     }
 
-    // Clear field error when user types
+    // Clear field error
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
-  // Handle country selection change
-  const handleCountryChange = (e) => {
-    const countryCode = e.target.value;
-    setSelectedCountry(countryCode);
-    // Clear phone number when country changes
-    setPhoneNumber('');
-    setFormData(prev => ({
-      ...prev,
-      supplier: {
-        ...prev.supplier,
-        contact: ''
-      }
-    }));
-  };
-
-  // Handle phone number input with country-specific restrictions
-  const handlePhoneInput = (e) => {
-    const input = e.target.value;
-    // Extract only digits
-    const digits = input.replace(/\D/g, '');
-    // Restrict to country-specific length
-    const limitedDigits = digits.slice(0, currentCountry.length);
-    
-    // Update local state
-    setPhoneNumber(limitedDigits);
-    
-    // Update form data with full international format
-    const fullNumber = limitedDigits ? `${currentCountry.dialCode}${limitedDigits}` : '';
-    setFormData(prev => ({
-      ...prev,
-      supplier: {
-        ...prev.supplier,
-        contact: fullNumber
-      }
-    }));
-
-    // Clear phone error when user types
-    if (errors['supplier.contact']) {
-      setErrors(prev => ({ ...prev, 'supplier.contact': '' }));
-    }
-  };
-
-  // Prevent non-numeric input in phone field
-  const handlePhoneKeyPress = (e) => {
-    const char = e.key;
-    // Allow control keys
-    if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter', 'Escape'].includes(char)) {
-      return;
-    }
-    // Only allow digits
-    if (!/[0-9]/.test(char)) {
-      e.preventDefault();
-    }
-  };
-
-  const handleKeyPress = (e, filterType) => {
-    const char = e.key;
-    if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter', 'Escape'].includes(char)) {
-      return;
-    }
-
-    switch (filterType) {
-      case 'name':
-      case 'supplierName':
-        if (!/[A-Za-z\s]/.test(char)) e.preventDefault();
-        break;
-      case 'email':
-        if (!/[a-zA-Z0-9@.\-_]/.test(char)) e.preventDefault();
-        break;
-      case 'location':
-        if (!/[a-zA-Z0-9\-\s]/.test(char)) e.preventDefault();
-        break;
-      case 'batchSerial':
-        if (!/[a-zA-Z0-9\-\.]/.test(char)) e.preventDefault();
-        break;
-      case 'number':
-        if (!/[0-9]/.test(char)) e.preventDefault();
-        break;
-      case 'price':
-        if (!/[0-9\.]/.test(char)) e.preventDefault();
-        break;
-      default:
-        break;
-    }
-  };
-
-  // ✅ FIXED: Updated validateForm to handle autoRestock paths
+  // Form validation
   const validateForm = () => {
     const newErrors = {};
 
-    // Name validation
     if (!formData.name.trim()) newErrors.name = 'Item name is required';
-    else if (!/^[A-Za-z\s]+$/.test(formData.name)) newErrors.name = 'Name can only contain letters and spaces';
-    else if (formData.name.length < 2) newErrors.name = 'Name must be at least 2 characters long';
-
-    // Category validation
     if (!formData.category) newErrors.category = 'Category is required';
-
-    // Supplier name validation
-    if (!formData.supplier.name.trim()) newErrors['supplier.name'] = 'Supplier name is required';
-    else if (!/^[A-Za-z\s]+$/.test(formData.supplier.name)) newErrors['supplier.name'] = 'Supplier name can only contain letters and spaces';
-    else if (formData.supplier.name.length < 2) newErrors['supplier.name'] = 'Supplier name must be at least 2 characters long';
-
-    // Enhanced phone validation
-    if (phoneNumber) {
-      const validation = validatePhoneNumber(phoneNumber, currentCountry);
-      if (!validation.isValid) {
-        newErrors['supplier.contact'] = validation.message;
-      }
+    if (!formData.companyId && !formData.supplier.name.trim()) {
+      newErrors.companyId = 'Please select a company or enter supplier name';
     }
-
-    // Other validations
     if (formData.quantity < 0) newErrors.quantity = 'Quantity cannot be negative';
     if (formData.price < 0) newErrors.price = 'Price cannot be negative';
-    
-    // ✅ FIXED: AutoRestock validations with proper paths
-    if (formData.autoRestock.minStockLevel < 0) newErrors['autoRestock.minStockLevel'] = 'Min Stock Level cannot be negative';
-    if (formData.autoRestock.maxStockLevel < 0) newErrors['autoRestock.maxStockLevel'] = 'Max Stock Level cannot be negative';
-    if (formData.autoRestock.reorderQuantity < 0) newErrors['autoRestock.reorderQuantity'] = 'Reorder Quantity cannot be negative';
-    
-    // ✅ CRITICAL: maxStockLevel >= minStockLevel validation
-    if (formData.autoRestock.maxStockLevel < formData.autoRestock.minStockLevel) {
-      newErrors['autoRestock.maxStockLevel'] = 'Maximum stock level must be greater than or equal to minimum stock level';
-    }
-    
-    if (formData.description.length > 500) newErrors.description = 'Description is too long (max 500 characters)';
-    if (formData.supplier.email && !/\S+@\S+\.\S+/.test(formData.supplier.email)) newErrors['supplier.email'] = 'Invalid email format';
-
-    if (formData.expiryDate) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const expiry = new Date(formData.expiryDate);
-      if (expiry <= today) newErrors.expiryDate = 'Expiry date must be in the future';
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  // Form submission
+// ✅ FIXED: Enhanced form submission with onSuccess safety check
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!validateForm()) {
+    return;
+  }
 
-    setLoading(true);
-    try {
-      const url = item ? `${apiBaseUrl}/surgical-items/${item._id}` : `${apiBaseUrl}/surgical-items`;
-      const method = item ? 'PUT' : 'POST';
+  setLoading(true);
+  
+  try {
+    // ✅ CORRECT: Using the right API endpoint for surgical items
+    const url = item 
+      ? `http://localhost:7000/api/inventory/surgical-items/${item._id}` 
+      : `http://localhost:7000/api/inventory/surgical-items`;
+    const method = item ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+    console.log('🚀 Submitting to CORRECT endpoint:', url);
+    console.log('📋 Form data:', formData);
 
-      const data = await response.json();
+    const response = await fetch(url, {
+      method,
+      headers: { 
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData),
+    });
 
-      if (data.success) {
-        alert(`Item ${item ? 'updated' : 'created'} successfully!`);
-        onSuccess();
-      } else {
-        throw new Error(data.message || `Failed to ${item ? 'update' : 'create'} item`);
-      }
-    } catch (error) {
-      console.error('Error saving item:', error);
-      alert(`Failed to ${item ? 'update' : 'create'} item: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getTodayDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
-  };
-
-  const getMaxDate = () => {
-    const maxDate = new Date();
-    maxDate.setFullYear(maxDate.getFullYear() + 20);
-    return maxDate.toISOString().split('T')[0];
-  };
-
-  const CharacterCounter = ({ current, max, warning = 0.9 }) => (
-    <small style={{
-      color: current > max * warning ? '#ff6b35' : '#666',
-      fontSize: '12px',
-      fontWeight: current > max * warning ? 'bold' : 'normal'
-    }}>
-      {current}/{max} characters
-    </small>
-  );
-
-  const ValidationIndicator = ({ isValid, message }) => (
-    <span style={{
-      fontSize: '12px',
-      color: isValid ? '#28a745' : '#dc3545',
-      marginLeft: '8px'
-    }}>
-      {isValid ? '✓' : '✗'} {message}
-    </span>
-  );
-
-  // Phone validation indicator
-  const PhoneValidationIndicator = () => {
-    if (!phoneNumber) return <ValidationIndicator isValid={true} message="Optional" />;
+    console.log('📡 Response status:', response.status);
     
-    const validation = validatePhoneNumber(phoneNumber, currentCountry);
-    return <ValidationIndicator isValid={validation.isValid} message={validation.message} />;
-  };
+    // ✅ ENHANCED: Better response handling
+    let data;
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        data = await response.json();
+        console.log('📋 Response data:', data);
+      } catch (jsonError) {
+        console.error('❌ JSON parsing error:', jsonError);
+        throw new Error('Server returned invalid JSON response');
+      }
+    } else {
+      // If not JSON, get text content for debugging
+      const textResponse = await response.text();
+      console.log('📄 Non-JSON response:', textResponse);
+      
+      if (response.ok) {
+        // Sometimes servers return success with empty body or plain text
+        alert(`✅ Item ${item ? 'updated' : 'created'} successfully!`);
+        
+        // ✅ FIXED: Safe onSuccess call with fallback
+        if (typeof onSuccess === 'function') {
+          onSuccess();
+        } else {
+          console.warn('⚠️ onSuccess prop is not a function, skipping callback');
+          // Optionally refresh the page or perform other actions
+          window.location.reload();
+        }
+        onClose();
+        return;
+      } else {
+        throw new Error(`Server error: ${response.status} - ${textResponse || 'No response body'}`);
+      }
+    }
 
-  // ✅ FIXED: Updated useEffect to handle autoRestock object
+    // Handle JSON response
+    if (response.ok || (data && (data.success || data.message?.includes('success')))) {
+      alert(`✅ Item ${item ? 'updated' : 'created'} successfully!`);
+      
+      // ✅ FIXED: Safe onSuccess call with fallback
+      if (typeof onSuccess === 'function') {
+        onSuccess();
+        console.log('✅ onSuccess callback executed');
+      } else {
+        console.warn('⚠️ onSuccess prop is not a function or not provided');
+        console.log('Available props:', { onSuccess, onClose, item, categories, apiBaseUrl });
+        // Fallback: refresh the page to show updated data
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+      onClose();
+    } else {
+      throw new Error(data?.message || `Server error: ${response.status}`);
+    }
+    
+  } catch (error) {
+    console.error('❌ Error saving item:', error);
+    
+    // ✅ BETTER: More specific error messages
+    let errorMessage = error.message;
+    
+    if (error.message.includes('Failed to fetch')) {
+      errorMessage = 'Cannot connect to server. Check if backend is running on port 7000.';
+    } else if (error.message.includes('JSON')) {
+      errorMessage = 'Server returned invalid response. Check server logs for errors.';
+    } else if (error.message.includes('Route') && error.message.includes('not found')) {
+      errorMessage = 'API endpoint not found. Using: http://localhost:7000/api/inventory/surgical-items';
+    } else if (error.message.includes('onSuccess is not a function')) {
+      errorMessage = 'Item created successfully, but callback function is missing. Page will refresh automatically.';
+      // Auto-refresh after showing message
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    }
+    
+    alert(`❌ Failed to ${item ? 'update' : 'create'} item: ${errorMessage}`);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // Initialize form data
   useEffect(() => {
     if (item) {
       setFormData({
@@ -422,13 +397,13 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
         description: item.description || '',
         quantity: item.quantity || 0,
         price: item.price || 0,
-        // ✅ FIXED: Handle autoRestock as nested object
         autoRestock: {
           minStockLevel: item.autoRestock?.minStockLevel || 10,
           maxStockLevel: item.autoRestock?.maxStockLevel || 50,
           reorderQuantity: item.autoRestock?.reorderQuantity || 25,
           isEnabled: item.autoRestock?.isEnabled !== undefined ? item.autoRestock.isEnabled : true
         },
+        companyId: item.companyId || '',
         supplier: {
           name: item.supplier?.name || '',
           contact: item.supplier?.contact || '',
@@ -443,17 +418,7 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
         batchNumber: item.batchNumber || '',
         serialNumber: item.serialNumber || ''
       });
-
-      // Parse existing phone number
-      if (item.supplier?.contact) {
-        const country = phoneCountries.find(c => item.supplier.contact.startsWith(c.dialCode));
-        if (country) {
-          setSelectedCountry(country.code);
-          setPhoneNumber(item.supplier.contact.replace(country.dialCode, ''));
-        }
-      }
     } else {
-      // ✅ FIXED: Reset form with proper autoRestock structure
       setFormData({
         name: '',
         category: '',
@@ -466,6 +431,7 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
           reorderQuantity: 25,
           isEnabled: true
         },
+        companyId: '',
         supplier: {
           name: '',
           contact: '',
@@ -480,11 +446,9 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
         batchNumber: '',
         serialNumber: ''
       });
-      setSelectedCountry('LK');
-      setPhoneNumber('');
     }
     setErrors({});
-  }, [item, categories]);
+  }, [item, isOpen]);
 
   if (!isOpen) return null;
 
@@ -492,29 +456,24 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{item ? 'Edit Surgical Item' : 'Add New Surgical Item'}</h2>
+          <h2>{item ? '✏️ Edit Surgical Item' : '➕ Add New Surgical Item'}</h2>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
+        {/* Error Summary */}
         {Object.keys(errors).length > 0 && (
-          <div className="error-summary" style={{
-            background: 'linear-gradient(135deg, #ffe6e6, #ffcccc)',
-            border: '2px solid #ff9999',
-            borderRadius: '8px',
-            padding: '15px',
-            margin: '15px 0',
-            color: '#cc0000',
-            boxShadow: '0 4px 12px rgba(255, 0, 0, 0.1)'
+          <div style={{
+            background: '#f8d7da',
+            border: '1px solid #f5c6cb',
+            borderRadius: '6px',
+            padding: '12px',
+            margin: '16px 0',
+            color: '#721c24'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-              <span style={{ fontSize: '20px', marginRight: '10px' }}>⚠️</span>
-              <strong>Please fix the following {Object.keys(errors).length} error{Object.keys(errors).length > 1 ? 's' : ''}:</strong>
-            </div>
-            <ul style={{ margin: '5px 0 0 30px', lineHeight: '1.6' }}>
+            <strong>⚠️ Please fix the following errors:</strong>
+            <ul style={{ margin: '8px 0 0 20px', paddingLeft: '0' }}>
               {Object.entries(errors).map(([field, error], index) => (
-                <li key={index} style={{ marginBottom: '5px' }}>
-                  <strong>{field.replace(/([A-Z])/g, ' $1').replace(/\./g, ' ')}: </strong>{error}
-                </li>
+                <li key={index} style={{ marginBottom: '4px' }}>{error}</li>
               ))}
             </ul>
           </div>
@@ -522,31 +481,23 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
 
         <form onSubmit={handleSubmit} className="item-form">
           <div className="form-grid">
+            
             {/* Basic Information */}
             <div className="form-section">
               <h3>📋 Basic Information</h3>
               
               <div className="form-group">
-                <label>Item Name <small style={{ color: '#dc3545', fontWeight: 'bold' }}>*Letters and spaces ONLY*</small></label>
+                <label>Item Name *</label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value, 'name')}
-                  onKeyPress={(e) => handleKeyPress(e, 'name')}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
                   className={errors.name ? 'error' : ''}
-                  placeholder="Enter item name (letters and spaces only)"
-                  maxLength="100"
+                  placeholder="Enter item name"
+                  required
+                  style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                 />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                  <CharacterCounter current={formData.name.length} max={100} />
-                  <ValidationIndicator 
-                    isValid={formData.name.length >= 2 && /^[A-Za-z\s]+$/.test(formData.name)}
-                    message={formData.name.length === 0 ? 'Required' : 
-                            formData.name.length < 2 ? 'Too short (min 2)' : 
-                            !/^[A-Za-z\s]+$/.test(formData.name) ? 'Letters & spaces only' : 'Valid name'}
-                  />
-                </div>
-                {errors.name && <span className="error-text">{errors.name}</span>}
+                {errors.name && <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>{errors.name}</span>}
               </div>
 
               <div className="form-group">
@@ -555,30 +506,26 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
                   value={formData.category}
                   onChange={(e) => handleInputChange('category', e.target.value)}
                   className={errors.category ? 'error' : ''}
+                  required
+                  style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                 >
                   <option value="">Select category</option>
-                  {categories.map(category => (
+                  {categories && categories.map(category => (
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
-                <ValidationIndicator 
-                  isValid={formData.category !== ''} 
-                  message={formData.category ? 'Selected' : 'Required'}
-                />
-                {errors.category && <span className="error-text">{errors.category}</span>}
+                {errors.category && <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>{errors.category}</span>}
               </div>
 
               <div className="form-group">
-                <label>Description <small>(max 500 chars)</small></label>
+                <label>Description</label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value, 'description')}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
                   placeholder="Enter item description"
                   rows="3"
-                  maxLength="500"
+                  style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px', resize: 'vertical' }}
                 />
-                <CharacterCounter current={formData.description.length} max={500} />
-                {errors.description && <span className="error-text">{errors.description}</span>}
               </div>
             </div>
 
@@ -586,398 +533,308 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
             <div className="form-section">
               <h3>📦 Inventory Information</h3>
               
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Quantity <small>(digits only, max 999,999)</small></label>
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Quantity</label>
                   <input
-                    type="text"
+                    type="number"
                     value={formData.quantity}
-                    onChange={(e) => handleInputChange('quantity', e.target.value, 'number')}
-                    onKeyPress={(e) => handleKeyPress(e, 'number')}
+                    onChange={(e) => handleInputChange('quantity', parseInt(e.target.value) || 0)}
                     className={errors.quantity ? 'error' : ''}
-                    placeholder="0"
-                    maxLength="6"
+                    min="0"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
-                  <ValidationIndicator 
-                    isValid={formData.quantity >= 0 && formData.quantity <= 999999}
-                    message={formData.quantity.toLocaleString()}
-                  />
-                  {errors.quantity && <span className="error-text">{errors.quantity}</span>}
+                  {errors.quantity && <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>{errors.quantity}</span>}
                 </div>
 
-                <div className="form-group">
-                  <label>Price per Unit <small>(numbers and decimal only)</small></label>
-                  <div style={{ position: 'relative' }}>
-                    <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#666' }}>$</span>
-                    <input
-                      type="text"
-                      value={formData.price}
-                      onChange={(e) => handleInputChange('price', e.target.value, 'price')}
-                      onKeyPress={(e) => handleKeyPress(e, 'price')}
-                      className={errors.price ? 'error' : ''}
-                      placeholder="0.00"
-                      style={{ paddingLeft: '25px' }}
-                    />
-                  </div>
-                  <ValidationIndicator 
-                    isValid={formData.price >= 0 && formData.price <= 1000000}
-                    message={`$${parseFloat(formData.price || 0).toLocaleString()}`}
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Price per Unit ($)</label>
+                  <input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
+                    className={errors.price ? 'error' : ''}
+                    min="0"
+                    step="0.01"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
-                  {errors.price && <span className="error-text">{errors.price}</span>}
-                </div>
-              </div>
-
-              {/* ✅ FIXED: Auto-Restock Configuration Section */}
-              <div className="form-section" style={{ border: '2px solid #007bff', borderRadius: '8px', padding: '15px', marginTop: '15px', background: '#f8f9ff' }}>
-                <h4 style={{ color: '#007bff', marginBottom: '15px' }}>🔄 Auto-Restock Configuration</h4>
-                
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Min Stock Level <small>(digits only, max 100,000)</small></label>
-                    <input
-                      type="text"
-                      value={formData.autoRestock.minStockLevel}
-                      onChange={(e) => handleInputChange('autoRestock.minStockLevel', e.target.value, 'number')}
-                      onKeyPress={(e) => handleKeyPress(e, 'number')}
-                      className={errors['autoRestock.minStockLevel'] ? 'error' : ''}
-                      placeholder="10"
-                      maxLength="6"
-                    />
-                    <ValidationIndicator 
-                      isValid={formData.autoRestock.minStockLevel >= 0 && formData.autoRestock.minStockLevel <= 100000}
-                      message={formData.autoRestock.minStockLevel.toLocaleString()}
-                    />
-                    {errors['autoRestock.minStockLevel'] && <span className="error-text">{errors['autoRestock.minStockLevel']}</span>}
-                  </div>
-
-                  <div className="form-group">
-                    <label>Max Stock Level <small>(digits only, max 100,000)</small></label>
-                    <input
-                      type="text"
-                      value={formData.autoRestock.maxStockLevel}
-                      onChange={(e) => handleInputChange('autoRestock.maxStockLevel', e.target.value, 'number')}
-                      onKeyPress={(e) => handleKeyPress(e, 'number')}
-                      className={errors['autoRestock.maxStockLevel'] ? 'error' : ''}
-                      placeholder="50"
-                      maxLength="6"
-                    />
-                    <ValidationIndicator 
-                      isValid={formData.autoRestock.maxStockLevel >= 0 && 
-                               formData.autoRestock.maxStockLevel <= 100000 && 
-                               formData.autoRestock.maxStockLevel >= formData.autoRestock.minStockLevel}
-                      message={formData.autoRestock.maxStockLevel.toLocaleString()}
-                    />
-                    {errors['autoRestock.maxStockLevel'] && <span className="error-text">{errors['autoRestock.maxStockLevel']}</span>}
-                  </div>
-
-                  <div className="form-group">
-                    <label>Reorder Quantity <small>(digits only, max 100,000)</small></label>
-                    <input
-                      type="text"
-                      value={formData.autoRestock.reorderQuantity}
-                      onChange={(e) => handleInputChange('autoRestock.reorderQuantity', e.target.value, 'number')}
-                      onKeyPress={(e) => handleKeyPress(e, 'number')}
-                      className={errors['autoRestock.reorderQuantity'] ? 'error' : ''}
-                      placeholder="25"
-                      maxLength="6"
-                    />
-                    <ValidationIndicator 
-                      isValid={formData.autoRestock.reorderQuantity >= 0 && formData.autoRestock.reorderQuantity <= 100000}
-                      message={formData.autoRestock.reorderQuantity.toLocaleString()}
-                    />
-                    {errors['autoRestock.reorderQuantity'] && <span className="error-text">{errors['autoRestock.reorderQuantity']}</span>}
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Auto-Restock Enabled</label>
-                  <select
-                    value={formData.autoRestock.isEnabled}
-                    onChange={(e) => handleInputChange('autoRestock.isEnabled', e.target.value === 'true')}
-                  >
-                    <option value={true}>Yes - Enable Auto-Restock</option>
-                    <option value={false}>No - Manual Restock Only</option>
-                  </select>
-                  <ValidationIndicator 
-                    isValid={true} 
-                    message={formData.autoRestock.isEnabled ? 'Auto-Restock Enabled' : 'Manual Restock Only'}
-                  />
+                  {errors.price && <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>{errors.price}</span>}
                 </div>
               </div>
             </div>
 
-            {/* Supplier Information with Enhanced Phone Input */}
+            {/* Auto-Restock Configuration */}
+            <div className="form-section" style={{ 
+              border: '2px solid #007bff', 
+              borderRadius: '8px', 
+              padding: '20px', 
+              background: '#f8f9ff',
+              margin: '20px 0'
+            }}>
+              <h3 style={{ color: '#007bff' }}>🔄 Auto-Restock Configuration</h3>
+              
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Min Stock Level</label>
+                  <input
+                    type="number"
+                    value={formData.autoRestock.minStockLevel}
+                    onChange={(e) => handleInputChange('autoRestock.minStockLevel', parseInt(e.target.value) || 0)}
+                    min="0"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
+                  />
+                </div>
+
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Max Stock Level</label>
+                  <input
+                    type="number"
+                    value={formData.autoRestock.maxStockLevel}
+                    onChange={(e) => handleInputChange('autoRestock.maxStockLevel', parseInt(e.target.value) || 0)}
+                    min="0"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
+                  />
+                </div>
+
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Reorder Quantity</label>
+                  <input
+                    type="number"
+                    value={formData.autoRestock.reorderQuantity}
+                    onChange={(e) => handleInputChange('autoRestock.reorderQuantity', parseInt(e.target.value) || 0)}
+                    min="0"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginTop: '16px' }}>
+                <label>Auto-Restock Enabled</label>
+                <select
+                  value={formData.autoRestock.isEnabled}
+                  onChange={(e) => handleInputChange('autoRestock.isEnabled', e.target.value === 'true')}
+                  style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
+                >
+                  <option value={true}>✅ Yes - Enable Auto-Restock</option>
+                  <option value={false}>❌ No - Manual Restock Only</option>
+                </select>
+              </div>
+            </div>
+
+            {/* 🏢 Company Information Section */}
             <div className="form-section">
-              <h3>🏢 Supplier Information</h3>
+              <h3>🏢 Company Information</h3>
               
               <div className="form-group">
-                <label>Supplier Name <small style={{ color: '#dc3545', fontWeight: 'bold' }}>*Letters and spaces ONLY*</small></label>
-                <input
-                  type="text"
-                  value={formData.supplier.name}
-                  onChange={(e) => handleInputChange('supplier.name', e.target.value, 'supplierName')}
-                  onKeyPress={(e) => handleKeyPress(e, 'supplierName')}
-                  className={errors['supplier.name'] ? 'error' : ''}
-                  placeholder="Enter supplier name (letters and spaces only)"
-                  maxLength="100"
+                <label>Company Name *</label>
+                <CompanyNameDropdown
+                  selectedCompany={formData.companyId}
+                  onCompanyChange={handleCompanyChange}
+                  className={errors.companyId ? 'error' : ''}
+                  placeholder="Select company name"
+                  required={true}
                 />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                  <CharacterCounter current={formData.supplier.name.length} max={100} />
-                  <ValidationIndicator 
-                    isValid={formData.supplier.name.length >= 2 && /^[A-Za-z\s]+$/.test(formData.supplier.name)}
-                    message={formData.supplier.name.length === 0 ? 'Required' : 
-                            formData.supplier.name.length < 2 ? 'Too short (min 2)' : 
-                            !/^[A-Za-z\s]+$/.test(formData.supplier.name) ? 'Letters & spaces only' : 'Valid name'}
-                  />
-                </div>
-                {errors['supplier.name'] && <span className="error-text">{errors['supplier.name']}</span>}
+                {errors.companyId && <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>{errors.companyId}</span>}
               </div>
 
-              <div className="form-row">
-                {/* ENHANCED PHONE INPUT WITH COUNTRY-SPECIFIC LENGTH RESTRICTIONS */}
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Contact Phone <small style={{ color: '#007bff', fontWeight: 'bold' }}>Select country & enter {currentCountry.length} digits</small></label>
-                  
-                  {/* Country Selector */}
-                  <div style={{ display: 'flex', marginBottom: '8px' }}>
-                    <select 
-                      value={selectedCountry} 
-                      onChange={handleCountryChange}
-                      style={{ 
-                        padding: '8px', 
-                        border: '1px solid #ced4da', 
-                        borderRadius: '4px', 
-                        fontSize: '14px', 
-                        minWidth: '200px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {phoneCountries.map(country => (
-                        <option key={country.code} value={country.code}>
-                          {country.flag} {country.name} ({country.dialCode})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Phone Number Input */}
-                  <div style={{ 
-                    display: 'flex', 
-                    border: errors['supplier.contact'] ? '2px solid #dc3545' : '1px solid #ced4da', 
-                    borderRadius: '4px', 
-                    overflow: 'hidden' 
+              {/* Auto-filled supplier details */}
+              {(formData.companyId || formData.supplier.name) && (
+                <div style={{ 
+                  marginTop: '20px', 
+                  padding: '16px', 
+                  backgroundColor: formData.companyId ? '#d4edda' : '#f8f9fa', 
+                  borderRadius: '8px',
+                  border: `2px solid ${formData.companyId ? '#28a745' : '#e9ecef'}`
+                }}>
+                  <h4 style={{ 
+                    marginBottom: '16px', 
+                    fontSize: '14px', 
+                    color: formData.companyId ? '#155724' : '#495057'
                   }}>
-                    <div style={{ 
-                      background: '#f8f9fa', 
-                      padding: '10px 12px', 
-                      borderRight: '1px solid #e9ecef', 
-                      fontSize: '14px', 
-                      fontWeight: 'bold', 
-                      color: '#495057',
-                      minWidth: '70px',
-                      display: 'flex',
-                      alignItems: 'center'
-                    }}>
-                      {currentCountry.dialCode}
+                    📋 Supplier Details {formData.companyId ? '(Auto-filled from company)' : '(Manual entry)'}
+                  </h4>
+                  
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Supplier Name</label>
+                      <input
+                        type="text"
+                        value={formData.supplier.name}
+                        onChange={(e) => handleInputChange('supplier.name', e.target.value)}
+                        readOnly={!!formData.companyId}
+                        style={{ 
+                          width: '100%', 
+                          padding: '10px', 
+                          border: '1px solid #ced4da', 
+                          borderRadius: '4px',
+                          backgroundColor: formData.companyId ? '#e9ecef' : 'white',
+                          cursor: formData.companyId ? 'not-allowed' : 'text'
+                        }}
+                      />
                     </div>
-                    <input
-                      type="tel"
-                      value={formatPhoneNumber(phoneNumber, currentCountry)}
-                      onChange={handlePhoneInput}
-                      onKeyPress={handlePhoneKeyPress}
-                      placeholder={currentCountry.example}
-                      style={{ 
-                        border: 'none', 
-                        padding: '10px 12px', 
-                        flex: 1, 
-                        outline: 'none', 
-                        fontSize: '14px'
-                      }}
-                      maxLength={currentCountry.length + 10} // Extra space for formatting
-                    />
+                    
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Contact</label>
+                      <input
+                        type="text"
+                        value={formData.supplier.contact}
+                        onChange={(e) => handleInputChange('supplier.contact', e.target.value)}
+                        readOnly={!!formData.companyId}
+                        style={{ 
+                          width: '100%', 
+                          padding: '10px', 
+                          border: '1px solid #ced4da', 
+                          borderRadius: '4px',
+                          backgroundColor: formData.companyId ? '#e9ecef' : 'white',
+                          cursor: formData.companyId ? 'not-allowed' : 'text'
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Email</label>
+                      <input
+                        type="email"
+                        value={formData.supplier.email}
+                        onChange={(e) => handleInputChange('supplier.email', e.target.value)}
+                        readOnly={!!formData.companyId}
+                        style={{ 
+                          width: '100%', 
+                          padding: '10px', 
+                          border: '1px solid #ced4da', 
+                          borderRadius: '4px',
+                          backgroundColor: formData.companyId ? '#e9ecef' : 'white',
+                          cursor: formData.companyId ? 'not-allowed' : 'text'
+                        }}
+                      />
+                    </div>
                   </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                    <small style={{ color: '#666', fontSize: '12px' }}>
-                      {phoneNumber.length}/{currentCountry.length} digits
-                      {currentCountry.validPrefixes.length > 0 && (
-                        <span> • Must start with {currentCountry.validPrefixes.join(', ')}</span>
-                      )}
-                    </small>
-                    <PhoneValidationIndicator />
-                  </div>
-                  {errors['supplier.contact'] && <span className="error-text">{errors['supplier.contact']}</span>}
                 </div>
-
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Email <small>(Valid email format)</small></label>
-                  <input
-                    type="text"
-                    value={formData.supplier.email}
-                    onChange={(e) => handleInputChange('supplier.email', e.target.value, 'email')}
-                    onKeyPress={(e) => handleKeyPress(e, 'email')}
-                    className={errors['supplier.email'] ? 'error' : ''}
-                    placeholder="supplier@email.com"
-                    maxLength="254"
-                  />
-                  <ValidationIndicator 
-                    isValid={!formData.supplier.email || /\S+@\S+\.\S+/.test(formData.supplier.email)}
-                    message={formData.supplier.email ? 
-                      (/\S+@\S+\.\S+/.test(formData.supplier.email) ? 'Valid' : 'Invalid') : 'Optional'}
-                  />
-                  {errors['supplier.email'] && <span className="error-text">{errors['supplier.email']}</span>}
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Location & Additional Info */}
             <div className="form-section">
               <h3>📍 Location & Additional Info</h3>
               
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Room <small>(Letters, numbers, hyphens, spaces)</small></label>
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Room</label>
                   <input
                     type="text"
                     value={formData.location.room}
-                    onChange={(e) => handleInputChange('location.room', e.target.value, 'location')}
-                    onKeyPress={(e) => handleKeyPress(e, 'location')}
-                    className={errors['location.room'] ? 'error' : ''}
+                    onChange={(e) => handleInputChange('location.room', e.target.value)}
                     placeholder="Room-101"
-                    maxLength="20"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
-                  <CharacterCounter current={formData.location.room.length} max={20} />
-                  {errors['location.room'] && <span className="error-text">{errors['location.room']}</span>}
                 </div>
 
-                <div className="form-group">
-                  <label>Shelf <small>(Letters, numbers, hyphens, spaces)</small></label>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Shelf</label>
                   <input
                     type="text"
                     value={formData.location.shelf}
-                    onChange={(e) => handleInputChange('location.shelf', e.target.value, 'location')}
-                    onKeyPress={(e) => handleKeyPress(e, 'location')}
-                    className={errors['location.shelf'] ? 'error' : ''}
+                    onChange={(e) => handleInputChange('location.shelf', e.target.value)}
                     placeholder="Shelf-A1"
-                    maxLength="20"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
-                  <CharacterCounter current={formData.location.shelf.length} max={20} />
-                  {errors['location.shelf'] && <span className="error-text">{errors['location.shelf']}</span>}
                 </div>
 
-                <div className="form-group">
-                  <label>Bin <small>(Letters, numbers, hyphens, spaces)</small></label>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Bin</label>
                   <input
                     type="text"
                     value={formData.location.bin}
-                    onChange={(e) => handleInputChange('location.bin', e.target.value, 'location')}
-                    onKeyPress={(e) => handleKeyPress(e, 'location')}
-                    className={errors['location.bin'] ? 'error' : ''}
+                    onChange={(e) => handleInputChange('location.bin', e.target.value)}
                     placeholder="Bin-B12"
-                    maxLength="20"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
-                  <CharacterCounter current={formData.location.bin.length} max={20} />
-                  {errors['location.bin'] && <span className="error-text">{errors['location.bin']}</span>}
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Expiry Date <small>(Future dates only)</small></label>
+              <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Expiry Date</label>
                   <input
                     type="date"
                     value={formData.expiryDate}
                     onChange={(e) => handleInputChange('expiryDate', e.target.value)}
-                    className={errors.expiryDate ? 'error' : ''}
-                    min={getTodayDate()}
-                    max={getMaxDate()}
+                    min={new Date().toISOString().split('T')[0]}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
-                  <ValidationIndicator 
-                    isValid={!formData.expiryDate || new Date(formData.expiryDate) > new Date()}
-                    message={formData.expiryDate ? 
-                      (new Date(formData.expiryDate) > new Date() ? 'Valid Future Date' : 'Must be future') : 'Optional'}
-                  />
-                  {errors.expiryDate && <span className="error-text">{errors.expiryDate}</span>}
                 </div>
 
-                <div className="form-group">
-                  <label>Batch Number <small>(Alphanumeric, '-', '.' only)</small></label>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Batch Number</label>
                   <input
                     type="text"
                     value={formData.batchNumber}
-                    onChange={(e) => handleInputChange('batchNumber', e.target.value, 'batchSerial')}
-                    onKeyPress={(e) => handleKeyPress(e, 'batchSerial')}
-                    className={errors.batchNumber ? 'error' : ''}
+                    onChange={(e) => handleInputChange('batchNumber', e.target.value)}
                     placeholder="BATCH-2025-001"
-                    maxLength="25"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
-                  <CharacterCounter current={formData.batchNumber.length} max={25} />
-                  {errors.batchNumber && <span className="error-text">{errors.batchNumber}</span>}
                 </div>
 
-                <div className="form-group">
-                  <label>Serial Number <small>(Alphanumeric, '-', '.' only)</small></label>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Serial Number</label>
                   <input
                     type="text"
                     value={formData.serialNumber}
-                    onChange={(e) => handleInputChange('serialNumber', e.target.value, 'batchSerial')}
-                    onKeyPress={(e) => handleKeyPress(e, 'batchSerial')}
-                    className={errors.serialNumber ? 'error' : ''}
+                    onChange={(e) => handleInputChange('serialNumber', e.target.value)}
                     placeholder="SN-123456789"
-                    maxLength="25"
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
-                  <CharacterCounter current={formData.serialNumber.length} max={25} />
-                  {errors.serialNumber && <span className="error-text">{errors.serialNumber}</span>}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="form-actions">
-            <button type="button" onClick={onClose} className="cancel-btn">
-              Cancel
-            </button>
+          {/* Form Actions */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginTop: '30px', 
+            padding: '20px 0',
+            borderTop: '2px solid #e9ecef'
+          }}>
             <button 
-              type="submit" 
-              disabled={loading || Object.keys(errors).length > 0}
-              className="submit-btn"
+              type="button" 
+              onClick={onClose}
               style={{
-                opacity: loading || Object.keys(errors).length > 0 ? 0.6 : 1,
-                cursor: loading || Object.keys(errors).length > 0 ? 'not-allowed' : 'pointer'
+                padding: '12px 24px',
+                backgroundColor: '#6c757d',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer'
               }}
             >
-              {loading ? 'Saving...' : item ? 'Update Item' : 'Create Item'}
+              ❌ Cancel
+            </button>
+            
+            <button 
+              type="submit" 
+              disabled={loading}
+              style={{
+                padding: '12px 32px',
+                backgroundColor: loading ? '#6c757d' : '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.6 : 1
+              }}
+            >
+              {loading ? '⏳ Saving...' : item ? '✅ Update Item' : '✅ Create Item'}
             </button>
           </div>
         </form>
-
-        <style jsx>{`
-          .error-text {
-            color: #dc3545;
-            font-size: 12px;
-            margin-top: 4px;
-            font-weight: 500;
-            display: block;
-          }
-
-          .form-group input.error,
-          .form-group select.error,
-          .form-group textarea.error {
-            border-color: #dc3545;
-            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-          }
-
-          .form-group input:focus,
-          .form-group select:focus,
-          .form-group textarea:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-          }
-        `}</style>
       </div>
     </div>
   );
 };
 
 export default SurgicalItemModal;
-
