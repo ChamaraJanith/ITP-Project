@@ -10,10 +10,20 @@ const SendEmail = () => {
   const [success, setSuccess] = useState("");
   const [dragActive, setDragActive] = useState(false);
   
-  // Form data
+  // Predefined email addresses
+  const predefinedEmails = {
+    admin: [
+      "cjtmadmhealx@gmail.com"
+    ],
+    doctor: [
+      "doctorgsdhealx@gmail.com",
+    ]
+  };
+  
+  // Form data - FIXED: Initialize recipients with admin emails since recipientType defaults to "admin"
   const [emailData, setEmailData] = useState({
-    recipients: [],
-    recipientType: "admin", // admin, doctor, or custom
+    recipients: ["cjtmadmhealx@gmail.com"], // Initialize with admin emails
+    recipientType: "admin",
     customEmails: "",
     subject: "",
     message: "",
@@ -25,20 +35,6 @@ const SendEmail = () => {
   const [emailPreview, setEmailPreview] = useState(false);
   
   const navigate = useNavigate();
-
-  // Predefined email addresses
-  const predefinedEmails = {
-    admin: [
-      "admin@healx.com",
-      "finaancemmakst@gmail.com",
-      "cjtmadmhealx@gmail.com"
-    ],
-    doctor: [
-      "doctorgsdhealx@gmail.com",
-      "medical.director@healx.com",
-      "head.physician@healx.com"
-    ]
-  };
 
   useEffect(() => {
     const adminData = localStorage.getItem("admin");
@@ -74,6 +70,11 @@ Financial Management Team
 HealX Healthcare Center`
     }));
   }, []);
+
+  // Handle page refresh
+  const handleRefresh = () => {
+    window.location.reload();
+  };
 
   // Handle drag and drop
   const handleDrag = (e) => {
@@ -144,7 +145,7 @@ HealX Healthcare Center`
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  // Handle recipient type change
+  // Handle recipient type change - FIXED: Properly populate recipients array
   const handleRecipientTypeChange = (type) => {
     setEmailData(prev => ({
       ...prev,
@@ -253,12 +254,20 @@ HealX Healthcare Center`
         <div className="se-header">
           <h1>📧 Send Financial Reports</h1>
           <p>Send financial PDF reports to admin and medical staff</p>
-          <button 
-            className="se-back-btn" 
-            onClick={() => navigate(-1)}
-          >
-            ← Back to Dashboard
-          </button>
+          <div className="se-header-buttons">
+            <button 
+              className="se-back-btn" 
+              onClick={() => navigate(-1)}
+            >
+              ← Back to Dashboard
+            </button>
+            <button 
+              className="se-refresh-btn" 
+              onClick={handleRefresh}
+            >
+              🔄 Refresh Page
+            </button>
+          </div>
         </div>
 
         {error && (
