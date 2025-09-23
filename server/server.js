@@ -30,7 +30,7 @@ import prescriptionNotificationRouter from './routes/prescriptionNotifications.j
 import emergencyAlertRouter from './routes/emergencyAlertRoutes.js';
 import financemailrouter from './routes/emails.js';
 import utilitiesrouter from './routes/FinancialUtilitiesRoutes.js';
-
+import disposalPdfRoute from './routes/disposalPdfRoute.js';
 
 
 
@@ -131,6 +131,7 @@ app.use('/api/inventory', surgicalrouter);
 app.use('/api/restock-orders', RestockRouter);
 app.use('/api/inventory/auto-restock', RestockRouter);
 app.use('/api/inventory', inventoryRouter);
+app.use('/api/inventory', disposalPdfRoute);
 
 // ✅ NEW: Mount supplier and purchase order routes
 console.log('🏢 Mounting supplier routes at /api/suppliers');
