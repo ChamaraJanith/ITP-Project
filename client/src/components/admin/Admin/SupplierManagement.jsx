@@ -1416,6 +1416,8 @@ const SupplierManagement = () => {
                   </div>
                 </div>
 
+                
+
                 <div className="supplier-management-form-section">
                   <div className="supplier-management-section-header">
                     <h3>Order Items *</h3>
