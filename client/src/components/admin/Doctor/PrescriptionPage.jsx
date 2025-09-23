@@ -95,26 +95,165 @@ const PrescriptionPage = ({ patientFromParent }) => {
     }
   };
 
-  // Start editing prescription
+  // Enhanced function to fetch patient details
+  const fetchPatientDetails = async (patientId) => {
+    try {
+      console.log("Fetching patient details for ID:", patientId);
+      
+      // Try direct patient fetch first
+      const response = await fetch(`http://localhost:7000/api/patients/${patientId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        const patientData = data.patient || data;
+        
+        console.log("Patient data from API:", patientData);
+        
+        return {
+          _id: patientData._id || patientId,
+          patientId: patientData.patientId || patientData._id,
+          firstName: patientData.firstName || "",
+          lastName: patientData.lastName || "",
+          email: patientData.email || "",
+          phone: patientData.phone || "",
+          gender: patientData.gender || "",
+          dateOfBirth: patientData.dateOfBirth || "",
+          bloodGroup: patientData.bloodGroup || "",
+          allergies: patientData.allergies || [],
+          address: patientData.address || "",
+          emergencyContact: patientData.emergencyContact || ""
+        };
+      } else {
+        // If direct fetch fails, try search
+        const searchResponse = await fetch(`http://localhost:7000/api/patients?search=${encodeURIComponent(patientId)}`);
+        
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json();
+          
+          if (Array.isArray(searchData) && searchData.length > 0) {
+            const exactMatch = searchData.find(p => 
+              p._id === patientId || 
+              p.patientId === patientId
+            );
+            
+            const patientData = exactMatch || searchData[0];
+            
+            return {
+              _id: patientData._id || patientId,
+              patientId: patientData.patientId || patientData._id,
+              firstName: patientData.firstName || "",
+              lastName: patientData.lastName || "",
+              email: patientData.email || "",
+              phone: patientData.phone || "",
+              gender: patientData.gender || "",
+              dateOfBirth: patientData.dateOfBirth || "",
+              bloodGroup: patientData.bloodGroup || "",
+              allergies: patientData.allergies || [],
+              address: patientData.address || "",
+              emergencyContact: patientData.emergencyContact || ""
+            };
+          }
+        }
+      }
+      
+      return null;
+    } catch (err) {
+      console.error("Error fetching patient details:", err);
+      return null;
+    }
+  };
+
+  // Enhanced edit handler with better patient data handling
   const handleEdit = async (id) => {
     try {
+      console.log("Editing prescription with ID:", id);
+      
       const res = await getPrescriptionById(id);
       const pres = res.data?.data;
-      if (!pres) return alert("Prescription not found");
+      
+      if (!pres) {
+        alert("Prescription not found");
+        return;
+      }
+      
+      console.log("Prescription data:", pres);
+      
+      // Set the editing prescription first
       setEditingPrescription(pres);
-      setPatient({
-        _id: pres.patientId,
-        firstName: pres.patientName.split(" ")[0] || "",
-        lastName: pres.patientName.split(" ")[1] || "",
-        gender: pres.patientGender,
-        email: pres.patientEmail,
-        phone: pres.patientPhone,
-      });
+      
+      // Try to get full patient details
+      let patientData = null;
+      
+      // Check if prescription already has full patient data
+      if (pres.patient && typeof pres.patient === 'object') {
+        console.log("Using patient data from prescription:", pres.patient);
+        patientData = {
+          _id: pres.patient._id || pres.patientId,
+          patientId: pres.patient.patientId || pres.patient._id,
+          firstName: pres.patient.firstName || "",
+          lastName: pres.patient.lastName || "",
+          email: pres.patient.email || pres.patientEmail || "",
+          phone: pres.patient.phone || pres.patientPhone || "",
+          gender: pres.patient.gender || pres.patientGender || "",
+          dateOfBirth: pres.patient.dateOfBirth || "",
+          bloodGroup: pres.patient.bloodGroup || pres.bloodGroup || "",
+          allergies: pres.patient.allergies || pres.patientAllergies || [],
+          address: pres.patient.address || "",
+          emergencyContact: pres.patient.emergencyContact || ""
+        };
+      } else {
+        // Try to fetch patient details from API
+        const patientId = pres.patientId || pres.patient;
+        if (patientId) {
+          patientData = await fetchPatientDetails(patientId);
+        }
+        
+        // If API fetch fails, construct from prescription data
+        if (!patientData) {
+          console.log("Constructing patient data from prescription fields");
+          
+          // Parse patient name
+          const nameParts = (pres.patientName || "").split(" ");
+          const firstName = nameParts[0] || "";
+          const lastName = nameParts.slice(1).join(" ") || "";
+          
+          patientData = {
+            _id: pres.patientId || pres.patient || "",
+            patientId: pres.patientId || pres.patient || "",
+            firstName: firstName,
+            lastName: lastName,
+            email: pres.patientEmail || "",
+            phone: pres.patientPhone || "",
+            gender: pres.patientGender || "",
+            dateOfBirth: pres.patientDateOfBirth || "",
+            bloodGroup: pres.bloodGroup || "",
+            allergies: pres.patientAllergies || [],
+            address: pres.patientAddress || "",
+            emergencyContact: pres.patientEmergencyContact || ""
+          };
+        }
+      }
+      
+      console.log("Final patient data for editing:", patientData);
+      
+      // Set the patient data
+      if (patientData) {
+        setPatient(patientData);
+      } else {
+        console.warn("No patient data available for editing");
+        setPatient(null);
+      }
+      
+      // Clear other states
       setOcrText("");
+      setScannedPatientId(null);
+      
+      // Scroll to top
       window.scrollTo({ top: 0, behavior: "smooth" });
+      
     } catch (err) {
-      console.error(err);
-      alert("Failed to load prescription");
+      console.error("Error loading prescription for editing:", err);
+      alert("Failed to load prescription for editing");
     }
   };
 
@@ -127,13 +266,17 @@ const PrescriptionPage = ({ patientFromParent }) => {
       } else {
         alert("Prescription created successfully");
       }
+      
+      // Reset states
       setEditingPrescription(null);
       setPatient(null);
       setOcrText("");
       setScannedPatientId(null);
+      
+      // Refresh the list
       fetchPrescriptions();
     } catch (err) {
-      console.error(err);
+      console.error("Error saving prescription:", err);
       alert("Failed to save prescription");
     }
   };
@@ -232,33 +375,78 @@ const PrescriptionPage = ({ patientFromParent }) => {
               </div>
             )}
 
-            {/* Patient Info */}
+            {/* Enhanced Patient Info Display */}
             <div className="pp-patient-info">
-              <h2 className="pp-section-title">Patient Information</h2>
+              <h2 className="pp-section-title">
+                {editingPrescription ? "Editing Patient" : "Patient Information"}
+              </h2>
               <div className="pp-patient-details">
                 {patient ? (
                   <div className="pp-patient-data">
-                    <div className="pp-patient-row">
-                      <span className="pp-patient-label">Name:</span>
-                      <span className="pp-patient-value">{patient.firstName} {patient.lastName}</span>
+                    <div className="pp-patient-header">
+                      <div className="pp-patient-name">
+                        {patient.firstName} {patient.lastName}
+                      </div>
+                      <div className="pp-patient-id">
+                        ID: {patient.patientId || patient._id}
+                      </div>
                     </div>
-                    <div className="pp-patient-row">
-                      <span className="pp-patient-label">Email:</span>
-                      <span className="pp-patient-value">{patient.email || "N/A"}</span>
+                    
+                    <div className="pp-patient-grid">
+                      <div className="pp-patient-row">
+                        <span className="pp-patient-label">Email:</span>
+                        <span className="pp-patient-value">
+                          {patient.email || "Not provided"}
+                          {!patient.email && <span className="pp-warning-text"> ⚠️</span>}
+                        </span>
+                      </div>
+                      <div className="pp-patient-row">
+                        <span className="pp-patient-label">Phone:</span>
+                        <span className="pp-patient-value">{patient.phone || "Not provided"}</span>
+                      </div>
+                      <div className="pp-patient-row">
+                        <span className="pp-patient-label">Gender:</span>
+                        <span className="pp-patient-value">{patient.gender || "Not specified"}</span>
+                      </div>
+                      <div className="pp-patient-row">
+                        <span className="pp-patient-label">Date of Birth:</span>
+                        <span className="pp-patient-value">
+                          {patient.dateOfBirth ? 
+                            new Date(patient.dateOfBirth).toLocaleDateString() : 
+                            "Not provided"
+                          }
+                        </span>
+                      </div>
+                      <div className="pp-patient-row">
+                        <span className="pp-patient-label">Blood Group:</span>
+                        <span className="pp-patient-value">{patient.bloodGroup || "Not specified"}</span>
+                      </div>
+                      {patient.allergies && patient.allergies.length > 0 && (
+                        <div className="pp-patient-row">
+                          <span className="pp-patient-label">Allergies:</span>
+                          <span className="pp-patient-value pp-allergies-list">
+                            {patient.allergies.join(", ")}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <div className="pp-patient-row">
-                      <span className="pp-patient-label">Gender:</span>
-                      <span className="pp-patient-value">{patient.gender}</span>
-                    </div>
-                    <div className="pp-patient-row">
-                      <span className="pp-patient-label">Phone:</span>
-                      <span className="pp-patient-value">{patient.phone || "N/A"}</span>
-                    </div>
+                    
+                    {editingPrescription && (
+                      <div className="pp-editing-indicator">
+                        <span className="pp-edit-icon">✏️</span>
+                        Editing mode - Patient data loaded from prescription
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="pp-no-patient">
                     <div className="pp-no-patient-icon">👤</div>
-                    <div className="pp-no-patient-text">No patient selected. Use search or scan QR.</div>
+                    <div className="pp-no-patient-text">
+                      {editingPrescription ? 
+                        "Loading patient data..." : 
+                        "No patient selected. Use search or scan QR."
+                      }
+                    </div>
                   </div>
                 )}
               </div>
@@ -305,6 +493,7 @@ const PrescriptionPage = ({ patientFromParent }) => {
                 ocrTextFromCanvas={ocrText}
                 onSaved={handleSaved}
                 editingPrescription={editingPrescription}
+                prescriptions={prescriptions}
                 scannedPatientId={scannedPatientId}
               />
             </ErrorBoundary>
