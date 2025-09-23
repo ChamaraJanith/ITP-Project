@@ -747,7 +747,7 @@ const SurgicalItemsManagement = () => {
       const bandY = y + 2;
       doc.setDrawColor(0, 0, 0);
       doc.setLineWidth(0.5);
-      doc.rect(20, bandY, pageWidth - 40, 16);
+      doc.rect(20, bandY, pageWidth - 30, 16);
 
       y += 7;
       doc.setFontSize(9);
