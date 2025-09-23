@@ -41,6 +41,8 @@ import ExploreTrends from './components/admin/Financial_Manager/ExploreTrends'; 
 import ProfitOrLoss from './components/admin/Financial_Manager/ProfitOrLoss'; 
 import SendEmail from './components/admin/Financial_Manager/SendEmail';
 import FinancialUtilities from './components/admin/Financial_Manager/FinancialUtilities';
+import FinancialBudgetPlanning from './components/admin/Financial_Manager/FinancialBudgetPlanning';
+
 
 
 
@@ -459,7 +461,12 @@ function App() {
         <Route 
               path="/admin/financial/utities" 
               element={<FinancialUtilities />} 
-        />
+          />
+
+        <Route 
+              path="admin/financial/budget-planning" 
+              element={<FinancialBudgetPlanning />} 
+          />
 
         <Route
           path="/admin/users"
