@@ -24,6 +24,7 @@ import "./ExpenseTracking.css";
 const EXPENSE_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d", "#FF6B6B", "#4ECDC4"];
 const PAYROLL_API = "http://localhost:7000/api/payrolls";
 const SURGICAL_ITEMS_API = "http://localhost:7000/api/inventory/surgical-items";
+const UTILITIES_API = "http://localhost:7000/api/financial-utilities"; // NEW: Utilities API
 
 const ExpenseTracking = () => {
   const [admin, setAdmin] = useState(null);
@@ -36,6 +37,7 @@ const ExpenseTracking = () => {
   const [selectedYear, setSelectedYear] = useState("");
   const [viewType, setViewType] = useState("overview");
   const [inventoryApiStatus, setInventoryApiStatus] = useState("checking");
+  const [utilitiesApiStatus, setUtilitiesApiStatus] = useState("checking"); // NEW: Utilities API status
   
   // New filter states
   const [activeFilter, setActiveFilter] = useState("overall");
@@ -57,7 +59,7 @@ const ExpenseTracking = () => {
     }
   }, [filterPeriod, selectedMonth, selectedYear, activeFilter, dateRange]);
 
-  // [Keep all your existing fetch functions exactly as they are]
+  // Keep your existing fetch functions exactly as they are
   const fetchPayrollExpenses = async () => {
     try {
       const response = await fetch(`${PAYROLL_API}?limit=1000`);
@@ -137,6 +139,124 @@ const ExpenseTracking = () => {
     }
   };
 
+  // NEW: Fetch utilities expenses function
+  const fetchUtilitiesExpenses = async () => {
+    console.log("🔄 Fetching utilities data from API...");
+    setUtilitiesApiStatus("trying");
+
+    try {
+      const apiUrl = `${UTILITIES_API}?page=1&limit=1000`;
+      console.log(`🔍 Connecting to utilities API: ${apiUrl}`);
+      
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const text = await response.text();
+      console.log(`⚡ Raw response from utilities API:`, text.substring(0, 200) + "...");
+      
+      try {
+        const data = JSON.parse(text);
+        
+        let utilities = [];
+        if (data.success && data.data && Array.isArray(data.data.utilities)) {
+          utilities = data.data.utilities;
+        } else if (data.success && Array.isArray(data.data)) {
+          utilities = data.data;
+        } else if (Array.isArray(data)) {
+          utilities = data;
+        }
+        
+        if (utilities.length > 0) {
+          console.log(`✅ Successfully fetched ${utilities.length} utility records`);
+          
+          const sampleUtility = utilities[0];
+          console.log("📋 Sample utility structure:", {
+            id: sampleUtility._id,
+            category: sampleUtility.category,
+            description: sampleUtility.description,
+            amount: sampleUtility.amount,
+            vendor: sampleUtility.vendor_name,
+            status: sampleUtility.payment_status
+          });
+          
+          setUtilitiesApiStatus("connected");
+          return utilities;
+        } else {
+          throw new Error("No utilities found in response");
+        }
+        
+      } catch (parseError) {
+        console.error("❌ JSON parsing error:", parseError);
+        throw new Error("Invalid JSON response from utilities API");
+      }
+      
+    } catch (error) {
+      console.error("❌ Error fetching utilities:", error);
+      console.warn("⚠️ Utilities API connection failed. Falling back to sample data.");
+      setUtilitiesApiStatus("fallback");
+      return getSampleUtilitiesData();
+    }
+  };
+
+  // NEW: Sample utilities data for fallback
+  const getSampleUtilitiesData = () => {
+    return [
+      { 
+        _id: "util1", 
+        category: "Electricity", 
+        description: "Monthly electricity bill - Main building", 
+        amount: 2500, 
+        vendor_name: "PowerGrid Corp", 
+        payment_status: "Paid",
+        billing_period_start: "2024-09-01",
+        billing_period_end: "2024-09-30"
+      },
+      { 
+        _id: "util2", 
+        category: "Water & Sewage", 
+        description: "Water supply and sewage services", 
+        amount: 800, 
+        vendor_name: "CityWater Services", 
+        payment_status: "Paid",
+        billing_period_start: "2024-09-01",
+        billing_period_end: "2024-09-30"
+      },
+      { 
+        _id: "util3", 
+        category: "Internet & Communication", 
+        description: "High-speed internet and phone services", 
+        amount: 1200, 
+        vendor_name: "TeleConnect Ltd", 
+        payment_status: "Pending",
+        billing_period_start: "2024-09-01",
+        billing_period_end: "2024-09-30"
+      },
+      { 
+        _id: "util4", 
+        category: "Generator Fuel", 
+        description: "Diesel fuel for backup generator", 
+        amount: 600, 
+        vendor_name: "FuelSupply Inc", 
+        payment_status: "Overdue",
+        billing_period_start: "2024-08-15",
+        billing_period_end: "2024-09-15"
+      },
+      { 
+        _id: "util5", 
+        category: "Waste Management", 
+        description: "Medical waste disposal services", 
+        amount: 450, 
+        vendor_name: "MedWaste Solutions", 
+        payment_status: "Paid",
+        billing_period_start: "2024-09-01",
+        billing_period_end: "2024-09-30"
+      }
+    ];
+  };
+
   const getSampleInventoryData = () => {
     return [
       { _id: "sample1", name: "Surgical Scissors", category: "Cutting Instruments", price: 250, quantity: 15, supplier: { name: "MedTech Ltd" } },
@@ -150,6 +270,7 @@ const ExpenseTracking = () => {
     ];
   };
 
+  // UPDATED: Initialize expense tracking with utilities
   const initializeExpenseTracking = async () => {
     try {
       const adminData = localStorage.getItem("admin");
@@ -157,19 +278,20 @@ const ExpenseTracking = () => {
         setAdmin(JSON.parse(adminData));
       }
 
-      console.log("🔄 Loading expense tracking data...");
+      console.log("🔄 Loading comprehensive expense tracking data...");
 
-      const [payrollData, surgicalItemsData] = await Promise.all([
+      const [payrollData, surgicalItemsData, utilitiesData] = await Promise.all([
         fetchPayrollExpenses(),
-        fetchInventoryExpenses()
+        fetchInventoryExpenses(),
+        fetchUtilitiesExpenses() // NEW: Fetch utilities data
       ]);
 
-      console.log(`📊 Loaded: ${payrollData.length} payroll records, ${surgicalItemsData.length} surgical items`);
+      console.log(`📊 Loaded: ${payrollData.length} payroll records, ${surgicalItemsData.length} surgical items, ${utilitiesData.length} utility records`);
 
-      const expenseAnalytics = calculateExpenseAnalytics(payrollData, surgicalItemsData);
+      const expenseAnalytics = calculateExpenseAnalytics(payrollData, surgicalItemsData, utilitiesData); // UPDATED: Include utilities
       setExpenseData(expenseAnalytics);
 
-      console.log("✅ Expense tracking initialized successfully");
+      console.log("✅ Expense tracking initialized successfully with utilities");
 
     } catch (error) {
       console.error("❌ Error loading expense tracking:", error);
@@ -179,9 +301,9 @@ const ExpenseTracking = () => {
     }
   };
 
-  // [Keep your existing calculateExpenseAnalytics function exactly as it is]
-  const calculateExpenseAnalytics = (payrolls = [], surgicalItems = []) => {
-    console.log("📊 Calculating expense analytics with surgical items...");
+  // UPDATED: Calculate expense analytics including utilities
+  const calculateExpenseAnalytics = (payrolls = [], surgicalItems = [], utilities = []) => {
+    console.log("📊 Calculating expense analytics with surgical items and utilities...");
     
     const payrollExpenses = {
       totalGrossSalary: payrolls.reduce((sum, p) => sum + (parseFloat(p.grossSalary) || 0), 0),
@@ -199,6 +321,7 @@ const ExpenseTracking = () => {
       payrollExpenses.totalEPF + 
       payrollExpenses.totalETF;
 
+    // Process payroll monthly costs
     payrolls.forEach(p => {
       if (p.payrollMonth && p.payrollYear) {
         const key = `${p.payrollMonth} ${p.payrollYear}`;
@@ -277,32 +400,120 @@ const ExpenseTracking = () => {
     inventoryExpenses.averageItemValue = inventoryExpenses.totalItems > 0 ? 
       inventoryExpenses.totalInventoryValue / inventoryExpenses.totalItems : 0;
 
-    const totalExpenses = payrollExpenses.totalPayrollExpense + inventoryExpenses.totalInventoryValue;
+    // NEW: Calculate utilities expenses
+    const utilitiesExpenses = {
+      totalUtilitiesExpense: 0,
+      totalUtilities: utilities.length || 0,
+      categoryExpenses: {},
+      vendorExpenses: {},
+      pendingPayments: 0,
+      overduePayments: 0,
+      paidPayments: 0,
+      monthlyUtilitiesCosts: {},
+      averageUtilityAmount: 0,
+      rawData: utilities
+    };
 
+    utilities.forEach(utility => {
+      if (!utility) return;
+      
+      const amount = parseFloat(utility.amount) || 0;
+      const category = utility.category || 'Other';
+      const vendor = utility.vendor_name || 'Unknown Vendor';
+      const status = utility.payment_status || 'Pending';
+      
+      utilitiesExpenses.totalUtilitiesExpense += amount;
+      
+      // Count payment statuses
+      if (status === 'Pending') {
+        utilitiesExpenses.pendingPayments++;
+      } else if (status === 'Overdue') {
+        utilitiesExpenses.overduePayments++;
+      } else if (status === 'Paid') {
+        utilitiesExpenses.paidPayments++;
+      }
+      
+      // Group by category
+      if (!utilitiesExpenses.categoryExpenses[category]) {
+        utilitiesExpenses.categoryExpenses[category] = {
+          totalAmount: 0,
+          count: 0,
+          pending: 0,
+          overdue: 0,
+          paid: 0
+        };
+      }
+      utilitiesExpenses.categoryExpenses[category].totalAmount += amount;
+      utilitiesExpenses.categoryExpenses[category].count += 1;
+      utilitiesExpenses.categoryExpenses[category][status.toLowerCase()]++;
+      
+      // Group by vendor
+      if (!utilitiesExpenses.vendorExpenses[vendor]) {
+        utilitiesExpenses.vendorExpenses[vendor] = {
+          totalAmount: 0,
+          count: 0,
+          averageAmount: 0
+        };
+      }
+      utilitiesExpenses.vendorExpenses[vendor].totalAmount += amount;
+      utilitiesExpenses.vendorExpenses[vendor].count += 1;
+      utilitiesExpenses.vendorExpenses[vendor].averageAmount = 
+        utilitiesExpenses.vendorExpenses[vendor].totalAmount / 
+        utilitiesExpenses.vendorExpenses[vendor].count;
+
+      // Monthly tracking
+      if (utility.billing_period_start) {
+        const date = new Date(utility.billing_period_start);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (!utilitiesExpenses.monthlyUtilitiesCosts[key]) {
+          utilitiesExpenses.monthlyUtilitiesCosts[key] = {
+            month: date.toLocaleString('default', { month: 'long' }),
+            year: date.getFullYear(),
+            totalAmount: 0,
+            count: 0
+          };
+        }
+        utilitiesExpenses.monthlyUtilitiesCosts[key].totalAmount += amount;
+        utilitiesExpenses.monthlyUtilitiesCosts[key].count += 1;
+      }
+    });
+
+    utilitiesExpenses.averageUtilityAmount = utilitiesExpenses.totalUtilities > 0 ? 
+      utilitiesExpenses.totalUtilitiesExpense / utilitiesExpenses.totalUtilities : 0;
+
+    // UPDATED: Calculate total expenses including utilities
+    const totalExpenses = payrollExpenses.totalPayrollExpense + inventoryExpenses.totalInventoryValue + utilitiesExpenses.totalUtilitiesExpense;
+
+    // UPDATED: Expense breakdown including utilities
     const expenseBreakdown = [
       { name: "Staff Salaries", value: payrollExpenses.totalGrossSalary, category: "Payroll" },
       { name: "Employee Benefits", value: payrollExpenses.totalBonuses, category: "Payroll" },
       { name: "EPF Contributions", value: payrollExpenses.totalEPF, category: "Payroll" },
       { name: "ETF Contributions", value: payrollExpenses.totalETF, category: "Payroll" },
-      { name: "Surgical Items Value", value: inventoryExpenses.totalInventoryValue, category: "Medical Inventory" }
+      { name: "Surgical Items Value", value: inventoryExpenses.totalInventoryValue, category: "Medical Inventory" },
+      { name: "Utilities Expenses", value: utilitiesExpenses.totalUtilitiesExpense, category: "Utilities" } // NEW
     ];
 
     const monthlyTrends = Object.values(payrollExpenses.monthlyPayrollCosts).map(month => ({
       ...month,
       employeeCount: month.employeeCount.size,
-      inventoryValue: inventoryExpenses.totalInventoryValue / 12
+      inventoryValue: inventoryExpenses.totalInventoryValue / 12,
+      utilitiesAmount: utilitiesExpenses.totalUtilitiesExpense / 12 // NEW
     }));
 
-    console.log("✅ Expense analytics calculated:", {
+    console.log("✅ Expense analytics calculated with utilities:", {
       totalExpenses: totalExpenses.toLocaleString(),
       payrollExpense: payrollExpenses.totalPayrollExpense.toLocaleString(),
       surgicalItemsValue: inventoryExpenses.totalInventoryValue.toLocaleString(),
-      surgicalItemsCount: inventoryExpenses.totalItems
+      utilitiesExpense: utilitiesExpenses.totalUtilitiesExpense.toLocaleString(), // NEW
+      surgicalItemsCount: inventoryExpenses.totalItems,
+      utilitiesCount: utilitiesExpenses.totalUtilities // NEW
     });
 
     return {
       payrollExpenses,
       inventoryExpenses,
+      utilitiesExpenses, // NEW
       totalExpenses,
       expenseBreakdown,
       monthlyTrends,
@@ -310,10 +521,14 @@ const ExpenseTracking = () => {
         totalMonthlyExpenses: totalExpenses,
         payrollPercentage: totalExpenses > 0 ? (payrollExpenses.totalPayrollExpense / totalExpenses) * 100 : 0,
         inventoryPercentage: totalExpenses > 0 ? (inventoryExpenses.totalInventoryValue / totalExpenses) * 100 : 0,
+        utilitiesPercentage: totalExpenses > 0 ? (utilitiesExpenses.totalUtilitiesExpense / totalExpenses) * 100 : 0, // NEW
         avgMonthlyPayroll: payrollExpenses.totalPayrollExpense / 12,
         avgInventoryPerEmployee: inventoryExpenses.totalInventoryValue / Math.max(payrollExpenses.totalEmployees, 1),
+        avgUtilitiesPerMonth: utilitiesExpenses.totalUtilitiesExpense / 12, // NEW
         inventoryHealthScore: inventoryExpenses.totalItems > 0 ? 
-          ((inventoryExpenses.totalItems - inventoryExpenses.lowStockCount - inventoryExpenses.outOfStockCount) / inventoryExpenses.totalItems) * 100 : 0
+          ((inventoryExpenses.totalItems - inventoryExpenses.lowStockCount - inventoryExpenses.outOfStockCount) / inventoryExpenses.totalItems) * 100 : 0,
+        utilitiesPaymentScore: utilitiesExpenses.totalUtilities > 0 ? // NEW
+          (utilitiesExpenses.paidPayments / utilitiesExpenses.totalUtilities) * 100 : 0
       }
     };
   };
@@ -348,7 +563,7 @@ const ExpenseTracking = () => {
     return isNaN(num) ? "0" : num.toLocaleString();
   };
 
-  // **NEW: Enhanced PDF Export with Professional Signature Section**
+  // UPDATED: Enhanced PDF Export with utilities data
   const exportToPDF = () => {
     if (!expenseData) {
       setError("No data to export");
@@ -357,16 +572,19 @@ const ExpenseTracking = () => {
 
     const currentDate = new Date();
     const reportTitle = activeFilter === 'payroll' ? 'Payroll Expense Report' : 
-                       activeFilter === 'inventory' ? 'Inventory Expense Report' : 
+                       activeFilter === 'inventory' ? 'Inventory Expense Report' :
+                       activeFilter === 'utilities' ? 'Utilities Expense Report' : // NEW
                        'Comprehensive Expense Report';
 
-    // Calculate totals based on active filter
+    // UPDATED: Calculate totals including utilities
     const totals = {
       totalExpenses: expenseData.totalExpenses || 0,
       payrollExpense: expenseData.payrollExpenses?.totalPayrollExpense || 0,
       inventoryValue: expenseData.inventoryExpenses?.totalInventoryValue || 0,
+      utilitiesExpense: expenseData.utilitiesExpenses?.totalUtilitiesExpense || 0, // NEW
       totalEmployees: expenseData.payrollExpenses?.totalEmployees || 0,
-      totalItems: expenseData.inventoryExpenses?.totalItems || 0
+      totalItems: expenseData.inventoryExpenses?.totalItems || 0,
+      totalUtilities: expenseData.utilitiesExpenses?.totalUtilities || 0 // NEW
     };
 
     const printContent = `
@@ -463,7 +681,6 @@ const ExpenseTracking = () => {
             font-weight: bold;
           }
           
-          /* NEW: Enhanced Signature Section Styles */
           .signature-section {
             margin-top: 60px;
             margin-bottom: 30px;
@@ -553,7 +770,7 @@ const ExpenseTracking = () => {
         <div class="info">
           <strong>Generated on:</strong> ${currentDate.toLocaleString()}<br>
           <strong>Report Type:</strong> ${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Analysis<br>
-          <strong>Data Status:</strong> ${inventoryApiStatus === 'connected' ? 'Live Data' : 'Sample Data'}<br>
+          <strong>Data Status:</strong> Inventory: ${inventoryApiStatus === 'connected' ? 'Live Data' : 'Sample Data'} | Utilities: ${utilitiesApiStatus === 'connected' ? 'Live Data' : 'Sample Data'}<br>
           <strong>Filter Period:</strong> ${filterPeriod === 'all' ? 'All Time' : filterPeriod}
         </div>
 
@@ -566,38 +783,46 @@ const ExpenseTracking = () => {
               <div class="metric-value">$${safeToLocaleString(totals.totalExpenses)}</div>
               <div class="metric-label">Combined organizational costs</div>
             </div>
-            ${activeFilter !== 'inventory' ? `
+            ${activeFilter !== 'inventory' && activeFilter !== 'utilities' ? `
             <div class="summary-card">
               <h4>👥 Payroll Expenses</h4>
               <div class="metric-value">$${safeToLocaleString(totals.payrollExpense)}</div>
               <div class="metric-label">${totals.totalEmployees} employees • ${safeToFixed(expenseData.summary?.payrollPercentage)}% of total</div>
             </div>` : ''}
-            ${activeFilter !== 'payroll' ? `
+            ${activeFilter !== 'payroll' && activeFilter !== 'utilities' ? `
             <div class="summary-card">
               <h4>🏥 Medical Inventory</h4>
               <div class="metric-value">$${safeToLocaleString(totals.inventoryValue)}</div>
               <div class="metric-label">${totals.totalItems} items • ${safeToFixed(expenseData.summary?.inventoryPercentage)}% of total</div>
             </div>` : ''}
+            ${activeFilter !== 'payroll' && activeFilter !== 'inventory' ? `
             <div class="summary-card">
-              <h4>📊 Health Score</h4>
+              <h4>⚡ Utilities</h4>
+              <div class="metric-value">$${safeToLocaleString(totals.utilitiesExpense)}</div>
+              <div class="metric-label">${totals.totalUtilities} services • ${safeToFixed(expenseData.summary?.utilitiesPercentage)}% of total</div>
+            </div>` : ''}
+            <div class="summary-card">
+              <h4>📊 Overall Health</h4>
               <div class="metric-value">${safeToFixed(expenseData.summary?.inventoryHealthScore)}%</div>
-              <div class="metric-label">Inventory availability status</div>
+              <div class="metric-label">System operational status</div>
             </div>
           </div>
         </div>
 
-        ${expenseData.inventoryExpenses?.lowStockCount > 0 || expenseData.inventoryExpenses?.outOfStockCount > 0 ? `
+        ${(expenseData.inventoryExpenses?.lowStockCount > 0 || expenseData.inventoryExpenses?.outOfStockCount > 0 || expenseData.utilitiesExpenses?.overduePayments > 0) ? `
         <!-- Alerts Section -->
         <div class="alert-section">
           <div class="alert-title">⚠️ Critical Alerts</div>
-          ${expenseData.inventoryExpenses.lowStockCount > 0 ? 
+          ${expenseData.inventoryExpenses?.lowStockCount > 0 ? 
             `<p><strong>Low Stock:</strong> ${expenseData.inventoryExpenses.lowStockCount} items need restocking</p>` : ''}
-          ${expenseData.inventoryExpenses.outOfStockCount > 0 ? 
+          ${expenseData.inventoryExpenses?.outOfStockCount > 0 ? 
             `<p><strong>Out of Stock:</strong> ${expenseData.inventoryExpenses.outOfStockCount} items completely depleted</p>` : ''}
+          ${expenseData.utilitiesExpenses?.overduePayments > 0 ? 
+            `<p><strong>Overdue Utilities:</strong> ${expenseData.utilitiesExpenses.overduePayments} utility bills are overdue</p>` : ''}
         </div>` : ''}
 
         <!-- Data Tables -->
-        ${activeFilter !== 'inventory' && expenseData.payrollExpenses?.rawData?.length > 0 ? `
+        ${activeFilter !== 'inventory' && activeFilter !== 'utilities' && expenseData.payrollExpenses?.rawData?.length > 0 ? `
         <h3 style="color: #1da1f2; margin-top: 30px;">💼 Payroll Details</h3>
         <table>
           <thead>
@@ -637,7 +862,7 @@ const ExpenseTracking = () => {
           </tbody>
         </table>` : ''}
 
-        ${activeFilter !== 'payroll' && expenseData.inventoryExpenses?.rawData?.length > 0 ? `
+        ${activeFilter !== 'payroll' && activeFilter !== 'utilities' && expenseData.inventoryExpenses?.rawData?.length > 0 ? `
         <h3 style="color: #1da1f2; margin-top: 30px;">🏥 Inventory Details</h3>
         <table>
           <thead>
@@ -677,7 +902,43 @@ const ExpenseTracking = () => {
           </tbody>
         </table>` : ''}
 
-        <!-- NEW: Professional Signature Section -->
+        ${activeFilter !== 'payroll' && activeFilter !== 'inventory' && expenseData.utilitiesExpenses?.rawData?.length > 0 ? `
+        <h3 style="color: #1da1f2; margin-top: 30px;">⚡ Utilities Details</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Amount</th>
+              <th>Vendor</th>
+              <th>Payment Status</th>
+              <th>Billing Period</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${expenseData.utilitiesExpenses.rawData.slice(0, 20).map(utility => {
+              return `
+                <tr>
+                  <td><strong>${utility.category || 'N/A'}</strong></td>
+                  <td>${utility.description || 'N/A'}</td>
+                  <td class="currency"><strong>$${(utility.amount || 0).toLocaleString()}</strong></td>
+                  <td>${utility.vendor_name || 'Unknown'}</td>
+                  <td>${utility.payment_status || 'Pending'}</td>
+                  <td>${utility.billing_period_start ? new Date(utility.billing_period_start).toLocaleDateString() : 'N/A'}</td>
+                </tr>
+              `;
+            }).join('')}
+            <tr class="totals-row">
+              <td colspan="2"><strong>TOTALS</strong></td>
+              <td class="currency"><strong>$${expenseData.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()}</strong></td>
+              <td><strong>${expenseData.utilitiesExpenses.totalUtilities} Services</strong></td>
+              <td><strong>Paid: ${expenseData.utilitiesExpenses.paidPayments}, Pending: ${expenseData.utilitiesExpenses.pendingPayments}, Overdue: ${expenseData.utilitiesExpenses.overduePayments}</strong></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>` : ''}
+
+        <!-- Professional Signature Section -->
         <div class="signature-section">
           <h3>✍️ Report Authorization</h3>
           <div class="signature-container">
@@ -706,12 +967,12 @@ const ExpenseTracking = () => {
           </div>
         </div>
 
-        <!-- NEW: Report Footer -->
+        <!-- Report Footer -->
         <div class="report-footer">
           <p><strong>This is a system-generated report from Heal-x Healthcare Management System</strong></p>
           <p>Report generated on ${currentDate.toLocaleString()} • All amounts are in Sri Lankan Rupees</p>
           <p>For queries regarding this report, contact the Financial Department at Heal-x Healthcare</p>
-          ${inventoryApiStatus === 'fallback' ? '<p><em>Note: This report contains sample inventory data due to API connection issues</em></p>' : ''}
+          ${inventoryApiStatus === 'fallback' || utilitiesApiStatus === 'fallback' ? '<p><em>Note: This report contains sample data due to API connection issues</em></p>' : ''}
         </div>
 
         <!-- Print Controls -->
@@ -735,7 +996,7 @@ const ExpenseTracking = () => {
     setTimeout(() => setSuccess(""), 3000);
   };
 
-  // Export functionality
+  // UPDATED: Export functionality including utilities
   const exportData = () => {
     if (!expenseData) return;
     
@@ -751,10 +1012,11 @@ const ExpenseTracking = () => {
     }
   };
 
+  // UPDATED: CSV export including utilities
   const exportToCSV = (filename) => {
     let csvContent = `Heal-x Expense Report - ${activeFilter.toUpperCase()}\n`;
     csvContent += `Generated on: ${new Date().toLocaleString()}\n`;
-    csvContent += `Total Records: ${(expenseData.payrollExpenses?.rawData?.length || 0) + (expenseData.inventoryExpenses?.rawData?.length || 0)}\n\n`;
+    csvContent += `Total Records: ${(expenseData.payrollExpenses?.rawData?.length || 0) + (expenseData.inventoryExpenses?.rawData?.length || 0) + (expenseData.utilitiesExpenses?.rawData?.length || 0)}\n\n`;
     
     if (activeFilter === 'overall' || activeFilter === 'payroll') {
       csvContent += 'Payroll Data\n';
@@ -772,6 +1034,16 @@ const ExpenseTracking = () => {
         const totalValue = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0);
         csvContent += `${item.name || ''},${item.category || ''},${item.price || 0},${item.quantity || 0},${item.supplier?.name || item.supplier || ''},${totalValue}\n`;
       });
+      csvContent += '\n';
+    }
+
+    // NEW: Utilities data export
+    if (activeFilter === 'overall' || activeFilter === 'utilities') {
+      csvContent += 'Utilities Data\n';
+      csvContent += 'Category,Description,Amount,Vendor,Payment Status,Billing Period Start,Billing Period End\n';
+      expenseData.utilitiesExpenses.rawData.forEach(utility => {
+        csvContent += `${utility.category || ''},${utility.description || ''},${utility.amount || 0},${utility.vendor_name || ''},${utility.payment_status || ''},${utility.billing_period_start || ''},${utility.billing_period_end || ''}\n`;
+      });
     }
     
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -786,13 +1058,15 @@ const ExpenseTracking = () => {
     setTimeout(() => setSuccess(""), 3000);
   };
 
+  // UPDATED: JSON export including utilities
   const exportToJSON = (filename) => {
     const exportData = {
       timestamp: new Date().toISOString(),
       filter: activeFilter,
       summary: expenseData.summary,
-      payrollExpenses: activeFilter !== 'inventory' ? expenseData.payrollExpenses : undefined,
-      inventoryExpenses: activeFilter !== 'payroll' ? expenseData.inventoryExpenses : undefined
+      payrollExpenses: activeFilter !== 'inventory' && activeFilter !== 'utilities' ? expenseData.payrollExpenses : undefined,
+      inventoryExpenses: activeFilter !== 'payroll' && activeFilter !== 'utilities' ? expenseData.inventoryExpenses : undefined,
+      utilitiesExpenses: activeFilter !== 'payroll' && activeFilter !== 'inventory' ? expenseData.utilitiesExpenses : undefined // NEW
     };
     
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -843,7 +1117,7 @@ const ExpenseTracking = () => {
     return null;
   };
 
-  // Generate alerts
+  // UPDATED: Generate alerts including utilities
   const generateAlerts = () => {
     if (!expenseData) return [];
     
@@ -868,6 +1142,26 @@ const ExpenseTracking = () => {
         icon: '🚨'
       });
     }
+
+    // NEW: Overdue utilities alerts
+    if (expenseData.utilitiesExpenses.overduePayments > 0) {
+      alerts.push({
+        type: 'error',
+        title: 'Overdue Utilities',
+        message: `${expenseData.utilitiesExpenses.overduePayments} utility bills are overdue`,
+        icon: '⚡'
+      });
+    }
+
+    // NEW: Pending utilities alerts
+    if (expenseData.utilitiesExpenses.pendingPayments > 3) {
+      alerts.push({
+        type: 'warning',
+        title: 'Pending Utilities',
+        message: `${expenseData.utilitiesExpenses.pendingPayments} utility bills are pending payment`,
+        icon: '💡'
+      });
+    }
     
     // High expense alert
     if (expenseData.summary.payrollPercentage > 80) {
@@ -890,6 +1184,7 @@ const ExpenseTracking = () => {
             <div className="etx-loading-spinner"></div>
             <h3>Loading comprehensive expense analytics...</h3>
             <p>📦 {inventoryApiStatus === "trying" ? "Fetching surgical items from correct endpoint..." : "Processing inventory data..."}</p>
+            <p>⚡ {utilitiesApiStatus === "trying" ? "Connecting to utilities API..." : "Processing utilities data..."}</p>
           </div>
         </div>
       </AdminLayout>
@@ -935,7 +1230,7 @@ const ExpenseTracking = () => {
     );
   }
 
-  // Prepare filtered data based on active filter
+  // UPDATED: Prepare filtered data based on active filter including utilities
   const getFilteredMetrics = () => {
     switch (activeFilter) {
       case 'payroll':
@@ -1000,6 +1295,38 @@ const ExpenseTracking = () => {
             note: "Overall stock status"
           }
         ];
+      // NEW: Utilities filter metrics
+      case 'utilities':
+        return [
+          {
+            icon: "⚡",
+            value: safeToLocaleString(expenseData.utilitiesExpenses?.totalUtilitiesExpense),
+            label: "Total Utilities Expense",
+            trend: "↗ 4.2%",
+            note: `${expenseData.utilitiesExpenses?.totalUtilities || 0} services`
+          },
+          {
+            icon: "✅",
+            value: expenseData.utilitiesExpenses?.paidPayments || "0",
+            label: "Paid Bills",
+            trend: "↗ 8.1%",
+            note: "Successfully processed"
+          },
+          {
+            icon: "⏳",
+            value: expenseData.utilitiesExpenses?.pendingPayments || "0",
+            label: "Pending Bills",
+            trend: "→ 0.0%",
+            note: "Awaiting payment"
+          },
+          {
+            icon: "🚨",
+            value: expenseData.utilitiesExpenses?.overduePayments || "0",
+            label: "Overdue Bills",
+            trend: "↘ 12.5%",
+            note: "Immediate attention needed"
+          }
+        ];
       default:
         return [
           {
@@ -1007,7 +1334,7 @@ const ExpenseTracking = () => {
             value: safeToLocaleString(expenseData.totalExpenses),
             label: "Total Expenses",
             trend: "↗ 12.5%",
-            note: inventoryApiStatus === "connected" ? "Live data calculation" : "Sample data"
+            note: inventoryApiStatus === "connected" && utilitiesApiStatus === "connected" ? "Live data calculation" : "Mixed data sources"
           },
           {
             icon: "👥",
@@ -1023,18 +1350,19 @@ const ExpenseTracking = () => {
             trend: "↘ 3.1%",
             note: `${safeToFixed(expenseData.summary?.inventoryPercentage)}% of total • ${expenseData.inventoryExpenses?.totalItems || 0} items`
           },
+          // NEW: Utilities in overall view
           {
-            icon: "📊",
-            value: safeToFixed(expenseData.summary?.inventoryHealthScore) + "%",
-            label: "Inventory Health Score",
-            trend: "→ 0.8%",
-            note: "Stock availability status"
+            icon: "⚡",
+            value: safeToLocaleString(expenseData.utilitiesExpenses?.totalUtilitiesExpense),
+            label: "Utilities Expenses",
+            trend: "↗ 4.2%",
+            note: `${safeToFixed(expenseData.summary?.utilitiesPercentage)}% of total • ${expenseData.utilitiesExpenses?.totalUtilities || 0} services`
           }
         ];
     }
   };
 
-  // Chart data preparation based on filter
+  // UPDATED: Chart data preparation including utilities
   const getChartData = () => {
     if (activeFilter === 'payroll') {
       return {
@@ -1068,12 +1396,47 @@ const ExpenseTracking = () => {
           .sort((a, b) => b.value - a.value)
           .slice(0, 8)
       };
-    } else {
+    } else if (activeFilter === 'utilities') {
+      // NEW: Utilities-specific chart data
       return {
-        primaryChart: expenseData.expenseBreakdown || [],
+        primaryChart: Object.entries(expenseData.utilitiesExpenses?.categoryExpenses || {}).map(([category, data]) => ({
+          name: category,
+          value: data.totalAmount || 0,
+          count: data.count || 0,
+          pending: data.pending || 0,
+          overdue: data.overdue || 0,
+          paid: data.paid || 0
+        })),
+        vendorData: Object.entries(expenseData.utilitiesExpenses?.vendorExpenses || {})
+          .map(([vendor, data]) => ({
+            name: vendor,
+            value: data.totalAmount || 0,
+            count: data.count || 0,
+            avgAmount: data.averageAmount || 0
+          }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 8),
+        monthlyTrends: Object.values(expenseData.utilitiesExpenses?.monthlyUtilitiesCosts || {}).map(month => ({
+          name: `${month.month} ${month.year}`,
+          value: month.totalAmount,
+          count: month.count
+        }))
+      };
+    } else {
+      // UPDATED: Overall view including utilities
+      return {
+        primaryChart: [
+          { name: "Staff Salaries", value: expenseData.payrollExpenses?.totalGrossSalary || 0, category: "Payroll" },
+          { name: "Employee Benefits", value: expenseData.payrollExpenses?.totalBonuses || 0, category: "Payroll" },
+          { name: "EPF Contributions", value: expenseData.payrollExpenses?.totalEPF || 0, category: "Payroll" },
+          { name: "ETF Contributions", value: expenseData.payrollExpenses?.totalETF || 0, category: "Payroll" },
+          { name: "Surgical Items Value", value: expenseData.inventoryExpenses?.totalInventoryValue || 0, category: "Medical Inventory" },
+          { name: "Utilities Expenses", value: expenseData.utilitiesExpenses?.totalUtilitiesExpense || 0, category: "Utilities" } // NEW
+        ],
         categoryComparison: [
           { name: "Payroll Expenses", value: expenseData.payrollExpenses?.totalPayrollExpense || 0 },
-          { name: "Surgical Items Value", value: expenseData.inventoryExpenses?.totalInventoryValue || 0 }
+          { name: "Surgical Items Value", value: expenseData.inventoryExpenses?.totalInventoryValue || 0 },
+          { name: "Utilities Expenses", value: expenseData.utilitiesExpenses?.totalUtilitiesExpense || 0 } // NEW
         ]
       };
     }
@@ -1095,19 +1458,30 @@ const ExpenseTracking = () => {
             </h1>
             <p className="etx-subtitle">Comprehensive financial insights with smart filtering and analytics</p>
             
-            {inventoryApiStatus === "fallback" && (
+            {/* UPDATED: API status warnings including utilities */}
+            {(inventoryApiStatus === "fallback" || utilitiesApiStatus === "fallback") && (
               <div className="etx-api-warning">
                 <div className="etx-warning-header">
                   <span className="etx-warning-icon">⚠️</span>
-                  <h4>API Connection Issue Detected</h4>
+                  <h4>API Connection Issues Detected</h4>
                 </div>
-                <p><strong>Unable to connect to surgical items API</strong></p>
-                <p>Expected endpoint: <code>http://localhost:7000/api/inventory/surgical-items</code></p>
+                {inventoryApiStatus === "fallback" && (
+                  <>
+                    <p><strong>Unable to connect to surgical items API</strong></p>
+                    <p>Expected endpoint: <code>http://localhost:7000/api/inventory/surgical-items</code></p>
+                  </>
+                )}
+                {utilitiesApiStatus === "fallback" && (
+                  <>
+                    <p><strong>Unable to connect to utilities API</strong></p>
+                    <p>Expected endpoint: <code>http://localhost:7000/api/financial-utilities</code></p>
+                  </>
+                )}
                 <div className="etx-warning-checklist">
                   <p><strong>Please ensure:</strong></p>
                   <ul>
                     <li>Backend server is running on port 7000</li>
-                    <li>Surgical items API is accessible</li>
+                    <li>All API endpoints are accessible</li>
                     <li>No CORS configuration issues</li>
                   </ul>
                 </div>
@@ -1115,10 +1489,11 @@ const ExpenseTracking = () => {
               </div>
             )}
             
-            {inventoryApiStatus === "connected" && expenseData.inventoryExpenses?.totalItems > 0 && (
+            {/* UPDATED: Success status including utilities */}
+            {inventoryApiStatus === "connected" && utilitiesApiStatus === "connected" && expenseData.inventoryExpenses?.totalItems > 0 && expenseData.utilitiesExpenses?.totalUtilities > 0 && (
               <div className="etx-api-success">
                 <span className="etx-success-icon">✅</span>
-                Connected to live surgical items API ({expenseData.inventoryExpenses.totalItems} items)
+                Connected to all APIs - Inventory: {expenseData.inventoryExpenses.totalItems} items | Utilities: {expenseData.utilitiesExpenses.totalUtilities} services
               </div>
             )}
           </div>
@@ -1197,7 +1572,7 @@ const ExpenseTracking = () => {
           </div>
         )}
 
-        {/* Enhanced Filter Tabs */}
+        {/* UPDATED: Enhanced Filter Tabs including utilities */}
         <div className="etx-filter-section">
           <div className="etx-filter-tabs">
             <button 
@@ -1223,6 +1598,15 @@ const ExpenseTracking = () => {
               <span className="etx-tab-icon">🏥</span>
               <span className="etx-tab-label">Inventory Focus</span>
               <span className="etx-tab-count">{expenseData.inventoryExpenses?.totalItems || 0} items</span>
+            </button>
+            {/* NEW: Utilities filter tab */}
+            <button 
+              className={`etx-filter-tab ${activeFilter === 'utilities' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('utilities')}
+            >
+              <span className="etx-tab-icon">⚡</span>
+              <span className="etx-tab-label">Utilities Focus</span>
+              <span className="etx-tab-count">{expenseData.utilitiesExpenses?.totalUtilities || 0} services</span>
             </button>
           </div>
           
@@ -1288,7 +1672,7 @@ const ExpenseTracking = () => {
           ))}
         </div>
 
-        {/* Dynamic Charts Section */}
+        {/* UPDATED: Dynamic Charts Section including utilities */}
         <div className="etx-charts-container">
           {/* Primary Chart */}
           <div className="etx-charts-row">
@@ -1296,10 +1680,13 @@ const ExpenseTracking = () => {
               <div className="etx-chart-header">
                 <h3 className="etx-chart-title">
                   <span className="etx-chart-icon">
-                    {activeFilter === 'payroll' ? '💼' : activeFilter === 'inventory' ? '📦' : '🥧'}
+                    {activeFilter === 'payroll' ? '💼' : 
+                     activeFilter === 'inventory' ? '📦' : 
+                     activeFilter === 'utilities' ? '⚡' : '🥧'}
                   </span>
                   {activeFilter === 'payroll' ? 'Payroll Breakdown' : 
-                   activeFilter === 'inventory' ? 'Inventory by Category' : 'Expense Breakdown'}
+                   activeFilter === 'inventory' ? 'Inventory by Category' :
+                   activeFilter === 'utilities' ? 'Utilities by Category' : 'Expense Breakdown'}
                 </h3>
                 <div className="etx-chart-controls">
                   <button 
@@ -1358,7 +1745,7 @@ const ExpenseTracking = () => {
               </div>
             </div>
 
-            {/* Secondary Chart */}
+            {/* UPDATED: Secondary Charts including utilities */}
             {activeFilter === 'inventory' && chartData.supplierData && (
               <div className="etx-chart-card etx-medium">
                 <div className="etx-chart-header">
@@ -1386,6 +1773,75 @@ const ExpenseTracking = () => {
                       <Tooltip content={<CustomTooltip />} />
                       <Bar dataKey="value" fill="#FF8042" radius={[4, 4, 0, 0]} />
                     </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* NEW: Utilities vendors chart */}
+            {activeFilter === 'utilities' && chartData.vendorData && (
+              <div className="etx-chart-card etx-medium">
+                <div className="etx-chart-header">
+                  <h3 className="etx-chart-title">
+                    <span className="etx-chart-icon">🏢</span>
+                    Utility Vendors
+                  </h3>
+                </div>
+                <div className="etx-chart-content">
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart data={chartData.vendorData} margin={{ top: 10, right: 30, left: 20, bottom: -15 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fontSize: 10 }}
+                        interval={0}
+                        angle={-45}
+                        textAnchor="end"
+                        height={150}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 11 }}
+                        tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar dataKey="value" fill="#FFBB28" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* NEW: Utilities monthly trends */}
+            {activeFilter === 'utilities' && chartData.monthlyTrends && (
+              <div className="etx-chart-card etx-medium">
+                <div className="etx-chart-header">
+                  <h3 className="etx-chart-title">
+                    <span className="etx-chart-icon">📈</span>
+                    Monthly Utility Trends
+                  </h3>
+                </div>
+                <div className="etx-chart-content">
+                  <ResponsiveContainer width="100%" height={400}>
+                    <LineChart data={chartData.monthlyTrends} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fontSize: 11 }}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 11 }}
+                        tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Line 
+                        type="monotone" 
+                        dataKey="value" 
+                        stroke="#FFBB28" 
+                        strokeWidth={3}
+                        dot={{ fill: '#FFBB28', strokeWidth: 2, r: 6 }}
+                        activeDot={{ r: 8 }}
+                      />
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
@@ -1426,6 +1882,7 @@ const ExpenseTracking = () => {
               </div>
             )}
 
+            {/* UPDATED: Overall category comparison including utilities */}
             {activeFilter === 'overall' && chartData.categoryComparison && (
               <div className="etx-chart-card etx-medium">
                 <div className="etx-chart-header">
@@ -1460,13 +1917,14 @@ const ExpenseTracking = () => {
           </div>
         </div>
 
-        {/* Enhanced Summary Section */}
+        {/* UPDATED: Enhanced Summary Section including utilities */}
         <div className="etx-summary-section">
           <div className="etx-summary-header">
             <h2 className="etx-summary-title">
               <span className="etx-summary-icon">📋</span>
               {activeFilter === 'payroll' ? 'Payroll Insights' : 
-               activeFilter === 'inventory' ? 'Inventory Insights' : 'Executive Summary'}
+               activeFilter === 'inventory' ? 'Inventory Insights' :
+               activeFilter === 'utilities' ? 'Utilities Insights' : 'Executive Summary'}
             </h2>
             <div className="etx-summary-actions">
               <button onClick={exportToPDF} className="etx-print-btn">
@@ -1510,21 +1968,40 @@ const ExpenseTracking = () => {
                   <p>Average item value is <strong>${safeToLocaleString(expenseData.inventoryExpenses?.averageItemValue)}</strong>. Consider implementing automated reordering systems and supplier consolidation to reduce costs.</p>
                 </div>
               </>
+            ) : activeFilter === 'utilities' ? (
+              // NEW: Utilities insights
+              <>
+                <div className="etx-summary-card">
+                  <h4>⚡ Utilities Overview</h4>
+                  <p>Total utilities expenses amount to <strong>${safeToLocaleString(expenseData.utilitiesExpenses?.totalUtilitiesExpense)}</strong> across <strong>{expenseData.utilitiesExpenses?.totalUtilities || 0}</strong> services. Average monthly utility cost is <strong>${safeToLocaleString(expenseData.summary?.avgUtilitiesPerMonth)}</strong>.</p>
+                </div>
+                
+                <div className="etx-summary-card">
+                  <h4>📊 Payment Status</h4>
+                  <p>Payment distribution: <strong>{expenseData.utilitiesExpenses?.paidPayments || 0}</strong> paid bills, <strong>{expenseData.utilitiesExpenses?.pendingPayments || 0}</strong> pending payments, and <strong>{expenseData.utilitiesExpenses?.overduePayments || 0}</strong> overdue bills. Payment score is <strong>{safeToFixed(expenseData.summary?.utilitiesPaymentScore)}%</strong>.</p>
+                </div>
+                
+                <div className="etx-summary-card">
+                  <h4>💡 Cost Management</h4>
+                  <p>Utilities represent <strong>{safeToFixed(expenseData.summary?.utilitiesPercentage)}%</strong> of total organizational expenses. Consider energy-efficient upgrades and vendor consolidation to reduce monthly costs.</p>
+                </div>
+              </>
             ) : (
+              // UPDATED: Overall summary including utilities
               <>
                 <div className="etx-summary-card">
                   <h4>💰 Financial Overview</h4>
-                  <p>Total organizational expenses amount to <strong>${safeToLocaleString(expenseData.totalExpenses)}</strong>, with payroll accounting for <strong>{safeToFixed(expenseData.summary?.payrollPercentage)}%</strong> and medical inventory representing <strong>{safeToFixed(expenseData.summary?.inventoryPercentage)}%</strong> of total costs.</p>
+                  <p>Total organizational expenses amount to <strong>${safeToLocaleString(expenseData.totalExpenses)}</strong>, with payroll accounting for <strong>{safeToFixed(expenseData.summary?.payrollPercentage)}%</strong>, medical inventory representing <strong>{safeToFixed(expenseData.summary?.inventoryPercentage)}%</strong>, and utilities comprising <strong>{safeToFixed(expenseData.summary?.utilitiesPercentage)}%</strong> of total costs.</p>
                 </div>
                 
                 <div className="etx-summary-card">
-                  <h4>👥 Workforce Costs</h4>
-                  <p>Monthly payroll averages <strong>${safeToLocaleString(expenseData.summary?.avgMonthlyPayroll)}</strong> across <strong>{expenseData.payrollExpenses?.totalEmployees || 0}</strong> employees, with an average inventory investment of <strong>${safeToLocaleString(expenseData.summary?.avgInventoryPerEmployee)}</strong> per employee.</p>
+                  <h4>👥 Workforce & Operations</h4>
+                  <p>Monthly payroll averages <strong>${safeToLocaleString(expenseData.summary?.avgMonthlyPayroll)}</strong> across <strong>{expenseData.payrollExpenses?.totalEmployees || 0}</strong> employees, with an average inventory investment of <strong>${safeToLocaleString(expenseData.summary?.avgInventoryPerEmployee)}</strong> per employee and utilities costing <strong>${safeToLocaleString(expenseData.summary?.avgUtilitiesPerMonth)}</strong> monthly.</p>
                 </div>
                 
                 <div className="etx-summary-card">
-                  <h4>🏥 Inventory Health</h4>
-                  <p>Medical inventory maintains a <strong>{safeToFixed(expenseData.summary?.inventoryHealthScore)}%</strong> health score with <strong>{expenseData.inventoryExpenses?.totalItems || 0}</strong> total items. Low stock alerts: <strong>{expenseData.inventoryExpenses?.lowStockCount || 0}</strong> items, Out of stock: <strong>{expenseData.inventoryExpenses?.outOfStockCount || 0}</strong> items.</p>
+                  <h4>🏥 Operational Health</h4>
+                  <p>Medical inventory maintains a <strong>{safeToFixed(expenseData.summary?.inventoryHealthScore)}%</strong> health score with <strong>{expenseData.inventoryExpenses?.totalItems || 0}</strong> total items. Utilities payment score is <strong>{safeToFixed(expenseData.summary?.utilitiesPaymentScore)}%</strong> with <strong>{expenseData.utilitiesExpenses?.overduePayments || 0}</strong> overdue bills requiring immediate attention.</p>
                 </div>
               </>
             )}

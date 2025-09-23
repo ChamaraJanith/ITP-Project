@@ -1289,3 +1289,397 @@ html {
   will-change: transform;
 }
 
+.etx-payment-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  gap: 4px;
+}
+
+.etx-status-paid {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.etx-status-pending {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.etx-status-overdue {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  color: #991b1b;
+  border: 1px solid #dc2626;
+  animation: etx-pulse-warning 2s ease-in-out infinite;
+}
+
+@keyframes etx-pulse-warning {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+/* Utilities Category Badges */
+.etx-utility-category {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.etx-category-electricity {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.etx-category-water {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+  border: 1px solid #3b82f6;
+}
+
+.etx-category-internet {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  color: #3730a3;
+  border: 1px solid #6366f1;
+}
+
+.etx-category-fuel {
+  background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+  color: #991b1b;
+  border: 1px solid #dc2626;
+}
+
+.etx-category-waste {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.etx-category-other {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #374151;
+  border: 1px solid #6b7280;
+}
+
+/* Enhanced Alert Styles for Utilities */
+.etx-alert-utilities {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-left-color: #f59e0b;
+  position: relative;
+  overflow: hidden;
+}
+
+.etx-alert-utilities::before {
+  content: '⚡';
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 2rem;
+  opacity: 0.1;
+  animation: etx-flash 1.5s ease-in-out infinite;
+}
+
+@keyframes etx-flash {
+  0%, 50%, 100% {
+    opacity: 0.1;
+  }
+  25%, 75% {
+    opacity: 0.3;
+  }
+}
+
+.etx-alert-critical {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  border-left-color: #dc2626;
+  animation: etx-critical-pulse 3s ease-in-out infinite;
+}
+
+@keyframes etx-critical-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.1);
+  }
+  50% {
+    box-shadow: 0 8px 15px -3px rgba(220, 38, 38, 0.3);
+    transform: translateY(-1px);
+  }
+}
+
+/* Utilities Dashboard Metrics Enhancements */
+.etx-metric-card.etx-utilities-primary {
+  --accent-color: #f59e0b;
+  --accent-color-light: #fbbf24;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.etx-metric-card.etx-utilities-success {
+  --accent-color: #10b981;
+  --accent-color-light: #34d399;
+  background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 100%);
+}
+
+.etx-metric-card.etx-utilities-danger {
+  --accent-color: #dc2626;
+  --accent-color-light: #ef4444;
+  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+}
+
+.etx-metric-card.etx-utilities-info {
+  --accent-color: #3b82f6;
+  --accent-color-light: #60a5fa;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+/* Utilities Table Enhancements */
+.etx-table-utilities .etx-table td.payment-status {
+  padding: 8px 16px;
+}
+
+.etx-table-utilities .etx-table td.amount {
+  font-weight: 600;
+  color: #059669;
+  text-align: right;
+}
+
+.etx-table-utilities .etx-table td.overdue {
+  background: #fef2f2;
+  color: #991b1b;
+  font-weight: 600;
+}
+
+.etx-table-utilities .etx-table tr:hover td.overdue {
+  background: #fecaca;
+}
+
+/* Utilities Chart Customizations */
+.etx-chart-card.etx-utilities-chart {
+  border-top: 4px solid #f59e0b;
+  position: relative;
+}
+
+.etx-chart-card.etx-utilities-chart::after {
+  content: '⚡';
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 1.5rem;
+  opacity: 0.1;
+}
+
+.etx-utilities-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+  justify-content: center;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.etx-utilities-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.etx-utilities-legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Enhanced Summary Cards for Utilities */
+.etx-summary-card.etx-utilities-summary {
+  border-left-color: #f59e0b;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.etx-summary-card.etx-utilities-summary::before {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+}
+
+.etx-summary-card.etx-utilities-summary h4::before {
+  content: '⚡';
+  margin-right: 8px;
+  font-size: 1.1em;
+}
+
+/* Message Enhancements */
+.etx-message {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  position: relative;
+  animation: etx-slideDown 0.3s ease-out;
+}
+
+@keyframes etx-slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.etx-message-icon {
+  margin-right: 8px;
+  font-size: 1.1rem;
+}
+
+.etx-message-close {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+}
+
+.etx-message-close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.etx-success-message {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.etx-error-message {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  color: #991b1b;
+  border: 1px solid #dc2626;
+}
+
+/* Utilities Filter Tab Enhancement */
+.etx-filter-tab[data-filter="utilities"] {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.etx-filter-tab[data-filter="utilities"]:hover {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.etx-filter-tab[data-filter="utilities"].active {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border-color: #f59e0b;
+}
+
+.etx-filter-tab[data-filter="utilities"].active .etx-tab-label,
+.etx-filter-tab[data-filter="utilities"].active .etx-tab-count {
+  color: white;
+}
+
+/* Responsive Utilities Enhancements */
+@media (max-width: 768px) {
+  .etx-payment-status {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+  
+  .etx-utility-category {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+  
+  .etx-utilities-legend {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .etx-utilities-legend-item {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .etx-payment-status {
+    font-size: 0.65rem;
+    padding: 2px 4px;
+  }
+  
+  .etx-utility-category {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+}
+
+/* Enhanced Accessibility for Utilities */
+.etx-payment-status:focus,
+.etx-utility-category:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Print Styles for Utilities */
+@media print {
+  .etx-payment-status,
+  .etx-utility-category {
+    border: 1px solid #000 !important;
+    background: white !important;
+    color: #000 !important;
+  }
+  
+  .etx-status-paid::after {
+    content: ' (PAID)';
+  }
+  
+  .etx-status-pending::after {
+    content: ' (PENDING)';
+  }
+  
+  .etx-status-overdue::after {
+    content: ' (OVERDUE)';
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .etx-payment-status,
+  .etx-utility-category {
+    border-width: 2px;
+    font-weight: 700;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .etx-status-overdue,
+  .etx-alert-critical,
+  .etx-alert-utilities::before {
+    animation: none;
+  }
+}

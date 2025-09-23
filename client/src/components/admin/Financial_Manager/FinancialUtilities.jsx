@@ -1210,7 +1210,7 @@ const FinancialUtilities = () => {
     <body>
         <!-- Header Section -->
         <div class="header">
-            <h1>Heal-x Financial Utilities Report</h1>
+            <h1>🏥Heal-x Financial Utilities Report</h1>
             <p>Healthcare Utilities Management System</p>
         </div>
 
