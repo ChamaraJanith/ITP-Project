@@ -479,7 +479,7 @@ const SupplierManagement = () => {
 
   const ErrorMessage = ({ error }) => {
     if (!error) return null;
-    return <span className="error-message">{error}</span>;
+    return <span className="supplier-management-error-message">{error}</span>;
   };
 
   // Generate PDF Report
@@ -707,7 +707,6 @@ const SupplierManagement = () => {
         doc.setLineWidth(0.5);
         doc.rect(boxX, boxY+3, boxW, boxH);
 
-
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         const lineY = boxY + 12;
@@ -737,19 +736,19 @@ const SupplierManagement = () => {
 
   if (loading) {
     return (
-      <div className="loading-state">
-        <div className="spinner"></div>
+      <div className="supplier-management-loading-state">
+        <div className="supplier-management-spinner"></div>
         <p>Loading supplier data from port 7000...</p>
       </div>
     );
   }
 
   return (
-    <div className="procurement-page">
+    <div className="supplier-management-procurement-page">
       {/* Header & Controls */}
-      <div className="order-page-header">
-        <div className="order-header-left">
-          <div className="page-icon">📦</div>
+      <div className="supplier-management-order-page-header">
+        <div className="supplier-management-order-header-left">
+          <div className="supplier-management-page-icon">📦</div>
           <div>
             <h1>Procurement & Suppliers</h1>
             <p>Manage purchase orders, supplier relationships & automated restocking</p>
@@ -757,11 +756,11 @@ const SupplierManagement = () => {
           </div>
         </div>
 
-        <div className="header-actions">
-          <button onClick={handleManualRefresh} className="action-btn refresh">
+        <div className="supplier-management-header-actions">
+          <button onClick={handleManualRefresh} className="supplier-management-action-btn supplier-management-refresh">
             🔄 Refresh Now
           </button>
-          <label className="auto-refresh-toggle">
+          <label className="supplier-management-auto-refresh-toggle">
             <input
               type="checkbox"
               checked={autoRefresh}
@@ -769,24 +768,24 @@ const SupplierManagement = () => {
             />
             Auto-Refresh
           </label>
-          <span className="last-updated">
+          <span className="supplier-management-last-updated">
             Last Updated: {lastUpdated.toLocaleTimeString()}
           </span>
           <button
-            className="action-btn primary"
+            className="supplier-management-action-btn supplier-management-primary"
             onClick={() => {
               setModalType('supplier');
               setShowModal(true);
               resetForms();
             }}
           >
-            <button onClick={() => navigate('/admin/dashboard')} className="back-btn">
-                  ← Back to Dashboard
-                </button>
             + Add Supplier
           </button>
+          <button onClick={() => navigate('/admin/dashboard')} className="supplier-management-back-btn">
+            ← Back to Dashboard
+          </button>
           <button
-            className="action-btn secondary"
+            className="supplier-management-action-btn supplier-management-secondary"
             onClick={() => {
               setModalType('order');
               setShowModal(true);
@@ -796,7 +795,7 @@ const SupplierManagement = () => {
             + New Order
           </button>
           <button
-            className="action-btn tertiary"
+            className="supplier-management-action-btn supplier-management-tertiary"
             onClick={generateSuppliersPDF}
             title="Export Suppliers PDF"
           >
@@ -806,42 +805,42 @@ const SupplierManagement = () => {
       </div>
 
       {/* Real-Time Supplier Costs Dashboard */}
-      <div className="supplier-costs-section">
-        <div className="section-header">
+      <div className="supplier-management-supplier-costs-section">
+        <div className="supplier-management-section-header">
           <h2>💰 Real-Time Supplier Costs</h2>
-          <div className="refresh-indicator">
-            <span className="live-dot"></span>
+          <div className="supplier-management-refresh-indicator">
+            <span className="supplier-management-live-dot"></span>
             <span>Live Data</span>
           </div>
         </div>
 
-        <div className="cost-metrics-grid">
+        <div className="supplier-management-cost-metrics-grid">
           {/* Total Spending */}
-          <div className="cost-metric-card total">
-            <div className="metric-header">
+          <div className="supplier-management-cost-metric-card supplier-management-total">
+            <div className="supplier-management-metric-header">
               <h3>Total Supplier Spending</h3>
-              <span className="trend-up">↗</span>
+              <span className="supplier-management-trend-up">↗</span>
             </div>
-            <div className="metric-value">
+            <div className="supplier-management-metric-value">
               ${supplierCosts.totalCosts.toLocaleString()}
             </div>
-            <div className="metric-subtitle">
+            <div className="supplier-management-metric-subtitle">
               All-time spending across {suppliers.length} suppliers
             </div>
           </div>
 
           {/* Monthly Spending */}
-          <div className="cost-metric-card monthly">
-            <div className="metric-header">
+          <div className="supplier-management-cost-metric-card supplier-management-monthly">
+            <div className="supplier-management-metric-header">
               <h3>This Month</h3>
-              <span className="period">
+              <span className="supplier-management-period">
                 {new Date().toLocaleString('default', { month: 'long' })}
               </span>
             </div>
-            <div className="metric-value">
+            <div className="supplier-management-metric-value">
               ${supplierCosts.monthlyCosts.toLocaleString()}
             </div>
-            <div className="metric-subtitle">
+            <div className="supplier-management-metric-subtitle">
               {supplierCosts.monthlyCosts > 0 
                 ? `${((supplierCosts.monthlyCosts / supplierCosts.totalCosts) * 100).toFixed(1)}% of total spending`
                 : 'No orders this month'
@@ -850,37 +849,37 @@ const SupplierManagement = () => {
           </div>
 
           {/* Average Order Value */}
-          <div className="cost-metric-card average">
-            <div className="metric-header">
+          <div className="supplier-management-cost-metric-card supplier-management-average">
+            <div className="supplier-management-metric-header">
               <h3>Average Order Value</h3>
-              <span className="calculation">📊</span>
+              <span className="supplier-management-calculation">📊</span>
             </div>
-            <div className="metric-value">
+            <div className="supplier-management-metric-value">
               ${purchaseOrders.length > 0 
                 ? (supplierCosts.totalCosts / purchaseOrders.length).toFixed(0) 
                 : '0'
               }
             </div>
-            <div className="metric-subtitle">
+            <div className="supplier-management-metric-subtitle">
               Based on {purchaseOrders.length} orders
             </div>
           </div>
         </div>
 
         {/* Top Suppliers by Spending */}
-        <div className="top-suppliers-spending">
+        <div className="supplier-management-top-suppliers-spending">
           <h3>🏆 Top Suppliers by Spending</h3>
-          <div className="suppliers-spending-list">
+          <div className="supplier-management-suppliers-spending-list">
             {supplierCosts.topSuppliers.map((supplier, index) => (
-              <div key={supplier.name} className="supplier-spending-item">
-                <div className="supplier-rank">#{index + 1}</div>
-                <div className="supplier-info">
-                  <span className="supplier-name">{supplier.name}</span>
-                  <span className="spending-amount">${supplier.amount.toLocaleString()}</span>
+              <div key={supplier.name} className="supplier-management-supplier-spending-item">
+                <div className="supplier-management-supplier-rank">#{index + 1}</div>
+                <div className="supplier-management-supplier-info">
+                  <span className="supplier-management-supplier-name">{supplier.name}</span>
+                  <span className="supplier-management-spending-amount">${supplier.amount.toLocaleString()}</span>
                 </div>
-                <div className="spending-bar">
+                <div className="supplier-management-spending-bar">
                   <div 
-                    className="spending-fill" 
+                    className="supplier-management-spending-fill" 
                     style={{ 
                       width: `${(supplier.amount / supplierCosts.topSuppliers[0]?.amount * 100) || 0}%` 
                     }}
@@ -892,23 +891,23 @@ const SupplierManagement = () => {
         </div>
 
         {/* Recent Orders Feed */}
-        <div className="recent-orders-feed">
+        <div className="supplier-management-recent-orders-feed">
           <h3>🔄 Recent Orders & Costs</h3>
-          <div className="orders-feed-container">
+          <div className="supplier-management-orders-feed-container">
             {supplierCosts.recentOrders.slice(0, 5).map((order) => (
-              <div key={order._id} className="recent-order-item">
-                <div className="order-info">
-                  <span className="order-number">#{order.orderNumber}</span>
-                  <span className="supplier-name">{order.supplier?.name || 'Unknown'}</span>
+              <div key={order._id} className="supplier-management-recent-order-item">
+                <div className="supplier-management-order-info">
+                  <span className="supplier-management-order-number">#{order.orderNumber}</span>
+                  <span className="supplier-management-supplier-name">{order.supplier?.name || 'Unknown'}</span>
                 </div>
-                <div className="order-details">
-                  <span className="order-amount">${(order.totalAmount || 0).toLocaleString()}</span>
-                  <span className="order-date">
+                <div className="supplier-management-order-details">
+                  <span className="supplier-management-order-amount">${(order.totalAmount || 0).toLocaleString()}</span>
+                  <span className="supplier-management-order-date">
                     {new Date(order.orderDate || order.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                <div className="order-status">
-                  <span className={`status-badge ${order.status}`}>{order.status}</span>
+                <div className="supplier-management-order-status">
+                  <span className={`supplier-management-status-badge supplier-management-${order.status}`}>{order.status}</span>
                 </div>
               </div>
             ))}
@@ -917,21 +916,21 @@ const SupplierManagement = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="tab-navigation">
+      <div className="supplier-management-tab-navigation">
         <button
-          className={`tab-btn ${activeTab === 'suppliers' ? 'active' : ''}`}
+          className={`supplier-management-tab-btn ${activeTab === 'suppliers' ? 'supplier-management-active' : ''}`}
           onClick={() => setActiveTab('suppliers')}
         >
           Suppliers ({suppliers.length})
         </button>
         <button
-          className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`}
+          className={`supplier-management-tab-btn ${activeTab === 'orders' ? 'supplier-management-active' : ''}`}
           onClick={() => setActiveTab('orders')}
         >
           Purchase Orders ({purchaseOrders.length})
         </button>
         <button
-          className={`tab-btn ${activeTab === 'analytics' ? 'active' : ''}`}
+          className={`supplier-management-tab-btn ${activeTab === 'analytics' ? 'supplier-management-active' : ''}`}
           onClick={() => setActiveTab('analytics')}
         >
           Analytics
@@ -939,48 +938,48 @@ const SupplierManagement = () => {
       </div>
 
       {/* Content Area */}
-      <div className="content-area">
+      <div className="supplier-management-content-area">
         {activeTab === 'suppliers' && (
-          <div className="suppliers-section">
-            <div className="section-stats">
-              <div className="stat-card">
+          <div className="supplier-management-suppliers-section">
+            <div className="supplier-management-section-stats">
+              <div className="supplier-management-stat-card">
                 <h3>{suppliers.filter(s => s.status === 'active').length}</h3>
                 <p>Active Suppliers</p>
               </div>
-              <div className="stat-card">
+              <div className="supplier-management-stat-card">
                 <h3>{suppliers.filter(s => s.rating >= 4).length}</h3>
                 <p>High Rated (4+ ⭐)</p>
               </div>
-              <div className="stat-card">
+              <div className="supplier-management-stat-card">
                 <h3>{suppliers.filter(s => s.category === 'medical_equipment').length}</h3>
                 <p>Equipment Suppliers</p>
               </div>
             </div>
 
-            <div className="suppliers-grid">
+            <div className="supplier-management-suppliers-grid">
               {suppliers.length === 0 ? (
-                <div className="empty-state">
+                <div className="supplier-management-empty-state">
                   <p>No suppliers found. Add your first supplier to get started!</p>
                 </div>
               ) : (
                 suppliers.map((supplier) => (
-                  <div key={supplier._id} className="supplier-card">
-                    <div className="card-header">
+                  <div key={supplier._id} className="supplier-management-supplier-card">
+                    <div className="supplier-management-card-header">
                       <h3>{supplier.name}</h3>
-                      <span className={`status-badge ${supplier.status}`}>
+                      <span className={`supplier-management-status-badge supplier-management-${supplier.status}`}>
                         {supplier.status}
                       </span>
                     </div>
-                    <div className="card-content">
+                    <div className="supplier-management-card-content">
                       <p><strong>Email:</strong> {supplier.email}</p>
                       <p><strong>Phone:</strong> {supplier.phone}</p>
                       <p><strong>Category:</strong>{' '}
-                        <span className="category-tag">{supplier.category?.replace('_', ' ')}</span>
+                        <span className="supplier-management-category-tag">{supplier.category?.replace('_', ' ')}</span>
                       </p>
                       <p><strong>Rating:</strong>
-                        <span className="rating-stars">
+                        <span className="supplier-management-rating-stars">
                           {'⭐'.repeat(supplier.rating || 3)}
-                          <span className="rating-text">({supplier.rating || 3}/5)</span>
+                          <span className="supplier-management-rating-text">({supplier.rating || 3}/5)</span>
                         </span>
                       </p>
                       {supplier.address?.city && (
@@ -988,9 +987,9 @@ const SupplierManagement = () => {
                       )}
                     </div>
 
-                    <div className="card-actions">
+                    <div className="supplier-management-card-actions">
                       <button
-                        className="btn-edit"
+                        className="supplier-management-btn-edit"
                         onClick={() => {
                           setEditingItem(supplier);
                           setSupplierForm(supplier);
@@ -1002,13 +1001,13 @@ const SupplierManagement = () => {
                         Edit
                       </button>
                       <button
-                        className="btn-delete"
+                        className="supplier-management-btn-delete"
                         onClick={() => handleDelete('supplier', supplier._id)}
                       >
                         Delete
                       </button>
                       <button
-                        className="btn-order"
+                        className="supplier-management-btn-order"
                         onClick={() => {
                           setOrderForm({ ...orderForm, supplier: supplier._id });
                           setModalType('order');
@@ -1027,25 +1026,25 @@ const SupplierManagement = () => {
         )}
 
         {activeTab === 'orders' && (
-          <div className="orders-section">
-            <div className="section-stats">
-              <div className="stat-card">
+          <div className="supplier-management-orders-section">
+            <div className="supplier-management-section-stats">
+              <div className="supplier-management-stat-card">
                 <h3>{purchaseOrders.filter(o => o.status === 'pending').length}</h3>
                 <p>Pending Orders</p>
               </div>
-              <div className="stat-card">
+              <div className="supplier-management-stat-card">
                 <h3>{purchaseOrders.filter(o => o.status === 'received').length}</h3>
                 <p>Completed Orders</p>
               </div>
-              <div className="stat-card">
+              <div className="supplier-management-stat-card">
                 <h3>${purchaseOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0).toLocaleString()}</h3>
                 <p>Total Value</p>
               </div>
             </div>
 
-            <div className="orders-table">
+            <div className="supplier-management-orders-table">
               {purchaseOrders.length === 0 ? (
-                <div className="empty-state">
+                <div className="supplier-management-empty-state">
                   <p>No purchase orders found. Create your first order!</p>
                 </div>
               ) : (
@@ -1067,15 +1066,15 @@ const SupplierManagement = () => {
                       <tr key={order._id}>
                         <td><strong>{order.orderNumber}</strong></td>
                         <td>{order.supplier?.name || 'Unknown Supplier'}</td>
-                        <td><span className="items-count">{order.items?.length || 0} items</span></td>
+                        <td><span className="supplier-management-items-count">{order.items?.length || 0} items</span></td>
                         <td><strong>${(order.totalAmount || 0).toLocaleString()}</strong></td>
-                        <td><span className={`status-badge ${order.status}`}>{order.status}</span></td>
-                        <td><span className="rating-display">{'⭐'.repeat(order.rating || 3)} ({order.rating || 3}/5)</span></td>
+                        <td><span className={`supplier-management-status-badge supplier-management-${order.status}`}>{order.status}</span></td>
+                        <td><span className="supplier-management-rating-display">{'⭐'.repeat(order.rating || 3)} ({order.rating || 3}/5)</span></td>
                         <td>{new Date(order.orderDate || order.createdAt).toLocaleDateString()}</td>
                         <td>
-                          <div className="table-actions">
+                          <div className="supplier-management-table-actions">
                             <button
-                              className="btn-view"
+                              className="supplier-management-btn-view"
                               onClick={() => {
                                 alert(`Order Details:\n\nOrder: ${order.orderNumber}\nSupplier: ${order.supplier?.name}\nRating: ${order.rating}/5 ⭐\nStatus: ${order.status}\nTotal: $${order.totalAmount}\nItems: ${order.items?.length}`);
                               }}
@@ -1083,7 +1082,7 @@ const SupplierManagement = () => {
                               View
                             </button>
                             <button
-                              className="btn-delete"
+                              className="supplier-management-btn-delete"
                               onClick={() => handleDelete('purchase-order', order._id)}
                             >
                               Delete
@@ -1100,19 +1099,19 @@ const SupplierManagement = () => {
         )}
 
         {activeTab === 'analytics' && (
-          <div className="analytics-section">
-            <div className="analytics-cards">
-              <div className="analytics-card">
+          <div className="supplier-management-analytics-section">
+            <div className="supplier-management-analytics-cards">
+              <div className="supplier-management-analytics-card">
                 <h3>Top Suppliers</h3>
-                <div className="supplier-ranking">
+                <div className="supplier-management-supplier-ranking">
                   {suppliers
                     .filter(s => s.rating >= 4)
                     .slice(0, 5)
                     .map((supplier, index) => (
-                      <div key={supplier._id} className="rank-item">
-                        <span className="rank">#{index + 1}</span>
-                        <span className="name">{supplier.name}</span>
-                        <span className="rating">{'⭐'.repeat(supplier.rating || 3)}</span>
+                      <div key={supplier._id} className="supplier-management-rank-item">
+                        <span className="supplier-management-rank">#{index + 1}</span>
+                        <span className="supplier-management-name">{supplier.name}</span>
+                        <span className="supplier-management-rating">{'⭐'.repeat(supplier.rating || 3)}</span>
                       </div>
                     ))
                   }
@@ -1122,35 +1121,35 @@ const SupplierManagement = () => {
                 </div>
               </div>
 
-              <div className="analytics-card">
+              <div className="supplier-management-analytics-card">
                 <h3>Category Distribution</h3>
-                <div className="category-stats">
+                <div className="supplier-management-category-stats">
                   {['medical_equipment', 'pharmaceuticals', 'consumables', 'services'].map(category => {
                     const count = suppliers.filter(s => s.category === category).length;
                     const percentage = suppliers.length > 0 ? ((count / suppliers.length) * 100).toFixed(1) : 0;
                     return (
-                      <div key={category} className="category-stat">
-                        <span className="category-name">{category.replace('_', ' ')}</span>
-                        <div className="progress-bar">
-                          <div className="progress-fill" style={{ width: `${percentage}%` }}></div>
+                      <div key={category} className="supplier-management-category-stat">
+                        <span className="supplier-management-category-name">{category.replace('_', ' ')}</span>
+                        <div className="supplier-management-progress-bar">
+                          <div className="supplier-management-progress-fill" style={{ width: `${percentage}%` }}></div>
                         </div>
-                        <span className="percentage">{percentage}%</span>
+                        <span className="supplier-management-percentage">{percentage}%</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              <div className="analytics-card">
+              <div className="supplier-management-analytics-card">
                 <h3>Order Status Overview</h3>
-                <div className="status-overview">
+                <div className="supplier-management-status-overview">
                   {['pending', 'approved', 'ordered', 'received', 'cancelled'].map(status => {
                     const count = purchaseOrders.filter(o => o.status === status).length;
                     return (
-                      <div key={status} className="status-item">
-                        <span className={`status-indicator ${status}`}></span>
-                        <span className="status-name">{status}</span>
-                        <span className="status-count">{count}</span>
+                      <div key={status} className="supplier-management-status-item">
+                        <span className={`supplier-management-status-indicator supplier-management-${status}`}></span>
+                        <span className="supplier-management-status-name">{status}</span>
+                        <span className="supplier-management-status-count">{count}</span>
                       </div>
                     );
                   })}
@@ -1163,9 +1162,9 @@ const SupplierManagement = () => {
 
       {/* Modals */}
       {showModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
+        <div className="supplier-management-modal-overlay">
+          <div className="supplier-management-modal">
+            <div className="supplier-management-modal-header">
               <h2>
                 {modalType === 'supplier' 
                   ? (editingItem ? 'Edit Supplier' : 'Add New Supplier')
@@ -1173,7 +1172,7 @@ const SupplierManagement = () => {
                 }
               </h2>
               <button
-                className="close-btn"
+                className="supplier-management-close-btn"
                 onClick={() => {
                   setShowModal(false);
                   resetForms();
@@ -1184,47 +1183,47 @@ const SupplierManagement = () => {
             </div>
 
             {errors.submit && (
-              <div className="alert alert-error">
+              <div className="supplier-management-alert supplier-management-alert-error">
                 {errors.submit}
               </div>
             )}
 
             {modalType === 'supplier' ? (
-              <form onSubmit={handleSupplierSubmit} className="modal-form">
-                <div className="form-grid">
-                  <div className="form-group">
+              <form onSubmit={handleSupplierSubmit} className="supplier-management-modal-form">
+                <div className="supplier-management-form-grid">
+                  <div className="supplier-management-form-group">
                     <label>Supplier Name *</label>
                     <input
                       type="text"
                       value={supplierForm.name}
                       onChange={(e) => handleNameInput(e.target.value, 'name')}
-                      className={errors.name ? 'error' : ''}
+                      className={errors.name ? 'supplier-management-error' : ''}
                       maxLength="100"
                       required
                     />
                     <ErrorMessage error={errors.name} />
                   </div>
 
-                  <div className="form-group">
+                  <div className="supplier-management-form-group">
                     <label>Email *</label>
                     <input
                       type="email"
                       value={supplierForm.email}
                       onChange={(e) => handleEmailInput(e.target.value)}
-                      className={errors.email ? 'error' : ''}
+                      className={errors.email ? 'supplier-management-error' : ''}
                       maxLength="100"
                       required
                     />
                     <ErrorMessage error={errors.email} />
                   </div>
 
-                  <div className="form-group">
+                  <div className="supplier-management-form-group">
                     <label>Phone *</label>
                     <input
                       type="tel"
                       value={supplierForm.phone}
                       onChange={(e) => handlePhoneInput(e.target.value)}
-                      className={errors.phone ? 'error' : ''}
+                      className={errors.phone ? 'supplier-management-error' : ''}
                       placeholder="+1234567890"
                       maxLength="20"
                       required
@@ -1232,7 +1231,7 @@ const SupplierManagement = () => {
                     <ErrorMessage error={errors.phone} />
                   </div>
 
-                  <div className="form-group">
+                  <div className="supplier-management-form-group">
                     <label>Category *</label>
                     <select
                       value={supplierForm.category}
@@ -1240,7 +1239,7 @@ const SupplierManagement = () => {
                         setSupplierForm({...supplierForm, category: e.target.value});
                         if (e.target.value) setErrors(prev => ({ ...prev, category: '' }));
                       }}
-                      className={errors.category ? 'error' : ''}
+                      className={errors.category ? 'supplier-management-error' : ''}
                       required
                     >
                       <option value="">Select Category</option>
@@ -1252,7 +1251,7 @@ const SupplierManagement = () => {
                     <ErrorMessage error={errors.category} />
                   </div>
 
-                  <div className="form-group">
+                  <div className="supplier-management-form-group">
                     <label>Status</label>
                     <select
                       value={supplierForm.status}
@@ -1264,7 +1263,7 @@ const SupplierManagement = () => {
                     </select>
                   </div>
 
-                  <div className="form-group full-width">
+                  <div className="supplier-management-form-group supplier-management-full-width">
                     <label>Street Address</label>
                     <input
                       type="text"
@@ -1277,57 +1276,57 @@ const SupplierManagement = () => {
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="supplier-management-form-group">
                     <label>City</label>
                     <input
                       type="text"
                       value={supplierForm.address.city}
                       onChange={(e) => handleNameInput(e.target.value, 'address.city')}
-                      className={errors['address.city'] ? 'error' : ''}
+                      className={errors['address.city'] ? 'supplier-management-error' : ''}
                       maxLength="50"
                     />
                     <ErrorMessage error={errors['address.city']} />
                   </div>
 
-                  <div className="form-group">
+                  <div className="supplier-management-form-group">
                     <label>State</label>
                     <input
                       type="text"
                       value={supplierForm.address.state}
                       onChange={(e) => handleNameInput(e.target.value, 'address.state')}
-                      className={errors['address.state'] ? 'error' : ''}
+                      className={errors['address.state'] ? 'supplier-management-error' : ''}
                       maxLength="50"
                     />
                     <ErrorMessage error={errors['address.state']} />
                   </div>
 
-                  <div className="form-group">
+                  <div className="supplier-management-form-group">
                     <label>Zip Code</label>
                     <input
                       type="text"
                       value={supplierForm.address.zipCode}
                       onChange={(e) => handleZipCodeInput(e.target.value)}
-                      className={errors['address.zipCode'] ? 'error' : ''}
+                      className={errors['address.zipCode'] ? 'supplier-management-error' : ''}
                       placeholder="12345"
                       maxLength="10"
                     />
                     <ErrorMessage error={errors['address.zipCode']} />
                   </div>
 
-                  <div className="form-group">
+                  <div className="supplier-management-form-group">
                     <label>Country</label>
                     <input
                       type="text"
                       value={supplierForm.address.country}
                       onChange={(e) => handleNameInput(e.target.value, 'address.country')}
-                      className={errors['address.country'] ? 'error' : ''}
+                      className={errors['address.country'] ? 'supplier-management-error' : ''}
                       maxLength="50"
                     />
                     <ErrorMessage error={errors['address.country']} />
                   </div>
                 </div>
 
-                <div className="form-actions">
+                <div className="supplier-management-form-actions">
                   <button type="button" onClick={() => setShowModal(false)}>
                     Cancel
                   </button>
@@ -1337,9 +1336,9 @@ const SupplierManagement = () => {
                 </div>
               </form>
             ) : (
-              <form onSubmit={handleOrderSubmit} className="modal-form">
-                <div className="form-grid-order">
-                  <div className="form-group">
+              <form onSubmit={handleOrderSubmit} className="supplier-management-modal-form">
+                <div className="supplier-management-form-grid-order">
+                  <div className="supplier-management-form-group">
                     <label>Supplier *</label>
                     <select
                       value={orderForm.supplier}
@@ -1347,7 +1346,7 @@ const SupplierManagement = () => {
                         setOrderForm({...orderForm, supplier: e.target.value});
                         if (e.target.value) setErrors(prev => ({ ...prev, supplier: '' }));
                       }}
-                      className={errors.supplier ? 'error' : ''}
+                      className={errors.supplier ? 'supplier-management-error' : ''}
                       required
                     >
                       <option value="">Select Supplier</option>
@@ -1363,12 +1362,12 @@ const SupplierManagement = () => {
                     <ErrorMessage error={errors.supplier} />
                   </div>
 
-                  <div className="form-group">
+                  <div className="supplier-management-form-group">
                     <label>Order Status *</label>
                     <select
                       value={orderForm.status}
                       onChange={(e) => handleStatusInput(e.target.value)}
-                      className={errors.status ? 'error' : ''}
+                      className={errors.status ? 'supplier-management-error' : ''}
                       required
                     >
                       <option value="pending">📋 Pending</option>
@@ -1378,30 +1377,30 @@ const SupplierManagement = () => {
                       <option value="cancelled">❌ Cancelled</option>
                     </select>
                     <ErrorMessage error={errors.status} />
-                    <small className="field-help">Select the current status of this order</small>
+                    <small className="supplier-management-field-help">Select the current status of this order</small>
                   </div>
 
-                  <div className="form-group">
+                  <div className="supplier-management-form-group">
                     <label>Supplier Rating *</label>
-                    <div className="rating-input-container">
+                    <div className="supplier-management-rating-input-container">
                       <input
                         type="number"
                         min="1"
                         max="5"
                         value={orderForm.rating}
                         onChange={(e) => handleRatingInput(e.target.value)}
-                        className={errors.rating ? 'error' : ''}
+                        className={errors.rating ? 'supplier-management-error' : ''}
                         required
                       />
-                      <div className="rating-stars-preview">
+                      <div className="supplier-management-rating-stars-preview">
                         {'⭐'.repeat(orderForm.rating)} ({orderForm.rating}/5)
                       </div>
                     </div>
                     <ErrorMessage error={errors.rating} />
-                    <small className="field-help">Rate this supplier from 1 to 5 stars</small>
+                    <small className="supplier-management-field-help">Rate this supplier from 1 to 5 stars</small>
                   </div>
 
-                  <div className="form-group">
+                  <div className="supplier-management-form-group">
                     <label>Expected Delivery Date</label>
                     <input
                       type="date"
@@ -1410,17 +1409,17 @@ const SupplierManagement = () => {
                         setOrderForm({...orderForm, expectedDelivery: e.target.value});
                         if (isValidDate(e.target.value)) setErrors(prev => ({ ...prev, expectedDelivery: '' }));
                       }}
-                      className={errors.expectedDelivery ? 'error' : ''}
+                      className={errors.expectedDelivery ? 'supplier-management-error' : ''}
                       min={new Date().toISOString().split('T')[0]}
                     />
                     <ErrorMessage error={errors.expectedDelivery} />
                   </div>
                 </div>
 
-                <div className="form-section">
-                  <div className="section-header">
+                <div className="supplier-management-form-section">
+                  <div className="supplier-management-section-header">
                     <h3>Order Items *</h3>
-                    <button type="button" onClick={addOrderItem} className="add-item-btn">
+                    <button type="button" onClick={addOrderItem} className="supplier-management-add-item-btn">
                       + Add Item
                     </button>
                   </div>
@@ -1428,9 +1427,9 @@ const SupplierManagement = () => {
                   <ErrorMessage error={errors.items} />
 
                   {orderForm.items.map((item, index) => (
-                    <div key={index} className="order-item">
-                      <div className="item-fields">
-                        <div className="field-container">
+                    <div key={index} className="supplier-management-order-item">
+                      <div className="supplier-management-item-fields">
+                        <div className="supplier-management-field-container">
                           <input
                             type="text"
                             placeholder="Product name *"
@@ -1439,20 +1438,20 @@ const SupplierManagement = () => {
                               const value = e.target.value.slice(0, 100);
                               updateOrderItem(index, 'product', value);
                             }}
-                            className={errors[`item_${index}_product`] ? 'error' : ''}
+                            className={errors[`item_${index}_product`] ? 'supplier-management-error' : ''}
                             maxLength="100"
                             required
                           />
                           <ErrorMessage error={errors[`item_${index}_product`]} />
                         </div>
 
-                        <div className="field-container">
+                        <div className="supplier-management-field-container">
                           <input
                             type="number"
                             placeholder="Quantity *"
                             value={item.quantity}
                             onChange={(e) => handleNumberInput(e.target.value, index, 'quantity')}
-                            className={errors[`item_${index}_quantity`] ? 'error' : ''}
+                            className={errors[`item_${index}_quantity`] ? 'supplier-management-error' : ''}
                             min="1"
                             max="999999"
                             required
@@ -1460,13 +1459,13 @@ const SupplierManagement = () => {
                           <ErrorMessage error={errors[`item_${index}_quantity`]} />
                         </div>
 
-                        <div className="field-container">
+                        <div className="supplier-management-field-container">
                           <input
                             type="number"
                             placeholder="Unit Price ($) *"
                             value={item.unitPrice}
                             onChange={(e) => handleNumberInput(e.target.value, index, 'unitPrice')}
-                            className={errors[`item_${index}_unitPrice`] ? 'error' : ''}
+                            className={errors[`item_${index}_unitPrice`] ? 'supplier-management-error' : ''}
                             min="0.01"
                             max="999999"
                             step="0.01"
@@ -1475,7 +1474,7 @@ const SupplierManagement = () => {
                           <ErrorMessage error={errors[`item_${index}_unitPrice`]} />
                         </div>
 
-                        <span className="item-total">
+                        <span className="supplier-management-item-total">
                           ${((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)}
                         </span>
 
@@ -1483,7 +1482,7 @@ const SupplierManagement = () => {
                           <button
                             type="button"
                             onClick={() => removeOrderItem(index)}
-                            className="remove-item-btn"
+                            className="supplier-management-remove-item-btn"
                           >
                             ×
                           </button>
@@ -1492,7 +1491,7 @@ const SupplierManagement = () => {
                     </div>
                   ))}
 
-                  <div className="order-total">
+                  <div className="supplier-management-order-total">
                     <strong>
                       Total: ${orderForm.items.reduce((sum, item) =>
                         sum + ((item.quantity || 0) * (item.unitPrice || 0)), 0
@@ -1501,7 +1500,7 @@ const SupplierManagement = () => {
                   </div>
                 </div>
 
-                <div className="form-group full-width">
+                <div className="supplier-management-form-group supplier-management-full-width">
                   <label>Notes</label>
                   <textarea
                     value={orderForm.notes}
@@ -1510,16 +1509,16 @@ const SupplierManagement = () => {
                       setOrderForm({...orderForm, notes: value});
                       if (value.length <= 500) setErrors(prev => ({ ...prev, notes: '' }));
                     }}
-                    className={errors.notes ? 'error' : ''}
+                    className={errors.notes ? 'supplier-management-error' : ''}
                     placeholder="Additional notes or special instructions"
                     rows="3"
                     maxLength="500"
                   />
                   <ErrorMessage error={errors.notes} />
-                  <small className="char-counter">{orderForm.notes.length}/500 characters</small>
+                  <small className="supplier-management-char-counter">{orderForm.notes.length}/500 characters</small>
                 </div>
 
-                <div className="form-actions">
+                <div className="supplier-management-form-actions">
                   <button type="button" onClick={() => setShowModal(false)}>
                     Cancel
                   </button>
