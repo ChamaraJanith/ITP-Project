@@ -1,0 +1,659 @@
+/* SurgicalItemsManagement.css - Isolated CSS */
+.surgical-items-management {
+  all: initial;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  color: #333333 !important;
+  background: transparent !important;
+  width: 100% !important;
+  min-height: 100vh !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.surgical-items-management *,
+.surgical-items-management *::before,
+.surgical-items-management *::after {
+  box-sizing: border-box !important;
+}
+
+/* Page Header */
+.surgical-items-management .page-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  padding: 30px !important;
+  border-radius: 12px !important;
+  margin-bottom: 30px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1) !important;
+  color: white !important;
+}
+
+.surgical-items-management .header-content {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 20px !important;
+}
+
+.surgical-items-management .header-content h1 {
+  margin: 0 !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  color: white !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+.surgical-items-management .header-actions {
+  display: flex !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+}
+
+.surgical-items-management .back-btn,
+.surgical-items-management .supplier-btn,
+.surgical-items-management .add-item-btn,
+.surgical-items-management .dispose-item-btn {
+  padding: 12px 20px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: auto !important;
+}
+
+.surgical-items-management .back-btn {
+  background: rgba(255,255,255,0.2) !important;
+  color: white !important;
+  border: 2px solid rgba(255,255,255,0.3) !important;
+}
+
+.surgical-items-management .back-btn:hover {
+  background: rgba(255,255,255,0.3) !important;
+  transform: translateY(-2px) !important;
+}
+
+.surgical-items-management .supplier-btn {
+  background: rgba(54, 162, 235, 0.3) !important;
+  color: white !important;
+  border: 2px solid rgba(54, 162, 235, 0.5) !important;
+}
+
+.surgical-items-management .supplier-btn:hover {
+  background: rgba(54, 162, 235, 0.5) !important;
+  transform: translateY(-2px) !important;
+}
+
+.surgical-items-management .add-item-btn {
+  background: rgba(40, 167, 69, 0.3) !important;
+  color: white !important;
+  border: 2px solid rgba(40, 167, 69, 0.5) !important;
+}
+
+.surgical-items-management .add-item-btn:hover {
+  background: rgba(40, 167, 69, 0.5) !important;
+  transform: translateY(-2px) !important;
+}
+
+.surgical-items-management .dispose-item-btn {
+  background: rgba(220, 53, 69, 0.3) !important;
+  color: white !important;
+  border: 2px solid rgba(220, 53, 69, 0.5) !important;
+}
+
+.surgical-items-management .dispose-item-btn:hover {
+  background: rgba(220, 53, 69, 0.5) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Error Banner */
+.surgical-items-management .error-banner {
+  background: linear-gradient(135deg, #ffe6e6, #ffcccc) !important;
+  border: 2px solid #ff9999 !important;
+  border-radius: 8px !important;
+  padding: 10px 15px !important;
+  color: #cc0000 !important;
+  font-weight: 500 !important;
+  margin: 15px 0 !important;
+}
+
+/* Notification Section */
+.surgical-items-management .notification-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  padding: 20px !important;
+  border-radius: 12px !important;
+  margin-bottom: 20px !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15) !important;
+}
+
+/* Sections */
+.surgical-items-management .restock-spending-section,
+.surgical-items-management .supplier-spending-section,
+.surgical-items-management .inventory-value-section {
+  padding: 25px !important;
+  border-radius: 12px !important;
+  margin-bottom: 25px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1) !important;
+  color: white !important;
+}
+
+.surgical-items-management .restock-spending-section {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+}
+
+.surgical-items-management .supplier-spending-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.surgical-items-management .inventory-value-section {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+}
+
+/* Stats Grid */
+.surgical-items-management .stats-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+  gap: 20px !important;
+  margin-bottom: 30px !important;
+}
+
+.surgical-items-management .stat-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+  padding: 25px !important;
+  border-radius: 12px !important;
+  text-align: center !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+  border: 1px solid #e9ecef !important;
+  transition: all 0.3s ease !important;
+}
+
+.surgical-items-management .stat-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.surgical-items-management .stat-card h3 {
+  margin: 0 0 10px 0 !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #6c757d !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.surgical-items-management .stat-number {
+  display: block !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  color: #495057 !important;
+  margin: 0 !important;
+}
+
+.surgical-items-management .stat-number.low-stock {
+  color: #ffc107 !important;
+}
+
+.surgical-items-management .stat-number.highlight {
+  color: #28a745 !important;
+}
+
+.surgical-items-management .export-pdf-btn {
+  background: linear-gradient(135deg, #dc3545, #c82333) !important;
+  color: white !important;
+  border: none !important;
+  padding: 15px 25px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3) !important;
+}
+
+.surgical-items-management .export-pdf-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4) !important;
+}
+
+/* Filters Container */
+.surgical-items-management .filters-container {
+  display: flex !important;
+  gap: 15px !important;
+  margin-bottom: 25px !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  background: white !important;
+  padding: 20px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
+}
+
+.surgical-items-management .search-input,
+.surgical-items-management .filter-select {
+  padding: 12px 16px !important;
+  border: 2px solid #e9ecef !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  background: white !important;
+  color: #495057 !important;
+  transition: all 0.3s ease !important;
+  outline: none !important;
+  min-width: 200px !important;
+}
+
+.surgical-items-management .search-input:focus,
+.surgical-items-management .filter-select:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1) !important;
+}
+
+.surgical-items-management .search-input::placeholder {
+  color: #adb5bd !important;
+  font-weight: 400 !important;
+}
+
+/* Items Table Container */
+.surgical-items-management .items-table-container {
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+  overflow: hidden !important;
+  margin-bottom: 25px !important;
+}
+
+.surgical-items-management .items-table {
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  font-size: 13px !important;
+  background: white !important;
+}
+
+.surgical-items-management .items-table thead {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+}
+
+.surgical-items-management .items-table thead th {
+  padding: 18px 12px !important;
+  text-align: left !important;
+  font-weight: 700 !important;
+  color: #495057 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  font-size: 11px !important;
+  border-bottom: 2px solid #dee2e6 !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+}
+
+.surgical-items-management .items-table tbody tr {
+  transition: all 0.2s ease !important;
+  background: white !important;
+}
+
+.surgical-items-management .items-table tbody tr:hover {
+  background: #f8f9fa !important;
+  transform: scale(1.005) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+.surgical-items-management .items-table tbody td {
+  padding: 15px 12px !important;
+  border-bottom: 1px solid #e9ecef !important;
+  vertical-align: middle !important;
+  font-size: 13px !important;
+  color: #495057 !important;
+}
+
+/* Item Info */
+.surgical-items-management .item-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.surgical-items-management .item-info strong {
+  font-weight: 600 !important;
+  color: #333333 !important;
+  font-size: 14px !important;
+}
+
+.surgical-items-management .item-info small {
+  font-size: 11px !important;
+  color: #6c757d !important;
+  font-weight: 400 !important;
+}
+
+/* Category Badge */
+.surgical-items-management .category-badge {
+  background: linear-gradient(135deg, #007bff, #0056b3) !important;
+  color: white !important;
+  padding: 4px 8px !important;
+  border-radius: 12px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3px !important;
+  display: inline-block !important;
+}
+
+/* Status Badge */
+.surgical-items-management .status-badge {
+  padding: 4px 8px !important;
+  border-radius: 12px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3px !important;
+  display: inline-block !important;
+  text-align: center !important;
+}
+
+/* Supplier Info */
+.surgical-items-management .supplier-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.surgical-items-management .supplier-info strong {
+  font-weight: 600 !important;
+  color: #333333 !important;
+  font-size: 13px !important;
+}
+
+.surgical-items-management .supplier-info small {
+  font-size: 10px !important;
+  color: #6c757d !important;
+  font-weight: 400 !important;
+}
+
+/* Action Buttons */
+.surgical-items-management .action-buttons {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+/* Pagination */
+.surgical-items-management .pagination-container {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 20px !important;
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
+  margin-bottom: 25px !important;
+}
+
+.surgical-items-management .pagination-info {
+  font-size: 14px !important;
+  color: #6c757d !important;
+  font-weight: 500 !important;
+}
+
+.surgical-items-management .pagination-buttons {
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.surgical-items-management .pagination-btn {
+  padding: 8px 12px !important;
+  border: 2px solid #e9ecef !important;
+  background: white !important;
+  color: #495057 !important;
+  border-radius: 6px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  outline: none !important;
+}
+
+.surgical-items-management .pagination-btn:hover:not(:disabled) {
+  background: #007bff !important;
+  color: white !important;
+  border-color: #007bff !important;
+  transform: translateY(-1px) !important;
+}
+
+.surgical-items-management .pagination-btn.active {
+  background: #007bff !important;
+  color: white !important;
+  border-color: #007bff !important;
+  font-weight: 700 !important;
+}
+
+.surgical-items-management .pagination-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* Modal Styles */
+.surgical-items-management .modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 1000 !important;
+  backdrop-filter: blur(4px) !important;
+  padding: 20px !important;
+}
+
+.surgical-items-management .modal-content {
+  background: white !important;
+  border-radius: 16px !important;
+  padding: 30px !important;
+  max-width: 90vw !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3) !important;
+  border: none !important;
+}
+
+/* Loading Spinner Animation */
+@keyframes spin {
+  0% { transform: rotate(0deg) !important; }
+  100% { transform: rotate(360deg) !important; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200px 0 !important; }
+  100% { background-position: 200px 0 !important; }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .surgical-items-management .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+    gap: 15px !important;
+  }
+  
+  .surgical-items-management .items-table {
+    font-size: 12px !important;
+  }
+  
+  .surgical-items-management .items-table thead th,
+  .surgical-items-management .items-table tbody td {
+    padding: 12px 8px !important;
+  }
+}
+
+@media (max-width: 992px) {
+  .surgical-items-management .header-content {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    text-align: center !important;
+  }
+  
+  .surgical-items-management .header-actions {
+    justify-content: center !important;
+  }
+  
+  .surgical-items-management .filters-container {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  
+  .surgical-items-management .search-input,
+  .surgical-items-management .filter-select {
+    min-width: auto !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .surgical-items-management {
+    padding: 0 10px !important;
+  }
+  
+  .surgical-items-management .page-header,
+  .surgical-items-management .notification-section,
+  .surgical-items-management .restock-spending-section,
+  .surgical-items-management .supplier-spending-section,
+  .surgical-items-management .inventory-value-section {
+    padding: 20px !important;
+  }
+  
+  .surgical-items-management .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    gap: 12px !important;
+  }
+  
+  .surgical-items-management .stat-card {
+    padding: 20px !important;
+  }
+  
+  .surgical-items-management .stat-number {
+    font-size: 24px !important;
+  }
+  
+  .surgical-items-management .items-table-container {
+    overflow-x: auto !important;
+  }
+  
+  .surgical-items-management .items-table {
+    min-width: 800px !important;
+  }
+  
+  .surgical-items-management .pagination-container {
+    flex-direction: column !important;
+    gap: 15px !important;
+  }
+  
+  .surgical-items-management .modal-content {
+    padding: 20px !important;
+    margin: 10px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .surgical-items-management .header-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  
+  .surgical-items-management .back-btn,
+  .surgical-items-management .supplier-btn,
+  .surgical-items-management .add-item-btn,
+  .surgical-items-management .dispose-item-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  
+  .surgical-items-management .stat-card h3 {
+    font-size: 14px !important;
+  }
+  
+  .surgical-items-management .stat-number {
+    font-size: 20px !important;
+  }
+  
+  .surgical-items-management .items-table {
+    font-size: 11px !important;
+  }
+  
+  .surgical-items-management .pagination-buttons {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .surgical-items-management .page-header,
+  .surgical-items-management .filters-container,
+  .surgical-items-management .pagination-container,
+  .surgical-items-management .action-buttons,
+  .surgical-items-management .notification-section {
+    display: none !important;
+  }
+  
+  .surgical-items-management .items-table {
+    font-size: 10px !important;
+  }
+  
+  .surgical-items-management .items-table thead th,
+  .surgical-items-management .items-table tbody td {
+    padding: 8px 4px !important;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .surgical-items-management .items-table tbody tr:hover {
+    background: #000000 !important;
+    color: #ffffff !important;
+  }
+  
+  .surgical-items-management .pagination-btn:hover:not(:disabled) {
+    background: #000000 !important;
+    color: #ffffff !important;
+    border-color: #000000 !important;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .surgical-items-management * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus Styles for Accessibility */
+.surgical-items-management button:focus,
+.surgical-items-management input:focus,
+.surgical-items-management select:focus {
+  outline: 3px solid #007bff !important;
+  outline-offset: 2px !important;
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .surgical-items-management .items-table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+}
