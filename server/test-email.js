@@ -28,7 +28,7 @@ transporter.verify().then(() => {
   // Send test email
   return transporter.sendMail({
     from: process.env.EMAIL_USER,
-    to: 'chamarasweed44@gmail.com',
+    to: 'cjtmadmhealx@gmail.com',
     subject: 'Direct Test Email from HealX',
     text: 'This is a direct test email from HealX Healthcare System'
   });

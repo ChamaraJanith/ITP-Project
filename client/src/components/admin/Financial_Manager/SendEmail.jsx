@@ -30,11 +30,11 @@ const SendEmail = () => {
   const predefinedEmails = {
     admin: [
       "admin@healx.com",
-      "financial.admin@healx.com",
-      "chamarasweed44@gmail.com"
+      "finaancemmakst@gmail.com",
+      "cjtmadmhealx@gmail.com"
     ],
     doctor: [
-      "doctor@healx.com",
+      "doctorgsdhealx@gmail.com",
       "medical.director@healx.com",
       "head.physician@healx.com"
     ]
