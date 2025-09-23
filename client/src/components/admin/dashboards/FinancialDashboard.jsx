@@ -515,13 +515,6 @@ const FinancialDashboard = () => {
 
                 <button
                   className="fd-feature-button"
-                  onClick={() => handleFinancialFeatureClick("profit_or_loss")}
-                >
-                  PROFIT OR LOSS
-                </button>
-
-                <button
-                  className="fd-feature-button"
                   onClick={() => handleFinancialFeatureClick("payroll_processing")}
                 >
                   PAYROLL PROCESSING
@@ -534,11 +527,25 @@ const FinancialDashboard = () => {
                   PAYROLL ANALYTICS
                 </button>
 
+                 <button
+                  className="fd-feature-button"
+                  onClick={() => handleFinancialFeatureClick("utility_management")}
+                >
+                  MANAGE UTILITIES
+                </button>
+
                 <button
                   className="fd-feature-button"
                   onClick={() => handleFinancialFeatureClick("expense_tracking")}
                 >
                   EXPENSE TRACKING
+                </button>
+
+                <button
+                  className="fd-feature-button"
+                  onClick={() => handleFinancialFeatureClick("profit_or_loss")}
+                >
+                  PROFIT OR LOSS
                 </button>
 
                  <button
@@ -548,12 +555,7 @@ const FinancialDashboard = () => {
                   EXPLORE TRENDS
                 </button>
 
-                <button
-                  className="fd-feature-button"
-                  onClick={() => handleFinancialFeatureClick("utility_management")}
-                >
-                  MANAGE UTILITIES
-                </button>
+               
               </div>
             </div>
 
