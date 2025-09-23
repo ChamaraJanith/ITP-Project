@@ -6,7 +6,7 @@ import MedicalNavbar from './components/NavBar';
 import EmergencyPage from './components/EmergencyPage';
 import HospitalsPage from './components/HospitalPage';
 import Footer from './components/Footer';
-
+import AllUserManagement from './components/admin/Admin/AllUserManagement';
 
 // ✅ Existing User Components
 import Register from './components/admin/Patient/Register';
@@ -460,6 +460,11 @@ function App() {
               path="/admin/financial/utities" 
               element={<FinancialUtilities />} 
         />
+
+        <Route
+          path="/admin/users"
+          element={<AllUserManagement />}
+        ></Route>
 
               <Route 
   path="/admin/procurement" 
