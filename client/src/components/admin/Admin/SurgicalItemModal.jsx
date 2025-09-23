@@ -980,3 +980,4 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
 };
 
 export default SurgicalItemModal;
+
