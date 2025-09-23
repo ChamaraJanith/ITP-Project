@@ -13,10 +13,10 @@ notificationRouter.post('/test-email', async (req, res) => {
     
     res.status(200).json({
       success: true,
-      message: '✅ Test email sent successfully to chamarasweed44@gmail.com!',
+      message: '✅ Test email sent successfully to cjtmadmhealx@gmail.com',
       data: {
         messageId: result.messageId,
-        recipient: 'chamarasweed44@gmail.com',
+        recipient: 'cjtmadmhealx@gmail.com',
         timestamp: new Date().toISOString()
       }
     });
@@ -75,7 +75,7 @@ notificationRouter.post('/check-low-stock', async (req, res) => {
       data: {
         count: lowStockItems.length,
         messageId: result.messageId,
-        recipient: 'chamarasweed44@gmail.com',
+        recipient: 'cjtmadmhealx@gmail.com',
         items: lowStockItems.map(item => ({ 
           name: item.name, 
           quantity: item.quantity,
@@ -130,7 +130,7 @@ notificationRouter.post('/send-item-alert', async (req, res) => {
       message: `Alert sent successfully for ${itemName}!`,
       data: {
         messageId: result.messageId,
-        recipient: 'chamarasweed44@gmail.com',
+        recipient: 'cjtmadmhealx@gmail.com',
         itemName: itemName,
         alertType: isOutOfStock ? 'out_of_stock' : 'low_stock',
         timestamp: new Date().toISOString()
