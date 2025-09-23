@@ -641,7 +641,7 @@ const UtilityModal = ({
 
               <div className="fu-form__field">
                 <label className="fu-form__label" htmlFor="fu-amount">
-                  Amount (LKR): <span className="fu-form__required">*</span>
+                  Amount ($): <span className="fu-form__required">*</span>
                 </label>
                 <input 
                   id="fu-amount"
@@ -849,9 +849,9 @@ const FinancialUtilities = () => {
 
   // Utility functions
   const formatCurrency = useCallback((amount) => {
-    return new Intl.NumberFormat('en-LK', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'LKR',
+      currency: 'USD',
       minimumFractionDigits: 2
     }).format(amount);
   }, []);
