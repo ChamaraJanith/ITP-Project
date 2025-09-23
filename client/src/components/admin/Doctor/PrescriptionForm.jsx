@@ -208,6 +208,23 @@ const validateNotesInput = (value) => {
   return value.replace(/[^a-zA-Z0-9\s\&-_.,;:!?'"()[\]{}]/g, '');
 };
 
+// Function to calculate age from date of birth
+const calculateAge = (dateOfBirth) => {
+  if (!dateOfBirth) return "N/A";
+  
+  const birthDate = new Date(dateOfBirth);
+  const today = new Date();
+  
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age;
+};
+
 // PROFESSIONAL: Standard Medical Prescription PDF generation
 const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNotes, doctor, date, signature, hospitalLogo) => {
   return new Promise((resolve, reject) => {
@@ -335,15 +352,14 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
       const patientName = `${selectedPatient.firstName || ""} ${selectedPatient.lastName || ""}`.trim();
       const patientId = selectedPatient.patientId || selectedPatient._id || "N/A";
       const dob = selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : "N/A";
-      const age = selectedPatient.dateOfBirth ? 
-        Math.floor((new Date() - new Date(selectedPatient.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000)) : "N/A";
+      const age = selectedPatient.dateOfBirth ? calculateAge(selectedPatient.dateOfBirth) : "N/A";
       
       // Left column
       doc.text(`Name: ${patientName}`, margin + 3, y + 16);
       doc.text(`ID: ${patientId}`, margin + 3, y + 22);
       doc.text(`Gender: ${selectedPatient.gender || "N/A"}`, margin + 3, y + 28);
       doc.text(`DOB: ${dob}`, margin + 3, y + 34);
-      doc.text(`Age: ${age}`, margin + 3, y + 40);
+      doc.text(`Age: ${age} years`, margin + 3, y + 40);
       
       // Right column
       doc.text(`Phone: ${selectedPatient.phone || "N/A"}`, margin + 80, y + 16);
@@ -675,6 +691,8 @@ const PrescriptionForm = ({
   prescriptions,
   scannedPatientId,
   hospitalLogo,
+  onPatientSelected,
+  onReset,
 }) => {
   // State for doctor information with fallback values from controller
   const [doctor, setDoctor] = useState(initialDoctor || {
@@ -929,6 +947,11 @@ const PrescriptionForm = ({
     setPatientsList([]);
     setSearchError("");
     trigger("patientId");
+    
+    // Notify parent component about patient selection
+    if (onPatientSelected) {
+      onPatientSelected(standardizedPatient);
+    }
     
     console.log("✅ Patient selected and form updated");
   };
@@ -1189,6 +1212,11 @@ const PrescriptionForm = ({
     setSelectedPatient(null);
     setSearchError("");
     setSignature(null);
+    
+    // Notify parent component about form reset
+    if (onReset) {
+      onReset();
+    }
   };
 
   return (
@@ -1244,11 +1272,21 @@ const PrescriptionForm = ({
               <span>{selectedPatient.gender || "Not specified"}</span>
             </div>
             <div className="pf-patient-info-item">
-              <span className="pf-patient-info-label">DOB:</span>
+              <span className="pf-patient-info-label">Date of Birth:</span>
               <span>
-                {selectedPatient.dateOfBirth 
-                  ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() 
-                  : "Not provided"}
+                {selectedPatient.dateOfBirth ? 
+                  new Date(selectedPatient.dateOfBirth).toLocaleDateString() : 
+                  "Not provided"
+                }
+              </span>
+            </div>
+            <div className="pf-patient-info-item">
+              <span className="pf-patient-info-label">Age:</span>
+              <span>
+                {selectedPatient.dateOfBirth ? 
+                  `${calculateAge(selectedPatient.dateOfBirth)} years` : 
+                  "Not provided"
+                }
               </span>
             </div>
             <div className="pf-patient-info-item">

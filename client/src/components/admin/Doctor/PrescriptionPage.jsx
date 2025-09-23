@@ -32,6 +32,23 @@ const PrescriptionPage = ({ patientFromParent }) => {
   const [scannedPatientId, setScannedPatientId] = useState(null);
   const [scanning, setScanning] = useState(false);
 
+  // Function to calculate age from date of birth
+  const calculateAge = (dateOfBirth) => {
+    if (!dateOfBirth) return "N/A";
+    
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
+
   // Fetch all prescriptions and filter today's only
   const fetchPrescriptions = async () => {
     try {
@@ -281,6 +298,23 @@ const PrescriptionPage = ({ patientFromParent }) => {
     }
   };
 
+  // Handle patient selection from form
+  const handlePatientSelected = (selectedPatient) => {
+    console.log("Patient selected in form:", selectedPatient);
+    setPatient(selectedPatient);
+    setEditingPrescription(null); // Exit editing mode
+    setOcrText("");
+    setScannedPatientId(null);
+  };
+
+  // Handle form reset
+  const handleFormReset = () => {
+    setPatient(null);
+    setEditingPrescription(null);
+    setOcrText("");
+    setScannedPatientId(null);
+  };
+
   // QR code scan handler
   const handleScan = (result, error) => {
     if (!!result) {
@@ -418,6 +452,15 @@ const PrescriptionPage = ({ patientFromParent }) => {
                         </span>
                       </div>
                       <div className="pp-patient-row">
+                        <span className="pp-patient-label">Age:</span>
+                        <span className="pp-patient-value">
+                          {patient.dateOfBirth ? 
+                            `${calculateAge(patient.dateOfBirth)} years` : 
+                            "Not provided"
+                          }
+                        </span>
+                      </div>
+                      <div className="pp-patient-row">
                         <span className="pp-patient-label">Blood Group:</span>
                         <span className="pp-patient-value">{patient.bloodGroup || "Not specified"}</span>
                       </div>
@@ -495,6 +538,8 @@ const PrescriptionPage = ({ patientFromParent }) => {
                 editingPrescription={editingPrescription}
                 prescriptions={prescriptions}
                 scannedPatientId={scannedPatientId}
+                onPatientSelected={handlePatientSelected}
+                onReset={handleFormReset}
               />
             </ErrorBoundary>
           </div>
