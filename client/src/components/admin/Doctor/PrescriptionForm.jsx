@@ -10,6 +10,7 @@ import PatientAutocomplete from "./PatientAutocomplete";
 import MedicineAutocomplete from "./MedicineAutocomplete";
 import LoadingSpinner from "./LoadingSpinner";
 import "./PrescriptionForm.css";
+import healXLogo from '../../../assets/heal-x-logo.png'; // Import your logo
 
 // Medicine database with common medications
 const medicineDatabase = [
@@ -156,7 +157,7 @@ const defaultValues = (patient, doctor) => ({
   diagnosis: "",
   medicines: [{ name: "", dosage: "", frequency: "", duration: "", notes: "" }],
   notes: "",
-  patientId: patient?._id || "",
+  patientId: patient?._id || patient?.patientId || "",
   doctor: {
     name: doctor?.name || "Dr. Gayath Dahanayaka",
     specialization: doctor?.specialization || "General",
@@ -207,7 +208,7 @@ const validateNotesInput = (value) => {
   return value.replace(/[^a-zA-Z0-9\s\&-_.,;:!?'"()[\]{}]/g, '');
 };
 
-// ✅ NEW: Function to generate PDF and return as buffer
+// PROFESSIONAL: Standard Medical Prescription PDF generation
 const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNotes, doctor, date, signature, hospitalLogo) => {
   return new Promise((resolve, reject) => {
     try {
@@ -216,208 +217,261 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
       const pageHeight = 297;
       const margin = 15;
       const usableWidth = pageWidth - margin * 2;
-      let y = 15;
+      let y = 10;
 
-      // Add a light blue background for the entire page
-      doc.setFillColor(245, 250, 255);
+      // Clean white background
+      doc.setFillColor(255, 255, 255);
       doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-      // Watermark
-      doc.setFontSize(70);
-      doc.setTextColor(220, 220, 220);
-      doc.setFont("helvetica", "bold");
-      doc.text('PRESCRIPTION', pageWidth/2, pageHeight/2, {align: 'center', angle: 45});
-      doc.setTextColor(0,0,0);
+      // Professional Header with Medical Practice Information
+      // Top border in medical blue
+      doc.setFillColor(0, 51, 102); // Medical blue
+      doc.rect(0, 0, pageWidth, 3, 'F');
 
-      // Header with clinic information in a box
-      doc.setFillColor(240, 248, 255);
-      doc.setDrawColor(70, 130, 180);
-      doc.setLineWidth(1);
-      doc.rect(margin, y, usableWidth, 30, 'FD');
-      
-      // Add hospital logo if available
-      if (hospitalLogo) {
-        try {
-          doc.addImage(hospitalLogo, 'PNG', pageWidth - margin - 40, y + 5, 30, 20);
-        } catch (e) {
-          console.error("Error adding hospital logo to PDF:", e);
+      // Logo and Practice Information - Fixed logo handling
+      try {
+        if (hospitalLogo) {
+          // For imported images, we need to convert to data URL first
+          const img = new Image();
+          img.src = hospitalLogo;
+          
+          // Calculate appropriate logo size (30mm width, maintaining aspect ratio)
+          const logoWidth = 30;
+          const logoHeight = (img.height / img.width) * logoWidth;
+          
+          // Add logo to PDF
+          doc.addImage(hospitalLogo, 'PNG', margin, y, logoWidth, logoHeight);
         }
+      } catch (e) {
+        console.error("Error adding logo to PDF:", e);
+        
+        // Fallback: Add text-based logo if image fails
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(20);
+        doc.setTextColor(0, 51, 102);
+        doc.text("HEAL X", margin, y + 10);
+        doc.setFontSize(12);
+        doc.text("Healthcare Center", margin, y + 18);
       }
-      
-      // Clinic name
+
+      // Practice Name and Information - Adjusted position based on logo
+      const logoWidth = 30; // Same as above
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.setTextColor(25, 25, 112);
-      doc.text("HealIX Healthcare Center", margin + 5, y + 12);
+      doc.setFontSize(16);
+      doc.setTextColor(0, 51, 102);
+      doc.text("HealX Healthcare Center", margin + logoWidth + 10, y + 8);
       
-      // Clinic details
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
-      doc.setTextColor(0, 0, 0);
-      doc.text("123 Medical Avenue, Health City, HC 12345", margin + 5, y + 20);
-      doc.text("Phone: (123) 456-7890 | Fax: (123) 456-7891", margin + 5, y + 25);
-      doc.text("Email: contact@healix.com | Web: www.healix.com", margin + 5, y + 30);
+      doc.setTextColor(60, 60, 60);
+      doc.text("123 Healthcare Avenue, Medical District, MD 12345", margin + logoWidth + 10, y + 14);
+      doc.text("Tel: (555) 123-4567 | Fax: (555) 123-4568", margin + logoWidth + 10, y + 18);
+      doc.text("Email: info@healxmedical.com | Web: www.healxmedical.com", margin + logoWidth + 10, y + 22);
       
-      y += 40;
+      y += 28;
 
-      // Prescription title and ID in a box
-      doc.setFillColor(70, 130, 180);
-      doc.setDrawColor(70, 130, 180);
-      doc.rect(margin, y, usableWidth, 12, 'FD');
+      // Prescription Header with Rx Symbol
+      doc.setDrawColor(0, 51, 102);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageWidth - margin, y);
       
+      // Rx Symbol in circle (standard medical prescription symbol)
+      doc.setFillColor(0, 51, 102);
+      doc.circle(margin + 8, y + 8, 6, 'FD');
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.setTextColor(255, 255, 255);
-      doc.text("PRESCRIPTION", margin + 5, y + 8);
+      doc.text("Rx", margin + 8, y + 11, { align: 'center' });
       
+      // Prescription Title
+      doc.setTextColor(0, 51, 102);
+      doc.setFontSize(18);
+      doc.text("PRESCRIPTION", margin + 20, y + 8);
+      
+      // Prescription Number and Date
       const prescriptionId = `RX-${Date.now().toString(36).toUpperCase()}`;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.text(`ID: ${prescriptionId}`, pageWidth - margin - 5, y + 8, {align: 'right'});
+      doc.setTextColor(60, 60, 60);
+      doc.text(`Prescription #: ${prescriptionId}`, pageWidth - margin - 5, y + 8, { align: 'right' });
       
-      y += 18;
-
-      // Date and time
       const now = new Date();
-      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const dateStr = date || now.toISOString().slice(0, 10);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Date: ${dateStr} | Time: ${timeStr}`, margin, y);
-      y += 8;
+      const formattedDate = new Date(dateStr).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      doc.text(`Date: ${formattedDate}`, pageWidth - margin - 5, y + 14, { align: 'right' });
+      
+      // Add generation time
+      const formattedTime = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      doc.text(`Generated: ${formattedTime}`, pageWidth - margin - 5, y + 20, { align: 'right' });
+      
+      y += 28; // Increased from 22 to 28 to accommodate the time line
 
-      // Patient information section
+      // Patient Information Section
+      doc.setDrawColor(0, 51, 102);
+      doc.setLineWidth(0.3);
+      doc.rect(margin, y, usableWidth, 45); // Increased height from 40 to 45
+      
+      // Patient Information Header
       doc.setFillColor(240, 248, 255);
-      doc.setDrawColor(70, 130, 180);
-      doc.setLineWidth(0.5);
-      doc.rect(margin, y, usableWidth, 35, 'FD');
-      
+      doc.rect(margin, y, usableWidth, 8, 'F');
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(25, 25, 112);
-      doc.text("PATIENT INFORMATION", margin + 5, y + 8);
+      doc.setFontSize(11);
+      doc.setTextColor(0, 51, 102);
+      doc.text("PATIENT INFORMATION", margin + 3, y + 5);
       
+      // Patient Details
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.setTextColor(0, 0, 0);
       
       const patientName = `${selectedPatient.firstName || ""} ${selectedPatient.lastName || ""}`.trim();
-      doc.text(`Name: ${patientName}`, margin + 5, y + 17);
-      doc.text(`ID: ${selectedPatient._id || selectedPatient.patientId || "N/A"}`, margin + 70, y + 17);
+      const patientId = selectedPatient.patientId || selectedPatient._id || "N/A";
+      const dob = selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : "N/A";
+      const age = selectedPatient.dateOfBirth ? 
+        Math.floor((new Date() - new Date(selectedPatient.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000)) : "N/A";
       
-      doc.text(`Gender: ${selectedPatient.gender || "N/A"}`, margin + 5, y + 24);
-      doc.text(`DOB: ${selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : "N/A"}`, margin + 70, y + 24);
+      // Left column
+      doc.text(`Name: ${patientName}`, margin + 3, y + 16);
+      doc.text(`ID: ${patientId}`, margin + 3, y + 22);
+      doc.text(`Gender: ${selectedPatient.gender || "N/A"}`, margin + 3, y + 28);
+      doc.text(`DOB: ${dob}`, margin + 3, y + 34);
+      doc.text(`Age: ${age}`, margin + 3, y + 40);
       
-      doc.text(`Contact: ${selectedPatient.phone || "N/A"}`, margin + 5, y + 31);
-      doc.text(`Email: ${selectedPatient.email || "N/A"}`, margin + 70, y + 31);
+      // Right column
+      doc.text(`Phone: ${selectedPatient.phone || "N/A"}`, margin + 80, y + 16);
+      doc.text(`Email: ${selectedPatient.email || "N/A"}`, margin + 80, y + 22);
+      doc.text(`Blood Type: ${selectedPatient.bloodGroup || "N/A"}`, margin + 80, y + 28);
       
-      // Allergies warning if present
+      // Allergies warning if present - moved to right column
       if (selectedPatient.allergies && selectedPatient.allergies.length > 0) {
-        doc.setTextColor(160, 0, 0);
+        doc.setTextColor(200, 0, 0);
         doc.setFont("helvetica", "bold");
-        doc.text(`⚠ ALLERGIES: ${selectedPatient.allergies.join(", ")}`, margin + 5, y + 38);
+        const allergiesText = `ALLERGIES: ${selectedPatient.allergies.join(", ")}`;
+        const splitText = doc.splitTextToSize(allergiesText, usableWidth - 85);
+        doc.text(splitText, margin + 80, y + 34);
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "normal");
-        y += 45;
-      } else {
-        y += 40;
       }
+      
+      y += 50; // Increased from 55 to 50 to accommodate the increased height
 
-      // Doctor information section
+      // Prescribing Physician Information
+      doc.setDrawColor(0, 51, 102);
+      doc.rect(margin, y, usableWidth, 25);
+      
+      // Physician Header
       doc.setFillColor(240, 248, 255);
-      doc.setDrawColor(70, 130, 180);
-      doc.rect(margin, y, usableWidth, 20, 'FD');
-      
+      doc.rect(margin, y, usableWidth, 8, 'F');
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(25, 25, 112);
-      doc.text("PRESCRIBING DOCTOR", margin + 5, y + 8);
+      doc.setFontSize(11);
+      doc.setTextColor(0, 51, 102);
+      doc.text("PRESCRIBING PHYSICIAN", margin + 3, y + 5);
       
+      // Physician Details
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.setTextColor(0, 0, 0);
-      doc.text(`Name: ${doctor?.name || "N/A"}`, margin + 5, y + 17);
-      doc.text(`Specialization: ${doctor?.specialization || "N/A"}`, margin + 70, y + 17);
+      doc.text(`Name: Dr. ${doctor?.name || "N/A"}`, margin + 3, y + 16);
+      doc.text(`Specialization: ${doctor?.specialization || "N/A"}`, margin + 3, y + 22);
       
-      y += 25;
+      // Standard medical credentials
+      doc.text(`License: MD-12345 | DEA: AB1234567 | NPI: 1234567890`, margin + 80, y + 16);
+      doc.text(`Phone: (555) 987-6543`, margin + 80, y + 22);
+      
+      y += 30;
 
-      // Diagnosis section
+      // Diagnosis Section
+      doc.setDrawColor(0, 51, 102);
+      doc.rect(margin, y, usableWidth, 25);
+      
+      // Diagnosis Header
       doc.setFillColor(240, 248, 255);
-      doc.setDrawColor(70, 130, 180);
-      doc.rect(margin, y, usableWidth, 25, 'FD');
-      
+      doc.rect(margin, y, usableWidth, 8, 'F');
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(25, 25, 112);
-      doc.text("DIAGNOSIS", margin + 5, y + 8);
+      doc.setFontSize(11);
+      doc.setTextColor(0, 51, 102);
+      doc.text("DIAGNOSIS / CLINICAL INDICATIONS", margin + 3, y + 5);
       
+      // Diagnosis Details
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.setTextColor(0, 0, 0);
       
-      const diagLines = doc.splitTextToSize(diagnosis || "N/A", usableWidth - 10);
-      let diagY = y + 17;
+      const diagLines = doc.splitTextToSize(diagnosis || "N/A", usableWidth - 6);
+      let diagY = y + 16;
       diagLines.forEach(line => {
-        doc.text(line, margin + 5, diagY);
+        doc.text(line, margin + 3, diagY);
         diagY += 5;
       });
       
       y += 30;
 
-      // Medications table
+      // Medications Section
+      doc.setDrawColor(0, 51, 102);
+      doc.rect(margin, y, usableWidth, 15);
+      
+      // Medications Header
       doc.setFillColor(240, 248, 255);
-      doc.setDrawColor(70, 130, 180);
-      doc.rect(margin, y, usableWidth, 15, 'FD');
-      
+      doc.rect(margin, y, usableWidth, 8, 'F');
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(25, 25, 112);
-      doc.text("MEDICATIONS", margin + 5, y + 10);
+      doc.setFontSize(11);
+      doc.setTextColor(0, 51, 102);
+      doc.text("MEDICATION ORDERS", margin + 3, y + 5);
       
-      y += 18;
+      y += 12;
 
-      // Table headers
+      // Table Headers
       doc.setFontSize(9);
-      const colWidths = [8, 45, 25, 30, 25, 32];
-      const headers = ["S/N", "Medicine", "Dosage", "Frequency", "Duration", "Notes"];
-      const headerHeight = 8;
+      const colWidths = [8, 35, 20, 30, 25, 40, 27];
+      const headers = ["#", "Medication", "Strength", "Dosage", "Frequency", "Duration", "Instructions"];
+      const headerHeight = 7;
       
       // Draw header background
-      doc.setFillColor(173, 216, 230);
+      doc.setFillColor(0, 51, 102);
       doc.rect(margin, y, usableWidth, headerHeight, "F");
       
       // Draw header borders and text
-      doc.setDrawColor(70, 130, 180);
-      doc.setLineWidth(0.3);
+      doc.setDrawColor(0, 51, 102);
+      doc.setLineWidth(0.2);
       let x = margin;
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
       for (let i = 0; i < headers.length; i++) {
         doc.rect(x, y, colWidths[i], headerHeight);
-        doc.text(headers[i], x + 2, y + 5);
+        doc.text(headers[i], x + 1, y + 4.5);
         x += colWidths[i];
       }
       y += headerHeight;
 
-      // Table rows
+      // Table Rows
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0, 0, 0);
-      const rowPadding = 2;
+      const rowPadding = 1;
       (medicines || []).forEach((med, idx) => {
         const rowTexts = [
           [(idx + 1).toString()],
           doc.splitTextToSize(med.name || "", colWidths[1] - rowPadding),
-          doc.splitTextToSize(med.dosage || "", colWidths[2] - rowPadding),
-          doc.splitTextToSize(med.frequency || "", colWidths[3] - rowPadding),
-          doc.splitTextToSize(med.duration || "", colWidths[4] - rowPadding),
-          doc.splitTextToSize(med.notes || "", colWidths[5] - rowPadding),
+          [med.dosage?.match(/[0-9]+(\.[0-9]+)?\s*(mg|g|ml|l|tablet|tablets|capsule|capsules|drop|drops|tsp|tbsp|unit|units)?/i)?.[0] || ""],
+          doc.splitTextToSize(med.dosage || "", colWidths[3] - rowPadding),
+          doc.splitTextToSize(med.frequency || "", colWidths[4] - rowPadding),
+          doc.splitTextToSize(med.duration || "", colWidths[5] - rowPadding),
+          doc.splitTextToSize(med.notes || "Take as directed", colWidths[6] - rowPadding),
         ];
 
         const maxLines = Math.max(...rowTexts.map(c => c.length));
-        const lineHeight = 4.5;
-        const rowHeight = Math.max(7, maxLines * lineHeight + 4);
+        const lineHeight = 4;
+        const rowHeight = Math.max(7, maxLines * lineHeight + 3);
 
         // Check if we need a new page
-        if (y + rowHeight > 270) {
+        if (y + rowHeight > 260) {
           doc.addPage();
           y = 15;
           
@@ -426,29 +480,36 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
           doc.rect(margin, y, usableWidth, 15, 'FD');
           
           doc.setFont("helvetica", "bold");
-          doc.setFontSize(12);
-          doc.setTextColor(25, 25, 112);
-          doc.text("MEDICATIONS (Continued)", margin + 5, y + 10);
+          doc.setFontSize(11);
+          doc.setTextColor(0, 51, 102);
+          doc.text("MEDICATION ORDERS (Continued)", margin + 3, y + 5);
           
-          y += 18;
+          y += 12;
           
           // Redraw table header
-          doc.setFillColor(173, 216, 230);
+          doc.setFillColor(0, 51, 102);
           doc.rect(margin, y, usableWidth, headerHeight, "F");
           x = margin;
           doc.setFontSize(9);
           doc.setFont("helvetica", "bold");
+          doc.setTextColor(255, 255, 255);
           for (let i = 0; i < headers.length; i++) {
             doc.rect(x, y, colWidths[i], headerHeight);
-            doc.text(headers[i], x + 2, y + 5);
+            doc.text(headers[i], x + 1, y + 4.5);
             x += colWidths[i];
           }
           y += headerHeight;
           doc.setFont("helvetica", "normal");
+          doc.setTextColor(0, 0, 0);
         }
 
-        // Draw row borders
+        // Draw row borders with alternating background
         x = margin;
+        if (idx % 2 === 0) {
+          doc.setFillColor(248, 248, 248);
+          doc.rect(x, y, usableWidth, rowHeight, "F");
+        }
+        
         for (let c = 0; c < rowTexts.length; c++) {
           doc.rect(x, y, colWidths[c], rowHeight);
           x += colWidths[c];
@@ -459,8 +520,8 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
         for (let c = 0; c < rowTexts.length; c++) {
           const lines = rowTexts[c];
           for (let li = 0; li < lines.length; li++) {
-            const textY = y + 4 + li * lineHeight;
-            doc.text(String(lines[li] || ""), x + 2, textY);
+            const textY = y + 3 + li * lineHeight;
+            doc.text(String(lines[li] || ""), x + 1, textY);
           }
           x += colWidths[c];
         }
@@ -470,84 +531,98 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
 
       y += 10;
 
-      // Additional instructions
+      // Additional Instructions
       if (additionalNotes) {
+        doc.setDrawColor(0, 51, 102);
+        doc.rect(margin, y, usableWidth, 25);
+        
+        // Instructions Header
         doc.setFillColor(240, 248, 255);
-        doc.setDrawColor(70, 130, 180);
-        doc.rect(margin, y, usableWidth, 25, 'FD');
-        
+        doc.rect(margin, y, usableWidth, 8, 'F');
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.setTextColor(25, 25, 112);
-        doc.text("ADDITIONAL INSTRUCTIONS", margin + 5, y + 8);
+        doc.setFontSize(11);
+        doc.setTextColor(0, 51, 102);
+        doc.text("ADDITIONAL INSTRUCTIONS", margin + 3, y + 5);
         
+        // Instructions Details
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         doc.setTextColor(0, 0, 0);
         
-        const noteLines = doc.splitTextToSize(additionalNotes, usableWidth - 10);
-        let noteY = y + 17;
+        const noteLines = doc.splitTextToSize(additionalNotes, usableWidth - 6);
+        let noteY = y + 16;
         noteLines.forEach(line => {
-          doc.text(line, margin + 5, noteY);
+          doc.text(line, margin + 3, noteY);
           noteY += 5;
         });
         
         y += 30;
       }
 
-      // Signature section
-      doc.setFillColor(240, 248, 255);
-      doc.setDrawColor(70, 130, 180);
-      doc.rect(margin, y, usableWidth, 45, 'FD');
+      // Signature and Authorization Section
+      doc.setDrawColor(0, 51, 102);
+      doc.rect(margin, y, usableWidth, 50);
       
+      // Signature Header
+      doc.setFillColor(240, 248, 255);
+      doc.rect(margin, y, usableWidth, 8, 'F');
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(25, 25, 112);
-      doc.text("DOCTOR'S SIGNATURE", margin + 5, y + 8);
+      doc.setFontSize(11);
+      doc.setTextColor(0, 51, 102);
+      doc.text("PHYSICIAN SIGNATURE & AUTHORIZATION", margin + 3, y + 5);
       
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.setTextColor(0, 0, 0);
       
       // Signature line
-      doc.setDrawColor(0, 0, 0);
+      doc.setDrawColor(0, 51, 102);
       doc.setLineWidth(0.5);
-      doc.line(margin + 5, y + 25, margin + 55, y + 25);
+      doc.line(margin + 3, y + 25, margin + 50, y + 25);
       
-      // Doctor's name and specialization
-      doc.text(`${doctor?.name || "Doctor"}`, margin + 5, y + 32);
-      doc.text(`${doctor?.specialization || ""}`, margin + 5, y + 38);
+      // Physician information
+      doc.text(`Dr. ${doctor?.name || "N/A"}`, margin + 3, y + 32);
+      doc.text(`${doctor?.specialization || "N/A"}`, margin + 3, y + 37);
+      doc.text(`License: MD-12345`, margin + 3, y + 42);
       
       // Add signature image if available
       if (signature) {
         try {
-          doc.addImage(signature, 'PNG', margin + 5, y + 12, 40, 15);
+          doc.addImage(signature, 'PNG', margin + 3, y + 12, 35, 12);
         } catch (e) {
           console.error("Error adding signature to PDF:", e);
         }
       }
       
-      // Date of signature
+      // Date and Refill information
       const signatureDate = new Date().toLocaleDateString();
-      doc.text(`Date: ${signatureDate}`, margin + 70, y + 25);
+      doc.text(`Date: ${signatureDate}`, margin + 60, y + 25);
+      doc.text("Refills: 0", margin + 60, y + 32);
+      doc.text("Substitution: Permitted", margin + 60, y + 37);
+      doc.text("DAW: ☐ Generic  ☐ Brand  ☐ Either", margin + 60, y + 42);
       
       y += 55;
 
-      // Footer with disclaimer
-      doc.setFillColor(240, 248, 255);
-      doc.setDrawColor(70, 130, 180);
-      doc.rect(margin, y, usableWidth, 15, 'FD');
+      // Professional Footer
+      doc.setDrawColor(0, 51, 102);
+      doc.rect(margin, y, usableWidth, 20);
       
       doc.setFont("helvetica", "italic");
       doc.setFontSize(8);
-      doc.setTextColor(0, 0, 0);
-      doc.text("This is a computer-generated prescription. Valid only with doctor's signature.", margin + 5, y + 6);
-      doc.text("HealIX Healthcare Center - (123) 456-7890 - contact@healix.com", pageWidth/2, y + 12, {align: 'center'});
+      doc.setTextColor(60, 60, 60);
+      
+      const disclaimer1 = "This prescription is valid only when signed by a licensed physician. Medications should be taken exactly as prescribed.";
+      const disclaimer2 = "For medical emergencies, call 911 or visit the nearest emergency room. Keep all medications out of reach of children.";
+      const contact = "Heal X Medical Center | (555) 123-4567 | www.healxmedical.com";
+      
+      doc.text(disclaimer1, margin + 3, y + 6, { maxWidth: usableWidth - 6 });
+      doc.text(disclaimer2, margin + 3, y + 12, { maxWidth: usableWidth - 6 });
+      doc.text(contact, pageWidth / 2, y + 18, { align: 'center' });
 
-      // Add a border around the entire page
-      doc.setDrawColor(70, 130, 180);
-      doc.setLineWidth(1);
-      doc.rect(5, 5, pageWidth - 10, pageHeight - 10);
+      // Professional border around the entire page
+      doc.setDrawColor(0, 51, 102);
+      doc.setLineWidth(0.5);
+      doc.rect(3, 3, pageWidth - 6, pageHeight - 6);
 
       // Return PDF as buffer
       const pdfBuffer = doc.output('arraybuffer');
@@ -559,7 +634,7 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
   });
 };
 
-// ✅ NEW: Function to send email with PDF attachment
+// Function to send email with PDF attachment
 const sendPrescriptionEmail = async (prescriptionData, pdfBuffer, isUpdate = false) => {
   try {
     console.log('📧 Preparing to send prescription email...');
@@ -571,7 +646,7 @@ const sendPrescriptionEmail = async (prescriptionData, pdfBuffer, isUpdate = fal
       },
       body: JSON.stringify({
         prescriptionData: prescriptionData,
-        pdfBuffer: Array.from(new Uint8Array(pdfBuffer)), // Convert ArrayBuffer to array for JSON
+        pdfBuffer: Array.from(new Uint8Array(pdfBuffer)),
         isUpdate: isUpdate
       })
     });
@@ -611,7 +686,7 @@ const PrescriptionForm = ({
   const [signature, setSignature] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [isSendingEmail, setIsSendingEmail] = useState(false); // ✅ NEW: Email sending state
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const signatureRef = useRef(null);
   
   const {
@@ -638,18 +713,44 @@ const PrescriptionForm = ({
     }
   }, [doctor, setValue]);
 
-  // Set doctor values when editing prescription
+  // Enhanced effect to handle editing prescription with better patient data
   useEffect(() => {
     if (editingPrescription) {
+      console.log("🔄 Setting form data for editing prescription:", editingPrescription);
+      
       const doctorName = editingPrescription.doctorName || doctor?.name || "Dr. Gayath Dahanayaka";
       const doctorSpecialization = editingPrescription.doctorSpecialization || doctor?.specialization || "General";
       
+      // Determine patient ID for the form
+      let patientId = "";
+      if (editingPrescription.patient && typeof editingPrescription.patient === 'object') {
+        patientId = editingPrescription.patient._id || editingPrescription.patient.patientId || "";
+      } else {
+        patientId = editingPrescription.patientId || editingPrescription.patient || "";
+      }
+      
+      console.log("📝 Form reset with data:", {
+        patientId,
+        doctorName,
+        doctorSpecialization,
+        diagnosis: editingPrescription.diagnosis,
+        medicines: editingPrescription.medicines?.length ? editingPrescription.medicines : [{ name: "", dosage: "", frequency: "", duration: "", notes: "" }]
+      });
+      
       setValue("doctor.name", doctorName);
       setValue("doctor.specialization", doctorSpecialization);
+      setValue("patientId", patientId);
+      setValue("date", editingPrescription.date?.slice(0, 10) || new Date().toISOString().slice(0, 10));
+      setValue("diagnosis", editingPrescription.diagnosis || "");
+      setValue("medicines", editingPrescription.medicines?.length ? editingPrescription.medicines : [{ name: "", dosage: "", frequency: "", duration: "", notes: "" }]);
+      setValue("notes", editingPrescription.notes || "");
       
-      console.log("Setting doctor values from editing prescription:", { doctorName, doctorSpecialization });
+      // Trigger validation after setting values
+      setTimeout(() => {
+        trigger();
+      }, 100);
     }
-  }, [editingPrescription, doctor, setValue]);
+  }, [editingPrescription, doctor, setValue, trigger]);
 
   const { fields, append, remove } = useFieldArray({ control, name: "medicines" });
 
@@ -670,6 +771,21 @@ const PrescriptionForm = ({
     return filterTodaysPrescriptions(prescriptions);
   }, [prescriptions]);
 
+  // Enhanced effect to handle parent patient changes
+  useEffect(() => {
+    if (parentPatient) {
+      console.log("👤 Setting parent patient:", parentPatient);
+      setSelectedPatient(parentPatient);
+      setValue("patientId", parentPatient.patientId || parentPatient._id);
+      
+      const displayName = `${parentPatient.firstName || ""} ${parentPatient.lastName || ""}`.trim();
+      const patientId = parentPatient.patientId || parentPatient._id || "";
+      setSearch(`${displayName} (${patientId})`);
+      
+      trigger("patientId");
+    }
+  }, [parentPatient, setValue, trigger]);
+
   // Add this useEffect to handle scanned patient ID
   useEffect(() => {
     if (!scannedPatientId || selectedPatient) return;
@@ -688,7 +804,8 @@ const PrescriptionForm = ({
           
           if (patient) {
             handleSelectPatient({
-              patientId: patient.patientId,
+              _id: patient._id,
+              patientId: patient.patientId || patient._id,
               firstName: patient.firstName,
               lastName: patient.lastName,
               email: patient.email,
@@ -709,7 +826,6 @@ const PrescriptionForm = ({
           const searchData = await searchRes.json();
           
           if (Array.isArray(searchData) && searchData.length > 0) {
-            // Find exact match first, otherwise take first result
             const exactMatch = searchData.find(p => 
               p._id === scannedPatientId || 
               p.patientId === scannedPatientId
@@ -734,61 +850,6 @@ const PrescriptionForm = ({
 
     fetchScannedPatient();
   }, [scannedPatientId, selectedPatient]);
-
-  // Prefill form for editing
-  useEffect(() => {
-    if (!editingPrescription) return;
-
-    const patientId = editingPrescription.patientId || 
-                      editingPrescription.patient?._id || 
-                      editingPrescription.patient?.patientId || 
-                      "";
-
-    console.log("Editing prescription with patientId:", patientId);
-
-    reset({
-      date: editingPrescription.date?.slice(0, 10) || "",
-      diagnosis: editingPrescription.diagnosis || "",
-      medicines: editingPrescription.medicines?.length
-        ? editingPrescription.medicines
-        : [{ name: "", dosage: "", frequency: "", duration: "", notes: "" }],
-      notes: editingPrescription.notes || "",
-      patientId: patientId,
-      doctor: {
-        name: editingPrescription.doctorName || doctor?.name || "Dr. Gayath Dahanayaka",
-        specialization: editingPrescription.doctorSpecialization || doctor?.specialization || "General",
-      },
-    });
-
-    if (editingPrescription.patient) {
-      const patient = editingPrescription.patient;
-      setSelectedPatient(patient);
-      setSearch(`${patient.firstName} ${patient.lastName} ${patient.patientId || patient._id}`);
-    } else if (patientId) {
-      fetch(`http://localhost:7000/api/patients/${patientId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (!data?.patient) return;
-
-          const patient = data.patient;
-
-          setSelectedPatient({
-            firstName: patient.firstName,
-            lastName: patient.lastName,
-            email: patient.email,
-            phone: patient.phone,
-            gender: patient.gender,
-            dateOfBirth: patient.dateOfBirth
-              ? new Date(patient.dateOfBirth).toLocaleDateString()
-              : "",
-            bloodGroup: patient.bloodGroup,
-            allergies: patient.allergies || []
-          });
-          setSearch(`${patient.firstName} ${patient.lastName} ${patient.patientId || patient._id}`);
-        })
-        .catch(err => console.error("Failed to fetch patient for editing:", err));
-    }
-  }, [editingPrescription, reset, doctor]);
 
   useEffect(() => {
     if (editingPrescription && selectedPatient) {
@@ -841,13 +902,35 @@ const PrescriptionForm = ({
       return;
     }
 
+    console.log("🔍 Selecting patient:", patient);
+    
     const patientId = patient.patientId || patient._id;
-    setSelectedPatient(patient);
+    const displayName = `${patient.firstName || ""} ${patient.lastName || ""}`.trim();
+    
+    // Create standardized patient object
+    const standardizedPatient = {
+      _id: patient._id || patientId,
+      patientId: patientId,
+      firstName: patient.firstName || "",
+      lastName: patient.lastName || "",
+      email: patient.email || "",
+      phone: patient.phone || "",
+      gender: patient.gender || "",
+      dateOfBirth: patient.dateOfBirth || "",
+      bloodGroup: patient.bloodGroup || "",
+      allergies: patient.allergies || [],
+      address: patient.address || "",
+      emergencyContact: patient.emergencyContact || ""
+    };
+    
+    setSelectedPatient(standardizedPatient);
     setValue("patientId", patientId);
-    setSearch(`${patient.firstName} ${patient.lastName} (${patientId})`);
+    setSearch(`${displayName} (${patientId})`);
     setPatientsList([]);
     setSearchError("");
     trigger("patientId");
+    
+    console.log("✅ Patient selected and form updated");
   };
 
   const handleSearchChange = (e) => {
@@ -860,14 +943,6 @@ const PrescriptionForm = ({
       setValue("patientId", "");
     }
   };
-
-  useEffect(() => {
-    if (parentPatient) {
-      setSelectedPatient(parentPatient);
-      setValue("patientId", parentPatient.patientId || parentPatient._id);
-      setSearch(`${parentPatient.firstName} ${parentPatient.lastName}`);
-    }
-  }, [parentPatient, setValue]);
 
   // OCR text integration with validation
   useEffect(() => {
@@ -885,7 +960,7 @@ const PrescriptionForm = ({
     trigger(activeField);
   }, [ocrTextFromCanvas, activeField, setValue, trigger]);
 
-  // ✅ ENHANCED: Form submission with PDF generation and email sending
+  // Enhanced form submission with PDF generation and email sending
   const onSubmit = async (data) => {
     if (!selectedPatient) {
       alert("Please select a patient.");
@@ -965,7 +1040,7 @@ const PrescriptionForm = ({
 
       const savedPrescription = res.data?.data || res.data;
 
-      // ✅ NEW: Generate PDF and send email if patient has email
+      // Generate PDF and send email if patient has email
       if (selectedPatient.email) {
         try {
           console.log("📧 Starting PDF generation and email process...");
@@ -1148,11 +1223,13 @@ const PrescriptionForm = ({
       {/* Patient ID validation error */}
       <ErrorMessage error={errors.patientId} />
 
-      {/* Selected patient */}
+      {/* Enhanced selected patient display */}
       {selectedPatient && (
         <div className="pf-selected-patient">
           <div className="pf-selected-patient-header">
-            <div className="pf-selected-patient-title">Selected Patient</div>
+            <div className="pf-selected-patient-title">
+              {editingPrescription ? "Editing Patient" : "Selected Patient"}
+            </div>
             <div className="pf-selected-patient-id">
               ID: {selectedPatient.patientId || selectedPatient._id}
             </div>
@@ -1164,33 +1241,43 @@ const PrescriptionForm = ({
             </div>
             <div className="pf-patient-info-item">
               <span className="pf-patient-info-label">Gender:</span>
-              <span>{selectedPatient.gender}</span>
+              <span>{selectedPatient.gender || "Not specified"}</span>
             </div>
             <div className="pf-patient-info-item">
               <span className="pf-patient-info-label">DOB:</span>
               <span>
                 {selectedPatient.dateOfBirth 
                   ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() 
-                  : "N/A"}
+                  : "Not provided"}
               </span>
             </div>
             <div className="pf-patient-info-item">
               <span className="pf-patient-info-label">Email:</span>
-              <span>{selectedPatient.email || "❌ No Email"}</span>
+              <span>
+                {selectedPatient.email || "❌ No Email"}
+                {!selectedPatient.email && <span className="pf-warning-text"> (Cannot send email)</span>}
+              </span>
             </div>
             <div className="pf-patient-info-item">
               <span className="pf-patient-info-label">Phone:</span>
-              <span>{selectedPatient.phone}</span>
+              <span>{selectedPatient.phone || "Not provided"}</span>
             </div>
             <div className="pf-patient-info-item">
               <span className="pf-patient-info-label">Blood Group:</span>
-              <span>{selectedPatient.bloodGroup || "N/A"}</span>
+              <span>{selectedPatient.bloodGroup || "Not specified"}</span>
             </div>
           </div>
-          {selectedPatient.allergies?.length > 0 && (
+          
+          {selectedPatient.allergies && selectedPatient.allergies.length > 0 && (
             <div className="pf-patient-allergies">
               <span className="pf-patient-info-label">Allergies:</span>
-              <span>{selectedPatient.allergies.join(", ")}</span>
+              <span className="pf-allergies-warning">{selectedPatient.allergies.join(", ")}</span>
+            </div>
+          )}
+          {editingPrescription && (
+            <div className="pf-editing-indicator">
+              <span className="pf-edit-icon">✏️</span>
+              Editing mode - Patient data loaded from prescription
             </div>
           )}
         </div>
@@ -1205,8 +1292,6 @@ const PrescriptionForm = ({
           onFocus={() => setActiveField("date")} 
           max={new Date().toISOString().split('T')[0]}
           min={new Date().toISOString().split('T')[0]}
-          // max={new Date().toISOString().split('T')[0]}
-          // min={new Date().toISOString().split('T')[0]}
           className={`pf-input ${errors.date ? 'pf-error' : ''}`} 
         />
         <ErrorMessage error={errors.date} />
@@ -1427,7 +1512,7 @@ const PrescriptionForm = ({
         </div>
       )}
 
-      {/* ✅ ENHANCED: Buttons with email status */}
+      {/* Enhanced buttons with email status */}
       <div className="pf-button-group">
         <button 
           type="submit" 
@@ -1456,7 +1541,7 @@ const PrescriptionForm = ({
         </button>
       </div>
 
-      {/* ✅ ENHANCED: Email status indicator */}
+      {/* Enhanced email status indicator */}
       {selectedPatient && (
         <div className={`pf-email-status ${selectedPatient.email ? 'has-email' : 'no-email'}`}>
           {selectedPatient.email ? (
