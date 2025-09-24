@@ -1,82 +1,143 @@
-import Appointment from '../model/appointment.js'; // Make sure you have this model
+// server/controller/appointmentController.js
+
+import Appointment from "../model/appointment.js";
 
 // Create a new appointment
+// server/controller/appointmentController.js
+
+
 export const createAppointment = async (req, res) => {
   try {
-    const { date, time, doctor, patientId } = req.body;
+    const {
+      // Personal Information
+      name,
+      gender,
+      dateOfBirth,
+      age,
+      email,
+      phone,
+      bloodGroup,
+      allergies,
+      // Appointment Details
+      appointmentDate,
+      appointmentTime,
+      doctorSpecialty,
+      doctorName,
+      appointmentType,
+      symptoms,
+      urgency,
+      // Emergency Contact
+      emergencyContactName,
+      emergencyContactPhone,
+      emergencyContactRelationship
+    } = req.body;
 
-    // Simple validation
-    if (!date || !time || !doctor || !patientId) {
-      return res.status(400).json({ message: 'All fields are required' });
+    // Validate required fields
+    if (
+      !name ||
+      !gender ||
+      !dateOfBirth ||
+      age == null ||
+      !email ||
+      !phone ||
+      !bloodGroup ||
+      !appointmentDate ||
+      !appointmentTime ||
+      !doctorSpecialty ||
+      !appointmentType
+    ) {
+      return res
+        .status(400)
+        .json({ message: "All required fields must be provided" });
     }
 
     const newAppointment = new Appointment({
-      date,
-      time,
-      doctor,
-      patient: patientId,
+      name,
+      gender,
+      dateOfBirth,
+      age,
+      email,
+      phone,
+      bloodGroup,
+      allergies: allergies || "",
+      appointmentDate,
+      appointmentTime,
+      doctorSpecialty,
+      doctorName: doctorName || "",
+      appointmentType,
+      symptoms: symptoms || "",
+      urgency: urgency || "normal",
+      emergencyContactName: emergencyContactName || "",
+      emergencyContactPhone: emergencyContactPhone || "",
+      emergencyContactRelationship: emergencyContactRelationship || ""
     });
 
-    await newAppointment.save();
-
-    res.status(201).json({ message: 'Appointment created', appointment: newAppointment });
+    const saved = await newAppointment.save();
+    res.status(201).json({
+      success: true,
+      message: "Appointment created successfully",
+      appointment: saved
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("❌ createAppointment error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 // Get all appointments
 export const getAppointments = async (req, res) => {
   try {
-    const appointments = await Appointment.find().populate('patient', '-password'); 
-    res.json(appointments);
+    const list = await Appointment.find().sort({ createdAt: -1 });
+    res.json({ success: true, appointments: list });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("❌ getAppointments error:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
 // Get single appointment by ID
 export const getAppointmentById = async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id).populate('patient', '-password');
-    if (!appointment) {
-      return res.status(404).json({ message: 'Appointment not found' });
+    const appt = await Appointment.findById(req.params.id);
+    if (!appt) {
+      return res.status(404).json({ message: "Appointment not found" });
     }
-    res.json(appointment);
+    res.json({ success: true, appointment: appt });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("❌ getAppointmentById error:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// Update appointment status
+// Update appointment
 export const updateAppointment = async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id);
-    if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
-
-    appointment.status = req.body.status || appointment.status;
-    await appointment.save();
-
-    res.json({ message: 'Appointment updated', appointment });
+    const appt = await Appointment.findById(req.params.id);
+    if (!appt) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+    Object.assign(appt, req.body);
+    const updated = await appt.save();
+    res.json({ success: true, message: "Appointment updated", appointment: updated });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("❌ updateAppointment error:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// Delete an appointment
+
+
+// Delete appointment
 export const deleteAppointment = async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id);
-    if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
-
-    await appointment.remove();
-    res.json({ message: 'Appointment deleted' });
+    const appt = await Appointment.findById(req.params.id);
+    if (!appt) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+    await appt.deleteOne();
+    res.json({ success: true, message: "Appointment deleted" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("❌ deleteAppointment error:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
