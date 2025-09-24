@@ -145,62 +145,8 @@ const SurgicalItemsManagement = () => {
   };
 
   // Load restock spending from localStorage
-  const loadRestockSpending = () => {
-    try {
-      const stored = localStorage.getItem('healx_restock_spending');
-      if (stored) {
-        const data = JSON.parse(stored);
-        setRestockSpending({
-          totalRestockValue: data.totalRestockValue || 0,
-          monthlyRestockValue: data.monthlyRestockValue || 0,
-          restockHistory: data.restockHistory || []
-        });
-        return data.totalRestockValue || 0;
-      }
-      return 0;
-    } catch (error) {
-      console.error('Error loading restock spending:', error);
-      return 0;
-    }
-  };
 
   // Save restock spending to localStorage
-  const saveRestockSpending = (restockValue, action = 'restock', details = {}) => {
-    try {
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      
-      // Check if this restock is from current month
-      const isCurrentMonth = details.timestamp ? 
-        new Date(details.timestamp).getMonth() === currentMonth && 
-        new Date(details.timestamp).getFullYear() === currentYear : 
-        true;
-      
-      const updatedMonthlyValue = isCurrentMonth ? 
-        restockSpending.monthlyRestockValue + restockValue : 
-        restockSpending.monthlyRestockValue;
-      
-      const data = {
-        totalRestockValue: restockSpending.totalRestockValue + restockValue,
-        monthlyRestockValue: updatedMonthlyValue,
-        restockHistory: [
-          ...restockSpending.restockHistory,
-          {
-            action,
-            restockValue,
-            timestamp: new Date().toISOString(),
-            admin: admin?.name || 'System',
-            ...details
-          }
-        ].slice(-100) // Keep last 100 entries
-      };
-      
-      localStorage.setItem('healx_restock_spending', JSON.stringify(data));
-      setRestockSpending(data);
-    } catch (error) {
-      console.error('Error saving restock spending:', error);
-    }
-  };
 
   // Add to cumulative purchases (NEVER decreases)
   const addToCumulativePurchases = (amount, action = 'purchase', details = {}) => {
@@ -285,6 +231,116 @@ const SurgicalItemsManagement = () => {
       console.error('Error fetching supplier spending:', error);
     }
   };
+
+  // Replace the localStorage-based functions with these API calls
+
+// Load restock spending from server
+const loadRestockSpending = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/restock-spending`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        setRestockSpending({
+          totalRestockValue: data.data.totalRestockValue || 0,
+          monthlyRestockValue: data.data.monthlyRestockValue || 0,
+          restockHistory: data.data.restockHistory || []
+        });
+        return data.data.totalRestockValue || 0;
+      }
+    }
+    return 0;
+  } catch (error) {
+    console.error('Error loading restock spending:', error);
+    return 0;
+  }
+};
+
+// Save restock spending to server
+const saveRestockSpending = async (restockValue, action = 'restock', details = {}) => {
+  try {
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    
+    // Check if this restock is from current month
+    const isCurrentMonth = details.timestamp ? 
+      new Date(details.timestamp).getMonth() === currentMonth && 
+      new Date(details.timestamp).getFullYear() === currentYear : 
+      true;
+    
+    const updatedMonthlyValue = isCurrentMonth ? 
+      restockSpending.monthlyRestockValue + restockValue : 
+      restockSpending.monthlyRestockValue;
+    
+    const updatedHistory = [
+      ...restockSpending.restockHistory,
+      {
+        action,
+        restockValue,
+        timestamp: new Date().toISOString(),
+        admin: admin?.name || 'System',
+        ...details
+      }
+    ].slice(-100); // Keep last 100 entries
+    
+    const updatedData = {
+      totalRestockValue: restockSpending.totalRestockValue + restockValue,
+      monthlyRestockValue: updatedMonthlyValue,
+      restockHistory: updatedHistory
+    };
+    
+    const response = await fetch(`${API_BASE_URL}/restock-spending`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updatedData)
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        setRestockSpending(updatedData);
+      }
+    }
+  } catch (error) {
+    console.error('Error saving restock spending:', error);
+  }
+};
+
+// Reset restock spending function
+const handleResetRestockSpending = async () => {
+  if (window.confirm(`Are you sure you want to reset the restock spending?\n\nCurrent restock spending: $${restockSpending.totalRestockValue.toLocaleString()}\nThis will set all restock values to zero.\n\nThis action cannot be undone.`)) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/restock-spending`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          totalRestockValue: 0,
+          monthlyRestockValue: 0,
+          restockHistory: []
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setRestockSpending({
+            totalRestockValue: 0,
+            monthlyRestockValue: 0,
+            restockHistory: []
+          });
+          showNotification(`✅ Restock spending reset to $0`, 'success');
+        }
+      }
+    } catch (error) {
+      console.error('Error resetting restock spending:', error);
+      showNotification('❌ Failed to reset restock spending', 'error');
+    }
+  }
+};
 
   // 🔥 ENHANCED Auto-restock check function with proper value tracking
   const handleAutoRestockCheck = async () => {
@@ -1128,48 +1184,47 @@ const SurgicalItemsManagement = () => {
     }
   }, [items, cumulativePurchases]);
 
-  const initializeComponent = async () => {
-    try {
-      setLoading(true);
-      
-      // Load cumulative purchases first
-      loadCumulativePurchases();
-      
-      // Load restock spending
-      loadRestockSpending();
-      
-      const adminData = localStorage.getItem('admin');
-      if (adminData) {
-        try {
-          const parsedAdmin = JSON.parse(adminData);
-          if (parsedAdmin && parsedAdmin.role === 'admin') {
-            setAdmin(parsedAdmin);
-          } else {
-            navigate('/admin/login');
-            return;
-          }
-        } catch (parseError) {
-          console.error('Error parsing admin data:', parseError);
+const initializeComponent = async () => {
+  try {
+    setLoading(true);
+    
+    // Load cumulative purchases first
+    loadCumulativePurchases();
+    
+    // Load restock spending from server
+    await loadRestockSpending();
+    
+    const adminData = localStorage.getItem('admin');
+    if (adminData) {
+      try {
+        const parsedAdmin = JSON.parse(adminData);
+        if (parsedAdmin && parsedAdmin.role === 'admin') {
+          setAdmin(parsedAdmin);
+        } else {
           navigate('/admin/login');
           return;
         }
-      } else {
+      } catch (parseError) {
+        console.error('Error parsing admin data:', parseError);
         navigate('/admin/login');
         return;
       }
-
-      await Promise.all([
-        loadItems(),
-        fetchSupplierSpending()
-      ]);
-    } catch (error) {
-      console.error('Initialization error:', error);
-      setError('Failed to initialize component');
-    } finally {
-      setLoading(false);
+    } else {
+      navigate('/admin/login');
+      return;
     }
-  };
 
+    await Promise.all([
+      loadItems(),
+      fetchSupplierSpending()
+    ]);
+  } catch (error) {
+    console.error('Initialization error:', error);
+    setError('Failed to initialize component');
+  } finally {
+    setLoading(false);
+  }
+};
   const loadItems = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/surgical-items?page=1&limit=1000`);
@@ -1415,19 +1470,6 @@ const SurgicalItemsManagement = () => {
   };
 
   // Reset Restock Spending function (for admin use)
-  const handleResetRestockSpending = () => {
-    if (window.confirm(`Are you sure you want to reset the restock spending?\n\nCurrent restock spending: $${restockSpending.totalRestockValue.toLocaleString()}\nThis will set all restock values to zero.\n\nThis action cannot be undone.`)) {
-      const data = {
-        totalRestockValue: 0,
-        monthlyRestockValue: 0,
-        restockHistory: []
-      };
-      
-      localStorage.setItem('healx_restock_spending', JSON.stringify(data));
-      setRestockSpending(data);
-      showNotification(`✅ Restock spending reset to $0`, 'success');
-    }
-  };
 
   // Enhanced CustomNumberInput that respects user's auto-restock settings
   const CustomNumberInput = ({ value, onSubmit, placeholder, title, max = 999999, type = 'add', item }) => {
