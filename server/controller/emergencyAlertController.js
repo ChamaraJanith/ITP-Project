@@ -1,4 +1,4 @@
-// ===== 2. EmergencyAlertController.js (Fixed) =====
+// controller/EmergencyAlertController.js
 import EmergencyAlert from "../model/EmergencyAlert.js";
 
 class EmergencyAlertController {
@@ -17,7 +17,11 @@ class EmergencyAlertController {
         description,
         assignedDoctorId,
         assignedDoctorName,
-        assignedDoctorSpecialization
+        assignedDoctorSpecialization,
+        location,
+        symptoms,
+        vitalSigns,
+        priority
       } = req.body;
 
       // Validate required fields
@@ -35,10 +39,14 @@ class EmergencyAlertController {
         patientPhone,
         patientGender,
         type: type || 'Non-urgent',
+        priority: priority || 'Medium',
         description,
         assignedDoctorId,
         assignedDoctorName,
-        assignedDoctorSpecialization
+        assignedDoctorSpecialization,
+        location: location || 'Unknown',
+        symptoms: symptoms || [],
+        vitalSigns: vitalSigns || {}
       });
 
       const savedAlert = await newAlert.save();
@@ -59,12 +67,20 @@ class EmergencyAlertController {
     }
   }
 
-  // Get all emergency alerts
+  // Get all emergency alerts with pagination
   static async getAllEmergencyAlerts(req, res) {
     try {
       console.log('📋 Fetching emergency alerts with query:', req.query);
       
-      const { status, type, assignedDoctorId } = req.query;
+      const { 
+        status, 
+        type, 
+        assignedDoctorId, 
+        page = 1, 
+        limit = 10,
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
+      } = req.query;
       
       // Build query filter
       const filter = {};
@@ -72,13 +88,37 @@ class EmergencyAlertController {
       if (type && type !== 'All') filter.type = type;
       if (assignedDoctorId) filter.assignedDoctorId = assignedDoctorId;
 
-      const alerts = await EmergencyAlert.find(filter).sort({ createdAt: -1 });
-      console.log(`✅ Found ${alerts.length} emergency alerts`);
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      
+      // Build sort object
+      const sort = {};
+      sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      
+      const [alerts, totalAlerts] = await Promise.all([
+        EmergencyAlert.find(filter)
+          .sort(sort)
+          .skip(skip)
+          .limit(parseInt(limit))
+          .lean(), // Use lean for better performance
+        EmergencyAlert.countDocuments(filter)
+      ]);
+
+      const totalPages = Math.ceil(totalAlerts / parseInt(limit));
+
+      console.log(`✅ Found ${alerts.length} emergency alerts (Page ${page} of ${totalPages})`);
 
       return res.status(200).json({
         success: true,
         message: 'Emergency alerts fetched successfully',
         data: alerts,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages,
+          totalAlerts,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+          limit: parseInt(limit)
+        },
         count: alerts.length
       });
     } catch (error) {
@@ -122,7 +162,7 @@ class EmergencyAlertController {
   }
 
   // Update emergency alert status
-  static async updateEmergencyAlertStatus(req, res) {
+  static async updateEmergencyAlert(req, res) {
     try {
       const { id } = req.params;
       const { status, notes, resolvedBy } = req.body;
@@ -237,13 +277,37 @@ class EmergencyAlertController {
         { $sort: { _id: 1 } }
       ]);
 
+      // Calculate average resolution time
+      const resolvedAlertsData = await EmergencyAlert.find({
+        ...filter,
+        status: 'Resolved',
+        resolutionTime: { $exists: true, $ne: null }
+      }).select('resolutionTime');
+      
+      const avgResolutionTime = resolvedAlertsData.length > 0
+        ? Math.round(resolvedAlertsData.reduce((sum, alert) => sum + alert.resolutionTime, 0) / resolvedAlertsData.length)
+        : 0;
+
       const stats = {
-        totalAlerts,
-        activeAlerts,
-        resolvedAlerts,
-        criticalAlerts,
-        urgentAlerts,
-        alertsByDay
+        overview: {
+          totalAlerts,
+          activeAlerts,
+          resolvedAlerts,
+          todayAlerts: alertsByDay.reduce((sum, day) => {
+            const today = new Date().toISOString().split('T')[0];
+            return day._id === today ? day.count : sum;
+          }, 0)
+        },
+        byType: {
+          criticalAlerts,
+          urgentAlerts,
+          nonUrgentAlerts: totalAlerts - criticalAlerts - urgentAlerts
+        },
+        alertsByDay,
+        performance: {
+          avgResolutionTime,
+          resolutionRate: totalAlerts > 0 ? Math.round((resolvedAlerts / totalAlerts) * 100) : 0
+        }
       };
 
       console.log('✅ Emergency alert statistics:', stats);
@@ -258,6 +322,39 @@ class EmergencyAlertController {
       return res.status(500).json({
         success: false,
         message: 'Error fetching emergency alert statistics',
+        error: error.message
+      });
+    }
+  }
+
+  // Bulk update alerts
+  static async bulkUpdateAlerts(req, res) {
+    try {
+      const { alertIds, updateData } = req.body;
+      
+      if (!alertIds || !Array.isArray(alertIds) || alertIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No alert IDs provided'
+        });
+      }
+
+      const result = await EmergencyAlert.updateMany(
+        { _id: { $in: alertIds } },
+        { $set: { ...updateData, updatedAt: new Date() } },
+        { multi: true }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: `${result.modifiedCount} alerts updated successfully`,
+        data: result
+      });
+    } catch (error) {
+      console.error("❌ Error bulk updating emergency alerts:", error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error bulk updating emergency alerts',
         error: error.message
       });
     }
