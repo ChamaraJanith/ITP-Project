@@ -10,6 +10,7 @@ import AllUserManagement from './components/admin/Admin/AllUserManagement';
 import ForgotPassword from './components/ForgotPassword';
 // ✅ User Authentication Components (ADD THESE IMPORTS)
 import Login from '../src/pages/Login';
+import RegisterUser from './components/RegisterUser';
 
 
 // ✅ Existing User Components
@@ -204,9 +205,11 @@ function App() {
   // ------------------------------------------------------------
 
   return (
+    
     <Router>
       {/* NEW: Ensure top-of-page on every route change */}
       <ScrollToTop />
+      <MedicalNavbar />
 
       <div className="App">
         
@@ -384,12 +387,14 @@ function App() {
             />
 
             {/* Inventory management */}
+            
             <Route path="/admin/surgical-items" element={<SurgicalItemsManagement />} />
-
+              <Route path="/register" element={<RegisterUser />} />
             {/* Financial routes */}
             <Route path="/admin/financial/payments" element={<FinancialManagePayments />} />
             <Route path="/admin/financial/payments/inventory-view" element={<InventoryTotalView />} />
             <Route path="/admin/financial/payments/total-view" element={<PaymentTotalView />} />
+
 
             {/* ✅ Admin Consultation Scheduling */}
             <Route path="/admin/doctor/schedule-consultation" element={<ScheduleConsultation />} />
@@ -419,6 +424,8 @@ function App() {
           <Route
               path="/admin/doctor/prescriptions"
               element={<PrescriptionPage />} />
+
+          
 
             <Route
              path="/admin/financial/payments/inventory-view"
