@@ -98,7 +98,9 @@ app.get('/health', (req, res) => {
       admin_auth: '/api/admin',
       chatbot: '/api/chatbot',
       inventory: '/api/inventory',
-      patients: '/api/patients'
+      patients: '/api/patients',
+      emergency_alerts: '/api/doctor/emergency-alerts', // Added this
+      emergency_stats: '/api/doctor/emergency-alerts/stats'
     }
   });
 });
@@ -173,7 +175,11 @@ app.use((req, res, next) => {
       'PUT /api/suppliers/:id',
       'DELETE /api/suppliers/:id',
       'GET /api/purchase-orders',
-      'POST /api/purchase-orders'
+      'POST /api/purchase-orders',
+      'GET /api/doctor/emergency-alerts', // Added
+      'POST /api/doctor/emergency-alerts', // Added
+      'PUT /api/doctor/emergency-alerts/:id', // Added
+      'GET /api/doctor/emergency-alerts/stats' // Added
     ]
   });
 });

@@ -1,0 +1,539 @@
+/* CreateAlertModal.css - Emergency Alerts Page Modal Styles */
+
+/* Modal Overlay & Container */
+.eap-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+  opacity: 0;
+  animation: eap-fade-in 0.3s ease-out forwards;
+}
+
+.eap-modal {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 4rem;
+  max-height: 95vh;
+  overflow-y: auto;
+  transform: scale(0.95);
+  animation: eap-scale-in 0.3s ease-out forwards;
+}
+
+.eap-modal-lg {
+  max-width: 56rem;
+}
+
+/* Animations */
+@keyframes eap-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes eap-scale-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Header Styles */
+.eap-modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.eap-modal-header-red {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border-bottom: none;
+  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
+  color: white;
+}
+
+.eap-modal-title-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.eap-modal-title-with-icon {
+  display: flex;
+  align-items: center;
+}
+
+.eap-modal-title-icon {
+  margin-right: 0.75rem;
+}
+
+.eap-icon-red {
+  color: white;
+}
+
+.eap-modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.eap-modal-close {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.eap-modal-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Form Layout */
+.eap-modal-form {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.eap-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.eap-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.eap-form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Form Labels */
+.eap-form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.eap-label-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.eap-label-icon {
+  flex-shrink: 0;
+}
+
+.eap-section-subtitle {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0 0 0.5rem 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Inputs & Textareas */
+.eap-form-input,
+.eap-form-select,
+.eap-form-textarea {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+
+.eap-form-input:focus,
+.eap-form-select:focus,
+.eap-form-textarea:focus {
+  outline: none;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.eap-form-textarea {
+  resize: vertical;
+  min-height: 6rem;
+}
+
+.eap-input-error {
+  border-color: #ef4444;
+}
+
+.eap-input-with-icon {
+  position: relative;
+}
+
+.eap-input-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.eap-form-input.eap-search-input {
+  padding-left: 2.5rem;
+}
+
+/* Error Messages */
+.eap-error-message {
+  font-size: 0.75rem;
+  color: #ef4444;
+  font-weight: 500;
+  margin: 0.25rem 0 0 0;
+}
+
+/* Search Dropdown */
+.eap-search-container {
+  position: relative;
+}
+
+.eap-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-top: none;
+  border-radius: 0 0 0.5rem 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  max-height: 15rem;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.eap-search-result-item {
+  padding: 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+}
+
+.eap-search-result-item:last-child {
+  border-bottom: none;
+}
+
+.eap-search-result-item:hover {
+  background-color: #f9fafb;
+}
+
+.eap-patient-result {
+  display: flex;
+  align-items: center;
+}
+
+.eap-result-icon {
+  color: #9ca3af;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.eap-result-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.eap-result-name {
+  font-weight: 500;
+  color: #111827;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.eap-result-details {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0.25rem 0 0 0;
+}
+
+.eap-search-loading {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Selected Patient */
+.eap-selected-patient {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.5rem;
+}
+
+.eap-selected-name {
+  font-weight: 500;
+  color: #166534;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.eap-selected-details {
+  font-size: 0.75rem;
+  color: #16a34a;
+  margin: 0.25rem 0 0 0;
+}
+
+/* Symptoms */
+.eap-symptom-input-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.eap-symptom-input {
+  flex: 1;
+}
+
+.eap-symptom-add-btn {
+  white-space: nowrap;
+}
+
+.eap-common-symptoms {
+  margin-bottom: 1rem;
+}
+
+.eap-symptom-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.eap-symptom-tag {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 9999px;
+  background-color: white;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.eap-symptom-tag:hover:not(.eap-symptom-disabled) {
+  background-color: #fee2e2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.eap-symptom-disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.eap-selected-symptoms {
+  margin-top: 1rem;
+}
+
+.eap-symptom-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.eap-selected-symptom-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-radius: 9999px;
+}
+
+.eap-symptom-remove {
+  margin-left: 0.5rem;
+  background: none;
+  border: none;
+  color: #b91c1c;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.eap-symptom-remove:hover {
+  background-color: rgba(185, 28, 28, 0.1);
+}
+
+/* Vital Signs */
+.eap-vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1rem;
+}
+
+.eap-vital-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.eap-vital-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.eap-bp-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.eap-bp-input {
+  flex: 1;
+}
+
+.eap-bp-separator {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Buttons */
+.eap-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.eap-btn-primary {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.eap-btn-primary:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.eap-btn-primary:active {
+  transform: translateY(1px);
+}
+
+.eap-btn-alert {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+}
+
+.eap-btn-alert:hover {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+}
+
+.eap-btn-secondary {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.eap-btn-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+.eap-btn-icon {
+  flex-shrink: 0;
+}
+
+/* Modal Footer */
+.eap-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  margin-top: auto;
+}
+
+/* Loading Spinner */
+.eap-spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid rgba(239, 68, 68, 0.2);
+  border-top-color: #ef4444;
+  border-radius: 50%;
+  animation: eap-spin 0.8s linear infinite;
+}
+
+@keyframes eap-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Adjustments */
+@media (min-width: 768px) {
+  .eap-vitals-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .eap-modal {
+    margin: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .eap-vitals-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .eap-form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .eap-modal-footer {
+    flex-direction: column;
+  }
+  
+  .eap-btn {
+    width: 100%;
+  }
+  
+  .eap-symptom-input-group {
+    flex-direction: column;
+  }
+  
+  .eap-symptom-add-btn {
+    width: 100%;
+  }
+}
