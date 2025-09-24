@@ -11,6 +11,7 @@ import ForgotPassword from './components/ForgotPassword';
 // ✅ User Authentication Components (ADD THESE IMPORTS)
 import Login from '../src/pages/Login';
 import RegisterUser from './components/RegisterUser';
+import '../src/pages/PatientProfile'
 
 
 // ✅ Existing User Components
@@ -44,6 +45,8 @@ import ProfitOrLoss from './components/admin/Financial_Manager/ProfitOrLoss';
 import SendEmail from './components/admin/Financial_Manager/SendEmail';
 import FinancialUtilities from './components/admin/Financial_Manager/FinancialUtilities';
 import FinancialBudgetPlanning from './components/admin/Financial_Manager/FinancialBudgetPlanning';
+import PaymentForm from './components/appointments/PaymentForm';
+
 
 
 
@@ -58,6 +61,8 @@ import ResetPassword from './components/ResetPassword';
 import SupplierManagement from './components/admin/Admin/SupplierManagement';
 import BookAppointment from './components/appointments/BookAppointment';
 import DoctorInventoryPage from './components/admin/Doctor/DoctorInventoryPage';
+import ConfirmationPage from './components/appointments/ConfirmationPage';
+import PatientProfile from '../src/pages/PatientProfile';
 
 // ---- NEW: Force scroll top on route change ----
 function ScrollToTop() {
@@ -231,6 +236,7 @@ function App() {
             <Route path="/search" element={<SearchPage />} />
             //<Route path="/book-appointment" element={<BookAppointment />} />
 
+
             {/* ✅ Admin Portal Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminLandingPage />} />
@@ -390,6 +396,7 @@ function App() {
             
             <Route path="/admin/surgical-items" element={<SurgicalItemsManagement />} />
               <Route path="/register" element={<RegisterUser />} />
+              <Route path="/PatientProfile" element={<PatientProfile />} />
             {/* Financial routes */}
             <Route path="/admin/financial/payments" element={<FinancialManagePayments />} />
             <Route path="/admin/financial/payments/inventory-view" element={<InventoryTotalView />} />
@@ -401,6 +408,9 @@ function App() {
             <Route path="/admin/doctor/view-consultations" element={<ViewConsultations />} />
             <Route path="/admin/doctor/prescriptions" element={<PrescriptionPage />} />
             <Route path="/admin/inventory-reports" element={<InventoryReports />} />
+            <Route path="/payment/:appointmentId" element={<PaymentForm />} />
+             <Route path="/confirmation/:appointmentId" element={<ConfirmationPage />} />
+            
 
             <Route path="/admin/doctor/patient-records" element={<PatientRecordsPage />} />
 
