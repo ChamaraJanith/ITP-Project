@@ -1,5 +1,5 @@
 // controller/adminDashboardController.js
-import UserModel from '../model/User.js'; // ✅ ADDED: Missing import
+import UserModel from '../model/userModel.js'; // ✅ ADDED: Missing import
 import UnifiedUserModel from '../model/UnifiedUserModel.js';
 import mongoose from 'mongoose';
 
