@@ -14,9 +14,8 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 
-// Import your existing routes
-import router from './routes/inventoryRoutes.js';
-import authRouter from './routes/auth.js';
+// Import routes
+import authRouter from './routes/authRoutes.js';
 import financialPayRoutes from './routes/financialPayRoutes.js';
 import patrouter from './routes/pat.js';
 import RestockRouter from './routes/autoRestockRoutes.js';
@@ -32,9 +31,7 @@ import financemailrouter from './routes/emails.js';
 import utilitiesrouter from './routes/FinancialUtilitiesRoutes.js';
 import disposalPdfRoute from './routes/disposalPdfRoute.js';
 
-
-
-// ✅ NEW: Import procurement routes
+// Import procurement routes
 import supplierRoutes from './routes/suppliers.js';
 import purchaseOrderRoutes from './routes/purchaseOrders.js';
 
@@ -47,14 +44,14 @@ const { default: inventoryRouter } = await import("./routes/inventoryRoutes.js")
 // Connect to database
 connectDB();
 
-const PORT = 7000; // ✅ Set to port 7000
+const PORT = 7000;
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// CORS configuration for port 7000
+// CORS configuration
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -93,14 +90,14 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     endpoints: {
+      auth: '/api/auth',
       suppliers: '/api/suppliers',
       purchase_orders: '/api/purchase-orders',
       admin_auth: '/api/admin',
       chatbot: '/api/chatbot',
       inventory: '/api/inventory',
       patients: '/api/patients',
-      emergency_alerts: '/api/doctor/emergency-alerts', // Added this
-      emergency_stats: '/api/doctor/emergency-alerts/stats'
+      emergency_alerts: '/api/doctor/emergency-alerts'
     }
   });
 });
@@ -119,37 +116,34 @@ app.get("/", (req, res) => {
   });
 });
 
-// Mount the prescription notification router at a unique path
-console.log('📧 Mounting prescription notification router at /api/prescription-notifications');
-app.use('/api/prescription-notifications', prescriptionNotificationRouter);
+// Mount routes in correct order
+console.log('🔐 Mounting auth router at /api/auth');
+app.use('/api/auth', authRouter);
 
+console.log('📦 Mounting surgical items router at /api/inventory/surgical');
+app.use('/api/inventory/surgical', surgicalrouter);
 
-// Mount notification routes FIRST
-console.log('📧 Mounting notification router at /api/inventory/notifications');
-app.use('/api/inventory/notifications', notificationRouter);
-
-console.log('📦 Mounting surgical items router at /api/inventory');
-app.use('/api/inventory', surgicalrouter);
-app.use('/api/restock-orders', RestockRouter);
+console.log('🔄 Mounting restock router at /api/inventory/auto-restock');
 app.use('/api/inventory/auto-restock', RestockRouter);
-app.use('/api/inventory', inventoryRouter);
-app.use('/api/inventory', disposalPdfRoute);
 
-// ✅ NEW: Mount supplier and purchase order routes
+console.log('📋 Mounting inventory router at /api/inventory');
+app.use('/api/inventory', inventoryRouter);
+
+console.log('📄 Mounting disposal PDF router at /api/inventory/disposal');
+app.use('/api/inventory/disposal', disposalPdfRoute);
+
 console.log('🏢 Mounting supplier routes at /api/suppliers');
 app.use('/api/suppliers', supplierRoutes);
+
 console.log('📋 Mounting purchase order routes at /api/purchase-orders');
 app.use('/api/purchase-orders', purchaseOrderRoutes);
 
-// Mount patient routes
 console.log('👥 Mounting patient router at /api/patients');
 app.use('/api/patients', patrouter);
 
-// Mount other API routes
+app.use('/api/auth', authRouter)
 app.use('/api/admin', adminRouter);
 app.use('/api/chatbot', chatbotRouter);
-app.use("/api/auth", router);
-app.use("/api/auth", authRouter);
 app.use("/api/payments", financialPayRoutes);
 app.use("/api/prescription", consultationRouter);
 app.use("/api/doctor/prescriptions", prescriptionRouter);
@@ -160,27 +154,32 @@ app.use('/api/financial-utilities', utilitiesrouter);
 console.log('🚨 Mounting emergency alerts router at /api/doctor/emergency-alerts');
 app.use('/api/doctor/emergency-alerts', emergencyAlertRouter);
 
+console.log('📧 Mounting notification router at /api/inventory/notifications');
+app.use('/api/inventory/notifications', notificationRouter);
+
+console.log('💊 Mounting prescription notification router at /api/prescription-notifications');
+app.use('/api/prescription-notifications', prescriptionNotificationRouter);
+
 // Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
-// 404 handler - MUST be after all routes
+// 404 handler
 app.use((req, res, next) => {
   console.log(`❌ 404 - Route not found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({
     success: false,
     message: `Route ${req.method} ${req.originalUrl} not found`,
     availableRoutes: [
+      'POST /api/auth/register',
+      'POST /api/auth/login',
+      'POST /api/auth/logout',
       'GET /api/suppliers',
       'POST /api/suppliers',
-      'PUT /api/suppliers/:id',
-      'DELETE /api/suppliers/:id',
       'GET /api/purchase-orders',
       'POST /api/purchase-orders',
-      'GET /api/doctor/emergency-alerts', // Added
-      'POST /api/doctor/emergency-alerts', // Added
-      'PUT /api/doctor/emergency-alerts/:id', // Added
-      'GET /api/doctor/emergency-alerts/stats' // Added
+      'GET /api/doctor/emergency-alerts',
+      'POST /api/doctor/emergency-alerts'
     ]
   });
 });
@@ -232,7 +231,7 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// Start server on port 7000
+// Start server
 app.listen(PORT, () => {
   console.log('🚀 HealX Healthcare Server Started Successfully!');
   console.log('=====================================');
@@ -240,11 +239,14 @@ app.listen(PORT, () => {
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Base URL: http://localhost:${PORT}`);
   console.log('=====================================');
+  console.log('📋 Authentication Endpoints:');
+  console.log(`   🔐 Register: POST http://localhost:${PORT}/api/auth/register`);
+  console.log(`   🔑 Login: POST http://localhost:${PORT}/api/auth/login`);
+  console.log(`   🚪 Logout: POST http://localhost:${PORT}/api/auth/logout`);
+  console.log('=====================================');
   console.log('📋 Procurement & Suppliers Endpoints:');
   console.log(`   🏢 Get Suppliers: GET http://localhost:${PORT}/api/suppliers`);
   console.log(`   🏢 Create Supplier: POST http://localhost:${PORT}/api/suppliers`);
-  console.log(`   🏢 Update Supplier: PUT http://localhost:${PORT}/api/suppliers/:id`);
-  console.log(`   🏢 Delete Supplier: DELETE http://localhost:${PORT}/api/suppliers/:id`);
   console.log(`   📋 Get Purchase Orders: GET http://localhost:${PORT}/api/purchase-orders`);
   console.log(`   📋 Create Purchase Order: POST http://localhost:${PORT}/api/purchase-orders`);
   console.log(`   💊 Health Check: GET http://localhost:${PORT}/health`);
