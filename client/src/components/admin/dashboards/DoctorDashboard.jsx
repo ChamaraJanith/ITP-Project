@@ -3,6 +3,7 @@ import AdminLayout from "../AdminLayout";
 import { adminDashboardApi } from "../../../services/adminApi.js";
 import { useNavigate } from "react-router-dom";
 import EmergencyAlertsPage from "../Doctor/EmergencyAlertsPage.jsx";
+import './DoctorDashboard.css';
 
 const DoctorDashboard = () => {
   const [admin, setAdmin] = useState(null);
