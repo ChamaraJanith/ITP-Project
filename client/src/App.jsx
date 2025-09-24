@@ -7,11 +7,12 @@ import EmergencyPage from './components/EmergencyPage';
 import HospitalsPage from './components/HospitalPage';
 import Footer from './components/Footer';
 import AllUserManagement from './components/admin/Admin/AllUserManagement';
+import ForgotPassword from './components/ForgotPassword';
+// ✅ User Authentication Components (ADD THESE IMPORTS)
+import Login from '../src/pages/Login';
+
 
 // ✅ Existing User Components
-import Register from './components/admin/Patient/Register';
-import Login from './components/admin/Patient/Login';
-import PatientProfile from './components/admin/Patient/PatientProfile';
 
 // ✅ Admin Components 
 import AdminLogin from './components/admin/AdminLogin';
@@ -50,6 +51,7 @@ import FinancialBudgetPlanning from './components/admin/Financial_Manager/Financ
 import PatientRegistration from './components/admin/Reciptionist/PatientRegistration';
 import PatientList from './components/admin/Reciptionist/PatientList';
 import PatientDetails from './components/admin/Reciptionist/PatientDetails';
+import ResetPassword from './components/ResetPassword';
 
 // ✅ NEW: Procurement & Suppliers Component
 import SupplierManagement from './components/admin/Admin/SupplierManagement';
@@ -207,15 +209,13 @@ function App() {
       <ScrollToTop />
 
       <div className="App">
-        <MedicalNavbar />
         
         <main className="main-content">
           <Routes>
             {/* ✅ Public User Routes */}
             <Route path="/" element={<Homepage />} />
-            <Route path="/PatientProfile" element={<PatientProfile />} />
-            <Route path="/Login" element={<Login/>}/>
-            <Route path="/register" element={<Register/>}/>
+            <Route path="/login" element={<Login/>}/>
+            <Route path="/forgot-password" element={<ForgotPassword />}/>
 
             {/* ✅ Healthcare Service Routes */}
             <Route path="/hospitals" element={<HospitalsPage />} />
@@ -231,6 +231,7 @@ function App() {
             {/* ✅ Admin Portal Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminLandingPage />} />
+            <Route path="/reset-password" element={<ResetPassword/>}/>
             
             {/* Protected Admin Routes */}
             <Route 
