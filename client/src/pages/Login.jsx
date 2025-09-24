@@ -77,7 +77,7 @@ const Login = () => {
 
   return (
     <>
-      <MedicalNavbar /> {/* Add the navbar to the login page */}
+       {/* Add the navbar to the login page */}
       <div className="login-container">
         <div className="login-card">
           <div className="login-header">
