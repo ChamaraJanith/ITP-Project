@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MdHome,
@@ -18,7 +18,9 @@ import {
   MdTimeline,
   MdRefresh,
   MdDownload,
-  MdUpload
+  MdUpload,
+  MdPrint,
+  MdGetApp
 } from "react-icons/md";
 import {
   BarChart,
@@ -85,6 +87,9 @@ const FinancialBudgetPlanning = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [comparisonMode, setComparisonMode] = useState("actual-vs-budget");
 
+  // ✅ Report generation refs - same as payroll
+  const printableRef = useRef();
+
   // Utility Functions
   function getCurrentQuarter() {
     const month = new Date().getMonth();
@@ -104,7 +109,505 @@ const FinancialBudgetPlanning = () => {
     return ((current - previous) / previous * 100).toFixed(1);
   };
 
-  // FIXED: Using EXACT same data fetching as your other files
+  // ✅ REPORT GENERATION FUNCTIONS - Same format as Financial Payroll
+  const exportToPDF = () => {
+    try {
+      if (!activeBudgetPlan) {
+        setError("Please select an active budget plan to generate report.");
+        return;
+      }
+
+      const historicalFinancials = processHistoricalFinancials();
+      const currentDate = new Date();
+      const reportData = prepareReportData();
+
+      // Create print window
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        setError("Please allow popups to generate PDF reports.");
+        return;
+      }
+
+      // Generate HTML content
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Budget Planning Report - ${activeBudgetPlan.planName}</title>
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            
+            body {
+              font-family: 'Arial', sans-serif;
+              line-height: 1.4;
+              color: #333;
+              background: white;
+            }
+            
+            .report-container {
+              max-width: 210mm;
+              margin: 0 auto;
+              padding: 20mm;
+              background: white;
+            }
+            
+            .report-header {
+              text-align: center;
+              border-bottom: 3px solid #2c5282;
+              padding-bottom: 20px;
+              margin-bottom: 30px;
+            }
+            
+            .company-logo {
+              font-size: 32px;
+              font-weight: bold;
+              color: #2c5282;
+              margin-bottom: 8px;
+            }
+            
+            .report-title {
+              font-size: 24px;
+              color: #2d3748;
+              margin-bottom: 10px;
+              font-weight: bold;
+            }
+            
+            .report-subtitle {
+              font-size: 16px;
+              color: #4a5568;
+              margin-bottom: 15px;
+            }
+            
+            .report-meta {
+              display: flex;
+              justify-content: space-between;
+              background: #f7fafc;
+              padding: 15px;
+              border-radius: 8px;
+              margin-bottom: 30px;
+              font-size: 14px;
+            }
+            
+            .meta-item {
+              display: flex;
+              flex-direction: column;
+            }
+            
+            .meta-label {
+              font-weight: bold;
+              color: #2d3748;
+            }
+            
+            .meta-value {
+              color: #4a5568;
+              margin-top: 4px;
+            }
+            
+            .summary-section {
+              margin-bottom: 30px;
+            }
+            
+            .section-title {
+              font-size: 18px;
+              font-weight: bold;
+              color: #2c5282;
+              border-bottom: 2px solid #e2e8f0;
+              padding-bottom: 8px;
+              margin-bottom: 20px;
+            }
+            
+            .summary-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 20px;
+              margin-bottom: 25px;
+            }
+            
+            .summary-card {
+              background: #f8f9fa;
+              padding: 20px;
+              border-radius: 8px;
+              border-left: 4px solid #2c5282;
+            }
+            
+            .summary-card h4 {
+              color: #2d3748;
+              margin-bottom: 8px;
+              font-size: 14px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            
+            .summary-value {
+              font-size: 24px;
+              font-weight: bold;
+              color: #2c5282;
+            }
+            
+            .data-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 30px;
+              font-size: 12px;
+            }
+            
+            .data-table th,
+            .data-table td {
+              border: 1px solid #e2e8f0;
+              padding: 12px 8px;
+              text-align: left;
+            }
+            
+            .data-table th {
+              background: #2c5282;
+              color: white;
+              font-weight: bold;
+              text-transform: uppercase;
+              font-size: 11px;
+              letter-spacing: 0.5px;
+            }
+            
+            .data-table tbody tr:nth-child(even) {
+              background: #f8f9fa;
+            }
+            
+            .data-table tbody tr:hover {
+              background: #e6fffa;
+            }
+            
+            .total-row {
+              background: #2c5282 !important;
+              color: white !important;
+              font-weight: bold;
+            }
+            
+            .total-row td {
+              background: #2c5282;
+              color: white;
+            }
+            
+            .text-right {
+              text-align: right;
+            }
+            
+            .text-center {
+              text-align: center;
+            }
+            
+            .positive-variance {
+              color: #38a169;
+              font-weight: bold;
+            }
+            
+            .negative-variance {
+              color: #e53e3e;
+              font-weight: bold;
+            }
+            
+            .signature-section {
+              margin-top: 50px;
+              display: flex;
+              justify-content: space-between;
+              align-items: end;
+            }
+            
+            .signature-block {
+              text-align: center;
+              min-width: 200px;
+            }
+            
+            .signature-line {
+              border-top: 1px solid #333;
+              margin-bottom: 5px;
+              height: 50px;
+            }
+            
+            .signature-title {
+              font-weight: bold;
+              color: #2d3748;
+            }
+            
+            .signature-subtitle {
+              font-size: 12px;
+              color: #4a5568;
+            }
+            
+            .report-footer {
+              margin-top: 40px;
+              text-align: center;
+              font-size: 12px;
+              color: #718096;
+              border-top: 1px solid #e2e8f0;
+              padding-top: 20px;
+            }
+            
+            @media print {
+              .report-container {
+                padding: 0;
+                max-width: none;
+              }
+              
+              .data-table {
+                font-size: 10px;
+              }
+              
+              .data-table th,
+              .data-table td {
+                padding: 8px 4px;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="report-container">
+            <!-- Header -->
+            <div class="report-header">
+              <div class="company-logo">🏥 Heal-x Healthcare</div>
+              <div class="report-title">Budget Planning Report</div>
+              <div class="report-subtitle">${activeBudgetPlan.planName}</div>
+            </div>
+
+            <!-- Report Metadata -->
+            <div class="report-meta">
+              <div class="meta-item">
+                <span class="meta-label">Report Generated</span>
+                <span class="meta-value">${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Budget Period</span>
+                <span class="meta-value">${activeBudgetPlan.startYear} - ${activeBudgetPlan.endYear}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Budget Type</span>
+                <span class="meta-value">${activeBudgetPlan.budgetType.charAt(0).toUpperCase() + activeBudgetPlan.budgetType.slice(1)}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Total Quarters</span>
+                <span class="meta-value">${reportData.length} Quarters</span>
+              </div>
+            </div>
+
+            <!-- Executive Summary -->
+            <div class="summary-section">
+              <h2 class="section-title">Executive Summary</h2>
+              <div class="summary-grid">
+                <div class="summary-card">
+                  <h4>Total Budgeted Revenue</h4>
+                  <div class="summary-value">${formatCurrency(reportData.reduce((sum, q) => sum + q.budgetedRevenue, 0))}</div>
+                </div>
+                <div class="summary-card">
+                  <h4>Total Budgeted Expenses</h4>
+                  <div class="summary-value">${formatCurrency(reportData.reduce((sum, q) => sum + q.budgetedExpenses, 0))}</div>
+                </div>
+                <div class="summary-card">
+                  <h4>Projected Net Income</h4>
+                  <div class="summary-value">${formatCurrency(reportData.reduce((sum, q) => sum + (q.budgetedRevenue - q.budgetedExpenses), 0))}</div>
+                </div>
+                <div class="summary-card">
+                  <h4>Historical Data Points</h4>
+                  <div class="summary-value">${historicalFinancials.payments?.length || 0} Records</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Budget Data Table -->
+            <div class="data-section">
+              <h2 class="section-title">Quarterly Budget Breakdown</h2>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Period</th>
+                    <th class="text-right">Budgeted Revenue</th>
+                    <th class="text-right">Budgeted Expenses</th>
+                    <th class="text-right">Projected Net</th>
+                    <th class="text-right">Actual Revenue</th>
+                    <th class="text-right">Actual Expenses</th>
+                    <th class="text-right">Actual Net</th>
+                    <th class="text-right">Variance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${reportData.map(quarter => `
+                    <tr>
+                      <td>Q${quarter.quarter} ${quarter.year}</td>
+                      <td class="text-right">${formatCurrency(quarter.budgetedRevenue)}</td>
+                      <td class="text-right">${formatCurrency(quarter.budgetedExpenses)}</td>
+                      <td class="text-right">${formatCurrency(quarter.budgetedRevenue - quarter.budgetedExpenses)}</td>
+                      <td class="text-right">${quarter.actualRevenue > 0 ? formatCurrency(quarter.actualRevenue) : 'N/A'}</td>
+                      <td class="text-right">${quarter.actualExpenses > 0 ? formatCurrency(quarter.actualExpenses) : 'N/A'}</td>
+                      <td class="text-right">${quarter.actualRevenue > 0 ? formatCurrency(quarter.actualRevenue - quarter.actualExpenses) : 'N/A'}</td>
+                      <td class="text-right ${quarter.variance >= 0 ? 'positive-variance' : 'negative-variance'}">
+                        ${quarter.variance !== 0 ? (quarter.variance >= 0 ? '+' : '') + formatCurrency(quarter.variance) : 'N/A'}
+                      </td>
+                    </tr>
+                  `).join('')}
+                  <tr class="total-row">
+                    <td><strong>TOTAL</strong></td>
+                    <td class="text-right"><strong>${formatCurrency(reportData.reduce((sum, q) => sum + q.budgetedRevenue, 0))}</strong></td>
+                    <td class="text-right"><strong>${formatCurrency(reportData.reduce((sum, q) => sum + q.budgetedExpenses, 0))}</strong></td>
+                    <td class="text-right"><strong>${formatCurrency(reportData.reduce((sum, q) => sum + (q.budgetedRevenue - q.budgetedExpenses), 0))}</strong></td>
+                    <td class="text-right"><strong>${formatCurrency(reportData.reduce((sum, q) => sum + q.actualRevenue, 0))}</strong></td>
+                    <td class="text-right"><strong>${formatCurrency(reportData.reduce((sum, q) => sum + q.actualExpenses, 0))}</strong></td>
+                    <td class="text-right"><strong>${formatCurrency(reportData.reduce((sum, q) => sum + (q.actualRevenue - q.actualExpenses), 0))}</strong></td>
+                    <td class="text-right"><strong>${formatCurrency(reportData.reduce((sum, q) => sum + q.variance, 0))}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Signature Section -->
+            <div class="signature-section">
+              <div class="signature-block">
+                <div class="signature-line"></div>
+                <div class="signature-title">Issued By - Financial Manager</div>
+                <div class="signature-subtitle">Financial Department Heal-X</div>
+              </div>
+              <div style="text-align: center;">
+                <div style="width: 80px; height: 80px; border: 2px solid #2c5282; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                  <span style="font-size: 12px; color: #2c5282;">SEAL</span>
+                </div>
+              </div>
+              <div class="signature-block">
+                <div class="signature-line"></div>
+                <div class="signature-title">Approved By - Admin Heal-x</div>
+                <div class="signature-subtitle">Heal-x Healthcare System</div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="report-footer">
+              <p>This is a confidential financial document generated by Heal-x Healthcare Management System</p>
+              <p>Report ID: BP-${Date.now()} | Generated by: Financial Management System</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      
+      // Wait for content to load, then print
+      setTimeout(() => {
+        printWindow.print();
+        setTimeout(() => printWindow.close(), 1000);
+      }, 500);
+
+      setSuccess("Budget report generated successfully!");
+      
+    } catch (error) {
+      console.error("Export to PDF error:", error);
+      setError("Failed to generate PDF report: " + error.message);
+    }
+  };
+
+  const printTable = () => {
+    try {
+      if (!activeBudgetPlan) {
+        setError("Please select an active budget plan to print.");
+        return;
+      }
+
+      const reportData = prepareReportData();
+      
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        setError("Please allow popups to print reports.");
+        return;
+      }
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Budget Planning Table - ${activeBudgetPlan.planName}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { color: #2c5282; text-align: center; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #2c5282; color: white; }
+            .text-right { text-align: right; }
+            .total-row { background-color: #f0f8ff; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <h1>Budget Planning Report</h1>
+          <h2>${activeBudgetPlan.planName}</h2>
+          <p>Period: ${activeBudgetPlan.startYear} - ${activeBudgetPlan.endYear} | Type: ${activeBudgetPlan.budgetType}</p>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Period</th>
+                <th>Budgeted Revenue</th>
+                <th>Budgeted Expenses</th>
+                <th>Projected Net</th>
+                <th>Actual Revenue</th>
+                <th>Actual Expenses</th>
+                <th>Variance</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${reportData.map(quarter => `
+                <tr>
+                  <td>Q${quarter.quarter} ${quarter.year}</td>
+                  <td class="text-right">${formatCurrency(quarter.budgetedRevenue)}</td>
+                  <td class="text-right">${formatCurrency(quarter.budgetedExpenses)}</td>
+                  <td class="text-right">${formatCurrency(quarter.budgetedRevenue - quarter.budgetedExpenses)}</td>
+                  <td class="text-right">${quarter.actualRevenue > 0 ? formatCurrency(quarter.actualRevenue) : 'N/A'}</td>
+                  <td class="text-right">${quarter.actualExpenses > 0 ? formatCurrency(quarter.actualExpenses) : 'N/A'}</td>
+                  <td class="text-right">${quarter.variance !== 0 ? formatCurrency(quarter.variance) : 'N/A'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <p style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">
+            Generated on ${new Date().toLocaleDateString()} - Heal-x Healthcare System
+          </p>
+        </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      printWindow.print();
+      
+      setSuccess("Budget table printed successfully!");
+      
+    } catch (error) {
+      console.error("Print table error:", error);
+      setError("Failed to print table: " + error.message);
+    }
+  };
+
+  const prepareReportData = () => {
+    if (!activeBudgetPlan || !activeBudgetPlan.quarters) return [];
+    
+    return activeBudgetPlan.quarters.map(quarter => {
+      const budgetedRevenue = Object.values(quarter.budget.revenue).reduce((a, b) => a + b, 0);
+      const budgetedExpenses = Object.values(quarter.budget.expenses).reduce((a, b) => a + b, 0);
+      const actualRevenue = quarter.actual ? Object.values(quarter.actual.revenue).reduce((a, b) => a + b, 0) : 0;
+      const actualExpenses = quarter.actual ? Object.values(quarter.actual.expenses).reduce((a, b) => a + b, 0) : 0;
+      const variance = quarter.actual ? (actualRevenue - actualExpenses) - (budgetedRevenue - budgetedExpenses) : 0;
+      
+      return {
+        quarter: quarter.quarter,
+        year: quarter.year,
+        budgetedRevenue,
+        budgetedExpenses,
+        actualRevenue,
+        actualExpenses,
+        variance
+      };
+    });
+  };
+
+  // EXISTING DATA FETCHING FUNCTIONS (keep all your existing functions)
   const fetchPayrollData = async () => {
     try {
       console.log("Fetching payroll data from:", PAYROLL_API);
@@ -121,7 +624,6 @@ const FinancialBudgetPlanning = () => {
         const data = JSON.parse(text);
         console.log("Parsed payroll data:", data);
         
-        // Handle both response formats: direct array or { success: true, data: [...] }
         if (data.success && Array.isArray(data.data)) {
           console.log(`✅ Payroll: Found ${data.data.length} records`);
           return data.data;
@@ -158,7 +660,6 @@ const FinancialBudgetPlanning = () => {
         const data = JSON.parse(text);
         console.log("Parsed inventory data:", data);
         
-        // Handle the specific format: { success: true, data: { items: [...] } }
         if (data.success && data.data && Array.isArray(data.data.items)) {
           console.log(`✅ Inventory: Found ${data.data.items.length} items`);
           return data.data.items;
@@ -195,7 +696,6 @@ const FinancialBudgetPlanning = () => {
         const data = JSON.parse(text);
         console.log("Parsed utilities data:", data);
         
-        // Handle the specific format: { success: true, data: { utilities: [...] } }
         if (data.success && data.data && Array.isArray(data.data.utilities)) {
           console.log(`✅ Utilities: Found ${data.data.utilities.length} records`);
           return data.data.utilities;
@@ -244,13 +744,11 @@ const FinancialBudgetPlanning = () => {
     }
   };
 
-  // MAIN DATA FETCHING - Using your exact patterns
   const fetchHistoricalData = async () => {
     try {
       setLoading(true);
       console.log("🔄 Loading comprehensive financial data...");
       
-      // Fetch all data using your exact methods
       const [payrollData, inventoryData, utilitiesData, paymentsData] = await Promise.all([
         fetchPayrollData(),
         fetchInventoryData(),
@@ -280,6 +778,8 @@ const FinancialBudgetPlanning = () => {
     }
   };
 
+  // [Keep all your existing functions: fetchBudgetPlans, generateMockQuarterlyData, processHistoricalFinancials, etc.]
+  
   const fetchBudgetPlans = async () => {
     try {
       const savedPlans = localStorage.getItem('budgetPlans');
@@ -347,7 +847,6 @@ const FinancialBudgetPlanning = () => {
     return quarters;
   };
 
-  // FIXED: Using EXACT same calculation logic as your other files
   const processHistoricalFinancials = () => {
     const { payments, payroll, inventory, utilities } = historicalData;
     
@@ -358,7 +857,6 @@ const FinancialBudgetPlanning = () => {
       utilitiesCount: utilities.length
     });
     
-    // Revenue Analysis - using same logic as your other files
     const totalRevenue = payments.reduce((sum, p) => {
       const amount = parseFloat(p.totalAmount) || 0;
       return sum + amount;
@@ -371,31 +869,14 @@ const FinancialBudgetPlanning = () => {
     
     const collectionRate = totalRevenue > 0 ? (totalCollected / totalRevenue * 100) : 0;
     
-    // PAYROLL EXPENSES - using EXACT same calculation as FinancialPayroll.jsx
     const totalPayrollExpense = payroll.reduce((sum, p) => {
       const grossSalary = parseFloat(p.grossSalary) || 0;
       const bonuses = parseFloat(p.bonuses) || 0;
       const epf = parseFloat(p.epf) || 0;
       const etf = parseFloat(p.etf) || 0;
-      const netSalary = parseFloat(p.netSalary) || 0;
-      
-      // Use the total of all salary components
       return sum + grossSalary + bonuses + epf + etf;
     }, 0);
     
-    console.log("💼 Payroll calculation:", {
-      totalRecords: payroll.length,
-      totalPayrollExpense: totalPayrollExpense.toFixed(2),
-      sampleRecord: payroll[0] ? {
-        grossSalary: payroll[0].grossSalary,
-        bonuses: payroll[0].bonuses,
-        epf: payroll[0].epf,
-        etf: payroll[0].etf,
-        netSalary: payroll[0].netSalary
-      } : 'No records'
-    });
-    
-    // INVENTORY VALUE - using EXACT same calculation as SurgicalItemsManagement.jsx
     const totalInventoryValue = inventory.reduce((sum, item) => {
       const price = parseFloat(item.price) || 0;
       const quantity = parseInt(item.quantity) || 0;
@@ -403,34 +884,11 @@ const FinancialBudgetPlanning = () => {
       return sum + itemValue;
     }, 0);
     
-    console.log("📦 Inventory calculation:", {
-      totalItems: inventory.length,
-      totalInventoryValue: totalInventoryValue.toFixed(2),
-      sampleItem: inventory[0] ? {
-        name: inventory[0].name,
-        price: inventory[0].price,
-        quantity: inventory[0].quantity,
-        value: (parseFloat(inventory[0].price) || 0) * (parseInt(inventory[0].quantity) || 0)
-      } : 'No items'
-    });
-    
-    // UTILITIES EXPENSES - using EXACT same calculation as FinancialUtilities.jsx
     const totalUtilitiesExpense = utilities.reduce((sum, utility) => {
       const amount = parseFloat(utility.amount) || 0;
       return sum + amount;
     }, 0);
     
-    console.log("⚡ Utilities calculation:", {
-      totalRecords: utilities.length,
-      totalUtilitiesExpense: totalUtilitiesExpense.toFixed(2),
-      sampleUtility: utilities[0] ? {
-        category: utilities[0].category,
-        amount: utilities[0].amount,
-        vendor: utilities[0].vendor_name
-      } : 'No records'
-    });
-    
-    // Monthly Trends
     const monthlyTrends = [];
     const currentDate = new Date();
     
@@ -472,9 +930,15 @@ const FinancialBudgetPlanning = () => {
       totalUtilitiesExpense,
       totalExpenses,
       netIncome,
-      monthlyTrends
+      monthlyTrends,
+      payments,
+      payroll,
+      inventory,
+      utilities
     };
   };
+
+  // [Keep all your existing event handlers and utility functions]
 
   const generateBudgetProjections = (historicalData, years = 3) => {
     const baseRevenue = historicalData.totalCollected || 300000;
@@ -514,7 +978,6 @@ const FinancialBudgetPlanning = () => {
     return projections;
   };
 
-  // Event Handlers
   const handleCreateBudgetPlan = async (e) => {
     e.preventDefault();
     
@@ -589,7 +1052,6 @@ const FinancialBudgetPlanning = () => {
       }));
   };
 
-  // Effect Hooks
   useEffect(() => {
     fetchHistoricalData();
     fetchBudgetPlans();
@@ -611,13 +1073,41 @@ const FinancialBudgetPlanning = () => {
     }
   }, [success, error]);
 
-  // Render Functions (rest of the component remains the same...)
+  // [Keep all your existing render functions but add report buttons to the header]
+
   const renderOverviewDashboard = () => {
     const historicalData = processHistoricalFinancials();
     const comparisonData = generateComparisonData();
     
     return (
       <div className="fbp-overview-container">
+        {/* ✅ Add Report Generation Section */}
+        <div className="fbp-report-section">
+          <div className="fbp-section-header">
+            <h3>Budget Reports</h3>
+            <div className="fbp-report-actions">
+              <button 
+                className="fbp-btn-report fbp-btn-pdf"
+                onClick={exportToPDF}
+                disabled={!activeBudgetPlan}
+                title="Generate Professional PDF Report"
+              >
+                <MdGetApp size={18} />
+                Generate PDF Report
+              </button>
+              <button 
+                className="fbp-btn-report fbp-btn-print"
+                onClick={printTable}
+                disabled={!activeBudgetPlan}
+                title="Print Budget Table"
+              >
+                <MdPrint size={18} />
+                Print Table
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Key Metrics Cards */}
         <div className="fbp-metrics-grid">
           <div className="fbp-metric-card fbp-revenue">
@@ -776,6 +1266,8 @@ const FinancialBudgetPlanning = () => {
     );
   };
 
+  // [Keep all your existing render functions: renderCreateBudgetForm, renderQuarterlyReview]
+  
   const renderCreateBudgetForm = () => (
     <div className="fbp-create-budget-form-container">
       <div className="fbp-form-header">
@@ -858,7 +1350,6 @@ const FinancialBudgetPlanning = () => {
         </div>
       </form>
 
-      {/* Budget Template Preview */}
       <div className="fbp-budget-template-preview">
         <h4>Budget Template Preview</h4>
         <div className="fbp-template-info">
