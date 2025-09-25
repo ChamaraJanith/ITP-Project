@@ -1,0 +1,48 @@
+/* components/DoctorAppointments.css */
+
+.doctor-appointments {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.doctor-appointments h2 {
+  margin-bottom: 16px;
+}
+
+.appointments-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.appointments-table th,
+.appointments-table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.appointments-table th {
+  background-color: #f5f5f5;
+}
+
+.contact {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.urgency.normal {
+  color: #333;
+}
+
+.urgency.urgent {
+  color: #e67e22;
+}
+
+.urgency.emergency {
+  color: #c0392b;
+}
+
+.error {
+  color: red;
+  margin: 20px 0;
+}
