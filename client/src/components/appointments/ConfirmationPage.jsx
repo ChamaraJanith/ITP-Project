@@ -16,7 +16,8 @@ const ConfirmationPage = () => {
     const fetchAppointment = async () => {
       try {
         const response = await axios.get(`http://localhost:7000/api/appointments/${appointmentId}`);
-        setAppointment(response.data.appointment);
+        console.log('Fetched appointment data:', response.data); // Debug log
+        setAppointment(response.data.appointment || response.data);
       } catch (err) {
         console.error('Error fetching appointment:', err);
         setError('Failed to load appointment details');
@@ -27,6 +28,38 @@ const ConfirmationPage = () => {
 
     fetchAppointment();
   }, [appointmentId]);
+
+  // Helper function to format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not specified';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
+  };
+
+  // Helper function to format time
+  const formatTime = (timeString) => {
+    if (!timeString) return 'Not specified';
+    try {
+      // Handle time format like "14:30"
+      const [hours, minutes] = timeString.split(':');
+      const hour = parseInt(hours);
+      const minute = minutes || '00';
+      const period = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      return `${displayHour}:${minute} ${period}`;
+    } catch (error) {
+      return timeString; // Return original if formatting fails
+    }
+  };
 
   const generateReceiptHTML = () => {
     if (!appointment) return '';
@@ -439,15 +472,15 @@ const ConfirmationPage = () => {
             <div class="info-grid-four">
                 <div class="info-item">
                     <div class="info-label">Patient Name:</div>
-                    <div class="info-value">${appointment.patientName || 'Not specified'}</div>
+                    <div class="info-value">${appointment.name || 'Not specified'}</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Patient ID:</div>
-                    <div class="info-value">${appointment.patientId || 'N/A'}</div>
+                    <div class="info-value">${appointment._id?.slice(-8) || 'N/A'}</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Contact Number:</div>
-                    <div class="info-value">${appointment.contact || 'Not specified'}</div>
+                    <div class="info-value">${appointment.phone || 'Not specified'}</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Email:</div>
@@ -466,20 +499,15 @@ const ConfirmationPage = () => {
                 </div>
                 <div class="info-item">
                     <div class="info-label">Department:</div>
-                    <div class="info-value">${appointment.department || 'General Medicine'}</div>
+                    <div class="info-value">${appointment.doctorSpecialty || 'General Medicine'}</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Date:</div>
-                    <div class="info-value">${appointment.date ? new Date(appointment.date).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    }) : 'Not specified'}</div>
+                    <div class="info-value">${formatDate(appointment.appointmentDate)}</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Time:</div>
-                    <div class="info-value">${appointment.time || 'Not specified'}</div>
+                    <div class="info-value">${formatTime(appointment.appointmentTime)}</div>
                 </div>
             </div>
             <div style="margin-top: 15px;">
@@ -649,9 +677,14 @@ const ConfirmationPage = () => {
   };
 
   const handleAddToCalendar = () => {
-    if (!appointment) return;
+    if (!appointment || !appointment.appointmentDate) return;
     
-    const eventDate = new Date(appointment.date);
+    const eventDate = new Date(appointment.appointmentDate);
+    if (appointment.appointmentTime) {
+      const [hours, minutes] = appointment.appointmentTime.split(':');
+      eventDate.setHours(parseInt(hours), parseInt(minutes));
+    }
+    
     const endDate = new Date(eventDate);
     endDate.setHours(endDate.getHours() + 1);
     
@@ -659,7 +692,7 @@ const ConfirmationPage = () => {
       title: `Medical Appointment with Dr. ${appointment.doctorName || 'Doctor'}`,
       start: eventDate.toISOString(),
       end: endDate.toISOString(),
-      description: `Appointment at ${appointment.location || 'Main Hospital'}`,
+      description: `Appointment at ${appointment.location || 'Main Hospital'}. Specialty: ${appointment.doctorSpecialty || 'General'}`,
       location: appointment.location || 'Main Hospital'
     };
     
@@ -721,33 +754,51 @@ const ConfirmationPage = () => {
                   <span className="detail-value">{appointment._id || appointmentId}</span>
                 </div>
                 <div className="detail-item">
+                  <span className="detail-label">Patient Name</span>
+                  <span className="detail-value">{appointment.name || 'Not specified'}</span>
+                </div>
+                <div className="detail-item">
                   <span className="detail-label">Doctor</span>
                   <span className="detail-value">Dr. {appointment.doctorName || 'Not specified'}</span>
                 </div>
                 <div className="detail-item">
+                  <span className="detail-label">Specialty</span>
+                  <span className="detail-value">{appointment.doctorSpecialty || 'General Medicine'}</span>
+                </div>
+                <div className="detail-item">
                   <span className="detail-label">Date</span>
                   <span className="detail-value">
-                    {appointment.date ? new Date(appointment.date).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    }) : 'Not specified'}
+                    {formatDate(appointment.appointmentDate)}
                   </span>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">Time</span>
-                  <span className="detail-value">{appointment.time || 'Not specified'}</span>
+                  <span className="detail-value">{formatTime(appointment.appointmentTime)}</span>
                 </div>
                 <div className="detail-item">
-                  <span className="detail-label">Location</span>
-                  <span className="detail-value">{appointment.location || 'Main Hospital'}</span>
+                  <span className="detail-label">Contact</span>
+                  <span className="detail-value">{appointment.phone || 'Not specified'}</span>
                 </div>
                 <div className="detail-item">
-                  <span className="detail-label">Department</span>
-                  <span className="detail-value">{appointment.department || 'General Medicine'}</span>
+                  <span className="detail-label">Email</span>
+                  <span className="detail-value">{appointment.email || 'Not specified'}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Appointment Type</span>
+                  <span className="detail-value">{appointment.appointmentType || 'consultation'}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Urgency</span>
+                  <span className="detail-value">{appointment.urgency || 'normal'}</span>
                 </div>
               </div>
+              
+              {appointment.symptoms && (
+                <div className="symptoms-section">
+                  <h3>Symptoms/Reason for Visit</h3>
+                  <p>{appointment.symptoms}</p>
+                </div>
+              )}
             </div>
 
             <div className="payment-summary">
@@ -801,7 +852,7 @@ const ConfirmationPage = () => {
                   <div className="step-icon">3</div>
                   <div className="step-content">
                     <h3>Arrive on Time</h3>
-                    <p>Please arrive 15 minutes before your scheduled appointment time.</p>
+                    <p>Please arrive 15 minutes before your scheduled appointment time: {formatTime(appointment.appointmentTime)}</p>
                   </div>
                 </div>
               </div>
