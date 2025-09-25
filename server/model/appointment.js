@@ -5,25 +5,14 @@ import mongoose from "mongoose";
 const appointmentSchema = new mongoose.Schema(
   {
     // Personal Information
-    name: {
-      type: String,
-      required: true,
-      trim: true
-    },
+    name: { type: String, required: true, trim: true },
     gender: {
       type: String,
       enum: ["Male", "Female", "Other"],
       required: true
     },
-    dateOfBirth: {
-      type: Date,
-      required: true
-    },
-    age: {
-      type: Number,
-      required: true,
-      min: 0
-    },
+    dateOfBirth: { type: Date, required: true },
+    age: { type: Number, required: true, min: 0 },
     email: {
       type: String,
       required: true,
@@ -31,27 +20,16 @@ const appointmentSchema = new mongoose.Schema(
       trim: true,
       match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     },
-    phone: {
-      type: String,
-      required: true,
-      trim: true
-    },
+    phone: { type: String, required: true, trim: true },
     bloodGroup: {
       type: String,
       enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
       required: true
     },
-    allergies: {
-      type: String,
-      trim: true,
-      default: ""
-    },
+    allergies: { type: String, trim: true, default: "" },
 
     // Appointment Details
-    appointmentDate: {
-      type: Date,
-      required: true
-    },
+    appointmentDate: { type: Date, required: true },
     appointmentTime: {
       type: String,
       required: true,
@@ -60,26 +38,14 @@ const appointmentSchema = new mongoose.Schema(
         message: props => `${props.value} is not a valid time format (HH:MM)`
       }
     },
-    doctorSpecialty: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    doctorName: {
-      type: String,
-      trim: true,
-      default: ""
-    },
+    doctorSpecialty: { type: String, required: true, trim: true },
+    doctorName: { type: String, trim: true, default: "" },
     appointmentType: {
       type: String,
       enum: ["consultation", "follow-up", "checkup", "emergency"],
       required: true
     },
-    symptoms: {
-      type: String,
-      trim: true,
-      default: ""
-    },
+    symptoms: { type: String, trim: true, default: "" },
     urgency: {
       type: String,
       enum: ["normal", "urgent", "emergency"],
@@ -87,21 +53,29 @@ const appointmentSchema = new mongoose.Schema(
     },
 
     // Emergency Contact
-    emergencyContactName: {
+    emergencyContactName: { type: String, trim: true, default: "" },
+    emergencyContactPhone: { type: String, trim: true, default: "" },
+    emergencyContactRelationship: { type: String, trim: true, default: "" },
+
+    // MANAGEMENT FIELDS
+    status: {
       type: String,
-      trim: true,
-      default: ""
+      enum: ["pending", "accepted", "rejected", "completed", "cancelled"],
+      default: "pending"
     },
-    emergencyContactPhone: {
-      type: String,
-      trim: true,
-      default: ""
+    acceptedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
     },
-    emergencyContactRelationship: {
-      type: String,
-      trim: true,
-      default: ""
-    }
+    acceptedAt: { type: Date, default: null },
+    rejectedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
+    },
+    rejectedAt: { type: Date, default: null },
+    rejectionReason: { type: String, default: "" }
   },
   {
     timestamps: true
