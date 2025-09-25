@@ -109,19 +109,150 @@ const EMOJIS = {
   ruler: '📏'
 };
 
-// BMI Calculator Component
+// BMI Calculator Component with Validation
 const BMICalculator = () => {
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [bmi, setBmi] = useState(null);
   const [category, setCategory] = useState('');
   const [recommendations, setRecommendations] = useState([]);
+  const [heightError, setHeightError] = useState('');
+  const [weightError, setWeightError] = useState('');
+
+  // Validation functions
+  const validateHeight = (value) => {
+    const numValue = parseFloat(value);
+    if (isNaN(numValue) || numValue <= 0) {
+      return 'Height must be a positive number';
+    }
+    if (numValue > 300) {
+      return 'Height cannot exceed 300 cm';
+    }
+    return '';
+  };
+
+  const validateWeight = (value) => {
+    const numValue = parseFloat(value);
+    if (isNaN(numValue) || numValue <= 0) {
+      return 'Weight must be a positive number';
+    }
+    if (numValue > 650) {
+      return 'Weight cannot exceed 650 kg';
+    }
+    return '';
+  };
+
+  // Handle height input with validation
+  const handleHeightChange = (e) => {
+    let value = e.target.value;
+    
+    // Allow only numbers and one decimal point
+    const numericValue = value.replace(/[^0-9.]/g, '');
+    
+    // Prevent multiple decimal points
+    const parts = numericValue.split('.');
+    if (parts.length > 2) {
+      value = parts[0] + '.' + parts.slice(1).join('');
+    } else {
+      value = numericValue;
+    }
+    
+    // Limit to 3 digits before decimal and 2 after
+    const regex = /^\d{0,3}(\.\d{0,2})?$/;
+    if (regex.test(value) || value === '') {
+      setHeight(value);
+      
+      // Validate range
+      if (value) {
+        const numValue = parseFloat(value);
+        if (numValue > 300) {
+          setHeight('300');
+          setHeightError('Maximum height is 300 cm');
+        } else if (numValue < 0) {
+          setHeight('');
+          setHeightError('Height must be positive');
+        } else {
+          setHeightError('');
+        }
+      } else {
+        setHeightError('');
+      }
+    }
+  };
+
+  // Handle weight input with validation
+  const handleWeightChange = (e) => {
+    let value = e.target.value;
+    
+    // Allow only numbers and one decimal point
+    const numericValue = value.replace(/[^0-9.]/g, '');
+    
+    // Prevent multiple decimal points
+    const parts = numericValue.split('.');
+    if (parts.length > 2) {
+      value = parts[0] + '.' + parts.slice(1).join('');
+    } else {
+      value = numericValue;
+    }
+    
+    // Limit to 3 digits before decimal and 2 after
+    const regex = /^\d{0,3}(\.\d{0,2})?$/;
+    if (regex.test(value) || value === '') {
+      setWeight(value);
+      
+      // Validate range
+      if (value) {
+        const numValue = parseFloat(value);
+        if (numValue > 650) {
+          setWeight('650');
+          setWeightError('Maximum weight is 650 kg');
+        } else if (numValue < 0) {
+          setWeight('');
+          setWeightError('Weight must be positive');
+        } else {
+          setWeightError('');
+        }
+      } else {
+        setWeightError('');
+      }
+    }
+  };
+
+  // Prevent non-numeric keyboard input
+  const handleKeyPress = (e) => {
+    // Allow: backspace, delete, tab, escape, enter, decimal point
+    if ([8, 9, 27, 13, 46, 110, 190].indexOf(e.keyCode) !== -1 ||
+        // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+        (e.keyCode === 65 && e.ctrlKey === true) ||
+        (e.keyCode === 67 && e.ctrlKey === true) ||
+        (e.keyCode === 86 && e.ctrlKey === true) ||
+        (e.keyCode === 88 && e.ctrlKey === true)) {
+      return;
+    }
+    // Ensure that it is a number and stop the keypress
+    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+      e.preventDefault();
+    }
+  };
 
   const calculateBMI = () => {
-    if (height && weight) {
-      const heightInMeters = parseFloat(height) / 100;
-      const weightInKg = parseFloat(weight);
-      const bmiValue = weightInKg / (heightInMeters * heightInMeters);
+    const heightNum = parseFloat(height);
+    const weightNum = parseFloat(weight);
+    
+    // Validate inputs before calculation
+    const heightValidation = validateHeight(height);
+    const weightValidation = validateWeight(weight);
+    
+    setHeightError(heightValidation);
+    setWeightError(weightValidation);
+    
+    if (heightValidation || weightValidation) {
+      return;
+    }
+
+    if (heightNum && weightNum && heightNum > 0 && weightNum > 0) {
+      const heightInMeters = heightNum / 100;
+      const bmiValue = weightNum / (heightInMeters * heightInMeters);
       
       setBmi(bmiValue.toFixed(1));
       
@@ -174,6 +305,8 @@ const BMICalculator = () => {
     setBmi(null);
     setCategory('');
     setRecommendations([]);
+    setHeightError('');
+    setWeightError('');
   };
 
   const getBMIColor = (bmiValue) => {
@@ -193,6 +326,18 @@ const BMICalculator = () => {
     }
   };
 
+  // Check if form is valid
+  const isFormValid = () => {
+    return height && 
+           weight && 
+           !heightError && 
+           !weightError && 
+           parseFloat(height) > 0 && 
+           parseFloat(weight) > 0 &&
+           parseFloat(height) <= 300 &&
+           parseFloat(weight) <= 650;
+  };
+
   return (
     <div className="bmi-calculator">
       <div className="bmi-header">
@@ -204,25 +349,33 @@ const BMICalculator = () => {
         <div className="input-group">
           <label>Height (cm)</label>
           <input
-            type="number"
+            type="text"
             value={height}
-            onChange={(e) => setHeight(e.target.value)}
-            placeholder="Enter height in centimeters"
-            className="bmi-input"
+            onChange={handleHeightChange}
+            onKeyDown={handleKeyPress}
+            placeholder="Enter height (0-300 cm)"
+            className={`bmi-input ${heightError ? 'error' : ''}`}
+            maxLength="6"
           />
           <FaRuler className="input-icon" />
+          {heightError && <span className="error-message">{heightError}</span>}
+          <div className="input-hint">Valid range: 0 - 300 cm</div>
         </div>
         
         <div className="input-group">
           <label>Weight (kg)</label>
           <input
-            type="number"
+            type="text"
             value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            placeholder="Enter weight in kilograms"
-            className="bmi-input"
+            onChange={handleWeightChange}
+            onKeyDown={handleKeyPress}
+            placeholder="Enter weight (0-650 kg)"
+            className={`bmi-input ${weightError ? 'error' : ''}`}
+            maxLength="6"
           />
           <FaWeight className="input-icon" />
+          {weightError && <span className="error-message">{weightError}</span>}
+          <div className="input-hint">Valid range: 0 - 650 kg</div>
         </div>
       </div>
       
@@ -230,7 +383,7 @@ const BMICalculator = () => {
         <button 
           onClick={calculateBMI}
           className="calculate-btn"
-          disabled={!height || !weight}
+          disabled={!isFormValid()}
         >
           <FaCalculator />
           Calculate BMI
@@ -304,11 +457,12 @@ const BMICalculator = () => {
   );
 };
 
-// AI Health Risk Assessment Component
+// AI Health Risk Assessment Component with Age Validation
 const AIHealthRiskAssessment = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState({});
   const [riskScore, setRiskScore] = useState(null);
+  const [ageError, setAgeError] = useState('');
 
   const questions = [
     { id: 'age', question: 'What is your age?', type: 'number', options: null },
@@ -317,6 +471,59 @@ const AIHealthRiskAssessment = () => {
     { id: 'exercise', question: 'How often do you exercise?', type: 'select', options: ['Never', '1-2 times/week', '3-4 times/week', 'Daily'] },
     { id: 'family_history', question: 'Family history of heart disease?', type: 'select', options: ['No', 'Yes'] }
   ];
+
+  // Age validation function
+  const validateAge = (value) => {
+    const numValue = parseInt(value);
+    if (isNaN(numValue) || numValue < 1) {
+      return 'Age must be at least 1 year';
+    }
+    if (numValue > 120) {
+      return 'Age cannot exceed 120 years';
+    }
+    return '';
+  };
+
+  // Handle age input with validation
+  const handleAgeChange = (e) => {
+    let value = e.target.value;
+    
+    // Allow only numbers
+    const numericValue = value.replace(/[^0-9]/g, '');
+    
+    // Limit to 3 digits
+    if (numericValue.length <= 3) {
+      const numValue = parseInt(numericValue);
+      
+      if (numericValue === '' || (numValue >= 1 && numValue <= 120)) {
+        setAnswers(prev => ({ ...prev, age: numValue || '' }));
+        setAgeError('');
+      } else if (numValue > 120) {
+        setAnswers(prev => ({ ...prev, age: 120 }));
+        setAgeError('Maximum age is 120 years');
+      } else if (numValue < 1) {
+        setAnswers(prev => ({ ...prev, age: '' }));
+        setAgeError('Age must be at least 1 year');
+      }
+    }
+  };
+
+  // Prevent non-numeric keyboard input for age
+  const handleAgeKeyPress = (e) => {
+    // Allow: backspace, delete, tab, escape, enter
+    if ([8, 9, 27, 13].indexOf(e.keyCode) !== -1 ||
+        // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+        (e.keyCode === 65 && e.ctrlKey === true) ||
+        (e.keyCode === 67 && e.ctrlKey === true) ||
+        (e.keyCode === 86 && e.ctrlKey === true) ||
+        (e.keyCode === 88 && e.ctrlKey === true)) {
+      return;
+    }
+    // Ensure that it is a number and stop the keypress
+    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+      e.preventDefault();
+    }
+  };
 
   const calculateRisk = () => {
     let score = 0;
@@ -335,10 +542,22 @@ const AIHealthRiskAssessment = () => {
   };
 
   const handleAnswer = (value) => {
+    if (questions[currentStep].id === 'age') {
+      // Age validation is handled by handleAgeChange
+      return;
+    }
     setAnswers(prev => ({ ...prev, [questions[currentStep].id]: value }));
   };
 
   const nextStep = () => {
+    if (questions[currentStep].id === 'age') {
+      const validation = validateAge(answers.age);
+      if (validation) {
+        setAgeError(validation);
+        return;
+      }
+    }
+
     if (currentStep < questions.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -350,6 +569,18 @@ const AIHealthRiskAssessment = () => {
     if (score < 20) return { level: 'Low', color: '#10b981', message: 'Your health risk is low. Keep up the good work!' };
     if (score < 40) return { level: 'Moderate', color: '#f59e0b', message: 'Moderate risk. Consider lifestyle improvements.' };
     return { level: 'High', color: '#ef4444', message: 'High risk. Please consult with a healthcare provider.' };
+  };
+
+  // Check if current step answer is valid
+  const isCurrentStepValid = () => {
+    const currentQuestion = questions[currentStep];
+    if (currentQuestion.id === 'age') {
+      return answers.age && 
+             !ageError && 
+             answers.age >= 1 && 
+             answers.age <= 120;
+    }
+    return answers[currentQuestion.id];
   };
 
   if (riskScore !== null) {
@@ -375,7 +606,12 @@ const AIHealthRiskAssessment = () => {
         </div>
         <button 
           className="book-checkup-btn"
-          onClick={() => setRiskScore(null)}
+          onClick={() => {
+            setRiskScore(null);
+            setCurrentStep(0);
+            setAnswers({});
+            setAgeError('');
+          }}
         >
           {EMOJIS.calendar} Book Private Consultation
         </button>
@@ -402,12 +638,19 @@ const AIHealthRiskAssessment = () => {
         <h4>{questions[currentStep].question}</h4>
         
         {questions[currentStep].type === 'number' && (
-          <input
-            type="number"
-            className="assessment-input"
-            onChange={(e) => handleAnswer(parseInt(e.target.value))}
-            placeholder="Enter your age"
-          />
+          <div className="input-group">
+            <input
+              type="text"
+              className={`assessment-input ${ageError ? 'error' : ''}`}
+              value={answers.age || ''}
+              onChange={handleAgeChange}
+              onKeyDown={handleAgeKeyPress}
+              placeholder="Enter your age (1-120 years)"
+              maxLength="3"
+            />
+            {ageError && <span className="error-message">{ageError}</span>}
+            <div className="input-hint">Valid range: 1 - 120 years</div>
+          </div>
         )}
         
         {questions[currentStep].type === 'select' && (
@@ -428,7 +671,7 @@ const AIHealthRiskAssessment = () => {
       <button 
         className="assessment-next-btn"
         onClick={nextStep}
-        disabled={!answers[questions[currentStep].id]}
+        disabled={!isCurrentStepValid()}
       >
         {currentStep < questions.length - 1 ? 'Next Question' : 'Calculate Risk'}
       </button>
@@ -539,11 +782,72 @@ const LiveHospitalStatus = () => {
   );
 };
 
-// Private Doctor Availability Component - Only 2 Doctors
+// Private Doctor Availability Component with Date Validation - Only 2 Doctors
 const AdvancedDoctorAvailability = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedSpecialty, setSelectedSpecialty] = useState('all');
+  // Get current date and calculate min/max dates
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const dayAfterTomorrow = new Date(today);
+  dayAfterTomorrow.setDate(today.getDate() + 2);
+
+  // Format dates for input value and validation
+  const todayString = today.toISOString().split('T')[0];
+  const maxDateString = dayAfterTomorrow.toISOString().split('T')[0];
   
+  const [selectedDate, setSelectedDate] = useState(todayString);
+  const [selectedSpecialty, setSelectedSpecialty] = useState('all');
+  const [dateError, setDateError] = useState('');
+
+  // Validate date selection
+  const validateDate = (dateString) => {
+    const selectedDateObj = new Date(dateString);
+    const todayObj = new Date(todayString);
+    const maxDateObj = new Date(maxDateString);
+
+    if (selectedDateObj < todayObj) {
+      return 'Cannot select past dates';
+    }
+    if (selectedDateObj > maxDateObj) {
+      return 'Cannot select dates beyond 2 days from today';
+    }
+    return '';
+  };
+
+  // Handle date change with validation
+  const handleDateChange = (e) => {
+    const dateValue = e.target.value;
+    const validation = validateDate(dateValue);
+    
+    if (validation) {
+      setDateError(validation);
+      return;
+    }
+    
+    setSelectedDate(dateValue);
+    setDateError('');
+  };
+
+  // Format date for display
+  const formatDateForDisplay = (dateString) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    
+    if (dateString === today.toISOString().split('T')[0]) {
+      return 'Today';
+    } else if (dateString === tomorrow.toISOString().split('T')[0]) {
+      return 'Tomorrow';
+    } else {
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+  };
+
   // Only 2 private doctors
   const doctors = [
     {
@@ -552,7 +856,9 @@ const AdvancedDoctorAvailability = () => {
       specialty: 'Cardiology',
       rating: 4.9,
       experience: '15 years',
-      nextSlot: 'Today 3:30 PM',
+      nextSlot: selectedDate === todayString ? 'Today 3:30 PM' : 
+                selectedDate === tomorrow.toISOString().split('T')[0] ? 'Tomorrow 10:15 AM' : 
+                `${formatDateForDisplay(selectedDate)} 9:00 AM`,
       consultationFee: '$250',
       avatar: '👨‍⚕️',
       status: 'available',
@@ -567,7 +873,9 @@ const AdvancedDoctorAvailability = () => {
       specialty: 'General Medicine',
       rating: 4.8,
       experience: '12 years',
-      nextSlot: 'Tomorrow 10:15 AM',
+      nextSlot: selectedDate === todayString ? 'Today 4:15 PM' : 
+                selectedDate === tomorrow.toISOString().split('T')[0] ? 'Tomorrow 10:15 AM' : 
+                `${formatDateForDisplay(selectedDate)} 11:30 AM`,
       consultationFee: '$200',
       avatar: '👩‍⚕️',
       status: 'available',
@@ -591,12 +899,18 @@ const AdvancedDoctorAvailability = () => {
           <span>  Exclusive Private Healthcare</span>
         </div>
         <div className="availability-filters">
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="date-filter"
-          />
+          <div className="date-filter-container">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={handleDateChange}
+              min={todayString}
+              max={maxDateString}
+              className={`date-filter ${dateError ? 'error' : ''}`}
+            />
+            {dateError && <span className="error-message date-error">{dateError}</span>}
+            
+          </div>
           <select
             value={selectedSpecialty}
             onChange={(e) => setSelectedSpecialty(e.target.value)}
@@ -615,8 +929,8 @@ const AdvancedDoctorAvailability = () => {
             <div className="private-indicator">
               <FaShieldAlt />
               <span style={{ fontSize: "20px", fontWeight: "bold", marginLeft: "10px" }}>
-  {doctor.type}
-</span>
+                {doctor.type}
+              </span>
             </div>
             
             <div className="doctor-header">
@@ -741,7 +1055,7 @@ const AdvancedServices = () => {
       <div className="container">
         <h2>{EMOJIS.sparkles} Private Healthcare Services</h2>
         <p className="section-subtitle">
-          Exclusive AI-po       wered private healthcare solutions designed for premium care
+          Exclusive AI-powered private healthcare solutions designed for premium care
         </p>
         
         <div className="advanced-services-grid">
@@ -923,7 +1237,6 @@ const AIFaqSection = () => {
     </div>
   );
 };
-
 
 // Features Showcase Component
 const FeaturesShowcase = () => {
