@@ -687,6 +687,7 @@ const ExpenseTracking = () => {
     return isNaN(num) ? "0" : num.toLocaleString();
   };
 
+  // FIXED REPORT GENERATION - Matching the exact format from the reference code
   const exportToPDF = () => {
     if (!expenseData) {
       setError("No data to export");
@@ -729,14 +730,37 @@ const ExpenseTracking = () => {
           .summary-card h4 { margin: 0 0 8px 0; color: #1da1f2; font-size: 14px; }
           .summary-card .metric-value { font-size: 18px; font-weight: bold; color: #333; margin: 5px 0; }
           .summary-card .metric-label { font-size: 11px; color: #666; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #1da1f2; color: white; font-weight: bold; text-align: center; }
+          .currency { text-align: right; }
+          .totals-row { background-color: #f0f8ff; font-weight: bold; }
+          .signature-section { margin-top: 60px; margin-bottom: 30px; width: 100%; page-break-inside: avoid; }
+          .signature-section h3 { color: #1da1f2; border-bottom: 1px solid #1da1f2; padding-bottom: 5px; margin-bottom: 20px; }
+          .signature-container { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; }
+          .signature-block { width: 30%; text-align: center; }
+          .signature-line { border-bottom: 2px dotted #333; width: 200px; height: 50px; margin: 0 auto 10px auto; position: relative; }
+          .signature-text { font-size: 11px; font-weight: bold; color: #333; margin-top: 5px; }
+          .signature-title { font-size: 10px; color: #666; margin-top: 2px; }
+          .company-stamp { text-align: center; margin-top: 30px; padding: 15px; border: 2px solid #1da1f2; display: inline-block; font-size: 10px; color: #1da1f2; font-weight: bold; }
+          .report-footer { margin-top: 40px; text-align: center; font-size: 9px; color: #888; border-top: 1px solid #ddd; padding-top: 15px; }
+          .alert-section { margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; }
+          .alert-title { font-weight: bold; color: #856404; margin-bottom: 8px; }
+          @media print {
+            body { margin: 10px; }
+            .no-print { display: none; }
+            .signature-section { page-break-inside: avoid; }
+          }
         </style>
       </head>
       <body>
+        <!-- Header -->
         <div class="header">
           <h1>🏥 Heal-x ${reportTitle}</h1>
           <p>Healthcare Financial Management System</p>
         </div>
         
+        <!-- Report Info -->
         <div class="info">
           <strong>Generated on:</strong> ${currentDate.toLocaleString()}<br>
           <strong>Report Type:</strong> ${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Analysis<br>
@@ -744,6 +768,7 @@ const ExpenseTracking = () => {
           <strong>Filter Period:</strong> ${filterPeriod === 'all' ? 'All Time' : filterPeriod}
         </div>
         
+        <!-- Executive Summary -->
         <div class="summary-section">
           <h3 style="color: #1da1f2; margin: 0 0 15px 0;">📊 Executive Summary</h3>
           <div class="summary-grid">
@@ -752,22 +777,198 @@ const ExpenseTracking = () => {
               <div class="metric-value">$${safeToLocaleString(totals.totalExpenses)}</div>
               <div class="metric-label">Combined organizational costs</div>
             </div>
+            ${activeFilter !== 'inventory' && activeFilter !== 'utilities' ? `
             <div class="summary-card">
               <h4>👥 Payroll Expenses</h4>
               <div class="metric-value">$${safeToLocaleString(totals.payrollExpense)}</div>
-              <div class="metric-label">${totals.totalEmployees} employees</div>
-            </div>
+              <div class="metric-label">${totals.totalEmployees} employees • ${safeToFixed(expenseData.summary?.payrollPercentage)}% of total</div>
+            </div>` : ''}
+            ${activeFilter !== 'payroll' && activeFilter !== 'utilities' ? `
             <div class="summary-card">
               <h4>🏥 Medical Inventory Total</h4>
               <div class="metric-value">$${safeToLocaleString(totals.combinedInventoryValue)}</div>
-              <div class="metric-label">${totals.totalItems} items</div>
-            </div>
+              <div class="metric-label">${totals.totalItems} items • ${safeToFixed(expenseData.summary?.inventoryPercentage)}% of total</div>
+            </div>` : ''}
+            ${activeFilter !== 'payroll' && activeFilter !== 'inventory' ? `
             <div class="summary-card">
               <h4>⚡ Utilities</h4>
               <div class="metric-value">$${safeToLocaleString(totals.utilitiesExpense)}</div>
-              <div class="metric-label">${totals.totalUtilities} services</div>
+              <div class="metric-label">${totals.totalUtilities} services • ${safeToFixed(expenseData.summary?.utilitiesPercentage)}% of total</div>
+            </div>` : ''}
+            <div class="summary-card">
+              <h4>📊 Overall Health</h4>
+              <div class="metric-value">${safeToFixed(expenseData.summary?.inventoryHealthScore)}%</div>
+              <div class="metric-label">System operational status</div>
             </div>
           </div>
+        </div>
+
+        ${(expenseData.inventoryExpenses?.lowStockCount > 0 || expenseData.inventoryExpenses?.outOfStockCount > 0 || expenseData.utilitiesExpenses?.overduePayments > 0) ? `
+        <!-- Alerts Section -->
+        <div class="alert-section">
+          <div class="alert-title">🚨 Critical Alerts</div>
+          ${expenseData.inventoryExpenses?.lowStockCount > 0 ? `<p><strong>Low Stock:</strong> ${expenseData.inventoryExpenses.lowStockCount} items need restocking</p>` : ''}
+          ${expenseData.inventoryExpenses?.outOfStockCount > 0 ? `<p><strong>Out of Stock:</strong> ${expenseData.inventoryExpenses.outOfStockCount} items completely depleted</p>` : ''}
+          ${expenseData.utilitiesExpenses?.overduePayments > 0 ? `<p><strong>Overdue Utilities:</strong> ${expenseData.utilitiesExpenses.overduePayments} utility bills are overdue</p>` : ''}
+        </div>` : ''}
+
+        <!-- Data Tables -->
+        ${activeFilter !== 'inventory' && activeFilter !== 'utilities' && expenseData.payrollExpenses?.rawData?.length > 0 ? `
+        <h3 style="color: #1da1f2; margin-top: 30px;">👥 Payroll Details</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Employee ID</th>
+              <th>Employee Name</th>
+              <th>Gross Salary</th>
+              <th>Bonuses</th>
+              <th>EPF (8%)</th>
+              <th>ETF (3%)</th>
+              <th>Net Salary</th>
+              <th>Period</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${expenseData.payrollExpenses.rawData.slice(0, 20).map(payroll => `
+            <tr>
+              <td><strong>${payroll.employeeId || 'N/A'}</strong></td>
+              <td>${payroll.employeeName || 'N/A'}</td>
+              <td class="currency">$${(payroll.grossSalary || 0).toLocaleString()}</td>
+              <td class="currency">$${(payroll.bonuses || 0).toLocaleString()}</td>
+              <td class="currency">$${(payroll.epf || 0).toLocaleString()}</td>
+              <td class="currency">$${(payroll.etf || 0).toLocaleString()}</td>
+              <td class="currency"><strong>$${(payroll.netSalary || 0).toLocaleString()}</strong></td>
+              <td>${payroll.payrollMonth} ${payroll.payrollYear}</td>
+            </tr>
+            `).join('')}
+            <tr class="totals-row">
+              <td colspan="2"><strong>TOTALS</strong></td>
+              <td class="currency"><strong>$${expenseData.payrollExpenses.totalGrossSalary.toLocaleString()}</strong></td>
+              <td class="currency"><strong>$${expenseData.payrollExpenses.totalBonuses.toLocaleString()}</strong></td>
+              <td class="currency"><strong>$${expenseData.payrollExpenses.totalEPF.toLocaleString()}</strong></td>
+              <td class="currency"><strong>$${expenseData.payrollExpenses.totalETF.toLocaleString()}</strong></td>
+              <td class="currency"><strong>$${(expenseData.payrollExpenses.totalGrossSalary + expenseData.payrollExpenses.totalBonuses - expenseData.payrollExpenses.totalEPF - expenseData.payrollExpenses.totalETF).toLocaleString()}</strong></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>` : ''}
+
+        ${activeFilter !== 'payroll' && activeFilter !== 'utilities' && expenseData.inventoryExpenses?.rawData?.length > 0 ? `
+        <h3 style="color: #1da1f2; margin-top: 30px;">🏥 Inventory Details</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Unit Price</th>
+              <th>Quantity</th>
+              <th>Total Value</th>
+              <th>Supplier</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${expenseData.inventoryExpenses.rawData.slice(0, 20).map(item => {
+              const totalValue = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0);
+              const status = item.quantity === 0 ? 'Out of Stock' : 
+                           item.quantity <= (item.minStockLevel || 10) ? 'Low Stock' : 'In Stock';
+              return `
+              <tr>
+                <td><strong>${item.name || 'N/A'}</strong></td>
+                <td>${item.category || 'Uncategorized'}</td>
+                <td class="currency">$${(item.price || 0).toLocaleString()}</td>
+                <td class="currency">${(item.quantity || 0).toLocaleString()}</td>
+                <td class="currency"><strong>$${totalValue.toLocaleString()}</strong></td>
+                <td>${item.supplier?.name || item.supplier || 'Unknown'}</td>
+                <td>${status}</td>
+              </tr>
+              `;
+            }).join('')}
+            <tr class="totals-row">
+              <td colspan="4"><strong>TOTALS</strong></td>
+              <td class="currency"><strong>$${expenseData.inventoryExpenses.totalInventoryValue.toLocaleString()}</strong></td>
+              <td><strong>${expenseData.inventoryExpenses.totalItems} Items</strong></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>` : ''}
+
+        ${activeFilter !== 'payroll' && activeFilter !== 'inventory' && expenseData.utilitiesExpenses?.rawData?.length > 0 ? `
+        <h3 style="color: #1da1f2; margin-top: 30px;">⚡ Utilities Details</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Amount</th>
+              <th>Vendor</th>
+              <th>Payment Status</th>
+              <th>Billing Period</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${expenseData.utilitiesExpenses.rawData.slice(0, 20).map(utility => {
+              return `
+              <tr>
+                <td><strong>${utility.category || 'N/A'}</strong></td>
+                <td>${utility.description || 'N/A'}</td>
+                <td class="currency"><strong>$${(utility.amount || 0).toLocaleString()}</strong></td>
+                <td>${utility.vendor_name || 'Unknown'}</td>
+                <td>${utility.payment_status || 'Pending'}</td>
+                <td>${utility.billing_period_start ? new Date(utility.billing_period_start).toLocaleDateString() : 'N/A'}</td>
+              </tr>
+              `;
+            }).join('')}
+            <tr class="totals-row">
+              <td colspan="2"><strong>TOTALS</strong></td>
+              <td class="currency"><strong>$${expenseData.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()}</strong></td>
+              <td><strong>${expenseData.utilitiesExpenses.totalUtilities} Services</strong></td>
+              <td><strong>Paid: ${expenseData.utilitiesExpenses.paidPayments}, Pending: ${expenseData.utilitiesExpenses.pendingPayments}, Overdue: ${expenseData.utilitiesExpenses.overduePayments}</strong></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>` : ''}
+
+        <!-- Professional Signature Section -->
+        <div class="signature-section">
+          <h3>📋 Report Authorization</h3>
+          <div class="signature-container">
+            <div class="signature-block">
+              <div class="signature-line"></div>
+              <div class="signature-text">Financial Manager</div>
+              <div class="signature-title">Heal-x Healthcare Management</div>
+            </div>
+            <div class="signature-block">
+              <div class="signature-line"></div>
+              <div class="signature-text">Administrator</div>
+              <div class="signature-title">Report Reviewed By</div>
+            </div>
+            <div class="signature-block">
+              <div class="signature-line"></div>
+              <div class="signature-text">Date</div>
+              <div class="signature-title">Report Approved On</div>
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 30px;">
+            <div class="company-stamp">
+              HEAL-X OFFICIAL SEAL<br>
+              HEALTHCARE MANAGEMENT SYSTEM
+            </div>
+          </div>
+        </div>
+
+        <!-- Report Footer -->
+        <div class="report-footer">
+          <p><strong>This is a system-generated report from Heal-x Healthcare Management System</strong></p>
+          <p>Report generated on ${currentDate.toLocaleString()} • All amounts are in Sri Lankan Rupees</p>
+          <p>For queries regarding this report, contact the Financial Department at Heal-x Healthcare</p>
+          ${inventoryApiStatus === 'fallback' || utilitiesApiStatus === 'fallback' ? '<p><em>Note: This report contains sample data due to API connection issues</em></p>' : ''}
+        </div>
+
+        <!-- Print Controls -->
+        <div class="no-print" style="margin-top: 30px; text-align: center;">
+          <button onclick="window.print()" style="background: #1da1f2; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 14px; cursor: pointer;">🖨️ Print PDF Report</button>
+          <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 14px; cursor: pointer; margin-left: 10px;">✕ Close</button>
         </div>
       </body>
       </html>
@@ -1050,7 +1251,7 @@ const ExpenseTracking = () => {
           <div className="etx-header-content">
             <h1 className="etx-title">
               <span className="etx-title-icon">💸</span>
-          💼 Advanced Expense Analytics
+              💼 Advanced Expense Analytics
             </h1>
             <p className="etx-subtitle">Comprehensive financial insights with smart filtering and analytics</p>
             
