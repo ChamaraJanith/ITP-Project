@@ -342,11 +342,16 @@
   font-size: 1.1rem;
 }
 
+.footer-section-contact-section{
+
+
+}
+
 /* Contact Information */
 .contact-info {
   display: flex;
   flex-direction: column;
-  gap: 25px;
+  gap: 15px;
 }
 
 .contact-item {

@@ -214,7 +214,7 @@ const Footer = () => {
               </div>
 
               {/* Contact Information */}
-              <div className="footer-section contact-section">
+              <div className="footer-section-contact-section">
                 <h4>Contact Us</h4>
                 <div className="contact-info">
                   {contactInfo.map((info, index) => (
