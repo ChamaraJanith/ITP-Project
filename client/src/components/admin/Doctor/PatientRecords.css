@@ -773,12 +773,14 @@
   padding: 20px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
+  gap: 30px;
 }
 
 .pr-expanded-section {
   background: white;
   border-radius: 12px;
+  min-width: 450px;
+  padding-left: 5px;
   padding: 15px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border-left: 4px solid #0ea5e9;
@@ -1657,3 +1659,4 @@
 .pr-loading-dots span:nth-child(3) {
   animation-delay: 0.4s;
 }
+

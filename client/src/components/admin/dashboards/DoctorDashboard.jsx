@@ -47,7 +47,7 @@ const DoctorDashboard = () => {
   // Doctor information
   const [doctor] = useState({
     id: 'DOC001',
-    name: 'Dr. Robert Smith',
+    name: 'Dr. Gayath Dahanayake',
     specialization: 'Emergency Medicine'
   });
 
@@ -175,7 +175,7 @@ const DoctorDashboard = () => {
         <div className="doctor-dashboard-header-section">
           <div className="doctor-dashboard-welcome">
             <h1>Doctor Dashboard</h1>
-            <p>Welcome back, Dr. Smith</p>
+            <p>Welcome back, Dr. Dahanayake</p>
           </div>
           <div className="doctor-dashboard-doctor-info">
             <div className="doctor-dashboard-doctor-avatar">
