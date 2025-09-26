@@ -1,69 +1,683 @@
-.receptionist-dashboard {
-  padding: 20px;
-  color: #fff;
+/* ReceptionistDashboard.css - Smart Healthcare System Design */
+
+/* ============================================
+   HEALTHCARE COLOR PALETTE & VARIABLES
+============================================ */
+:root {
+  --rd-primary: #2563eb;
+  --rd-primary-light: #3b82f6;
+  --rd-primary-dark: #1d4ed8;
+  --rd-secondary: #059669;
+  --rd-secondary-light: #10b981;
+  --rd-accent: #0891b2;
+  --rd-accent-light: #06b6d4;
+  --rd-success: #16a34a;
+  --rd-warning: #d97706;
+  --rd-danger: #dc2626;
+  --rd-info: #0284c7;
+  
+  --rd-bg-primary: #f8fafc;
+  --rd-bg-secondary: #ffffff;
+  --rd-bg-tertiary: #f1f5f9;
+  --rd-bg-light: #f8fafc;
+  --rd-bg-card: #ffffff;
+  --rd-bg-hover: #f1f5f9;
+  
+  --rd-text-primary: #1e293b;
+  --rd-text-secondary: #64748b;
+  --rd-text-light: #94a3b8;
+  --rd-text-white: #ffffff;
+  
+  --rd-border: #e2e8f0;
+  --rd-border-light: #f1f5f9;
+  --rd-border-focus: #2563eb;
+  
+  --rd-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --rd-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --rd-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --rd-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --rd-shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  
+  --rd-gradient-primary: linear-gradient(135deg, #2563eb, #3b82f6);
+  --rd-gradient-secondary: linear-gradient(135deg, #059669, #10b981);
+  --rd-gradient-accent: linear-gradient(135deg, #0891b2, #06b6d4);
+  --rd-gradient-success: linear-gradient(135deg, #16a34a, #22c55e);
+  --rd-gradient-bg: linear-gradient(135deg, #f8fafc, #ffffff);
+  
+  --rd-radius-sm: 6px;
+  --rd-radius-md: 8px;
+  --rd-radius-lg: 12px;
+  --rd-radius-xl: 16px;
+  --rd-radius-2xl: 20px;
+  
+  --rd-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --rd-transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.dashboard-header h1 {
-  font-size: 28px;
-  margin-bottom: 5px;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-  margin-bottom: 30px;
-}
-
-.stat-card {
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-  font-weight: bold;
-}
-
-.features-section {
-  margin-top: 30px;
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin-top: 20px;
-}
-
-/* ✅ Button Styling */
-.feature-button {
+/* ============================================
+   BASE LAYOUT - HEALTHCARE THEME
+============================================ */
+.rd-loading {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 16px;
-  background: #0d1b2a;
-  border: 2px solid #1a73e8;
-  border-radius: 10px;
-  text-decoration: none;
-  color: #00e5b0;
-  font-weight: bold;
-  font-size: 16px;
-  transition: all 0.2s ease-in-out;
+  min-height: 60vh;
+  flex-direction: column;
+  gap: 1.5rem;
+  color: var(--rd-text-secondary);
+  font-size: 1.1rem;
 }
 
-.feature-button:hover {
-  background: #ffffff;
-  border-color: #00e5b0;
-  transform: scale(1.05);
+.rd-loading::before {
+  content: '';
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--rd-border);
+  border-top: 3px solid var(--rd-primary);
+  border-radius: 50%;
+  animation: rd-spin 1s linear infinite;
+}
+
+@keyframes rd-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.rd-main-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  background: var(--rd-bg-primary);
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  line-height: 1.6;
+}
+
+/* ============================================
+   HEADER - PROFESSIONAL MEDICAL
+============================================ */
+.rd-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  position: relative;
+  padding: 2rem 0;
+}
+
+.rd-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: var(--rd-gradient-primary);
+  border-radius: 2px;
+}
+
+.rd-header h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  color: var(--rd-primary);
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.025em;
+}
+
+.rd-header p {
+  font-size: 1.125rem;
+  color: var(--rd-text-secondary);
+  font-weight: 500;
+  margin-top: 0.5rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.rd-error-banner {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  border: 1px solid #fecaca;
+  color: var(--rd-danger);
+  padding: 1rem 1.5rem;
+  border-radius: var(--rd-radius-lg);
+  margin-bottom: 2rem;
+  box-shadow: var(--rd-shadow-sm);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ============================================
+   STATS GRID - MEDICAL CARDS
+============================================ */
+.rd-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.rd-stat-card {
+  background: var(--rd-bg-card);
+  border: 1px solid var(--rd-border);
+  padding: 2rem 1.5rem;
+  border-radius: var(--rd-radius-xl);
+  text-align: center;
+  box-shadow: var(--rd-shadow-card);
+  transition: var(--rd-transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.rd-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: var(--rd-radius-xl) var(--rd-radius-xl) 0 0;
+}
+
+.rd-stat-card:nth-child(1)::before {
+  background: var(--rd-gradient-primary);
+}
+
+.rd-stat-card:nth-child(2)::before {
+  background: var(--rd-gradient-secondary);
+}
+
+.rd-stat-card:nth-child(3)::before {
+  background: var(--rd-gradient-success);
+}
+
+.rd-stat-card:nth-child(4)::before {
+  background: var(--rd-gradient-accent);
+}
+
+.rd-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--rd-shadow-lg);
+  border-color: var(--rd-border-focus);
+}
+
+.rd-stat-card h3 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem 0;
+  color: var(--rd-text-primary);
+  line-height: 1.2;
+}
+
+.rd-stat-card:nth-child(1) h3 { color: var(--rd-primary); }
+.rd-stat-card:nth-child(2) h3 { color: var(--rd-secondary); }
+.rd-stat-card:nth-child(3) h3 { color: var(--rd-success); }
+.rd-stat-card:nth-child(4) h3 { color: var(--rd-accent); }
+
+.rd-stat-card p {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--rd-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ============================================
+   FEATURES - HEALTHCARE FUNCTION GRID
+============================================ */
+.rd-features-section {
+  margin-bottom: 3rem;
+}
+
+.rd-features-section h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--rd-text-primary);
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rd-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.rd-feature-card {
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  border: 1px solid var(--rd-border);
+  border-radius: var(--rd-radius-xl);
+  padding: 2rem 1.5rem;
+  text-align: center;
   cursor: pointer;
+  transition: var(--rd-transition);
+  font-weight: 500;
+  font-size: 1.25rem;
+  color: white;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  box-shadow: var(--rd-shadow-card);
 }
 
-.activity-section {
-  margin-top: 30px;
+.rd-feature-card:hover {
+  transform: translateX(-6px);
+  box-shadow: var(--rd-shadow-lg);
+  font-size: 1.3rem;
+  border-color: var(--rd-border-focus);
+  background: linear-gradient(135deg, #5a35de 0%, #7C3AED 100%);
 }
 
-.activity-item {
-  background: #ffffff;
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 10px;
+.rd-patient-registration-card {
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border: 1px solid #bbf7d0;
+  color: var(--rd-secondary);
+}
+
+.rd-patient-registration-card:hover {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border-color: var(--rd-secondary);
+}
+
+.rd-patient-search-card {
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border: 1px solid #bae6fd;
+  color: var(--rd-accent);
+}
+
+.rd-patient-search-card:hover {
+  background: linear-gradient(135deg, #e0f2fe, #cffafe);
+  border-color: var(--rd-accent);
+}
+
+.rd-feature-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.rd-feature-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.rd-feature-subtitle {
+  font-size: 0.875rem;
+  color: var(--rd-text-secondary);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+/* ============================================
+   QUICK ACTIONS - MEDICAL BUTTONS
+============================================ */
+.rd-quick-actions-section {
+  margin-bottom: 3rem;
+}
+
+.rd-quick-actions-section h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--rd-text-primary);
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rd-quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.rd-quick-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 1.5rem 2rem;
+  background: var(--rd-bg-card);
+  border: 1px solid var(--rd-border);
+  border-radius: var(--rd-radius-lg);
+  cursor: pointer;
+  transition: var(--rd-transition);
+  text-decoration: none;
+  color: var(--rd-text-primary);
+  box-shadow: var(--rd-shadow-card);
+  position: relative;
+}
+
+.rd-quick-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--rd-shadow-lg);
+  background: var(--rd-bg-hover);
+}
+
+.rd-register-patient {
+  border-left: 4px solid var(--rd-secondary);
+}
+
+.rd-register-patient:hover {
+  border-color: var(--rd-secondary);
+  background: linear-gradient(135deg, #f0fdf4, #ffffff);
+}
+
+.rd-register-patient .rd-action-text {
+  color: var(--rd-secondary);
+}
+
+.rd-view-patients {
+  border-left: 4px solid var(--rd-primary);
+}
+
+.rd-view-patients:hover {
+  border-color: var(--rd-primary);
+  background: linear-gradient(135deg, #eff6ff, #ffffff);
+}
+
+.rd-view-patients .rd-action-text {
+  color: var(--rd-primary);
+}
+
+.rd-emergency {
+  border-left: 4px solid var(--rd-danger);
+}
+
+.rd-emergency:hover {
+  border-color: var(--rd-danger);
+  background: linear-gradient(135deg, #fef2f2, #ffffff);
+}
+
+.rd-emergency .rd-action-text {
+  color: var(--rd-danger);
+}
+
+.rd-action-icon {
+  font-size: 1.5rem;
+  margin-right: 1rem;
+  color: var(--rd-text-secondary);
+}
+
+.rd-register-patient .rd-action-icon { color: var(--rd-secondary); }
+.rd-view-patients .rd-action-icon { color: var(--rd-primary); }
+.rd-emergency .rd-action-icon { color: var(--rd-danger); }
+
+.rd-action-text {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* ============================================
+   ACTIVITY SECTION - MEDICAL RECORDS
+============================================ */
+.rd-activity-section {
+  margin-bottom: 2rem;
+}
+
+.rd-activity-section h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--rd-text-primary);
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rd-activity-list {
+  background: var(--rd-bg-card);
+  border: 1px solid var(--rd-border);
+  border-radius: var(--rd-radius-xl);
+  box-shadow: var(--rd-shadow-card);
+  overflow: hidden;
+}
+
+.rd-activity-item {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--rd-border-light);
+  transition: var(--rd-transition-fast);
+  position: relative;
+}
+
+.rd-activity-item:last-child {
+  border-bottom: none;
+}
+
+.rd-activity-item:hover {
+  background: var(--rd-bg-hover);
+}
+
+.rd-activity-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--rd-primary);
+  transform: scaleY(0);
+  transition: var(--rd-transition);
+}
+
+.rd-activity-item:hover::before {
+  transform: scaleY(1);
+}
+
+.rd-activity-item p {
+  margin: 0;
+  color: var(--rd-text-primary);
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.rd-no-activities {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--rd-text-secondary);
+}
+
+.rd-no-activities p {
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  font-weight: 500;
+}
+
+.rd-start-activity-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  background: var(--rd-gradient-primary);
+  color: var(--rd-text-white);
+  border: none;
+  border-radius: var(--rd-radius-lg);
+  cursor: pointer;
+  transition: var(--rd-transition);
+  font-weight: 600;
+  font-size: 0.875rem;
+  box-shadow: var(--rd-shadow-md);
+}
+
+.rd-start-activity-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--rd-shadow-lg);
+  background: var(--rd-primary-dark);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN - HEALTHCARE
+============================================ */
+@media (max-width: 768px) {
+  .rd-main-container {
+    padding: 1rem;
+  }
+  
+  .rd-header {
+    margin-bottom: 2rem;
+    padding: 1rem 0;
+  }
+  
+  .rd-header h1 {
+    font-size: 2rem;
+  }
+  
+  .rd-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .rd-stat-card {
+    padding: 1.5rem 1rem;
+  }
+  
+  .rd-stat-card h3 {
+    font-size: 2rem;
+  }
+  
+  .rd-features-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .rd-feature-card {
+    padding: 1.5rem;
+    min-height: 120px;
+  }
+  
+  .rd-quick-actions-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .rd-quick-action-btn {
+    padding: 1.25rem 1.5rem;
+  }
+  
+  .rd-activity-item {
+    padding: 1.25rem 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .rd-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .rd-stat-card h3 {
+    font-size: 1.875rem;
+  }
+  
+  .rd-header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .rd-features-section h2,
+  .rd-quick-actions-section h2,
+  .rd-activity-section h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY & INTERACTIONS
+============================================ */
+.rd-feature-card:focus,
+.rd-quick-action-btn:focus,
+.rd-start-activity-btn:focus {
+  outline: 2px solid var(--rd-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   SMOOTH ENTRANCE ANIMATIONS
+============================================ */
+.rd-stat-card,
+.rd-feature-card,
+.rd-quick-action-btn {
+  animation: rd-fade-up 0.6s ease-out forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.rd-stat-card:nth-child(1) { animation-delay: 0.1s; }
+.rd-stat-card:nth-child(2) { animation-delay: 0.15s; }
+.rd-stat-card:nth-child(3) { animation-delay: 0.2s; }
+.rd-stat-card:nth-child(4) { animation-delay: 0.25s; }
+
+@keyframes rd-fade-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   MEDICAL ICON ENHANCEMENTS
+============================================ */
+.rd-feature-card:hover .rd-feature-icon,
+.rd-quick-action-btn:hover .rd-action-icon {
+  transform: scale(1.1);
+  transition: var(--rd-transition);
+}
+
+/* ============================================
+   HEALTHCARE-SPECIFIC STYLING
+============================================ */
+.rd-header h1::after {
+  content: '⚕️';
+  margin-left: 0.5rem;
+  font-size: 0.8em;
+}
+
+.rd-features-section h2::before {
+  content: '';
+  margin-right: 0.5rem;
+}
+
+.rd-quick-actions-section h2::before {
+  content: '⚡';
+  margin-right: 0.5rem;
+}
+
+.rd-activity-section h2::before {
+  content: '📋';
+  margin-right: 0.5rem;
+}
+
+/* ============================================
+   SCROLLBAR - MEDICAL THEME
+============================================ */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--rd-bg-tertiary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--rd-primary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--rd-primary-dark);
 }
