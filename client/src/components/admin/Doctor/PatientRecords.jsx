@@ -846,9 +846,10 @@ const PatientRecords = () => {
               <thead className="pr-table-head">
                 <tr>
                   <th className="pr-th pr-th-expand"></th>
+                  <th className="pr-th pr-th-expand"></th>
                   <th className="pr-th">Date</th>
                   <th className="pr-th">Patient</th>
-                  <th className="pr-th">Diagnosis</th>
+                  <th className="pr-th pr-th-diagnosis">Diagnosis</th>
                   <th className="pr-th">Doctor</th>
                   <th className="pr-th">Actions</th>
                 </tr>
@@ -887,7 +888,9 @@ const PatientRecords = () => {
                         </td>
                         <td className="pr-td pr-td-diagnosis">
                           <div className="pr-diagnosis-cell">
-                            {prescription.diagnosis || 'N/A'}
+                            <div className="pr-diagnosis-text" title={prescription.diagnosis || 'N/A'}>
+                              {prescription.diagnosis || 'N/A'}
+                            </div>
                             {prescription.medicines && prescription.medicines.length > 0 && (
                               <div className="pr-medicine-count">
                                 <Pill size={14} />
