@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../appointments/styles/ManageAppointments.css';
 
@@ -10,10 +11,8 @@ const ManageAppointments = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [actionLoading, setActionLoading] = useState({});
 
+  const navigate = useNavigate();
   const backendUrl = 'http://localhost:7000';
-
-// Removed duplicate handleAction function
-
 
   useEffect(() => {
     fetchAppointments();
@@ -86,6 +85,10 @@ const ManageAppointments = () => {
     }
   };
 
+  const handleBackToDashboard = () => {
+    navigate('/admin/receptionist');
+  };
+
   // Filter appointments based on status and search term
   const filteredAppointments = appointments.filter(appointment => {
     const matchesFilter = filter === 'all' || appointment.status === filter;
@@ -97,29 +100,27 @@ const ManageAppointments = () => {
 
   const getStatusBadge = (status) => {
     const statusClass = {
-      'pending': 'status-pending',
-      'accepted': 'status-accepted',
-      'rejected': 'status-rejected'
+      'pending': 'ma-unique-status-pending',
+      'accepted': 'ma-unique-status-accepted',
+      'rejected': 'ma-unique-status-rejected'
     };
     
     return (
-      <span className={`status-badge ${statusClass[status] || 'status-pending'}`}>
+      <span className={`ma-unique-status-badge ${statusClass[status] || 'ma-unique-status-pending'}`}>
         {status || 'pending'}
       </span>
     );
   };
 
-  
-
   const getUrgencyBadge = (urgency) => {
     const urgencyClass = {
-      'normal': 'urgency-normal',
-      'urgent': 'urgency-urgent',
-      'emergency': 'urgency-emergency'
+      'normal': 'ma-unique-urgency-normal',
+      'urgent': 'ma-unique-urgency-urgent',
+      'emergency': 'ma-unique-urgency-emergency'
     };
     
     return (
-      <span className={`urgency-badge ${urgencyClass[urgency] || 'urgency-normal'}`}>
+      <span className={`ma-unique-urgency-badge ${urgencyClass[urgency] || 'ma-unique-urgency-normal'}`}>
         {urgency || 'normal'}
       </span>
     );
@@ -132,41 +133,41 @@ const ManageAppointments = () => {
       day: 'numeric'
     });
   };
-const formatTime = (timeString) => {
-  // Add null/undefined check
-  if (!timeString || typeof timeString !== 'string') {
-    return 'Time not set';
-  }
-  
-  // Check if timeString contains ':'
-  if (!timeString.includes(':')) {
-    return timeString; // Return as-is if it's not in HH:MM format
-  }
-  
-  try {
-    const [hours, minutes] = timeString.split(':');
-    
-    // Additional validation
-    if (!hours || !minutes) {
-      return timeString; // Return original if split didn't work properly
+
+  const formatTime = (timeString) => {
+    // Add null/undefined check
+    if (!timeString || typeof timeString !== 'string') {
+      return 'Time not set';
     }
     
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
-  } catch (error) {
-    console.error('Error formatting time:', error);
-    return timeString || 'Invalid time';
-  }
-};
-
+    // Check if timeString contains ':'
+    if (!timeString.includes(':')) {
+      return timeString; // Return as-is if it's not in HH:MM format
+    }
+    
+    try {
+      const [hours, minutes] = timeString.split(':');
+      
+      // Additional validation
+      if (!hours || !minutes) {
+        return timeString; // Return original if split didn't work properly
+      }
+      
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour % 12 || 12;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return timeString || 'Invalid time';
+    }
+  };
 
   if (loading) {
     return (
-      <div className="manage-appointments">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
+      <div className="ma-unique-manage-appointments">
+        <div className="ma-unique-loading-container">
+          <div className="ma-unique-loading-spinner"></div>
           <p>Loading appointments...</p>
         </div>
       </div>
@@ -174,41 +175,47 @@ const formatTime = (timeString) => {
   }
 
   return (
-    <div className="manage-appointments">
-      <div className="page-header">
+    <div className="ma-unique-manage-appointments">
+      <div className="ma-unique-page-header">
+        <button 
+          onClick={handleBackToDashboard} 
+          className="ma-unique-back-btn"
+        >
+          ← Back to Dashboard
+        </button>
         <h1>Manage Appointments</h1>
         <p>Review and manage patient appointment requests</p>
       </div>
 
       {error && (
-        <div className="error-message">
-          <span className="error-icon">⚠️</span>
+        <div className="ma-unique-error-message">
+          <span className="ma-unique-error-icon">⚠️</span>
           {error}
-          <button onClick={fetchAppointments} className="retry-btn">
+          <button onClick={fetchAppointments} className="ma-unique-retry-btn">
             Retry
           </button>
         </div>
       )}
 
-      <div className="controls-section">
-        <div className="search-container">
+      <div className="ma-unique-controls-section">
+        <div className="ma-unique-search-container">
           <input
             type="text"
             placeholder="Search by patient name, email, or phone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
+            className="ma-unique-search-input"
           />
-          <span className="search-icon">🔍</span>
+          <span className="ma-unique-search-icon">🔍</span>
         </div>
 
-        <div className="filter-container">
+        <div className="ma-unique-filter-container">
           <label htmlFor="status-filter">Filter by status:</label>
           <select
             id="status-filter"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="filter-select"
+            className="ma-unique-filter-select"
           >
             <option value="all">All Appointments</option>
             <option value="pending">Pending</option>
@@ -217,33 +224,33 @@ const formatTime = (timeString) => {
           </select>
         </div>
 
-        <button onClick={fetchAppointments} className="refresh-btn">
+        <button onClick={fetchAppointments} className="ma-unique-refresh-btn">
           🔄 Refresh
         </button>
       </div>
 
-      <div className="appointments-stats">
-        <div className="stat-card">
+      <div className="ma-unique-appointments-stats">
+        <div className="ma-unique-stat-card">
           <h3>{appointments.filter(a => a.status === 'pending' || !a.status).length}</h3>
           <p>Pending</p>
         </div>
-        <div className="stat-card">
+        <div className="ma-unique-stat-card">
           <h3>{appointments.filter(a => a.status === 'accepted').length}</h3>
           <p>Accepted</p>
         </div>
-        <div className="stat-card">
+        <div className="ma-unique-stat-card">
           <h3>{appointments.filter(a => a.status === 'rejected').length}</h3>
           <p>Rejected</p>
         </div>
-        <div className="stat-card">
+        <div className="ma-unique-stat-card">
           <h3>{appointments.length}</h3>
           <p>Total</p>
         </div>
       </div>
 
       {filteredAppointments.length === 0 ? (
-        <div className="no-appointments">
-          <div className="no-appointments-icon">📅</div>
+        <div className="ma-unique-no-appointments">
+          <div className="ma-unique-no-appointments-icon">📅</div>
           <h3>No appointments found</h3>
           <p>
             {searchTerm 
@@ -255,8 +262,8 @@ const formatTime = (timeString) => {
           </p>
         </div>
       ) : (
-        <div className="appointments-table-container">
-          <table className="appointments-table">
+        <div className="ma-unique-appointments-table-container">
+          <table className="ma-unique-appointments-table">
             <thead>
               <tr>
                 <th>Patient Info</th>
@@ -270,74 +277,74 @@ const formatTime = (timeString) => {
             </thead>
             <tbody>
               {filteredAppointments.map(appointment => (
-                <tr key={appointment._id} className="appointment-row">
-                  <td className="patient-info">
-                    <div className="patient-name">{appointment.name}</div>
-                    <div className="patient-details">
+                <tr key={appointment._id} className="ma-unique-appointment-row">
+                  <td className="ma-unique-patient-info">
+                    <div className="ma-unique-patient-name">{appointment.name}</div>
+                    <div className="ma-unique-patient-details">
                       <span>Age: {appointment.age}</span>
                       <span>Gender: {appointment.gender}</span>
                       <span>Blood: {appointment.bloodGroup}</span>
                     </div>
                   </td>
 
-                  <td className="contact-info">
-                    <div className="contact-email">{appointment.email}</div>
-                    <div className="contact-phone">{appointment.phone}</div>
+                  <td className="ma-unique-contact-info">
+                    <div className="ma-unique-contact-email">{appointment.email}</div>
+                    <div className="ma-unique-contact-phone">{appointment.phone}</div>
                   </td>
 
-                  <td className="appointment-details">
-                    <div className="appointment-date">
+                  <td className="ma-unique-appointment-details">
+                    <div className="ma-unique-appointment-date">
                       📅 {formatDate(appointment.appointmentDate)}
                     </div>
-                    <div className="appointment-time">
+                    <div className="ma-unique-appointment-time">
                       🕐 {formatTime(appointment.appointmentTime)}
                     </div>
-                    <div className="appointment-doctor">
+                    <div className="ma-unique-appointment-doctor">
                       🩺 {appointment.doctorSpecialty}
                     </div>
-                    <div className="appointment-type">
+                    <div className="ma-unique-appointment-type">
                       📋 {appointment.appointmentType}
                     </div>
                   </td>
 
-                  <td className="medical-info">
+                  <td className="ma-unique-medical-info">
                     {appointment.allergies && (
-                      <div className="allergies">
+                      <div className="ma-unique-allergies">
                         <strong>Allergies:</strong> {appointment.allergies}
                       </div>
                     )}
                     {appointment.symptoms && (
-                      <div className="symptoms">
+                      <div className="ma-unique-symptoms">
                         <strong>Symptoms:</strong> {appointment.symptoms}
                       </div>
                     )}
                     {appointment.emergencyContactName && (
-                      <div className="emergency-contact">
+                      <div className="ma-unique-emergency-contact">
                         <strong>Emergency:</strong> {appointment.emergencyContactName} 
                         ({appointment.emergencyContactPhone})
                       </div>
                     )}
                   </td>
 
-                  <td className="status-cell">
+                  <td className="ma-unique-status-cell">
                     {getStatusBadge(appointment.status)}
                   </td>
 
-                  <td className="urgency-cell">
+                  <td className="ma-unique-urgency-cell">
                     {getUrgencyBadge(appointment.urgency)}
                   </td>
 
-                  <td className="actions-cell">
+                  <td className="ma-unique-actions-cell">
                     {(!appointment.status || appointment.status === 'pending') && (
-                      <div className="action-buttons">
+                      <div className="ma-unique-action-buttons">
                         <button
                           onClick={() => handleAction(appointment._id, 'accept')}
                           disabled={actionLoading[appointment._id] === 'accept'}
-                          className="accept-btn"
+                          className="ma-unique-accept-btn"
                         >
                           {actionLoading[appointment._id] === 'accept' ? (
                             <>
-                              <span className="loading-spinner small"></span>
+                              <span className="ma-unique-loading-spinner ma-unique-small"></span>
                               Accepting...
                             </>
                           ) : (
@@ -350,11 +357,11 @@ const formatTime = (timeString) => {
                         <button
                           onClick={() => handleAction(appointment._id, 'reject')}
                           disabled={actionLoading[appointment._id] === 'reject'}
-                          className="reject-btn"
+                          className="ma-unique-reject-btn"
                         >
                           {actionLoading[appointment._id] === 'reject' ? (
                             <>
-                              <span className="loading-spinner small"></span>
+                              <span className="ma-unique-loading-spinner ma-unique-small"></span>
                               Rejecting...
                             </>
                           ) : (
@@ -367,13 +374,13 @@ const formatTime = (timeString) => {
                     )}
 
                     {appointment.status === 'accepted' && (
-                      <div className="status-message accepted">
+                      <div className="ma-unique-status-message ma-unique-accepted">
                         ✅ Accepted
                       </div>
                     )}
 
                     {appointment.status === 'rejected' && (
-                      <div className="status-message rejected">
+                      <div className="ma-unique-status-message ma-unique-rejected">
                         ❌ Rejected
                       </div>
                     )}
@@ -386,7 +393,6 @@ const formatTime = (timeString) => {
       )}
     </div>
   );
-  
 };
 
 export default ManageAppointments;
