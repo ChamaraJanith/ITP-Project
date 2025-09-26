@@ -105,7 +105,7 @@ const ReceptionistDashboard = () => {
                   className="rd-feature-card"
                   onClick={() => navigate("/admin/doctor/view-consultations")}
                 >
-                  SCHEDULE APPOINTMENTS
+                  VIEW CONSULTATIONS
                 </button>
                 
                 {/* ✅ Updated: Patient Registration - Navigate to Registration Form */}

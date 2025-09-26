@@ -3,12 +3,15 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import './PatientRegistration.css';
 
 const PatientRegistration = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [registeredPatient, setRegisteredPatient] = useState(null);
   const [qrCodeData, setQrCodeData] = useState('');
   const [qrCodeError, setQrCodeError] = useState(false);
+  const navigate = useNavigate();
 
   const {
     register,
@@ -125,6 +128,10 @@ const PatientRegistration = () => {
     setQrCodeError(false);
   };
 
+  const handleBackToDashboard = () => {
+    navigate('/admin/receptionist/');
+  };
+
   // QR Code regeneration function
   const handleRegenerateQR = async () => {
     if (!registeredPatient?.patientId) return;
@@ -144,82 +151,93 @@ const PatientRegistration = () => {
 
   if (registeredPatient) {
     return (
-      <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">✅</span>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Registration Successful!</h2>
-          <p className="text-gray-600">Patient has been registered with unique ID and QR code</p>
+      <div className="registration-success-container">
+        {/* Back to Dashboard Button */}
+        <div className="back-to-dashboard-container">
+          <button
+            onClick={handleBackToDashboard}
+            className="back-to-dashboard-btn"
+          >
+            <span className="back-icon">🏠</span>
+            Back to Dashboard
+          </button>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="registration-success-header">
+          <div className="success-icon-container">
+            <span className="success-icon">✅</span>
+          </div>
+          <h2 className="success-title">Registration Successful!</h2>
+          <p className="success-subtitle">Patient has been registered with unique ID and QR code</p>
+        </div>
+
+        <div className="success-content-grid">
           {/* Patient Information */}
-          <div className="bg-gray-50 p-6 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4 flex items-center">
-              <span className="mr-2">👤</span>
+          <div className="patient-details-card">
+            <h3 className="details-card-title">
+              <span className="details-icon">👤</span>
               Patient Information
             </h3>
-            <div className="space-y-3">
-              <div>
-                <span className="font-medium text-blue-600">Patient ID:</span>
-                <span className="ml-2 font-mono bg-blue-100 px-2 py-1 rounded">
+            <div className="patient-info-list">
+              <div className="info-item">
+                <span className="info-label">Patient ID:</span>
+                <span className="patient-id-display">
                   {registeredPatient.patientId}
                 </span>
               </div>
-              <div>
-                <span className="font-medium">Name:</span>
-                <span className="ml-2">{registeredPatient.firstName} {registeredPatient.lastName}</span>
+              <div className="info-item">
+                <span className="info-label">Name:</span>
+                <span className="info-value">{registeredPatient.firstName} {registeredPatient.lastName}</span>
               </div>
-              <div>
-                <span className="font-medium">Email:</span>
-                <span className="ml-2">{registeredPatient.email}</span>
+              <div className="info-item">
+                <span className="info-label">Email:</span>
+                <span className="info-value">{registeredPatient.email}</span>
               </div>
-              <div>
-                <span className="font-medium">Phone:</span>
-                <span className="ml-2">{registeredPatient.phone}</span>
+              <div className="info-item">
+                <span className="info-label">Phone:</span>
+                <span className="info-value">{registeredPatient.phone}</span>
               </div>
-              <div>
-                <span className="font-medium">Blood Group:</span>
-                <span className="ml-2">{registeredPatient.bloodGroup || 'Not specified'}</span>
+              <div className="info-item">
+                <span className="info-label">Blood Group:</span>
+                <span className="info-value">{registeredPatient.bloodGroup || 'Not specified'}</span>
               </div>
-              <div>
-                <span className="font-medium">Registration Date:</span>
-                <span className="ml-2">{new Date(registeredPatient.registrationDate || Date.now()).toLocaleDateString()}</span>
+              <div className="info-item">
+                <span className="info-label">Registration Date:</span>
+                <span className="info-value">{new Date(registeredPatient.registrationDate || Date.now()).toLocaleDateString()}</span>
               </div>
             </div>
           </div>
 
           {/* QR Code */}
-          <div className="bg-gray-50 p-6 rounded-lg text-center">
-            <h3 className="text-lg font-semibold mb-4 flex items-center justify-center">
-              <span className="mr-2">📱</span>
+          <div className="qr-code-display-card">
+            <h3 className="qr-card-title">
+              <span className="qr-icon">📱</span>
               Patient QR Code
             </h3>
-            <div className="bg-white p-4 rounded-lg inline-block">
+            <div className="qr-code-wrapper">
               {qrCodeData && !qrCodeError ? (
                 <img 
                   src={qrCodeData} 
                   alt="Patient QR Code" 
-                  className="w-48 h-48"
+                  className="qr-code-success-image"
                   onError={() => {
                     console.error('QR Code image failed to load');
                     setQrCodeError(true);
                   }}
                 />
               ) : (
-                <div className="w-48 h-48 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
-                  <div className="text-center">
-                    <span className="text-4xl mb-2 block">
+                <div className="qr-code-error-state">
+                  <div className="qr-error-content">
+                    <span className="qr-error-icon">
                       {qrCodeError ? '❌' : '⏳'}
                     </span>
-                    <p className="text-sm">
+                    <p className="qr-error-text">
                       {qrCodeError ? 'QR Code generation failed' : 'Generating QR Code...'}
                     </p>
                     {qrCodeError && (
                       <button
                         onClick={handleRegenerateQR}
-                        className="mt-2 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                        className="qr-retry-button"
                       >
                         Retry
                       </button>
@@ -229,14 +247,14 @@ const PatientRegistration = () => {
               )}
             </div>
             
-            <div className="mt-4 space-y-2">
+            <div className="qr-action-buttons">
               {qrCodeData && !qrCodeError && (
                 <a
                   href={qrCodeData}
                   download={`patient_${registeredPatient.patientId}_qr.png`}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="qr-download-btn"
                 >
-                  <span className="mr-2">💾</span>
+                  <span className="btn-icon">💾</span>
                   Download QR Code
                 </a>
               )}
@@ -244,9 +262,9 @@ const PatientRegistration = () => {
               {qrCodeError && (
                 <button
                   onClick={handleRegenerateQR}
-                  className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                  className="qr-regenerate-btn"
                 >
-                  <span className="mr-2">🔄</span>
+                  <span className="btn-icon">🔄</span>
                   Regenerate QR Code
                 </button>
               )}
@@ -254,27 +272,37 @@ const PatientRegistration = () => {
           </div>
         </div>
 
-        <div className="mt-6 text-center">
-          <button
-            onClick={handleNewRegistration}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            Register Another Patient
-          </button>
+        <div className="success-footer-actions">
+          <div className="success-action-buttons">
+            <button
+              onClick={handleNewRegistration}
+              className="new-registration-btn"
+            >
+              <span className="btn-icon">➕</span>
+              Register Another Patient
+            </button>
+            <button
+              onClick={handleBackToDashboard}
+              className="success-dashboard-btn"
+            >
+              <span className="btn-icon">🏠</span>
+              Back to Dashboard
+            </button>
+          </div>
         </div>
 
         {/* Debug Information (Remove in production) */}
         {process.env.NODE_ENV === 'development' && (
-          <div className="mt-6 p-4 bg-gray-100 rounded-lg text-xs">
-            <details>
-              <summary className="cursor-pointer font-medium">Debug Info (Dev Only)</summary>
-              <div className="mt-2 space-y-1">
-                <p><strong>Patient ID:</strong> {registeredPatient.patientId}</p>
-                <p><strong>QR Code Available:</strong> {qrCodeData ? 'Yes' : 'No'}</p>
-                <p><strong>QR Code Error:</strong> {qrCodeError ? 'Yes' : 'No'}</p>
-                <p><strong>QR Code Type:</strong> {typeof qrCodeData}</p>
-                <p><strong>QR Code Length:</strong> {qrCodeData?.length || 0}</p>
-                <p><strong>QR Code Preview:</strong> {qrCodeData?.substring(0, 50)}...</p>
+          <div className="debug-info-container">
+            <details className="debug-details">
+              <summary className="debug-summary">Debug Info (Dev Only)</summary>
+              <div className="debug-content">
+                <p className="debug-item"><strong>Patient ID:</strong> {registeredPatient.patientId}</p>
+                <p className="debug-item"><strong>QR Code Available:</strong> {qrCodeData ? 'Yes' : 'No'}</p>
+                <p className="debug-item"><strong>QR Code Error:</strong> {qrCodeError ? 'Yes' : 'No'}</p>
+                <p className="debug-item"><strong>QR Code Type:</strong> {typeof qrCodeData}</p>
+                <p className="debug-item"><strong>QR Code Length:</strong> {qrCodeData?.length || 0}</p>
+                <p className="debug-item"><strong>QR Code Preview:</strong> {qrCodeData?.substring(0, 50)}...</p>
               </div>
             </details>
           </div>
@@ -284,53 +312,64 @@ const PatientRegistration = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-2xl">👤</span>
-        </div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Patient Registration</h1>
-        <p className="text-gray-600">Register a new patient and generate unique QR code</p>
+    <div className="patient-registration-container">
+      {/* Back to Dashboard Button */}
+      <div className="back-to-dashboard-container">
+        <button
+          onClick={handleBackToDashboard}
+          className="back-to-dashboard-btn"
+        >
+          <span className="back-icon">🏠</span>
+          Back to Dashboard
+        </button>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="registration-header">
+        <div className="registration-icon-container">
+          <span className="registration-icon">👤</span>
+        </div>
+        <h1 className="registration-main-title">Patient Registration</h1>
+        <p className="registration-subtitle">Register a new patient and generate unique QR code</p>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="registration-form">
         {/* Personal Information */}
-        <div className="bg-gray-50 p-6 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <span className="mr-2">👤</span>
+        <div className="form-section personal-info-section">
+          <h2 className="section-title">
+            <span className="section-icon">👤</span>
             Personal Information
           </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="form-grid">
+            <div className="form-field">
+              <label className="field-label">
                 First Name *
               </label>
               <input
                 {...register('firstName', { required: 'First name is required' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input"
                 placeholder="Enter first name"
               />
               {errors.firstName && (
-                <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>
+                <p className="field-error">{errors.firstName.message}</p>
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="form-field">
+              <label className="field-label">
                 Last Name *
               </label>
               <input
                 {...register('lastName', { required: 'Last name is required' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input"
                 placeholder="Enter last name"
               />
               {errors.lastName && (
-                <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>
+                <p className="field-error">{errors.lastName.message}</p>
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="form-field">
+              <label className="field-label">
                 Email *
               </label>
               <input
@@ -342,49 +381,49 @@ const PatientRegistration = () => {
                     message: 'Invalid email address'
                   }
                 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input"
                 placeholder="Enter email address"
               />
               {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+                <p className="field-error">{errors.email.message}</p>
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="form-field">
+              <label className="field-label">
                 Phone Number *
               </label>
               <input
                 {...register('phone', { required: 'Phone number is required' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input"
                 placeholder="Enter phone number"
               />
               {errors.phone && (
-                <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
+                <p className="field-error">{errors.phone.message}</p>
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="form-field">
+              <label className="field-label">
                 Date of Birth *
               </label>
               <input
                 type="date"
                 {...register('dateOfBirth', { required: 'Date of birth is required' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input date-input"
               />
               {errors.dateOfBirth && (
-                <p className="text-red-500 text-sm mt-1">{errors.dateOfBirth.message}</p>
+                <p className="field-error">{errors.dateOfBirth.message}</p>
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="form-field">
+              <label className="field-label">
                 Gender *
               </label>
               <select
                 {...register('gender', { required: 'Gender is required' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-select"
               >
                 <option value="">Select Gender</option>
                 <option value="Male">Male</option>
@@ -392,26 +431,26 @@ const PatientRegistration = () => {
                 <option value="Other">Other</option>
               </select>
               {errors.gender && (
-                <p className="text-red-500 text-sm mt-1">{errors.gender.message}</p>
+                <p className="field-error">{errors.gender.message}</p>
               )}
             </div>
           </div>
         </div>
 
         {/* Medical Information */}
-        <div className="bg-gray-50 p-6 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <span className="mr-2">🩺</span>
+        <div className="form-section medical-info-section">
+          <h2 className="section-title">
+            <span className="section-icon">🩺</span>
             Medical Information
           </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="form-grid">
+            <div className="form-field">
+              <label className="field-label">
                 Blood Group
               </label>
               <select
                 {...register('bloodGroup')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-select"
               >
                 <option value="">Select Blood Group</option>
                 <option value="A+">A+</option>
@@ -425,25 +464,25 @@ const PatientRegistration = () => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="form-field">
+              <label className="field-label">
                 Allergies
               </label>
               <input
                 {...register('allergies')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input"
                 placeholder="Enter allergies (comma separated)"
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="form-field form-field-full">
+              <label className="field-label">
                 Medical History
               </label>
               <textarea
                 {...register('medicalHistory')}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-textarea"
                 placeholder="Enter medical history (comma separated)"
               />
             </div>
@@ -451,61 +490,61 @@ const PatientRegistration = () => {
         </div>
 
         {/* Emergency Contact */}
-        <div className="bg-gray-50 p-6 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <span className="mr-2">📞</span>
+        <div className="form-section emergency-contact-section">
+          <h2 className="section-title">
+            <span className="section-icon">📞</span>
             Emergency Contact
           </h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="emergency-contact-grid">
+            <div className="form-field">
+              <label className="field-label">
                 Contact Name
               </label>
               <input
                 {...register('emergencyContact.name')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input"
                 placeholder="Enter contact name"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="form-field">
+              <label className="field-label">
                 Contact Phone
               </label>
               <input
                 {...register('emergencyContact.phone')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input"
                 placeholder="Enter contact phone"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="form-field">
+              <label className="field-label">
                 Relationship
               </label>
               <input
                 {...register('emergencyContact.relationship')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="form-input"
                 placeholder="e.g., Spouse, Parent"
               />
             </div>
           </div>
         </div>
 
-        <div className="flex justify-center">
+        <div className="form-submit-container">
           <button
             type="submit"
             disabled={isLoading}
-            className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center"
+            className={`registration-submit-btn ${isLoading ? 'loading' : ''}`}
           >
             {isLoading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div className="loading-spinner"></div>
                 Registering...
               </>
             ) : (
               <>
-                <span className="mr-2">👤</span>
+                <span className="submit-icon">👤</span>
                 Register Patient & Generate QR
               </>
             )}
@@ -515,6 +554,5 @@ const PatientRegistration = () => {
     </div>
   );
 };
-
 
 export default PatientRegistration;

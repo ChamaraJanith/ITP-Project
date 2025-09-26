@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import './PatientList.css'; // Import the CSS file
 
 const PatientList = () => {
   const [patients, setPatients] = useState([]);
@@ -51,14 +52,18 @@ const PatientList = () => {
     }
   };
 
+  const handleBackToDashboard = () => {
+    navigate('/admin/receptionist/');
+  };
+
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-lg">
-          <div className="flex justify-center items-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading patients...</p>
+      <div className="patient-list-container">
+        <div className="patient-list-card">
+          <div className="loading-container">
+            <div className="loading-content">
+              <div className="loading-spinner"></div>
+              <p className="loading-text">Loading patients...</p>
             </div>
           </div>
         </div>
@@ -67,163 +72,167 @@ const PatientList = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-lg">
+    <div className="patient-list-container">
+      <div className="patient-list-card">
+        {/* Back to Dashboard Button */}
+        <div className="back-to-dashboard-container">
+          <button
+            onClick={handleBackToDashboard}
+            className="back-to-dashboard-btn"
+          >
+            <span className="back-icon">🏠</span>
+            Back to Dashboard
+          </button>
+        </div>
+
         {/* Header Section */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-                <span className="text-2xl">👥</span>
+        <div className="header-section">
+          <div className="header-content">
+            <div className="header-left">
+              <div className="icon-container">
+                <span className="header-icon">👥</span>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-800">Patient Database</h1>
-                <p className="text-gray-600">Manage and search patient records</p>
+                <h1 className="header-title">Patient Database</h1>
+                <p className="header-subtitle">Manage and search patient records</p>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-100 text-blue-800 px-3 py-2 rounded-full text-sm font-medium">
+            <div className="header-actions">
+              <div className="patient-count">
                 📊 {filteredPatients.length} of {patients.length} patients
               </div>
               <button
                 onClick={() => navigate('/receptionist/patient_registration')}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                className="add-patient-btn"
               >
                 <span>➕</span>
                 Add New Patient
+              </button>
+              <button
+                onClick={handleBackToDashboard}
+                className="dashboard-btn-header"
+              >
+                <span>🏠</span>
+                Dashboard
               </button>
             </div>
           </div>
 
           {/* Search Section */}
-          <div className="mt-6">
-            <div className="relative">
-              <span className="absolute left-3 top-3 text-gray-400">🔍</span>
+          <div className="search-section">
+            <div className="search-container">
+              <span className="search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="Search by name, ID, email, or phone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="search-input"
               />
             </div>
           </div>
         </div>
 
         {/* Table Section */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
+        <div className="table-container">
+          <table className="patients-table">
+            <thead className="table-header">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Patient ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contact Info
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Medical Info
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Registration Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  QR Code
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="table-header-cell">Patient ID</th>
+                <th className="table-header-cell">Name</th>
+                <th className="table-header-cell">Contact Info</th>
+                <th className="table-header-cell">Medical Info</th>
+                <th className="table-header-cell">Registration Date</th>
+                <th className="table-header-cell">QR Code</th>
+                <th className="table-header-cell">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="table-body">
               {filteredPatients.map((patient) => (
-                <tr key={patient._id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="font-mono text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                <tr key={patient._id} className="table-row">
+                  <td className="table-cell">
+                    <span className="patient-id-badge">
                       {patient.patientId}
                     </span>
                   </td>
                   
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-lg">
+                  <td className="table-cell">
+                    <div className="patient-info">
+                      <div className="avatar-container">
+                        <span className="avatar-icon">
                           {patient.gender === 'Male' ? '👨' : patient.gender === 'Female' ? '👩' : '👤'}
                         </span>
                       </div>
                       <div>
-                        <div className="font-medium text-gray-900">
+                        <div className="patient-name">
                           {patient.firstName} {patient.lastName}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="patient-meta">
                           {patient.gender} • {new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear()} years
                         </div>
                       </div>
                     </div>
                   </td>
                   
-                  <td className="px-6 py-4">
-                    <div className="text-sm">
-                      <div className="text-gray-900">📧 {patient.email}</div>
-                      <div className="text-gray-500">📞 {patient.phone}</div>
+                  <td className="table-cell-wrap">
+                    <div className="contact-info">
+                      <div className="contact-item">📧 {patient.email}</div>
+                      <div className="contact-item-secondary">📞 {patient.phone}</div>
                     </div>
                   </td>
                   
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col gap-1">
+                  <td className="table-cell-wrap">
+                    <div className="medical-info">
                       {patient.bloodGroup && (
-                        <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium w-fit">
+                        <span className="blood-group-badge">
                           🩸 {patient.bloodGroup}
                         </span>
                       )}
                       {patient.allergies && patient.allergies.length > 0 && (
-                        <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs w-fit">
+                        <span className="allergies-badge">
                           ⚠️ {patient.allergies.length} allergies
                         </span>
                       )}
                       {(!patient.bloodGroup && (!patient.allergies || patient.allergies.length === 0)) && (
-                        <span className="text-gray-400 text-xs">No medical data</span>
+                        <span className="no-medical-data">No medical data</span>
                       )}
                     </div>
                   </td>
                   
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm">
-                      <div className="text-gray-900">{new Date(patient.registrationDate).toLocaleDateString()}</div>
-                      <div className="text-gray-500">{new Date(patient.registrationDate).toLocaleTimeString()}</div>
+                  <td className="table-cell">
+                    <div className="date-info">
+                      <div className="date-main">{new Date(patient.registrationDate).toLocaleDateString()}</div>
+                      <div className="date-sub">{new Date(patient.registrationDate).toLocaleTimeString()}</div>
                     </div>
                   </td>
                   
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="table-cell">
                     <button
                       onClick={() => setSelectedPatient(patient)}
-                      className="bg-green-100 text-green-800 p-2 rounded-lg hover:bg-green-200 transition-colors"
+                      className="qr-code-btn"
                       title="View QR Code"
                     >
-                      <span className="text-lg">📱</span>
+                      <span className="qr-icon">📱</span>
                     </button>
                   </td>
                   
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex space-x-2">
+                  <td className="table-cell">
+                    <div className="action-buttons">
                       <button
                         onClick={() => navigate(`/receptionist/patients/${patient._id}`)}
-                        className="text-blue-600 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-100 transition-colors"
+                        className="view-btn"
                         title="View Details"
                       >
-                        <span className="text-lg">👁️</span>
+                        <span className="action-icon">👁️</span>
                       </button>
                       
                       <button
                         onClick={() => handleDelete(patient._id, `${patient.firstName} ${patient.lastName}`)}
-                        className="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-100 transition-colors"
+                        className="delete-btn"
                         title="Delete Patient"
                       >
-                        <span className="text-lg">🗑️</span>
+                        <span className="action-icon">🗑️</span>
                       </button>
                     </div>
                   </td>
@@ -234,36 +243,45 @@ const PatientList = () => {
 
           {/* Empty State */}
           {filteredPatients.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl">👥</span>
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <span className="empty-state-icon-emoji">👥</span>
               </div>
               {searchTerm ? (
                 <>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No patients found</h3>
-                  <p className="text-gray-500 mb-4">
+                  <h3 className="empty-state-title">No patients found</h3>
+                  <p className="empty-state-text">
                     No patients match your search criteria "{searchTerm}"
                   </p>
                   <button
                     onClick={() => setSearchTerm('')}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    className="clear-search-btn"
                   >
                     Clear Search
                   </button>
                 </>
               ) : (
                 <>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No patients registered yet</h3>
-                  <p className="text-gray-500 mb-4">
+                  <h3 className="empty-state-title">No patients registered yet</h3>
+                  <p className="empty-state-text">
                     Get started by registering your first patient
                   </p>
-                  <button
-                    onClick={() => navigate('/receptionist/patient_registration')}
-                    className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 mx-auto"
-                  >
-                    <span>➕</span>
-                    Register First Patient
-                  </button>
+                  <div className="empty-state-actions">
+                    <button
+                      onClick={() => navigate('/receptionist/patient_registration')}
+                      className="register-first-btn"
+                    >
+                      <span>➕</span>
+                      Register First Patient
+                    </button>
+                    <button
+                      onClick={handleBackToDashboard}
+                      className="empty-dashboard-btn"
+                    >
+                      <span>🏠</span>
+                      Back to Dashboard
+                    </button>
+                  </div>
                 </>
               )}
             </div>
@@ -273,34 +291,34 @@ const PatientList = () => {
 
       {/* QR Code Modal */}
       {selectedPatient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">📱</span>
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-body">
+              <div className="modal-icon-container">
+                <span className="modal-icon">📱</span>
               </div>
               
-              <h3 className="text-xl font-semibold mb-2">
+              <h3 className="modal-title">
                 {selectedPatient.firstName} {selectedPatient.lastName}
               </h3>
               
-              <p className="text-sm text-gray-600 mb-4">
-                Patient ID: <span className="font-mono bg-blue-100 px-2 py-1 rounded">{selectedPatient.patientId}</span>
+              <p className="modal-patient-id">
+                Patient ID: <span className="modal-patient-id-value">{selectedPatient.patientId}</span>
               </p>
               
-              <div className="bg-gray-100 p-4 rounded-lg mb-6">
+              <div className="qr-code-container">
                 <img
                   src={selectedPatient.qrCodeData}
                   alt="Patient QR Code"
-                  className="w-64 h-64 mx-auto"
+                  className="qr-code-image"
                 />
               </div>
               
-              <div className="space-y-3">
+              <div className="modal-actions">
                 <a
                   href={selectedPatient.qrCodeData}
                   download={`patient_${selectedPatient.patientId}_qr.png`}
-                  className="block w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="download-btn"
                 >
                   💾 Download QR Code
                 </a>
@@ -310,22 +328,22 @@ const PatientList = () => {
                     navigator.clipboard.writeText(selectedPatient.patientId);
                     toast.success('Patient ID copied to clipboard!');
                   }}
-                  className="block w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors"
+                  className="copy-btn"
                 >
                   📋 Copy Patient ID
                 </button>
                 
-                <div className="flex gap-2">
+                <div className="modal-bottom-actions">
                   <button
                     onClick={() => navigate(`/receptionist/patients/${selectedPatient._id}`)}
-                    className="flex-1 bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+                    className="view-details-btn"
                   >
                     👁️ View Details
                   </button>
                   
                   <button
                     onClick={() => setSelectedPatient(null)}
-                    className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+                    className="close-btn"
                   >
                     ✖️ Close
                   </button>
