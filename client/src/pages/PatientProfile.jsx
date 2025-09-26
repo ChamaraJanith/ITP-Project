@@ -1,49 +1,73 @@
-// src/pages/PatientProfile.jsx
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import '../pages/styles/PatientProfile.css';
 
 const PatientProfile = () => {
   const [patient, setPatient] = useState(null);
+  const [message, setMessage] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Fetch patient data on mount
   useEffect(() => {
+    // Check for navigation state first
+    if (location.state?.userData) {
+      setPatient(location.state.userData);
+      setMessage(location.state.message || '');
+      return;
+    }
+
+    // Fallback to localStorage
     const stored = localStorage.getItem('user');
     if (!stored) {
       navigate('/login');
       return;
     }
     try {
-      setPatient(JSON.parse(stored));
+      const userData = JSON.parse(stored);
+      setPatient(userData);
     } catch {
+      localStorage.removeItem('user');
       navigate('/login');
     }
-  }, [navigate]);
+  }, [navigate, location.state]);
 
   const handleSignOut = () => {
-    // Clear auth tokens and user data
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    // Optionally notify server (logout endpoint)
     axios.post('/api/auth/logout', {}, { withCredentials: true }).catch(() => {});
     navigate('/login');
   };
 
-  if (!patient) return null;
+  if (!patient) {
+    return (
+      <div className="profile-container">
+        <div className="loading">Loading profile...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="profile-container">
       <div className="profile-card">
+        {message && (
+          <div className={`message ${message.includes('successful') ? 'success' : 'error'}`}>
+            {message}
+          </div>
+        )}
+
         <div className="profile-header">
           <h2>Welcome, {patient.name}</h2>
           <button className="signout-btn" onClick={handleSignOut}>
             Sign Out
           </button>
         </div>
+
         <div className="profile-info">
+          <div className="info-item">
+            <span className="label">Name:</span>
+            <span className="value">{patient.name}</span>
+          </div>
           <div className="info-item">
             <span className="label">Email:</span>
             <span className="value">{patient.email}</span>
@@ -75,4 +99,3 @@ const PatientProfile = () => {
 };
 
 export default PatientProfile;
-// src/pages/styles/PatientProfile.css

@@ -1328,7 +1328,7 @@ const FinalAdvancedCTA = () => {
         
         <div className="final-advanced-buttons">
           <button 
-            onClick={() => navigate('/register')}
+            onClick={() => navigate('/book-appointment')}
             className="final-btn-advanced primary"
           >
             <FaRocket />
