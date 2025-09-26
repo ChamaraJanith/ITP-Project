@@ -89,12 +89,47 @@ const ManageAppointments = () => {
     navigate('/admin/receptionist');
   };
 
-  // Filter appointments based on status and search term
+  // Enhanced search function with better null handling and multiple property checks
   const filteredAppointments = appointments.filter(appointment => {
     const matchesFilter = filter === 'all' || appointment.status === filter;
-    const matchesSearch = appointment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         appointment.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         appointment.phone.includes(searchTerm);
+    
+    // If no search term, only apply status filter
+    if (!searchTerm || searchTerm.trim() === '') {
+      return matchesFilter;
+    }
+    
+    const searchLower = searchTerm.toLowerCase().trim();
+    
+    // Helper function to safely check if a value contains the search term
+    const containsSearchTerm = (value) => {
+      if (!value) return false;
+      return String(value).toLowerCase().includes(searchLower);
+    };
+    
+    // Check multiple possible property names for patient info
+    const matchesSearch = 
+      // Patient name variations
+      containsSearchTerm(appointment.name) ||
+      containsSearchTerm(appointment.patientName) ||
+      containsSearchTerm(appointment.patient?.name) ||
+      
+      // Email variations
+      containsSearchTerm(appointment.email) ||
+      containsSearchTerm(appointment.patientEmail) ||
+      containsSearchTerm(appointment.patient?.email) ||
+      
+      // Phone variations
+      containsSearchTerm(appointment.phone) ||
+      containsSearchTerm(appointment.phoneNumber) ||
+      containsSearchTerm(appointment.patientPhone) ||
+      containsSearchTerm(appointment.patient?.phone) ||
+      containsSearchTerm(appointment.patient?.phoneNumber) ||
+      
+      // Additional searchable fields
+      containsSearchTerm(appointment.emergencyContactName) ||
+      containsSearchTerm(appointment.doctorSpecialty) ||
+      containsSearchTerm(appointment.appointmentType);
+    
     return matchesFilter && matchesSearch;
   });
 
@@ -127,6 +162,7 @@ const ManageAppointments = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'Date not set';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -161,6 +197,14 @@ const ManageAppointments = () => {
       console.error('Error formatting time:', error);
       return timeString || 'Invalid time';
     }
+  };
+
+  // Helper function to safely get patient data
+  const getPatientData = (appointment, field) => {
+    return appointment[field] || 
+           appointment.patient?.[field] || 
+           appointment[`patient${field.charAt(0).toUpperCase() + field.slice(1)}`] || 
+           'N/A';
   };
 
   if (loading) {
@@ -201,7 +245,7 @@ const ManageAppointments = () => {
         <div className="ma-unique-search-container">
           <input
             type="text"
-            placeholder="Search by patient name, email, or phone..."
+            placeholder="Search by patient name, email, phone, or doctor specialty..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="ma-unique-search-input"
@@ -230,23 +274,34 @@ const ManageAppointments = () => {
       </div>
 
       <div className="ma-unique-appointments-stats">
-        <div className="ma-unique-stat-card">
+        <div className="ma-unique-stat-card ma-unique-stat-pending">
           <h3>{appointments.filter(a => a.status === 'pending' || !a.status).length}</h3>
           <p>Pending</p>
         </div>
-        <div className="ma-unique-stat-card">
+        <div className="ma-unique-stat-card ma-unique-stat-accepted">
           <h3>{appointments.filter(a => a.status === 'accepted').length}</h3>
           <p>Accepted</p>
         </div>
-        <div className="ma-unique-stat-card">
+        <div className="ma-unique-stat-card ma-unique-stat-rejected">
           <h3>{appointments.filter(a => a.status === 'rejected').length}</h3>
           <p>Rejected</p>
         </div>
-        <div className="ma-unique-stat-card">
+        <div className="ma-unique-stat-card ma-unique-stat-total">
           <h3>{appointments.length}</h3>
           <p>Total</p>
         </div>
       </div>
+
+      {/* Search Results Info */}
+      {searchTerm && (
+        <div className="ma-unique-search-info">
+          <p>
+            Showing {filteredAppointments.length} result{filteredAppointments.length !== 1 ? 's' : ''} 
+            for "{searchTerm}"
+            {filter !== 'all' && ` with status: ${filter}`}
+          </p>
+        </div>
+      )}
 
       {filteredAppointments.length === 0 ? (
         <div className="ma-unique-no-appointments">
@@ -260,6 +315,14 @@ const ManageAppointments = () => {
                 : 'No appointments have been booked yet'
             }
           </p>
+          {searchTerm && (
+            <button 
+              onClick={() => setSearchTerm('')} 
+              className="ma-unique-clear-search-btn"
+            >
+              Clear Search
+            </button>
+          )}
         </div>
       ) : (
         <div className="ma-unique-appointments-table-container">
@@ -279,31 +342,37 @@ const ManageAppointments = () => {
               {filteredAppointments.map(appointment => (
                 <tr key={appointment._id} className="ma-unique-appointment-row">
                   <td className="ma-unique-patient-info">
-                    <div className="ma-unique-patient-name">{appointment.name}</div>
+                    <div className="ma-unique-patient-name">
+                      {getPatientData(appointment, 'name')}
+                    </div>
                     <div className="ma-unique-patient-details">
-                      <span>Age: {appointment.age}</span>
-                      <span>Gender: {appointment.gender}</span>
-                      <span>Blood: {appointment.bloodGroup}</span>
+                      <span>Age: {getPatientData(appointment, 'age')}</span>
+                      <span>Gender: {getPatientData(appointment, 'gender')}</span>
+                      <span>Blood: {getPatientData(appointment, 'bloodGroup') || appointment.bloodType || 'N/A'}</span>
                     </div>
                   </td>
 
                   <td className="ma-unique-contact-info">
-                    <div className="ma-unique-contact-email">{appointment.email}</div>
-                    <div className="ma-unique-contact-phone">{appointment.phone}</div>
+                    <div className="ma-unique-contact-email">
+                      {getPatientData(appointment, 'email')}
+                    </div>
+                    <div className="ma-unique-contact-phone">
+                      {getPatientData(appointment, 'phone') || getPatientData(appointment, 'phoneNumber')}
+                    </div>
                   </td>
 
                   <td className="ma-unique-appointment-details">
                     <div className="ma-unique-appointment-date">
-                      📅 {formatDate(appointment.appointmentDate)}
+                      📅 {formatDate(appointment.appointmentDate || appointment.date)}
                     </div>
                     <div className="ma-unique-appointment-time">
-                      🕐 {formatTime(appointment.appointmentTime)}
+                      🕐 {formatTime(appointment.appointmentTime || appointment.time)}
                     </div>
                     <div className="ma-unique-appointment-doctor">
-                      🩺 {appointment.doctorSpecialty}
+                      🩺 {appointment.doctorSpecialty || appointment.specialty || appointment.doctor || 'N/A'}
                     </div>
                     <div className="ma-unique-appointment-type">
-                      📋 {appointment.appointmentType}
+                      📋 {appointment.appointmentType || appointment.type || 'General'}
                     </div>
                   </td>
 
@@ -324,6 +393,9 @@ const ManageAppointments = () => {
                         ({appointment.emergencyContactPhone})
                       </div>
                     )}
+                    {!appointment.allergies && !appointment.symptoms && !appointment.emergencyContactName && (
+                      <div className="ma-unique-no-medical-info">No additional medical info</div>
+                    )}
                   </td>
 
                   <td className="ma-unique-status-cell">
@@ -331,7 +403,7 @@ const ManageAppointments = () => {
                   </td>
 
                   <td className="ma-unique-urgency-cell">
-                    {getUrgencyBadge(appointment.urgency)}
+                    {getUrgencyBadge(appointment.urgency || appointment.priority)}
                   </td>
 
                   <td className="ma-unique-actions-cell">

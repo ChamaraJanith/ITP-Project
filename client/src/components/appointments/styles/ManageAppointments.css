@@ -648,3 +648,133 @@
     padding: 0.625rem 1.25rem;
   }
 }
+
+/* Status-specific card colors - Add these to your existing ManageAppointments.css */
+
+/* Pending Card - Yellow Theme */
+.ma-unique-stat-card.ma-unique-stat-pending {
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1), 0 2px 4px -1px rgba(245, 158, 11, 0.06);
+}
+
+.ma-unique-stat-card.ma-unique-stat-pending h3 {
+  color: #92400e;
+}
+
+.ma-unique-stat-card.ma-unique-stat-pending p {
+  color: #a16207;
+}
+
+.ma-unique-stat-card.ma-unique-stat-pending:hover {
+  box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.15), 0 4px 6px -2px rgba(245, 158, 11, 0.1);
+  transform: translateY(-3px);
+}
+
+/* Accepted Card - Green Theme */
+.ma-unique-stat-card.ma-unique-stat-accepted {
+  border-left: 4px solid #10b981;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1), 0 2px 4px -1px rgba(16, 185, 129, 0.06);
+}
+
+.ma-unique-stat-card.ma-unique-stat-accepted h3 {
+  color: #047857;
+}
+
+.ma-unique-stat-card.ma-unique-stat-accepted p {
+  color: #065f46;
+}
+
+.ma-unique-stat-card.ma-unique-stat-accepted:hover {
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.15), 0 4px 6px -2px rgba(16, 185, 129, 0.1);
+  transform: translateY(-3px);
+}
+
+/* Rejected Card - Red Theme */
+.ma-unique-stat-card.ma-unique-stat-rejected {
+  border-left: 4px solid #ef4444;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.1), 0 2px 4px -1px rgba(239, 68, 68, 0.06);
+}
+
+.ma-unique-stat-card.ma-unique-stat-rejected h3 {
+  color: #dc2626;
+}
+
+.ma-unique-stat-card.ma-unique-stat-rejected p {
+  color: #991b1b;
+}
+
+.ma-unique-stat-card.ma-unique-stat-rejected:hover {
+  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.15), 0 4px 6px -2px rgba(239, 68, 68, 0.1);
+  transform: translateY(-3px);
+}
+
+/* Total Card - Blue Theme */
+.ma-unique-stat-card.ma-unique-stat-total {
+  border-left: 4px solid #3b82f6;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.06);
+}
+
+.ma-unique-stat-card.ma-unique-stat-total h3 {
+  color: #1d4ed8;
+}
+
+.ma-unique-stat-card.ma-unique-stat-total p {
+  color: #1e40af;
+}
+
+.ma-unique-stat-card.ma-unique-stat-total:hover {
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.15), 0 4px 6px -2px rgba(59, 130, 246, 0.1);
+  transform: translateY(-3px);
+}
+
+/* Enhanced hover effects for all stat cards */
+.ma-unique-stat-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.ma-unique-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.ma-unique-stat-card:hover::before {
+  left: 100%;
+}
+
+/* Responsive adjustments for colored cards */
+@media (max-width: 768px) {
+  .ma-unique-stat-card.ma-unique-stat-pending,
+  .ma-unique-stat-card.ma-unique-stat-accepted,
+  .ma-unique-stat-card.ma-unique-stat-rejected,
+  .ma-unique-stat-card.ma-unique-stat-total {
+    border-left-width: 3px;
+  }
+  
+  .ma-unique-stat-card.ma-unique-stat-pending h3,
+  .ma-unique-stat-card.ma-unique-stat-accepted h3,
+  .ma-unique-stat-card.ma-unique-stat-rejected h3,
+  .ma-unique-stat-card.ma-unique-stat-total h3 {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .ma-unique-stat-card.ma-unique-stat-pending h3,
+  .ma-unique-stat-card.ma-unique-stat-accepted h3,
+  .ma-unique-stat-card.ma-unique-stat-rejected h3,
+  .ma-unique-stat-card.ma-unique-stat-total h3 {
+    font-size: 1.5rem;
+  }
+}
