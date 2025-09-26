@@ -38,49 +38,49 @@ const ReceptionistDashboard = () => {
   if (loading) {
     return (
       <AdminLayout admin={admin} title="Receptionist Dashboard">
-        <div className="loading">Loading receptionist dashboard...</div>
+        <div className="rd-loading">Loading receptionist dashboard...</div>
       </AdminLayout>
     );
   }
 
   return (
     <AdminLayout admin={admin} title="Receptionist Dashboard">
-      <div className="receptionist-dashboard">
-        <div className="dashboard-header">
+      <div className="rd-main-container">
+        <div className="rd-header">
           <h1>👩‍💼 Receptionist Dashboard</h1>
           <p>Appointment scheduling & patient management</p>
         </div>
 
-        {error && <div className="error-banner">⚠️ {error}</div>}
+        {error && <div className="rd-error-banner">⚠️ {error}</div>}
 
         {dashboardData && (
           <>
             {/* ✅ Stats Section */}
-            <div className="stats-grid">
-              <div className="stat-card">
+            <div className="rd-stats-grid">
+              <div className="rd-stat-card">
                 <h3>{dashboardData.stats?.todayAppointments || 0}</h3>
                 <p>Today's Appointments</p>
               </div>
-              <div className="stat-card">
+              <div className="rd-stat-card">
                 <h3>{dashboardData.stats?.waitingPatients || 0}</h3>
                 <p>Waiting Patients</p>
               </div>
-              <div className="stat-card">
+              <div className="rd-stat-card">
                 <h3>{dashboardData.stats?.completedToday || 0}</h3>
                 <p>Completed Today</p>
               </div>
-              <div className="stat-card">
+              <div className="rd-stat-card">
                 <h3>{dashboardData.stats?.upcomingToday || 0}</h3>
                 <p>Upcoming Today</p>
               </div>
             </div>
 
             {/* ✅ Features Section - Updated with correct paths */}
-            <div className="features-section">
+            <div className="rd-features-section">
               <h2>🛠️ Available Features</h2>
-              <div className="features-grid">
+              <div className="rd-features-grid">
                 <button
-                  className="feature-card"
+                  className="rd-feature-card"
                   onClick={() => navigate("/receptionist/manage_appointments")}
                 >
                   MANAGE APPOINTMENTS
@@ -88,21 +88,21 @@ const ReceptionistDashboard = () => {
                 
                 {/* ✅ Updated: View Patients - Navigate to Patient List */}
                 <button
-                  className="feature-card"
+                  className="rd-feature-card"
                   onClick={() => navigate("/receptionist/patients")}
                 >
                   VIEW PATIENTS
                 </button>
                 
                 <button
-                  className="feature-card"
+                  className="rd-feature-card"
                   onClick={() => navigate("/receptionist/check_in_patients")}
                 >
                   CHECK IN PATIENTS
                 </button>
                 
                 <button
-                  className="feature-card"
+                  className="rd-feature-card"
                   onClick={() => navigate("/admin/doctor/view-consultations")}
                 >
                   SCHEDULE APPOINTMENTS
@@ -110,71 +110,71 @@ const ReceptionistDashboard = () => {
                 
                 {/* ✅ Updated: Patient Registration - Navigate to Registration Form */}
                 <button
-                  className="feature-card patient-registration-card"
+                  className="rd-feature-card rd-patient-registration-card"
                   onClick={() => navigate("/receptionist/patient_registration")}
                 >
-                  <div className="feature-icon">👥</div>
-                  <div className="feature-title">PATIENT REGISTRATION</div>
-                  <div className="feature-subtitle">Register new patients & generate QR codes</div>
+                  <div className="rd-feature-icon">👥</div>
+                  <div className="rd-feature-title">PATIENT REGISTRATION</div>
+                  <div className="rd-feature-subtitle">Register new patients & generate QR codes</div>
                 </button>
 
                 {/* ✅ New: Quick Patient Search */}
                 <button
-                  className="feature-card patient-search-card"
+                  className="rd-feature-card rd-patient-search-card"
                   onClick={() => navigate("/receptionist/patients")}
                 >
-                  <div className="feature-icon">🔍</div>
-                  <div className="feature-title">PATIENT DATABASE</div>
-                  <div className="feature-subtitle">Search & manage patient records</div>
+                  <div className="rd-feature-icon">🔍</div>
+                  <div className="rd-feature-title">PATIENT DATABASE</div>
+                  <div className="rd-feature-subtitle">Search & manage patient records</div>
                 </button>
               </div>
             </div>
 
             {/* ✅ Quick Actions Section - New Patient Management Tools */}
-            <div className="quick-actions-section">
-              <h2>⚡ Quick Actions</h2>
-              <div className="quick-actions-grid">
+            <div className="rd-quick-actions-section">
+              <h2>Quick Actions</h2>
+              <div className="rd-quick-actions-grid">
                 <button
-                  className="quick-action-btn register-patient"
+                  className="rd-quick-action-btn rd-register-patient"
                   onClick={() => navigate("/receptionist/patient_registration")}
                 >
-                  <span className="action-icon">➕</span>
-                  <span className="action-text">Register New Patient</span>
+                  <span className="rd-action-icon">➕</span>
+                  <span className="rd-action-text">Register New Patient</span>
                 </button>
                 
                 <button
-                  className="quick-action-btn view-patients"
+                  className="rd-quick-action-btn rd-view-patients"
                   onClick={() => navigate("/receptionist/patients")}
                 >
-                  <span className="action-icon">📋</span>
-                  <span className="action-text">View All Patients</span>
+                  <span className="rd-action-icon">📋</span>
+                  <span className="rd-action-text">View All Patients</span>
                 </button>
                 
                 <button
-                  className="quick-action-btn emergency"
+                  className="rd-quick-action-btn rd-emergency"
                   onClick={() => navigate("/emergency")}
                 >
-                  <span className="action-icon">🚨</span>
-                  <span className="action-text">Emergency Registration</span>
+                  <span className="rd-action-icon">🚨</span>
+                  <span className="rd-action-text">Emergency Registration</span>
                 </button>
               </div>
             </div>
 
             {/* ✅ Recent Activities Section */}
-            <div className="activity-section">
-              <h2>📋 Recent Activities</h2>
-              <div className="activity-list">
+            <div className="rd-activity-section">
+              <h2>Recent Activities</h2>
+              <div className="rd-activity-list">
                 {dashboardData.recentActivities?.length > 0 ? (
                   dashboardData.recentActivities.map((activity, index) => (
-                    <div key={index} className="activity-item">
+                    <div key={index} className="rd-activity-item">
                       <p>{activity}</p>
                     </div>
                   ))
                 ) : (
-                  <div className="no-activities">
+                  <div className="rd-no-activities">
                     <p>No recent activities to display</p>
                     <button
-                      className="start-activity-btn"
+                      className="rd-start-activity-btn"
                       onClick={() => navigate("/receptionist/patient_registration")}
                     >
                       Start by registering a patient
