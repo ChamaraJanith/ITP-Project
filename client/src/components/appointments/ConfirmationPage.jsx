@@ -805,7 +805,7 @@ const ConfirmationPage = () => {
               <h2>Payment Summary</h2>
               <div className="payment-row">
                 <span>Appointment Fee</span>
-                <span>${appointment.fee || '100.00'}</span>
+                <span>${appointment.fee || '5000.00'}</span>
               </div>
               <div className="payment-row">
                 <span>Processing Fee</span>
@@ -813,7 +813,7 @@ const ConfirmationPage = () => {
               </div>
               <div className="payment-row total">
                 <span>Total Paid</span>
-                <span>${appointment.fee || '100.00'}</span>
+                <span>${appointment.fee || '5000.00'}</span>
               </div>
               <div className="payment-info">
                 <div className="info-item">

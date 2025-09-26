@@ -19,83 +19,67 @@ const RegisterUser = () => {
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [step, setStep] = useState(1); // Multi-step form
+  const [step, setStep] = useState(1);
   const navigate = useNavigate();
 
   const backendUrl = 'http://localhost:7000';
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const validateStep1 = () => {
     const { name, email, password, confirmPassword } = formData;
-    
     if (!name.trim()) {
       setMessage('❌ Full name is required');
       return false;
     }
-
     if (!email.trim()) {
       setMessage('❌ Email is required');
       return false;
     }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setMessage('❌ Please enter a valid email address');
       return false;
     }
-
     if (!password) {
       setMessage('❌ Password is required');
       return false;
     }
-
     if (password.length < 6) {
       setMessage('❌ Password must be at least 6 characters long');
       return false;
     }
-
     if (password !== confirmPassword) {
       setMessage('❌ Passwords do not match');
       return false;
     }
-
     return true;
   };
 
   const validateStep2 = () => {
     const { phone, dateOfBirth } = formData;
-    
     if (phone && phone.length < 10) {
       setMessage('❌ Please enter a valid phone number');
       return false;
     }
-
     if (dateOfBirth) {
       const birthDate = new Date(dateOfBirth);
       const today = new Date();
       const age = today.getFullYear() - birthDate.getFullYear();
-      
       if (age < 13) {
         setMessage('❌ You must be at least 13 years old to register');
         return false;
       }
     }
-
     return true;
   };
 
   const handleNext = () => {
     setMessage('');
-    if (validateStep1()) {
-      setStep(2);
-    }
+    if (validateStep1()) setStep(2);
   };
 
   const handleBack = () => {
@@ -103,19 +87,33 @@ const RegisterUser = () => {
     setStep(1);
   };
 
+  const togglePasswordVisibility = () => setShowPassword(prev => !prev);
+  const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(prev => !prev);
+
+  const getPasswordStrength = (password) => {
+    if (!password) return { strength: 0, text: '' };
+    let strength = 0;
+    if (password.length >= 6) strength += 1;
+    if (password.length >= 8) strength += 1;
+    if (/[A-Z]/.test(password)) strength += 1;
+    if (/[a-z]/.test(password)) strength += 1;
+    if (/[0-9]/.test(password)) strength += 1;
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+    if (strength < 3) return { strength: 1, text: 'Weak', color: '#dc3545' };
+    if (strength < 5) return { strength: 2, text: 'Medium', color: '#ffc107' };
+    return { strength: 3, text: 'Strong', color: '#28a745' };
+  };
+
+  const passwordStrength = getPasswordStrength(formData.password);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
-
-    if (!validateStep2()) {
-      return;
-    }
-
+    if (!validateStep2()) return;
     setLoading(true);
 
     try {
       console.log('📝 Registering user:', { ...formData, password: '[HIDDEN]' });
-      
       const response = await axios.post(`${backendUrl}/api/auth/register`, {
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
@@ -129,73 +127,55 @@ const RegisterUser = () => {
       console.log('✅ Registration response:', response.data);
 
       if (response.data.success) {
-        setMessage('✅ Registration successful! Please log in.');
-        
-        // Store user info temporarily if needed
+        setMessage('✅ Registration successful! Welcome to HealX.');
+
+        // Persist token
         if (response.data.token) {
           localStorage.setItem('token', response.data.token);
         }
 
-        // Redirect to login after success
+        // Persist complete user data
+        const userData = {
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          phone: formData.phone.trim(),
+          dateOfBirth: formData.dateOfBirth,
+          gender: formData.gender,
+          role: formData.role,
+          ...response.data.user
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
+
+        // Redirect to profile after a brief delay
         setTimeout(() => {
-          navigate('/login', { 
-            state: { 
-              message: 'Registration successful! Please log in with your credentials.',
-              email: formData.email
+          navigate('/PatientProfile', {
+            state: {
+              message: 'Registration successful! Welcome to HealX.',
+              userData
             }
           });
-        }, 2000);
+        }, 1500);
       }
     } catch (error) {
       console.error('❌ Registration error:', error);
-      
       if (error.response?.status === 409) {
         setMessage('❌ An account with this email already exists. Please log in instead.');
       } else {
-        const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
-        setMessage('❌ ' + errorMessage);
+        const errMsg = error.response?.data?.message || 'Registration failed. Please try again.';
+        setMessage('❌ ' + errMsg);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
-
-  const getPasswordStrength = (password) => {
-    if (!password) return { strength: 0, text: '' };
-    
-    let strength = 0;
-    let feedback = [];
-
-    if (password.length >= 6) strength += 1;
-    if (password.length >= 8) strength += 1;
-    if (/[A-Z]/.test(password)) strength += 1;
-    if (/[a-z]/.test(password)) strength += 1;
-    if (/[0-9]/.test(password)) strength += 1;
-    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
-
-    if (strength < 3) return { strength: 1, text: 'Weak', color: '#dc3545' };
-    if (strength < 5) return { strength: 2, text: 'Medium', color: '#ffc107' };
-    return { strength: 3, text: 'Strong', color: '#28a745' };
-  };
-
-  const passwordStrength = getPasswordStrength(formData.password);
-
   return (
     <div className="register-container">
+      <MedicalNavbar />
       <div className="register-card">
         <div className="register-header">
           <h2>Create Account</h2>
           <p>Join HealX Healthcare - Your Health, Our Priority</p>
-          
-          {/* Progress indicator */}
           <div className="progress-indicator">
             <div className={`step ${step >= 1 ? 'active' : ''}`}>
               <span>1</span>
@@ -219,12 +199,8 @@ const RegisterUser = () => {
           {step === 1 && (
             <div className="form-step">
               <h3>Account Information</h3>
-              
               <div className="form-group">
-                <label htmlFor="name">
-                  <span className="label-icon">👤</span>
-                  Full Name
-                </label>
+                <label htmlFor="name"><span className="label-icon">👤</span>Full Name</label>
                 <input
                   type="text"
                   id="name"
@@ -235,12 +211,8 @@ const RegisterUser = () => {
                   required
                 />
               </div>
-
               <div className="form-group">
-                <label htmlFor="email">
-                  <span className="label-icon">📧</span>
-                  Email Address
-                </label>
+                <label htmlFor="email"><span className="label-icon">📧</span>Email Address</label>
                 <input
                   type="email"
                   id="email"
@@ -251,12 +223,8 @@ const RegisterUser = () => {
                   required
                 />
               </div>
-
               <div className="form-group">
-                <label htmlFor="password">
-                  <span className="label-icon">🔒</span>
-                  Password
-                </label>
+                <label htmlFor="password"><span className="label-icon">🔒</span>Password</label>
                 <div className="password-input-container">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -267,20 +235,16 @@ const RegisterUser = () => {
                     placeholder="Create a strong password"
                     required
                   />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={togglePasswordVisibility}
-                  >
+                  <button type="button" className="password-toggle" onClick={togglePasswordVisibility}>
                     {showPassword ? '👁️' : '👁️‍🗨️'}
                   </button>
                 </div>
                 {formData.password && (
                   <div className="password-strength">
                     <div className="strength-bar">
-                      <div 
-                        className="strength-fill" 
-                        style={{ 
+                      <div
+                        className="strength-fill"
+                        style={{
                           width: `${(passwordStrength.strength / 3) * 100}%`,
                           backgroundColor: passwordStrength.color
                         }}
@@ -292,12 +256,8 @@ const RegisterUser = () => {
                   </div>
                 )}
               </div>
-
               <div className="form-group">
-                <label htmlFor="confirmPassword">
-                  <span className="label-icon">🔐</span>
-                  Confirm Password
-                </label>
+                <label htmlFor="confirmPassword"><span className="label-icon">🔐</span>Confirm Password</label>
                 <div className="password-input-container">
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
@@ -308,11 +268,7 @@ const RegisterUser = () => {
                     placeholder="Confirm your password"
                     required
                   />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={toggleConfirmPasswordVisibility}
-                  >
+                  <button type="button" className="password-toggle" onClick={toggleConfirmPasswordVisibility}>
                     {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
                   </button>
                 </div>
@@ -322,12 +278,7 @@ const RegisterUser = () => {
                   </div>
                 )}
               </div>
-
-              <button
-                type="button"
-                className="next-btn"
-                onClick={handleNext}
-              >
+              <button type="button" className="next-btn" onClick={handleNext}>
                 Next Step →
               </button>
             </div>
@@ -336,12 +287,8 @@ const RegisterUser = () => {
           {step === 2 && (
             <div className="form-step">
               <h3>Personal Information</h3>
-              
               <div className="form-group">
-                <label htmlFor="phone">
-                  <span className="label-icon">📱</span>
-                  Phone Number (Optional)
-                </label>
+                <label htmlFor="phone"><span className="label-icon">📱</span>Phone Number (Optional)</label>
                 <input
                   type="tel"
                   id="phone"
@@ -351,13 +298,9 @@ const RegisterUser = () => {
                   placeholder="Enter your phone number"
                 />
               </div>
-
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="dateOfBirth">
-                    <span className="label-icon">🎂</span>
-                    Date of Birth (Optional)
-                  </label>
+                  <label htmlFor="dateOfBirth"><span className="label-icon">🎂</span>Date of Birth (Optional)</label>
                   <input
                     type="date"
                     id="dateOfBirth"
@@ -366,12 +309,8 @@ const RegisterUser = () => {
                     onChange={handleInputChange}
                   />
                 </div>
-
                 <div className="form-group">
-                  <label htmlFor="gender">
-                    <span className="label-icon">⚥</span>
-                    Gender (Optional)
-                  </label>
+                  <label htmlFor="gender"><span className="label-icon">⚥</span>Gender (Optional)</label>
                   <select
                     id="gender"
                     name="gender"
@@ -385,12 +324,8 @@ const RegisterUser = () => {
                   </select>
                 </div>
               </div>
-
               <div className="form-group">
-                <label htmlFor="role">
-                  <span className="label-icon">👥</span>
-                  Account Type
-                </label>
+                <label htmlFor="role"><span className="label-icon">👥</span>Account Type</label>
                 <select
                   id="role"
                   name="role"
@@ -399,26 +334,15 @@ const RegisterUser = () => {
                   required
                 >
                   <option value="user">Patient</option>
-                  <option value="patient">Patient (Alternative)</option>
                   <option value="doctor">Doctor</option>
                   <option value="admin">Administrator</option>
                 </select>
               </div>
-
               <div className="form-actions">
-                <button
-                  type="button"
-                  className="back-btn"
-                  onClick={handleBack}
-                >
+                <button type="button" className="back-btn" onClick={handleBack}>
                   ← Back
                 </button>
-                
-                <button 
-                  type="submit" 
-                  className={`submit-btn ${loading ? 'loading' : ''}`}
-                  disabled={loading}
-                >
+                <button type="submit" className={`submit-btn ${loading ? 'loading' : ''}`} disabled={loading}>
                   {loading ? 'Creating Account...' : 'Create Account'}
                 </button>
               </div>
@@ -436,8 +360,8 @@ const RegisterUser = () => {
           <div className="terms-info">
             <small>
               By creating an account, you agree to our{' '}
-              <a href="/terms" target="_blank">Terms of Service</a> and{' '}
-              <a href="/privacy" target="_blank">Privacy Policy</a>
+              <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and{' '}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
             </small>
           </div>
         </div>
