@@ -294,7 +294,7 @@ body {
 
 /* Table Header - Proper Sizing */
 .payments-table th {
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
   color: white;
   font-weight: 700;
   padding: 16px 12px;
