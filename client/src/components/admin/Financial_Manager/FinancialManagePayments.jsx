@@ -102,26 +102,6 @@ function PatientSuccessfulPayments() {
     return `${display}:${m || "00"} ${pm ? "PM" : "AM"}`;
   };
 
-  // derive inventoryStats from successfulPayments
-  const inventoryStats = {
-    inventoryItems: successfulPayments,
-    totalItems: successfulPayments.length,
-    totalQuantity: successfulPayments.reduce((sum, a) => sum + (a.quantity || 1), 0),
-    totalValue: successfulPayments.reduce((sum, a) => sum + (a.totalAmount || 0), 0),
-    lowStockCount: successfulPayments.filter(a => a.quantity && a.quantity < (a.minStockLevel || 1)).length,
-    outOfStockCount: successfulPayments.filter(a => a.quantity === 0).length,
-    categoryBreakdown: successfulPayments.reduce((acc, a) => {
-      const c = a.doctorSpecialty || "General";
-      if (!acc[c]) acc[c] = { totalValue: 0, count: 0, totalQuantity: 0, lowStockCount: 0 };
-      acc[c].totalValue += a.totalAmount;
-      acc[c].count++;
-      acc[c].totalQuantity += a.quantity || 1;
-      if (a.quantity && a.quantity < (a.minStockLevel || 1)) acc[c].lowStockCount++;
-      return acc;
-    }, {}),
-    supplierBreakdown: {}
-  };
-
   const filtered = successfulPayments.filter(a => {
     const js = !searchTerm
       || a.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -134,34 +114,73 @@ function PatientSuccessfulPayments() {
   const totalRevenue = filtered.reduce((s, a) => s + a.totalAmount, 0);
 
   const handleReturnHome = () => navigate("/admin/financial");
-  const handlePaymentAnalysis = () => navigate("/admin/financial/payments/total-view", { state: { payments: filtered } });
-const handleInventoryAnalysis = () => {
-  navigate("/admin/financial/payments/inventory-view", {
-    state: {
-      inventoryItems: successfulPayments,
-      inventoryStats: {
-        totalItems: successfulPayments.length,
-        totalQuantity: successfulPayments.reduce((sum, a) => sum + (a.quantity||1), 0),
-        totalValue: successfulPayments.reduce((sum, a) => sum + (a.totalAmount||0), 0),
-        lowStockCount: successfulPayments.filter(a => (a.quantity||0) < (a.minStockLevel||1)).length,
-        outOfStockCount: successfulPayments.filter(a => (a.quantity||0) === 0).length,
-        categoryBreakdown: successfulPayments.reduce((acc, a) => {
-          const c = a.doctorSpecialty || "General";
-          if (!acc[c]) acc[c] = { totalValue: 0, count: 0, totalQuantity: 0, lowStockCount: 0 };
-          acc[c].totalValue += a.totalAmount;
-          acc[c].count++;
-          acc[c].totalQuantity += a.quantity || 1;
-          if (a.quantity && a.quantity < (a.minStockLevel || 1)) acc[c].lowStockCount++;
-          return acc;
-        }, {}),
-        supplierBreakdown: {}, // Replace with actual supplier breakdown logic if needed
-        lowStockItems: successfulPayments.filter(a => (a.quantity||0) < (a.minStockLevel||1)),
-        outOfStockItems: successfulPayments.filter(a => (a.quantity||0) === 0)
+  
+  // **FIXED: Updated handlePaymentAnalysis to pass the correct data structure**
+  const handlePaymentAnalysis = () => {
+    // Get the raw appointment data for conversion
+    const appointmentData = successfulPayments.map(payment => ({
+      ...payment,
+      status: "accepted" // Ensure status is set
+    }));
+
+    navigate("/admin/financial/payments/total-view", { 
+      state: { 
+        appointments: appointmentData,
+        type: 'successful-appointments',
+        // Also include the converted payments as backup
+        payments: filtered,
+        stats: {
+          totalPayments: filtered.length,
+          totalAmountDue: filtered.reduce((sum, p) => sum + (p.totalAmount || 0), 0),
+          totalAmountPaid: filtered.reduce((sum, p) => sum + (p.amountPaid || 0), 0),
+          totalPending: 0,
+          collectionRate: 100,
+          paymentMethods: filtered.reduce((acc, p) => {
+            const method = p.paymentMethod || "Credit Card";
+            acc[method] = (acc[method] || 0) + (p.amountPaid || 0);
+            return acc;
+          }, {}),
+          hospitalBreakdown: filtered.reduce((acc, p) => {
+            const hospital = p.doctorSpecialty || "General Medicine";
+            if (!acc[hospital]) {
+              acc[hospital] = { totalValue: 0, totalDue: 0, totalPaid: 0, count: 0 };
+            }
+            acc[hospital].totalDue += (p.totalAmount || 0);
+            acc[hospital].totalPaid += (p.amountPaid || 0);
+            acc[hospital].count += 1;
+            return acc;
+          }, {})
+        }
+      } 
+    });
+  };
+
+  const handleInventoryAnalysis = () => {
+    navigate("/admin/financial/payments/inventory-view", {
+      state: {
+        inventoryItems: successfulPayments,
+        inventoryStats: {
+          totalItems: successfulPayments.length,
+          totalQuantity: successfulPayments.reduce((sum, a) => sum + (a.quantity||1), 0),
+          totalValue: successfulPayments.reduce((sum, a) => sum + (a.totalAmount||0), 0),
+          lowStockCount: successfulPayments.filter(a => (a.quantity||0) < (a.minStockLevel||1)).length,
+          outOfStockCount: successfulPayments.filter(a => (a.quantity||0) === 0).length,
+          categoryBreakdown: successfulPayments.reduce((acc, a) => {
+            const c = a.doctorSpecialty || "General";
+            if (!acc[c]) acc[c] = { totalValue: 0, count: 0, totalQuantity: 0, lowStockCount: 0 };
+            acc[c].totalValue += a.totalAmount;
+            acc[c].count++;
+            acc[c].totalQuantity += a.quantity || 1;
+            if (a.quantity && a.quantity < (a.minStockLevel || 1)) acc[c].lowStockCount++;
+            return acc;
+          }, {}),
+          supplierBreakdown: {},
+          lowStockItems: successfulPayments.filter(a => (a.quantity||0) < (a.minStockLevel||1)),
+          outOfStockItems: successfulPayments.filter(a => (a.quantity||0) === 0)
+        }
       }
-      
-    }
-  });
-};
+    });
+  };
 
   const renderDetails = (a) => (
     <div className="appointment-details successful-payment">
@@ -181,6 +200,53 @@ const handleInventoryAnalysis = () => {
       </div>
     </div>
   );
+
+  // **ADDED: generatePatientReceipt function that was missing**
+  const generatePatientReceipt = (appointment) => {
+    const receiptContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Patient Receipt - Heal-X</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          .receipt-header { text-align: center; margin-bottom: 20px; }
+          .receipt-details { margin: 20px 0; }
+          .receipt-total { font-weight: bold; font-size: 18px; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-header">
+          <h2>🏥 Heal-X Healthcare</h2>
+          <p>Official Payment Receipt</p>
+        </div>
+        <div class="receipt-details">
+          <p><strong>Patient:</strong> ${appointment.name}</p>
+          <p><strong>Doctor:</strong> ${appointment.doctorName}</p>
+          <p><strong>Specialty:</strong> ${appointment.doctorSpecialty}</p>
+          <p><strong>Date:</strong> ${formatDate(appointment.appointmentDate)}</p>
+          <p><strong>Time:</strong> ${formatTime(appointment.appointmentTime)}</p>
+          <p><strong>Transaction ID:</strong> ${appointment.transactionId}</p>
+          <p><strong>Payment Method:</strong> ${appointment.paymentMethod}</p>
+        </div>
+        <div class="receipt-total">
+          <p>Amount Paid: $${appointment.totalAmount.toLocaleString()}</p>
+          <p>Status: PAID ✅</p>
+        </div>
+        <div style="text-align: center; margin-top: 30px;">
+          <p><em>Thank you for choosing Heal-X Healthcare!</em></p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const newWindow = window.open('', '_blank', 'width=800,height=600');
+    if (newWindow) {
+      newWindow.document.write(receiptContent);
+      newWindow.document.close();
+      newWindow.print();
+    }
+  };
 
   if (loading) return <div className="loading-spinner">Loading...</div>;
 
