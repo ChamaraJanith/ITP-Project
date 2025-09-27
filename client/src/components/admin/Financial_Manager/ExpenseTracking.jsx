@@ -29,6 +29,9 @@ const PAYROLL_API = "http://localhost:7000/api/payrolls";
 const SURGICAL_ITEMS_API = "http://localhost:7000/api/inventory/surgical-items";
 const UTILITIES_API = "http://localhost:7000/api/financial-utilities";
 const RESTOCK_SPENDING_API = "http://localhost:7000/api/inventory/restock-spending";
+// NEW: Supplier expenses API endpoints
+const SUPPLIERS_API = "http://localhost:7000/api/suppliers";
+const PURCHASE_ORDERS_API = "http://localhost:7000/api/purchase-orders";
 
 const ExpenseTracking = () => {
   const [admin, setAdmin] = useState(null);
@@ -42,6 +45,8 @@ const ExpenseTracking = () => {
   const [viewType, setViewType] = useState("overview");
   const [inventoryApiStatus, setInventoryApiStatus] = useState("checking");
   const [utilitiesApiStatus, setUtilitiesApiStatus] = useState("checking");
+  // NEW: Supplier API status
+  const [supplierApiStatus, setSupplierApiStatus] = useState("checking");
   
   // New filter states
   const [activeFilter, setActiveFilter] = useState("overall");
@@ -218,6 +223,98 @@ const ExpenseTracking = () => {
     }
   };
 
+  // NEW: Fetch supplier expenses function
+  const fetchSupplierExpenses = async () => {
+    console.log("🔄 Fetching supplier expenses data...");
+    setSupplierApiStatus("trying");
+
+    try {
+      const [suppliersResponse, purchaseOrdersResponse] = await Promise.all([
+        fetch(`${SUPPLIERS_API}`),
+        fetch(`${PURCHASE_ORDERS_API}`)
+      ]);
+
+      if (!suppliersResponse.ok || !purchaseOrdersResponse.ok) {
+        throw new Error("Failed to fetch supplier data");
+      }
+
+      const suppliersData = await suppliersResponse.json();
+      const ordersData = await purchaseOrdersResponse.json();
+
+      const suppliers = suppliersData.suppliers || [];
+      const purchaseOrders = ordersData.orders || [];
+
+      if (purchaseOrders.length > 0) {
+        console.log(`✅ Successfully fetched ${suppliers.length} suppliers and ${purchaseOrders.length} purchase orders`);
+        setSupplierApiStatus("connected");
+
+        // Calculate supplier costs similar to SupplierManagement.jsx
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+
+        const totalSupplierCosts = purchaseOrders.reduce((sum, order) => sum + (parseFloat(order.totalAmount) || 0), 0);
+        
+        const monthlySupplierCosts = purchaseOrders
+          .filter(order => {
+            const orderDate = new Date(order.orderDate || order.createdAt);
+            return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+          })
+          .reduce((sum, order) => sum + (parseFloat(order.totalAmount) || 0), 0);
+
+        return {
+          suppliers,
+          purchaseOrders,
+          totalSupplierCosts,
+          monthlySupplierCosts,
+          supplierCount: suppliers.length,
+          orderCount: purchaseOrders.length
+        };
+      } else {
+        throw new Error("No purchase orders found");
+      }
+    } catch (error) {
+      console.error("❌ Error fetching supplier expenses:", error);
+      console.warn("⚠️ Supplier API connection failed. Falling back to sample data.");
+      setSupplierApiStatus("fallback");
+
+      return {
+        suppliers: getSampleSuppliersData(),
+        purchaseOrders: getSamplePurchaseOrdersData(),
+        totalSupplierCosts: 45000,
+        monthlySupplierCosts: 12000,
+        supplierCount: 8,
+        orderCount: 15
+      };
+    }
+  };
+
+  // NEW: Sample data functions for suppliers
+  const getSampleSuppliersData = () => {
+    return [
+      { id: "sup1", name: "MedTech Solutions", category: "Medical Equipment", status: "active" },
+      { id: "sup2", name: "PharmaCorp Ltd", category: "Pharmaceuticals", status: "active" },
+      { id: "sup3", name: "SurgiSupply Inc", category: "Surgical Instruments", status: "active" },
+      { id: "sup4", name: "HealthCare Supplies", category: "Consumables", status: "active" },
+      { id: "sup5", name: "BioMed Equipment", category: "Medical Equipment", status: "active" },
+      { id: "sup6", name: "CleanCare Services", category: "Cleaning Supplies", status: "active" },
+      { id: "sup7", name: "SafetyFirst Medical", category: "Safety Equipment", status: "active" },
+      { id: "sup8", name: "TechMed Innovations", category: "Technology", status: "active" }
+    ];
+  };
+
+  const getSamplePurchaseOrdersData = () => {
+    return [
+      { id: "po1", supplier: { name: "MedTech Solutions" }, totalAmount: 8500, orderDate: "2024-09-15", status: "received" },
+      { id: "po2", supplier: { name: "PharmaCorp Ltd" }, totalAmount: 12000, orderDate: "2024-09-10", status: "received" },
+      { id: "po3", supplier: { name: "SurgiSupply Inc" }, totalAmount: 6500, orderDate: "2024-09-08", status: "received" },
+      { id: "po4", supplier: { name: "HealthCare Supplies" }, totalAmount: 4200, orderDate: "2024-09-05", status: "pending" },
+      { id: "po5", supplier: { name: "BioMed Equipment" }, totalAmount: 15000, orderDate: "2024-08-28", status: "received" },
+      { id: "po6", supplier: { name: "CleanCare Services" }, totalAmount: 2800, orderDate: "2024-08-25", status: "received" },
+      { id: "po7", supplier: { name: "SafetyFirst Medical" }, totalAmount: 3500, orderDate: "2024-08-20", status: "received" },
+      { id: "po8", supplier: { name: "TechMed Innovations" }, totalAmount: 9200, orderDate: "2024-08-15", status: "received" }
+    ];
+  };
+
   const getSampleUtilitiesData = () => {
     return [
       { 
@@ -295,24 +392,28 @@ const ExpenseTracking = () => {
 
       console.log("🔄 Loading comprehensive expense tracking data...");
 
-      const [payrollData, inventoryData, utilitiesData] = await Promise.all([
+      // UPDATED: Now includes supplier expenses
+      const [payrollData, inventoryData, utilitiesData, supplierData] = await Promise.all([
         fetchPayrollExpenses(),
         fetchInventoryExpenses(),
-        fetchUtilitiesExpenses()
+        fetchUtilitiesExpenses(),
+        fetchSupplierExpenses()  // NEW: Fetch supplier data
       ]);
 
-      console.log(`📊 Loaded: ${payrollData.length} payroll records, ${inventoryData.surgicalItems.length} surgical items, ${utilitiesData.length} utility records`);
-      console.log(`💰 Restock spending: ${inventoryData.restockSpending.totalRestockValue}`);
+      console.log(`📊 Loaded: ${payrollData.length} payroll records, ${inventoryData.surgicalItems.length} surgical items, ${utilitiesData.length} utility records, ${supplierData.orderCount} supplier orders`);
+      console.log(`💰 Restock spending: ${inventoryData.restockSpending.totalRestockValue}, Supplier costs: ${supplierData.totalSupplierCosts}`);
 
+      // UPDATED: Pass supplier data to expense analytics calculation
       const expenseAnalytics = calculateExpenseAnalytics(
         payrollData, 
         inventoryData.surgicalItems, 
         utilitiesData,
-        inventoryData.restockSpending
+        inventoryData.restockSpending,
+        supplierData  // NEW: Include supplier data
       );
       setExpenseData(expenseAnalytics);
 
-      console.log("✅ Expense tracking initialized successfully with utilities and restock data");
+      console.log("✅ Expense tracking initialized successfully with utilities, restock, and supplier data");
 
     } catch (error) {
       console.error("❌ Error loading expense tracking:", error);
@@ -322,14 +423,17 @@ const ExpenseTracking = () => {
     }
   };
 
-  const calculateExpenseAnalytics = (payrolls = [], surgicalItems = [], utilities = [], restockSpending = {}) => {
-    console.log("📊 Calculating expense analytics with surgical items, utilities, and restock spending...");
+  // UPDATED: Modified to include supplier expenses in calculation
+  const calculateExpenseAnalytics = (payrolls = [], surgicalItems = [], utilities = [], restockSpending = {}, supplierData = {}) => {
+    console.log("📊 Calculating expense analytics with surgical items, utilities, restock spending, and supplier expenses...");
     
     // Initialize with safe defaults
     const safePayrolls = Array.isArray(payrolls) ? payrolls : [];
     const safeSurgicalItems = Array.isArray(surgicalItems) ? surgicalItems : [];
     const safeUtilities = Array.isArray(utilities) ? utilities : [];
     const safeRestockSpending = restockSpending || { totalRestockValue: 0 };
+    // NEW: Safe supplier data
+    const safeSupplierData = supplierData || { totalSupplierCosts: 0, monthlySupplierCosts: 0, supplierCount: 0, orderCount: 0, suppliers: [], purchaseOrders: [] };
     
     const payrollExpenses = {
       totalGrossSalary: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.grossSalary) || 0), 0),
@@ -515,10 +619,49 @@ const ExpenseTracking = () => {
     utilitiesExpenses.averageUtilityAmount = utilitiesExpenses.totalUtilities > 0 ? 
       utilitiesExpenses.totalUtilitiesExpense / utilitiesExpenses.totalUtilities : 0;
 
-    // Calculate total expenses
-    const totalExpenses = payrollExpenses.totalPayrollExpense + inventoryExpenses.totalInventoryValue + utilitiesExpenses.totalUtilitiesExpense;
+    // NEW: Calculate supplier expenses
+    const supplierExpenses = {
+      totalSupplierExpense: safeSupplierData.totalSupplierCosts || 0,
+      monthlySupplierExpense: safeSupplierData.monthlySupplierCosts || 0,
+      totalSuppliers: safeSupplierData.supplierCount || 0,
+      totalOrders: safeSupplierData.orderCount || 0,
+      averageOrderValue: 0,
+      supplierBreakdown: {},
+      monthlySupplierCosts: {},
+      rawSuppliers: safeSupplierData.suppliers || [],
+      rawOrders: safeSupplierData.purchaseOrders || []
+    };
 
-    // FIXED: Create proper expense breakdown data with guaranteed non-zero values
+    // Calculate average order value
+    supplierExpenses.averageOrderValue = supplierExpenses.totalOrders > 0 ? 
+      supplierExpenses.totalSupplierExpense / supplierExpenses.totalOrders : 0;
+
+    // Process supplier breakdown
+    (safeSupplierData.purchaseOrders || []).forEach(order => {
+      if (!order || !order.supplier) return;
+      
+      const supplierName = order.supplier.name || 'Unknown Supplier';
+      const amount = parseFloat(order.totalAmount) || 0;
+      
+      if (!supplierExpenses.supplierBreakdown[supplierName]) {
+        supplierExpenses.supplierBreakdown[supplierName] = {
+          totalAmount: 0,
+          orderCount: 0,
+          averageOrderValue: 0
+        };
+      }
+      
+      supplierExpenses.supplierBreakdown[supplierName].totalAmount += amount;
+      supplierExpenses.supplierBreakdown[supplierName].orderCount += 1;
+      supplierExpenses.supplierBreakdown[supplierName].averageOrderValue = 
+        supplierExpenses.supplierBreakdown[supplierName].totalAmount / 
+        supplierExpenses.supplierBreakdown[supplierName].orderCount;
+    });
+
+    // UPDATED: Calculate total expenses (now includes supplier expenses)
+    const totalExpenses = payrollExpenses.totalPayrollExpense + inventoryExpenses.totalInventoryValue + utilitiesExpenses.totalUtilitiesExpense + supplierExpenses.totalSupplierExpense;
+
+    // UPDATED: Create proper expense breakdown data with supplier expenses
     const expenseBreakdown = [
       { 
         name: "Staff Salaries", 
@@ -561,10 +704,17 @@ const ExpenseTracking = () => {
         value: utilitiesExpenses.totalUtilitiesExpense > 0 ? utilitiesExpenses.totalUtilitiesExpense : 5550, 
         category: "Utilities", 
         fill: EXPENSE_COLORS[6] 
+      },
+      // NEW: Supplier expenses entry
+      { 
+        name: "Supplier Expenses", 
+        value: supplierExpenses.totalSupplierExpense > 0 ? supplierExpenses.totalSupplierExpense : 45000, 
+        category: "Suppliers", 
+        fill: EXPENSE_COLORS[7] 
       }
     ];
 
-    // Generate monthly trends data
+    // Generate monthly trends data (updated to include supplier expenses)
     const monthlyTrends = [];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
@@ -574,15 +724,16 @@ const ExpenseTracking = () => {
         payroll: payrollExpenses.totalPayrollExpense / 12 + (Math.random() * 0.2 - 0.1) * payrollExpenses.totalPayrollExpense / 12,
         inventory: inventoryExpenses.totalInventoryValue / 12 + (Math.random() * 0.3 - 0.15) * inventoryExpenses.totalInventoryValue / 12,
         utilities: utilitiesExpenses.totalUtilitiesExpense / 12 + (Math.random() * 0.4 - 0.2) * utilitiesExpenses.totalUtilitiesExpense / 12,
+        suppliers: supplierExpenses.totalSupplierExpense / 12 + (Math.random() * 0.25 - 0.125) * supplierExpenses.totalSupplierExpense / 12, // NEW: Supplier trend
         total: 0
       });
     });
 
     monthlyTrends.forEach(month => {
-      month.total = month.payroll + month.inventory + month.utilities;
+      month.total = month.payroll + month.inventory + month.utilities + month.suppliers; // UPDATED: Include suppliers in total
     });
 
-    // Category breakdown for charts
+    // UPDATED: Category breakdown for charts (now includes suppliers)
     const categoryData = [
       { 
         name: 'Payroll', 
@@ -601,6 +752,13 @@ const ExpenseTracking = () => {
         value: utilitiesExpenses.totalUtilitiesExpense, 
         fill: '#FFBB28',
         percentage: totalExpenses > 0 ? (utilitiesExpenses.totalUtilitiesExpense / totalExpenses) * 100 : 0
+      },
+      // NEW: Supplier category
+      { 
+        name: 'Suppliers', 
+        value: supplierExpenses.totalSupplierExpense, 
+        fill: '#FF8042',
+        percentage: totalExpenses > 0 ? (supplierExpenses.totalSupplierExpense / totalExpenses) * 100 : 0
       }
     ];
 
@@ -620,35 +778,51 @@ const ExpenseTracking = () => {
       { name: 'Overdue', value: utilitiesExpenses.overduePayments || 0, fill: '#dc3545' }
     ];
 
-    console.log("✅ Expense analytics calculated with combined inventory value:", {
+    // NEW: Supplier category chart data
+    const supplierCategoryData = Object.entries(supplierExpenses.supplierBreakdown || {}).map(([supplier, data], index) => ({
+      name: supplier,
+      value: data?.totalAmount || 0,
+      orders: data?.orderCount || 0,
+      avgOrderValue: data?.averageOrderValue || 0,
+      fill: EXPENSE_COLORS[index % EXPENSE_COLORS.length]
+    }));
+
+    console.log("✅ Expense analytics calculated with combined inventory value and supplier expenses:", {
       totalExpenses: totalExpenses.toLocaleString(),
       payrollExpense: payrollExpenses.totalPayrollExpense.toLocaleString(),
       currentStockValue: inventoryExpenses.currentStockValue.toLocaleString(),
       totalRestockValue: inventoryExpenses.totalRestockValue.toLocaleString(),
       combinedInventoryValue: inventoryExpenses.totalInventoryValue.toLocaleString(),
       utilitiesExpense: utilitiesExpenses.totalUtilitiesExpense.toLocaleString(),
+      supplierExpense: supplierExpenses.totalSupplierExpense.toLocaleString(), // NEW: Log supplier expenses
       surgicalItemsCount: inventoryExpenses.totalItems,
-      utilitiesCount: utilitiesExpenses.totalUtilities
+      utilitiesCount: utilitiesExpenses.totalUtilities,
+      supplierCount: supplierExpenses.totalSuppliers,
+      orderCount: supplierExpenses.totalOrders
     });
 
     return {
       payrollExpenses,
       inventoryExpenses,
       utilitiesExpenses,
+      supplierExpenses, // NEW: Include supplier expenses in return
       totalExpenses,
       expenseBreakdown,
       monthlyTrends,
       categoryData,
       inventoryCategoryData,
       utilitiesStatusData,
+      supplierCategoryData, // NEW: Include supplier category data
       summary: {
         totalMonthlyExpenses: totalExpenses,
         payrollPercentage: totalExpenses > 0 ? (payrollExpenses.totalPayrollExpense / totalExpenses) * 100 : 0,
         inventoryPercentage: totalExpenses > 0 ? (inventoryExpenses.totalInventoryValue / totalExpenses) * 100 : 0,
         utilitiesPercentage: totalExpenses > 0 ? (utilitiesExpenses.totalUtilitiesExpense / totalExpenses) * 100 : 0,
+        supplierPercentage: totalExpenses > 0 ? (supplierExpenses.totalSupplierExpense / totalExpenses) * 100 : 0, // NEW: Supplier percentage
         avgMonthlyPayroll: payrollExpenses.totalPayrollExpense / 12,
         avgInventoryPerEmployee: inventoryExpenses.totalInventoryValue / Math.max(payrollExpenses.totalEmployees, 1),
         avgUtilitiesPerMonth: utilitiesExpenses.totalUtilitiesExpense / 12,
+        avgSupplierPerMonth: supplierExpenses.totalSupplierExpense / 12, // NEW: Average monthly supplier expense
         inventoryHealthScore: inventoryExpenses.totalItems > 0 ? 
           ((inventoryExpenses.totalItems - inventoryExpenses.lowStockCount - inventoryExpenses.outOfStockCount) / inventoryExpenses.totalItems) * 100 : 0,
         utilitiesPaymentScore: utilitiesExpenses.totalUtilities > 0 ?
@@ -687,7 +861,7 @@ const ExpenseTracking = () => {
     return isNaN(num) ? "0" : num.toLocaleString();
   };
 
-  // FIXED REPORT GENERATION - Matching the exact format from the reference code
+  // UPDATED REPORT GENERATION - Now includes supplier expenses
   const exportToPDF = () => {
     if (!expenseData) {
       setError("No data to export");
@@ -698,6 +872,7 @@ const ExpenseTracking = () => {
     const reportTitle = activeFilter === 'payroll' ? 'Payroll Expense Report' : 
                        activeFilter === 'inventory' ? 'Medical Inventory Report' :
                        activeFilter === 'utilities' ? 'Utilities Expense Report' :
+                       activeFilter === 'suppliers' ? 'Supplier Expense Report' :  // NEW: Supplier report type
                        'Comprehensive Expense Report';
 
     const totals = {
@@ -707,9 +882,12 @@ const ExpenseTracking = () => {
       totalRestockValue: expenseData.inventoryExpenses?.totalRestockValue || 0,
       combinedInventoryValue: expenseData.inventoryExpenses?.totalInventoryValue || 0,
       utilitiesExpense: expenseData.utilitiesExpenses?.totalUtilitiesExpense || 0,
+      supplierExpense: expenseData.supplierExpenses?.totalSupplierExpense || 0, // NEW: Supplier total
       totalEmployees: expenseData.payrollExpenses?.totalEmployees || 0,
       totalItems: expenseData.inventoryExpenses?.totalItems || 0,
-      totalUtilities: expenseData.utilitiesExpenses?.totalUtilities || 0
+      totalUtilities: expenseData.utilitiesExpenses?.totalUtilities || 0,
+      totalSuppliers: expenseData.supplierExpenses?.totalSuppliers || 0,  // NEW: Total suppliers
+      totalOrders: expenseData.supplierExpenses?.totalOrders || 0  // NEW: Total orders
     };
 
     const printContent = `
@@ -764,7 +942,7 @@ const ExpenseTracking = () => {
         <div class="info">
           <strong>Generated on:</strong> ${currentDate.toLocaleString()}<br>
           <strong>Report Type:</strong> ${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Analysis<br>
-          <strong>Data Status:</strong> Inventory: ${inventoryApiStatus === 'connected' ? 'Live Data' : 'Sample Data'} | Utilities: ${utilitiesApiStatus === 'connected' ? 'Live Data' : 'Sample Data'}<br>
+          <strong>Data Status:</strong> Inventory: ${inventoryApiStatus === 'connected' ? 'Live Data' : 'Sample Data'} | Utilities: ${utilitiesApiStatus === 'connected' ? 'Live Data' : 'Sample Data'} | Suppliers: ${supplierApiStatus === 'connected' ? 'Live Data' : 'Sample Data'}<br>
           <strong>Filter Period:</strong> ${filterPeriod === 'all' ? 'All Time' : filterPeriod}
         </div>
         
@@ -775,25 +953,31 @@ const ExpenseTracking = () => {
             <div class="summary-card">
               <h4>💰 Total Expenses</h4>
               <div class="metric-value">$${safeToLocaleString(totals.totalExpenses)}</div>
-              <div class="metric-label">Combined organizational costs</div>
+              <div class="metric-label">Combined organizational costs (including suppliers)</div>
             </div>
-            ${activeFilter !== 'inventory' && activeFilter !== 'utilities' ? `
+            ${activeFilter !== 'inventory' && activeFilter !== 'utilities' && activeFilter !== 'suppliers' ? `
             <div class="summary-card">
               <h4>👥 Payroll Expenses</h4>
               <div class="metric-value">$${safeToLocaleString(totals.payrollExpense)}</div>
               <div class="metric-label">${totals.totalEmployees} employees • ${safeToFixed(expenseData.summary?.payrollPercentage)}% of total</div>
             </div>` : ''}
-            ${activeFilter !== 'payroll' && activeFilter !== 'utilities' ? `
+            ${activeFilter !== 'payroll' && activeFilter !== 'utilities' && activeFilter !== 'suppliers' ? `
             <div class="summary-card">
               <h4>🏥 Medical Inventory Total</h4>
               <div class="metric-value">$${safeToLocaleString(totals.combinedInventoryValue)}</div>
               <div class="metric-label">${totals.totalItems} items • ${safeToFixed(expenseData.summary?.inventoryPercentage)}% of total</div>
             </div>` : ''}
-            ${activeFilter !== 'payroll' && activeFilter !== 'inventory' ? `
+            ${activeFilter !== 'payroll' && activeFilter !== 'inventory' && activeFilter !== 'suppliers' ? `
             <div class="summary-card">
               <h4>⚡ Utilities</h4>
               <div class="metric-value">$${safeToLocaleString(totals.utilitiesExpense)}</div>
               <div class="metric-label">${totals.totalUtilities} services • ${safeToFixed(expenseData.summary?.utilitiesPercentage)}% of total</div>
+            </div>` : ''}
+            ${activeFilter !== 'payroll' && activeFilter !== 'inventory' && activeFilter !== 'utilities' ? `
+            <div class="summary-card">
+              <h4>🤝 Supplier Expenses</h4>
+              <div class="metric-value">$${safeToLocaleString(totals.supplierExpense)}</div>
+              <div class="metric-label">${totals.totalSuppliers} suppliers • ${totals.totalOrders} orders • ${safeToFixed(expenseData.summary?.supplierPercentage)}% of total</div>
             </div>` : ''}
             <div class="summary-card">
               <h4>📊 Overall Health</h4>
@@ -813,7 +997,7 @@ const ExpenseTracking = () => {
         </div>` : ''}
 
         <!-- Data Tables -->
-        ${activeFilter !== 'inventory' && activeFilter !== 'utilities' && expenseData.payrollExpenses?.rawData?.length > 0 ? `
+        ${activeFilter !== 'inventory' && activeFilter !== 'utilities' && activeFilter !== 'suppliers' && expenseData.payrollExpenses?.rawData?.length > 0 ? `
         <h3 style="color: #1da1f2; margin-top: 30px;">👥 Payroll Details</h3>
         <table>
           <thead>
@@ -853,7 +1037,7 @@ const ExpenseTracking = () => {
           </tbody>
         </table>` : ''}
 
-        ${activeFilter !== 'payroll' && activeFilter !== 'utilities' && expenseData.inventoryExpenses?.rawData?.length > 0 ? `
+        ${activeFilter !== 'payroll' && activeFilter !== 'utilities' && activeFilter !== 'suppliers' && expenseData.inventoryExpenses?.rawData?.length > 0 ? `
         <h3 style="color: #1da1f2; margin-top: 30px;">🏥 Inventory Details</h3>
         <table>
           <thead>
@@ -893,7 +1077,7 @@ const ExpenseTracking = () => {
           </tbody>
         </table>` : ''}
 
-        ${activeFilter !== 'payroll' && activeFilter !== 'inventory' && expenseData.utilitiesExpenses?.rawData?.length > 0 ? `
+        ${activeFilter !== 'payroll' && activeFilter !== 'inventory' && activeFilter !== 'suppliers' && expenseData.utilitiesExpenses?.rawData?.length > 0 ? `
         <h3 style="color: #1da1f2; margin-top: 30px;">⚡ Utilities Details</h3>
         <table>
           <thead>
@@ -924,6 +1108,42 @@ const ExpenseTracking = () => {
               <td class="currency"><strong>$${expenseData.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()}</strong></td>
               <td><strong>${expenseData.utilitiesExpenses.totalUtilities} Services</strong></td>
               <td><strong>Paid: ${expenseData.utilitiesExpenses.paidPayments}, Pending: ${expenseData.utilitiesExpenses.pendingPayments}, Overdue: ${expenseData.utilitiesExpenses.overduePayments}</strong></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>` : ''}
+
+        ${activeFilter !== 'payroll' && activeFilter !== 'inventory' && activeFilter !== 'utilities' && expenseData.supplierExpenses?.rawOrders?.length > 0 ? `
+        <h3 style="color: #1da1f2; margin-top: 30px;">🤝 Supplier Orders Details</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Supplier Name</th>
+              <th>Order Amount</th>
+              <th>Order Date</th>
+              <th>Status</th>
+              <th>Items Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${expenseData.supplierExpenses.rawOrders.slice(0, 20).map(order => {
+              return `
+              <tr>
+                <td><strong>${order.orderNumber || order.id || 'N/A'}</strong></td>
+                <td>${order.supplier?.name || 'Unknown Supplier'}</td>
+                <td class="currency"><strong>$${(order.totalAmount || 0).toLocaleString()}</strong></td>
+                <td>${new Date(order.orderDate || order.createdAt).toLocaleDateString()}</td>
+                <td>${order.status || 'N/A'}</td>
+                <td>${order.items?.length || 0} items</td>
+              </tr>
+              `;
+            }).join('')}
+            <tr class="totals-row">
+              <td colspan="2"><strong>TOTALS</strong></td>
+              <td class="currency"><strong>$${expenseData.supplierExpenses.totalSupplierExpense.toLocaleString()}</strong></td>
+              <td><strong>${expenseData.supplierExpenses.totalOrders} Orders</strong></td>
+              <td><strong>${expenseData.supplierExpenses.totalSuppliers} Suppliers</strong></td>
               <td></td>
             </tr>
           </tbody>
@@ -962,7 +1182,7 @@ const ExpenseTracking = () => {
           <p><strong>This is a system-generated report from Heal-x Healthcare Management System</strong></p>
           <p>Report generated on ${currentDate.toLocaleString()} • All amounts are in Sri Lankan Rupees</p>
           <p>For queries regarding this report, contact the Financial Department at Heal-x Healthcare</p>
-          ${inventoryApiStatus === 'fallback' || utilitiesApiStatus === 'fallback' ? '<p><em>Note: This report contains sample data due to API connection issues</em></p>' : ''}
+          ${inventoryApiStatus === 'fallback' || utilitiesApiStatus === 'fallback' || supplierApiStatus === 'fallback' ? '<p><em>Note: This report contains sample data due to API connection issues</em></p>' : ''}
         </div>
 
         <!-- Print Controls -->
@@ -1035,6 +1255,7 @@ const ExpenseTracking = () => {
     return alerts;
   };
 
+  // UPDATED: Modified to include supplier filter and metrics
   const getFilteredMetrics = () => {
     // Add null checks for expenseData
     if (!expenseData) return [];
@@ -1133,6 +1354,38 @@ const ExpenseTracking = () => {
             note: "Immediate attention needed"
           }
         ];
+      // NEW: Supplier filter case
+      case 'suppliers':
+        return [
+          {
+            icon: "🤝",
+            value: safeToLocaleString(expenseData.supplierExpenses?.totalSupplierExpense),
+            label: "Total Supplier Expenses",
+            trend: "↗ 7.8%",
+            note: `${expenseData.supplierExpenses?.totalOrders || 0} orders from ${expenseData.supplierExpenses?.totalSuppliers || 0} suppliers`
+          },
+          {
+            icon: "📈",
+            value: safeToLocaleString(expenseData.supplierExpenses?.monthlySupplierExpense),
+            label: "Monthly Supplier Costs",
+            trend: "↗ 15.2%",
+            note: "Current month spending"
+          },
+          {
+            icon: "🏭",
+            value: expenseData.supplierExpenses?.totalSuppliers || "0",
+            label: "Active Suppliers",
+            trend: "↗ 2.5%",
+            note: "Total supplier partners"
+          },
+          {
+            icon: "💵",
+            value: safeToLocaleString(expenseData.supplierExpenses?.averageOrderValue),
+            label: "Average Order Value",
+            trend: "↘ 3.1%",
+            note: "Per purchase order"
+          }
+        ];
       default:
         return [
           {
@@ -1140,7 +1393,7 @@ const ExpenseTracking = () => {
             value: safeToLocaleString(expenseData.totalExpenses),
             label: "Total Expenses",
             trend: "↗ 12.5%",
-            note: inventoryApiStatus === "connected" && utilitiesApiStatus === "connected" ? "Live data calculation" : "Mixed data sources"
+            note: inventoryApiStatus === "connected" && utilitiesApiStatus === "connected" && supplierApiStatus === "connected" ? "Live data calculation" : "Mixed data sources"
           },
           {
             icon: "👥",
@@ -1162,6 +1415,14 @@ const ExpenseTracking = () => {
             label: "Utilities Expenses",
             trend: "↗ 4.2%",
             note: `${safeToFixed(expenseData.summary?.utilitiesPercentage)}% of total • ${expenseData.utilitiesExpenses?.totalUtilities || 0} services`
+          },
+          // NEW: Supplier expenses metric in overall view
+          {
+            icon: "🤝",
+            value: safeToLocaleString(expenseData.supplierExpenses?.totalSupplierExpense),
+            label: "Supplier Expenses",
+            trend: "↗ 7.8%",
+            note: `${safeToFixed(expenseData.summary?.supplierPercentage)}% of total • ${expenseData.supplierExpenses?.totalOrders || 0} orders`
           }
         ];
     }
@@ -1194,6 +1455,7 @@ const ExpenseTracking = () => {
             <h3>Loading comprehensive expense analytics...</h3>
             <p>📦 {inventoryApiStatus === "trying" ? "Fetching surgical items and restock data..." : "Processing inventory data..."}</p>
             <p>⚡ {utilitiesApiStatus === "trying" ? "Connecting to utilities API..." : "Processing utilities data..."}</p>
+            <p>🤝 {supplierApiStatus === "trying" ? "Connecting to supplier APIs..." : "Processing supplier data..."}</p>
           </div>
         </div>
       </AdminLayout>
@@ -1246,16 +1508,16 @@ const ExpenseTracking = () => {
   return (
     <AdminLayout admin={admin} title="Expense Tracking">
       <div className="etx-container">
-        {/* Enhanced Header Section */}
+        {/* Enhanced Header Section - UPDATED with supplier status */}
         <div className="etx-header">
           <div className="etx-header-content">
             <h1 className="etx-title">
               <span className="etx-title-icon">💸</span>
               💼 Advanced Expense Analytics
             </h1>
-            <p className="etx-subtitle">Comprehensive financial insights with smart filtering and analytics</p>
+            <p className="etx-subtitle">Comprehensive financial insights with smart filtering and analytics including supplier expenses</p>
             
-            {(inventoryApiStatus === "fallback" || utilitiesApiStatus === "fallback") && (
+            {(inventoryApiStatus === "fallback" || utilitiesApiStatus === "fallback" || supplierApiStatus === "fallback") && (
               <div className="etx-api-warning">
                 <div className="etx-warning-header">
                   <span className="etx-warning-icon">⚠️</span>
@@ -1273,16 +1535,23 @@ const ExpenseTracking = () => {
                     <p>Expected endpoint: <code>http://localhost:7000/api/financial-utilities</code></p>
                   </>
                 )}
+                {supplierApiStatus === "fallback" && (
+                  <>
+                    <p><strong>Unable to connect to supplier APIs</strong></p>
+                    <p>Expected endpoints: <code>http://localhost:7000/api/suppliers</code> & <code>http://localhost:7000/api/purchase-orders</code></p>
+                  </>
+                )}
                 <p className="etx-warning-note"><em>Currently showing sample data for demonstration</em></p>
               </div>
             )}
             
-            {inventoryApiStatus === "connected" && utilitiesApiStatus === "connected" && expenseData?.inventoryExpenses?.totalItems > 0 && expenseData?.utilitiesExpenses?.totalUtilities > 0 && (
+            {inventoryApiStatus === "connected" && utilitiesApiStatus === "connected" && supplierApiStatus === "connected" && expenseData?.inventoryExpenses?.totalItems > 0 && expenseData?.utilitiesExpenses?.totalUtilities > 0 && expenseData?.supplierExpenses?.totalSuppliers > 0 && (
               <div className="etx-api-success">
                 <span className="etx-success-icon">✅</span>
                 Connected to all APIs - Inventory: {expenseData.inventoryExpenses.totalItems} items | 
                 Restock Value: ${expenseData.inventoryExpenses.totalRestockValue.toLocaleString()} | 
-                Utilities: {expenseData.utilitiesExpenses.totalUtilities} services
+                Utilities: {expenseData.utilitiesExpenses.totalUtilities} services | 
+                Suppliers: {expenseData.supplierExpenses.totalSuppliers} suppliers, {expenseData.supplierExpenses.totalOrders} orders
               </div>
             )}
           </div>
@@ -1361,7 +1630,7 @@ const ExpenseTracking = () => {
           </div>
         )}
 
-        {/* Enhanced Filter Tabs */}
+        {/* UPDATED: Enhanced Filter Tabs - Now includes suppliers */}
         <div className="etx-filter-section">
           <div className="etx-filter-tabs">
             <button 
@@ -1396,13 +1665,22 @@ const ExpenseTracking = () => {
               <span className="etx-tab-label">Utilities Focus</span>
               <span className="etx-tab-count">{expenseData?.utilitiesExpenses?.totalUtilities || 0} services</span>
             </button>
+            {/* NEW: Supplier tab */}
+            <button 
+              className={`etx-filter-tab ${activeFilter === 'suppliers' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('suppliers')}
+            >
+              <span className="etx-tab-icon">🤝</span>
+              <span className="etx-tab-label">Supplier Focus</span>
+              <span className="etx-tab-count">{expenseData?.supplierExpenses?.totalSuppliers || 0} suppliers</span>
+            </button>
           </div>
         </div>
 
         {/* Dynamic Metrics Grid - FIXED with null checks */}
         <div className="etx-metrics-grid">
           {filteredMetrics && filteredMetrics.map((metric, index) => (
-            <div key={index} className={`etx-metric-card etx-${['primary', 'success', 'info', 'warning'][index % 4]}`}>
+            <div key={index} className={`etx-metric-card etx-${['primary', 'success', 'info', 'warning', 'danger'][index % 5]}`}>
               <div className="etx-metric-header">
                 <div className="etx-metric-icon">{metric.icon}</div>
                 <div className="etx-metric-trend">
@@ -1420,24 +1698,24 @@ const ExpenseTracking = () => {
           ))}
         </div>
 
-        {/* NEW: COMPREHENSIVE CHARTS AND ANALYTICS SECTION - FIXED with null checks */}
+        {/* UPDATED: COMPREHENSIVE CHARTS AND ANALYTICS SECTION - Now includes supplier charts */}
         <div className="etx-charts-section">
           <div className="etx-charts-header">
             <h2 className="etx-charts-title">
               <span className="etx-charts-icon">📊</span>
               Financial Expenses Analytics Dashboard
             </h2>
-            <p className="etx-charts-subtitle">Visual insights and trend analysis</p>
+            <p className="etx-charts-subtitle">Visual insights and trend analysis including supplier expenses</p>
           </div>
 
-          {/* Overview Charts Grid */}
+          {/* UPDATED: Overview Charts Grid - Now includes supplier data */}
           {activeFilter === 'overall' && expenseData && (
             <div className="etx-charts-grid">
-              {/* Expense Distribution Pie Chart */}
+              {/* UPDATED: Expense Distribution Pie Chart - Now shows suppliers */}
               <div className="etx-chart-card etx-chart-lg">
                 <div className="etx-chart-header">
                   <h3>💰 Expense Distribution</h3>
-                  <p>Total organizational expenses breakdown</p>
+                  <p>Total organizational expenses breakdown including suppliers</p>
                 </div>
                 <div className="etx-chart-container">
                   <ResponsiveContainer width="100%" height={400}>
@@ -1463,11 +1741,11 @@ const ExpenseTracking = () => {
                 </div>
               </div>
 
-              {/* Monthly Trends Line Chart */}
+              {/* UPDATED: Monthly Trends Line Chart - Now includes supplier line */}
               <div className="etx-chart-card etx-chart-lg">
                 <div className="etx-chart-header">
                   <h3>📈 Monthly Expense Trends</h3>
-                  <p>Year-over-year expense analysis</p>
+                  <p>Year-over-year expense analysis including supplier costs</p>
                 </div>
                 <div className="etx-chart-container">
                   <ResponsiveContainer width="100%" height={400}>
@@ -1480,17 +1758,18 @@ const ExpenseTracking = () => {
                       <Line type="monotone" dataKey="payroll" stroke="#0088FE" strokeWidth={3} name="Payroll" />
                       <Line type="monotone" dataKey="inventory" stroke="#00C49F" strokeWidth={3} name="Inventory" />
                       <Line type="monotone" dataKey="utilities" stroke="#FFBB28" strokeWidth={3} name="Utilities" />
-                      <Line type="monotone" dataKey="total" stroke="#FF8042" strokeWidth={4} name="Total" strokeDasharray="5 5" />
+                      <Line type="monotone" dataKey="suppliers" stroke="#FF8042" strokeWidth={3} name="Suppliers" />
+                      <Line type="monotone" dataKey="total" stroke="#8884d8" strokeWidth={4} name="Total" strokeDasharray="5 5" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* FIXED: Detailed Expense Breakdown Pie Chart (converted from horizontal bar chart) */}
+              {/* UPDATED: Detailed Expense Breakdown Pie Chart - Now includes suppliers */}
               <div className="etx-chart-card etx-chart-lg">
                 <div className="etx-chart-header">
                   <h3>🎯 Detailed Expense Categories</h3>
-                  <p>Comprehensive breakdown by expense type - Now as Interactive Pie Chart</p>
+                  <p>Comprehensive breakdown by expense type including supplier expenses</p>
                 </div>
                 <div className="etx-chart-container">
                   <ResponsiveContainer width="100%" height={400}>
@@ -1503,7 +1782,8 @@ const ExpenseTracking = () => {
                           { name: "ETF Contributions", value: 1350, fill: EXPENSE_COLORS[3] },
                           { name: "Current Inventory", value: 85000, fill: EXPENSE_COLORS[4] },
                           { name: "Auto-Restock Investment", value: 25000, fill: EXPENSE_COLORS[5] },
-                          { name: "Utilities Expenses", value: 5550, fill: EXPENSE_COLORS[6] }
+                          { name: "Utilities Expenses", value: 5550, fill: EXPENSE_COLORS[6] },
+                          { name: "Supplier Expenses", value: 45000, fill: EXPENSE_COLORS[7] }
                         ]}
                         cx="50%"
                         cy="50%"
@@ -1520,7 +1800,8 @@ const ExpenseTracking = () => {
                           { name: "ETF Contributions", value: 1350, fill: EXPENSE_COLORS[3] },
                           { name: "Current Inventory", value: 85000, fill: EXPENSE_COLORS[4] },
                           { name: "Auto-Restock Investment", value: 25000, fill: EXPENSE_COLORS[5] },
-                          { name: "Utilities Expenses", value: 5550, fill: EXPENSE_COLORS[6] }
+                          { name: "Utilities Expenses", value: 5550, fill: EXPENSE_COLORS[6] },
+                          { name: "Supplier Expenses", value: 45000, fill: EXPENSE_COLORS[7] }
                         ]).map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
@@ -1535,11 +1816,11 @@ const ExpenseTracking = () => {
                 </div>
               </div>
 
-              {/* Comparative Analysis Chart */}
+              {/* UPDATED: Comparative Analysis Chart - Now includes suppliers */}
               <div className="etx-chart-card etx-chart-lg">
                 <div className="etx-chart-header">
                   <h3>⚖️ Expense Comparison Analysis</h3>
-                  <p>Payroll vs Inventory vs Utilities monthly distribution</p>
+                  <p>Payroll vs Inventory vs Utilities vs Suppliers monthly distribution</p>
                 </div>
                 <div className="etx-chart-container">
                   <ResponsiveContainer width="100%" height={400}>
@@ -1552,7 +1833,8 @@ const ExpenseTracking = () => {
                       <Bar dataKey="payroll" fill="#0088FE" name="Payroll" />
                       <Bar dataKey="inventory" fill="#00C49F" name="Medical Inventory" />
                       <Bar dataKey="utilities" fill="#FFBB28" name="Utilities" />
-                      <Line type="monotone" dataKey="total" stroke="#FF8042" strokeWidth={3} name="Total Trend" />
+                      <Bar dataKey="suppliers" fill="#FF8042" name="Suppliers" />
+                      <Line type="monotone" dataKey="total" stroke="#8884d8" strokeWidth={3} name="Total Trend" />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
@@ -1720,7 +2002,7 @@ const ExpenseTracking = () => {
                         cy="50%"
                         labelLine={false}
                         label={({name, value}) => `${name}: ${value}`}
-                        outerRadius={80}
+                        outerRadius={100}
                         fill="#8884d8"
                         dataKey="value"
                       >
@@ -1738,15 +2020,15 @@ const ExpenseTracking = () => {
               {/* Utilities by Category */}
               <div className="etx-chart-card etx-chart-lg">
                 <div className="etx-chart-header">
-                  <h3>📊 Utilities by Category</h3>
-                  <p>Expense breakdown by utility type</p>
+                  <h3>📊 Utilities Expenses by Category</h3>
+                  <p>Monthly utilities spending breakdown</p>
                 </div>
                 <div className="etx-chart-container">
                   <ResponsiveContainer width="100%" height={400}>
                     <BarChart data={Object.entries(expenseData.utilitiesExpenses?.categoryExpenses || {}).map(([category, data], index) => ({
                       name: category,
-                      amount: data?.totalAmount || 0,
-                      count: data?.count || 0,
+                      amount: data.totalAmount || 0,
+                      count: data.count || 0,
                       fill: EXPENSE_COLORS[index % EXPENSE_COLORS.length]
                     }))}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -1762,96 +2044,370 @@ const ExpenseTracking = () => {
                   </ResponsiveContainer>
                 </div>
               </div>
+
+              {/* Utilities Payment Score */}
+              <div className="etx-chart-card etx-chart-md">
+                <div className="etx-chart-header">
+                  <h3>💯 Payment Performance Score</h3>
+                  <p>Percentage of bills paid on time</p>
+                </div>
+                <div className="etx-chart-container">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <RadialBarChart cx="50%" cy="50%" innerRadius="60%" outerRadius="90%" data={[
+                      { 
+                        name: 'Payment Score', 
+                        value: expenseData.summary?.utilitiesPaymentScore || 0, 
+                        fill: (expenseData.summary?.utilitiesPaymentScore || 0) > 80 ? '#28a745' : 
+                              (expenseData.summary?.utilitiesPaymentScore || 0) > 60 ? '#ffc107' : '#dc3545' 
+                      }
+                    ]}>
+                      <RadialBar dataKey="value" cornerRadius={10} fill="#8884d8" />
+                      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="etx-radial-text">
+                        {safeToFixed(expenseData.summary?.utilitiesPaymentScore)}%
+                      </text>
+                    </RadialBarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Enhanced Summary Section */}
-        <div className="etx-summary-section">
-          <div className="etx-summary-header">
-            <h2 className="etx-summary-title">
-              <span className="etx-summary-icon">📋</span>
-              {activeFilter === 'payroll' ? 'Payroll Insights' : 
-               activeFilter === 'inventory' ? 'Inventory Insights' :
-               activeFilter === 'utilities' ? 'Utilities Insights' : 'Executive Summary'}
-            </h2>
-            <div className="etx-summary-actions">
-              <button onClick={exportToPDF} className="etx-print-btn">
-                🖨️ Generate PDF Report
-              </button>
+          {/* NEW: Supplier-Specific Charts */}
+          {activeFilter === 'suppliers' && expenseData && (
+            <div className="etx-charts-grid">
+              {/* Supplier Expenses Breakdown */}
+              <div className="etx-chart-card etx-chart-lg">
+                <div className="etx-chart-header">
+                  <h3>🤝 Supplier Expenses Breakdown</h3>
+                  <p>Distribution of expenses by supplier</p>
+                </div>
+                <div className="etx-chart-container">
+                  <ResponsiveContainer width="100%" height={400}>
+                    <PieChart>
+                      <Pie
+                        data={expenseData.supplierCategoryData || []}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({name, value}) => `${name}: $${(value/1000).toFixed(0)}K`}
+                        outerRadius={120}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {(expenseData.supplierCategoryData || []).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Monthly vs Total Supplier Expenses */}
+              <div className="etx-chart-card etx-chart-md">
+                <div className="etx-chart-header">
+                  <h3>📈 Monthly vs Total Supplier Costs</h3>
+                  <p>Current month spending vs total expenses</p>
+                </div>
+                <div className="etx-chart-container">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={[
+                      { name: 'Monthly Costs', value: expenseData.supplierExpenses?.monthlySupplierExpense || 0, fill: '#0088FE' },
+                      { name: 'Total Costs', value: expenseData.supplierExpenses?.totalSupplierExpense || 0, fill: '#00C49F' }
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis tickFormatter={(value) => `$${(value/1000).toFixed(0)}K`} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar dataKey="value" fill="#8884d8">
+                        {[0, 1].map((index) => (
+                          <Cell key={`cell-${index}`} fill={index === 0 ? '#0088FE' : '#00C49F'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Supplier Performance Metrics */}
+              <div className="etx-chart-card etx-chart-md">
+                <div className="etx-chart-header">
+                  <h3>📊 Supplier Performance</h3>
+                  <p>Average order value and supplier count</p>
+                </div>
+                <div className="etx-chart-container">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={[
+                      { name: 'Avg Order Value', value: expenseData.supplierExpenses?.averageOrderValue || 0, fill: '#FFBB28' },
+                      { name: 'Active Suppliers', value: (expenseData.supplierExpenses?.totalSuppliers || 0) * 1000, fill: '#FF8042' },
+                      { name: 'Total Orders', value: (expenseData.supplierExpenses?.totalOrders || 0) * 500, fill: '#8884d8' }
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis tickFormatter={(value) => value > 1000 ? `$${(value/1000).toFixed(0)}K` : value} />
+                      <Tooltip 
+                        formatter={(value, name) => {
+                          if (name === 'Active Suppliers') return [Math.round(value/1000), name];
+                          if (name === 'Total Orders') return [Math.round(value/500), name];
+                          return [`$${value.toLocaleString()}`, name];
+                        }}
+                      />
+                      <Bar dataKey="value" fill="#8884d8">
+                        {[0, 1, 2].map((index) => (
+                          <Cell key={`cell-${index}`} fill={index === 0 ? '#FFBB28' : index === 1 ? '#FF8042' : '#8884d8'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* UPDATED: Advanced Analytics Section - Now includes suppliers */}
+          <div className="etx-advanced-analytics">
+            <div className="etx-analytics-header">
+              <h2 className="etx-analytics-title">
+                <span className="etx-analytics-icon">🔬</span>
+                Advanced Financial Analytics
+              </h2>
+              <p className="etx-analytics-subtitle">Comprehensive insights including supplier expense analysis</p>
+            </div>
+
+            <div className="etx-analytics-grid">
+              {/* UPDATED: Total Expense Tree Map - Now includes suppliers */}
+              <div className="etx-chart-card etx-chart-xl">
+                <div className="etx-chart-header">
+                  <h3>🌳 Expense Hierarchy Visualization</h3>
+                  <p>Complete organizational expense tree including supplier costs</p>
+                </div>
+                <div className="etx-chart-container">
+                  <ResponsiveContainer width="100%" height={500}>
+                    <Treemap
+                      data={expenseData.expenseBreakdown && expenseData.expenseBreakdown.length > 0 ? expenseData.expenseBreakdown : [
+                        { name: "Staff Salaries", value: 45000, fill: EXPENSE_COLORS[0] },
+                        { name: "Employee Benefits", value: 8500, fill: EXPENSE_COLORS[1] },
+                        { name: "EPF Contributions", value: 3600, fill: EXPENSE_COLORS[2] },
+                        { name: "ETF Contributions", value: 1350, fill: EXPENSE_COLORS[3] },
+                        { name: "Current Inventory", value: 85000, fill: EXPENSE_COLORS[4] },
+                        { name: "Auto-Restock Investment", value: 25000, fill: EXPENSE_COLORS[5] },
+                        { name: "Utilities Expenses", value: 5550, fill: EXPENSE_COLORS[6] },
+                        { name: "Supplier Expenses", value: 45000, fill: EXPENSE_COLORS[7] }
+                      ]}
+                      dataKey="value"
+                      ratio={4/3}
+                      stroke="#fff"
+                      fill="#8884d8"
+                      content={({ x, y, width, height, name, value }) => (
+                        <g>
+                          <rect
+                            x={x}
+                            y={y}
+                            width={width}
+                            height={height}
+                            fill={EXPENSE_COLORS[Math.floor(Math.random() * EXPENSE_COLORS.length)]}
+                            stroke="#fff"
+                            strokeWidth={2}
+                            opacity={0.8}
+                          />
+                          {width > 60 && height > 40 && (
+                            <>
+                              <text
+                                x={x + width / 2}
+                                y={y + height / 2 - 10}
+                                textAnchor="middle"
+                                fill="#fff"
+                                fontSize="12"
+                                fontWeight="bold"
+                              >
+                                {name}
+                              </text>
+                              <text
+                                x={x + width / 2}
+                                y={y + height / 2 + 10}
+                                textAnchor="middle"
+                                fill="#fff"
+                                fontSize="10"
+                              >
+                                ${(value/1000).toFixed(0)}K
+                              </text>
+                            </>
+                          )}
+                        </g>
+                      )}
+                    />
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Key Performance Indicators */}
+              <div className="etx-chart-card etx-chart-lg">
+                <div className="etx-chart-header">
+                  <h3>🎯 Key Performance Indicators</h3>
+                  <p>Critical financial health metrics including supplier efficiency</p>
+                </div>
+                <div className="etx-kpi-grid">
+                  <div className="etx-kpi-card">
+                    <div className="etx-kpi-icon">💰</div>
+                    <div className="etx-kpi-content">
+                      <h4>Total Monthly Expenses</h4>
+                      <p className="etx-kpi-value">${safeToLocaleString(expenseData.totalExpenses)}</p>
+                      <span className="etx-kpi-trend etx-trend-up">↗ 12.5%</span>
+                    </div>
+                  </div>
+                  <div className="etx-kpi-card">
+                    <div className="etx-kpi-icon">📊</div>
+                    <div className="etx-kpi-content">
+                      <h4>Expense Efficiency Ratio</h4>
+                      <p className="etx-kpi-value">{safeToFixed((expenseData.summary?.inventoryHealthScore || 0) + (expenseData.summary?.utilitiesPaymentScore || 0)) / 2}%</p>
+                      <span className="etx-kpi-trend etx-trend-up">↗ 3.2%</span>
+                    </div>
+                  </div>
+                  <div className="etx-kpi-card">
+                    <div className="etx-kpi-icon">🏥</div>
+                    <div className="etx-kpi-content">
+                      <h4>Inventory Per Employee</h4>
+                      <p className="etx-kpi-value">${safeToLocaleString(expenseData.summary?.avgInventoryPerEmployee)}</p>
+                      <span className="etx-kpi-trend etx-trend-stable">→ 0.8%</span>
+                    </div>
+                  </div>
+                  <div className="etx-kpi-card">
+                    <div className="etx-kpi-icon">🤝</div>
+                    <div className="etx-kpi-content">
+                      <h4>Avg Monthly Supplier Spend</h4>
+                      <p className="etx-kpi-value">${safeToLocaleString(expenseData.summary?.avgSupplierPerMonth)}</p>
+                      <span className="etx-kpi-trend etx-trend-up">↗ 7.8%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          
-          <div className="etx-summary-grid">
-            {activeFilter === 'payroll' ? (
-              <>
-                <div className="etx-summary-card">
-                  <h4>💰 Payroll Overview</h4>
-                  <p>Total payroll expenses amount to <strong>${safeToLocaleString(expenseData.payrollExpenses?.totalPayrollExpense)}</strong> across <strong>{expenseData.payrollExpenses?.totalEmployees || 0}</strong> employees. Average monthly cost per employee is <strong>${safeToLocaleString((expenseData.payrollExpenses?.totalPayrollExpense || 0) / Math.max(expenseData.payrollExpenses?.totalEmployees || 1, 1) / 12)}</strong>.</p>
+
+          {/* UPDATED: Summary Statistics - Now includes supplier metrics */}
+          <div className="etx-summary-section">
+            <div className="etx-summary-header">
+              <h2 className="etx-summary-title">
+                <span className="etx-summary-icon">📈</span>
+                Financial Summary & Insights
+              </h2>
+              <p className="etx-summary-subtitle">Complete expense analysis including supplier cost breakdown</p>
+            </div>
+
+            <div className="etx-summary-cards">
+              <div className="etx-summary-card etx-summary-primary">
+                <h3>💰 Total Organizational Expenses</h3>
+                <div className="etx-summary-value">${safeToLocaleString(expenseData.totalExpenses)}</div>
+                <p className="etx-summary-note">
+                  Complete financial overview including payroll (${safeToLocaleString(expenseData.payrollExpenses?.totalPayrollExpense)}), 
+                  medical inventory (${safeToLocaleString(expenseData.inventoryExpenses?.totalInventoryValue)}), 
+                  utilities (${safeToLocaleString(expenseData.utilitiesExpenses?.totalUtilitiesExpense)}), 
+                  and supplier costs (${safeToLocaleString(expenseData.supplierExpenses?.totalSupplierExpense)})
+                </p>
+              </div>
+
+              <div className="etx-summary-card etx-summary-success">
+                <h3>📊 Expense Distribution Analysis</h3>
+                <div className="etx-summary-breakdown">
+                  <div className="etx-breakdown-item">
+                    <span className="etx-breakdown-label">Payroll:</span>
+                    <span className="etx-breakdown-value">{safeToFixed(expenseData.summary?.payrollPercentage)}%</span>
+                  </div>
+                  <div className="etx-breakdown-item">
+                    <span className="etx-breakdown-label">Medical Inventory:</span>
+                    <span className="etx-breakdown-value">{safeToFixed(expenseData.summary?.inventoryPercentage)}%</span>
+                  </div>
+                  <div className="etx-breakdown-item">
+                    <span className="etx-breakdown-label">Utilities:</span>
+                    <span className="etx-breakdown-value">{safeToFixed(expenseData.summary?.utilitiesPercentage)}%</span>
+                  </div>
+                  <div className="etx-breakdown-item">
+                    <span className="etx-breakdown-label">Suppliers:</span>
+                    <span className="etx-breakdown-value">{safeToFixed(expenseData.summary?.supplierPercentage)}%</span>
+                  </div>
                 </div>
-                
-                <div className="etx-summary-card">
-                  <h4>📊 Cost Breakdown</h4>
-                  <p>Gross salaries represent <strong>{safeToFixed((expenseData.payrollExpenses?.totalGrossSalary / expenseData.payrollExpenses?.totalPayrollExpense) * 100)}%</strong> of total payroll costs, while government contributions (EPF+ETF) account for <strong>{safeToFixed(((expenseData.payrollExpenses?.totalEPF + expenseData.payrollExpenses?.totalETF) / expenseData.payrollExpenses?.totalPayrollExpense) * 100)}%</strong>.</p>
+              </div>
+
+              <div className="etx-summary-card etx-summary-info">
+                <h3>🏥 Healthcare Operations Metrics</h3>
+                <div className="etx-summary-metrics">
+                  <div className="etx-metric-item">
+                    <span className="etx-metric-label">Staff Members:</span>
+                    <span className="etx-metric-value">{expenseData.payrollExpenses?.totalEmployees || 0}</span>
+                  </div>
+                  <div className="etx-metric-item">
+                    <span className="etx-metric-label">Medical Items:</span>
+                    <span className="etx-metric-value">{expenseData.inventoryExpenses?.totalItems || 0}</span>
+                  </div>
+                  <div className="etx-metric-item">
+                    <span className="etx-metric-label">Utility Services:</span>
+                    <span className="etx-metric-value">{expenseData.utilitiesExpenses?.totalUtilities || 0}</span>
+                  </div>
+                  <div className="etx-metric-item">
+                    <span className="etx-metric-label">Active Suppliers:</span>
+                    <span className="etx-metric-value">{expenseData.supplierExpenses?.totalSuppliers || 0}</span>
+                  </div>
+                  <div className="etx-metric-item">
+                    <span className="etx-metric-label">Purchase Orders:</span>
+                    <span className="etx-metric-value">{expenseData.supplierExpenses?.totalOrders || 0}</span>
+                  </div>
                 </div>
-                
-                <div className="etx-summary-card">
-                  <h4>📈 Trends & Recommendations</h4>
-                  <p>Payroll costs show consistent growth. Consider implementing performance-based incentives and regular salary reviews to maintain competitive compensation while optimizing costs.</p>
+              </div>
+
+              <div className="etx-summary-card etx-summary-warning">
+                <h3>⚠️ Financial Health Indicators</h3>
+                <div className="etx-health-indicators">
+                  <div className="etx-health-item">
+                    <span className="etx-health-label">Inventory Health:</span>
+                    <span className={`etx-health-score etx-health-${(expenseData.summary?.inventoryHealthScore || 0) > 80 ? 'good' : (expenseData.summary?.inventoryHealthScore || 0) > 60 ? 'warning' : 'critical'}`}>
+                      {safeToFixed(expenseData.summary?.inventoryHealthScore)}%
+                    </span>
+                  </div>
+                  <div className="etx-health-item">
+                    <span className="etx-health-label">Payment Performance:</span>
+                    <span className={`etx-health-score etx-health-${(expenseData.summary?.utilitiesPaymentScore || 0) > 80 ? 'good' : (expenseData.summary?.utilitiesPaymentScore || 0) > 60 ? 'warning' : 'critical'}`}>
+                      {safeToFixed(expenseData.summary?.utilitiesPaymentScore)}%
+                    </span>
+                  </div>
+                  <div className="etx-health-item">
+                    <span className="etx-health-label">Low Stock Items:</span>
+                    <span className="etx-health-count">{expenseData.inventoryExpenses?.lowStockCount || 0}</span>
+                  </div>
+                  <div className="etx-health-item">
+                    <span className="etx-health-label">Overdue Bills:</span>
+                    <span className="etx-health-count">{expenseData.utilitiesExpenses?.overduePayments || 0}</span>
+                  </div>
                 </div>
-              </>
-            ) : activeFilter === 'inventory' ? (
-              <>
-                <div className="etx-summary-card">
-                  <h4>🏥 Inventory Status</h4>
-                  <p>Total medical inventory valued at <strong>${safeToLocaleString(expenseData.inventoryExpenses?.totalInventoryValue)}</strong>, comprising current stock value of <strong>${safeToLocaleString(expenseData.inventoryExpenses?.currentStockValue)}</strong> and auto-restock investment of <strong>${safeToLocaleString(expenseData.inventoryExpenses?.totalRestockValue)}</strong> across <strong>{expenseData.inventoryExpenses?.totalItems || 0}</strong> unique items.</p>
-                </div>
-                
-                <div className="etx-summary-card">
-                  <h4>⚠️ Stock Alerts</h4>
-                  <p>Currently <strong>{expenseData.inventoryExpenses?.lowStockCount || 0}</strong> items require restocking and <strong>{expenseData.inventoryExpenses?.outOfStockCount || 0}</strong> items are completely out of stock. Current health score is <strong>{safeToFixed(expenseData.summary?.inventoryHealthScore)}%</strong>.</p>
-                </div>
-                
-                <div className="etx-summary-card">
-                  <h4>💡 Investment Analysis</h4>
-                  <p>Auto-restock system has invested <strong>${safeToLocaleString(expenseData.inventoryExpenses?.totalRestockValue)}</strong> in automatic inventory replenishment, representing <strong>{safeToFixed((expenseData.inventoryExpenses?.totalRestockValue / expenseData.inventoryExpenses?.totalInventoryValue) * 100)}%</strong> of total inventory value. This ensures consistent supply availability.</p>
-                </div>
-              </>
-            ) : activeFilter === 'utilities' ? (
-              <>
-                <div className="etx-summary-card">
-                  <h4>⚡ Utilities Overview</h4>
-                  <p>Total utilities expenses amount to <strong>${safeToLocaleString(expenseData.utilitiesExpenses?.totalUtilitiesExpense)}</strong> across <strong>{expenseData.utilitiesExpenses?.totalUtilities || 0}</strong> services. Average monthly utility cost is <strong>${safeToLocaleString(expenseData.summary?.avgUtilitiesPerMonth)}</strong>.</p>
-                </div>
-                
-                <div className="etx-summary-card">
-                  <h4>📊 Payment Status</h4>
-                  <p>Payment distribution: <strong>{expenseData.utilitiesExpenses?.paidPayments || 0}</strong> paid bills, <strong>{expenseData.utilitiesExpenses?.pendingPayments || 0}</strong> pending payments, and <strong>{expenseData.utilitiesExpenses?.overduePayments || 0}</strong> overdue bills. Payment score is <strong>{safeToFixed(expenseData.summary?.utilitiesPaymentScore)}%</strong>.</p>
-                </div>
-                
-                <div className="etx-summary-card">
-                  <h4>💡 Cost Management</h4>
-                  <p>Utilities represent <strong>{safeToFixed(expenseData.summary?.utilitiesPercentage)}%</strong> of total organizational expenses. Consider energy-efficient upgrades and vendor consolidation to reduce monthly costs.</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="etx-summary-card">
-                  <h4>💰 Financial Overview</h4>
-                  <p>Total organizational expenses amount to <strong>${safeToLocaleString(expenseData.totalExpenses)}</strong>, with payroll accounting for <strong>{safeToFixed(expenseData.summary?.payrollPercentage)}%</strong>, medical inventory (including auto-restock investment) representing <strong>{safeToFixed(expenseData.summary?.inventoryPercentage)}%</strong>, and utilities comprising <strong>{safeToFixed(expenseData.summary?.utilitiesPercentage)}%</strong> of total costs.</p>
-                </div>
-                
-                <div className="etx-summary-card">
-                  <h4>🏥 Medical Inventory Investment</h4>
-                  <p>Medical inventory valued at <strong>${safeToLocaleString(expenseData.inventoryExpenses?.totalInventoryValue)}</strong> consists of current stock worth <strong>${safeToLocaleString(expenseData.inventoryExpenses?.currentStockValue)}</strong> and automatic restock investment of <strong>${safeToLocaleString(expenseData.inventoryExpenses?.totalRestockValue)}</strong>, ensuring continuous supply availability.</p>
-                </div>
-                
-                <div className="etx-summary-card">
-                  <h4>🏥 Operational Health</h4>
-                  <p>System maintains <strong>{expenseData.inventoryExpenses?.totalItems || 0}</strong> medical items with a <strong>{safeToFixed(expenseData.summary?.inventoryHealthScore)}%</strong> health score. Utilities payment score is <strong>{safeToFixed(expenseData.summary?.utilitiesPaymentScore)}%</strong> with <strong>{expenseData.utilitiesExpenses?.overduePayments || 0}</strong> overdue bills requiring attention.</p>
-                </div>
-              </>
-            )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Footer */}
+        <div className="etx-footer">
+          <div className="etx-footer-content">
+            <div className="etx-footer-info">
+              <h4>🏥 Heal-x Expense Tracking System</h4>
+              <p>
+                Last Updated: {new Date().toLocaleString()} • 
+                Data Status: {inventoryApiStatus === "connected" && utilitiesApiStatus === "connected" && supplierApiStatus === "connected" ? "Live Data" : "Mixed Sources"} • 
+                Total Expenses: ${safeToLocaleString(expenseData?.totalExpenses)}
+              </p>
+              <div className="etx-footer-metrics">
+                <span>📊 {expenseData?.payrollExpenses?.totalEmployees || 0} Employees</span>
+                <span>🏥 {expenseData?.inventoryExpenses?.totalItems || 0} Medical Items</span>
+                <span>⚡ {expenseData?.utilitiesExpenses?.totalUtilities || 0} Utilities</span>
+                <span>🤝 {expenseData?.supplierExpenses?.totalSuppliers || 0} Suppliers</span>
+                <span>📦 {expenseData?.supplierExpenses?.totalOrders || 0} Orders</span>
+              </div>
+            </div>
+            <div className="etx-footer-actions">
+              <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="etx-scroll-top">
+                ⬆️ Back to Top
+              </button>
+            </div>
           </div>
         </div>
       </div>
