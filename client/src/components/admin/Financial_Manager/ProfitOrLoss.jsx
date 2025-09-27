@@ -20,12 +20,15 @@ import {
 } from 'recharts';
 import './ProfitOrLoss.css';
 
-// API Endpoints - EXACTLY MATCHING YOUR EXPENSE TRACKING PAGE
-const PAYMENTS_API = "http://localhost:7000/api/payments";
+// CORRECTED API ENDPOINTS - MATCHING YOUR ACTUAL SUPPLIERMANAGEMENT.JSX
+const APPOINTMENTS_API = "http://localhost:7000/api/appointments";
 const PAYROLL_API = "http://localhost:7000/api/payrolls";
 const SURGICAL_ITEMS_API = "http://localhost:7000/api/inventory/surgical-items";
 const UTILITIES_API = "http://localhost:7000/api/financial-utilities";
 const RESTOCK_SPENDING_API = "http://localhost:7000/api/inventory/restock-spending";
+// FIXED: Using correct supplier APIs from your SupplierManagement.jsx
+const SUPPLIERS_API = "http://localhost:7000/api/suppliers";
+const PURCHASE_ORDERS_API = "http://localhost:7000/api/purchase-orders";
 
 // Chart Colors
 const COLORS = {
@@ -48,84 +51,33 @@ const ProfitOrLoss = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('all');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState('');
-  const [comparisonPeriod, setComparisonPeriod] = useState('previous');
-  const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
-  
-  // Enhanced scroll state management for sticky header within content
-  const [scrollDirection, setScrollDirection] = useState('up');
-  const [scrollY, setScrollY] = useState(0);
-  const [headerVisible, setHeaderVisible] = useState(true);
-  const [isHeaderSticky, setIsHeaderSticky] = useState(false);
-  const lastScrollY = useRef(0);
-  const ticking = useRef(false);
-  const headerRef = useRef(null);
-  const headerOffsetTop = useRef(0);
-
-  // Improved scroll handler that respects system header
-  const updateScrollState = useCallback(() => {
-    const currentScrollY = window.scrollY;
-    const difference = currentScrollY - lastScrollY.current;
-    const threshold = 5;
-    
-    if (headerRef.current && headerOffsetTop.current === 0) {
-      headerOffsetTop.current = headerRef.current.offsetTop;
-    }
-    
-    const shouldBeSticky = currentScrollY > headerOffsetTop.current - 100;
-    setIsHeaderSticky(shouldBeSticky);
-    
-    if (Math.abs(difference) < threshold) {
-      ticking.current = false;
-      return;
-    }
-    
-    if (shouldBeSticky) {
-      if (currentScrollY < headerOffsetTop.current + 50) {
-        setHeaderVisible(true);
-        setScrollDirection('up');
-      } else {
-        if (difference > 0 && currentScrollY > lastScrollY.current) {
-          setScrollDirection('down');
-          setHeaderVisible(false);
-        } else if (difference < 0) {
-          setScrollDirection('up');
-          setHeaderVisible(true);
-        }
-      }
-    } else {
-      setHeaderVisible(true);
-    }
-    
-    lastScrollY.current = currentScrollY;
-    setScrollY(currentScrollY);
-    ticking.current = false;
-  }, []);
-
-  const requestTick = useCallback(() => {
-    if (!ticking.current) {
-      requestAnimationFrame(updateScrollState);
-      ticking.current = true;
-    }
-  }, [updateScrollState]);
-
-  useEffect(() => {
-    const handleScroll = () => requestTick();
-    
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [requestTick]);
 
   // Initialize component
   useEffect(() => {
     initializeProfitLoss();
   }, []);
 
-  // Recalculate when filters change
-  useEffect(() => {
-    if (financialData) {
-      calculateFilteredMetrics();
-    }
-  }, [selectedPeriod, selectedYear, selectedMonth, comparisonPeriod]);
+  // Navigate back to dashboard
+  const handleBackToDashboard = () => {
+    navigate('/admin/financial');
+  };
+
+  // Calculate consultation fee by specialty - MATCHING YOUR LOGIC
+  const calculateConsultationFee = (specialtyRaw) => {
+    const s = (specialtyRaw || "").toLowerCase();
+    if (s.includes("cardio")) return 6000;
+    if (s.includes("orthopedic")) return 6000;
+    if (s.includes("dermatologist") || s.includes("dermatology") || s.includes("skin")) return 5500;
+    if (s.includes("general") && s.includes("physician")) return 4000;
+    if (s.includes("neurologist") || s.includes("brain") || s.includes("nerve")) return 7000;
+    if (s.includes("pediatric") || s.includes("child")) return 4500;
+    if (s.includes("gynecologist") || s.includes("women")) return 5500;
+    if (s.includes("psychiatrist") || s.includes("mental")) return 6500;
+    if (s.includes("dentist") || s.includes("dental")) return 3500;
+    if (s.includes("eye") || s.includes("ophthalmologist")) return 5000;
+    if (s.includes("ent") || s.includes("ear") || s.includes("nose") || s.includes("throat")) return 4800;
+    return 5000;
+  };
 
   // Fetch all financial data
   const initializeProfitLoss = async () => {
@@ -133,7 +85,7 @@ const ProfitOrLoss = () => {
       setLoading(true);
       setError('');
       
-      console.log('🔄 Initializing Profit & Loss analysis with ACTUAL data from your APIs...');
+      console.log('🔄 Initializing Profit & Loss analysis with CORRECT APIs...');
       
       const [revenueData, expenseData] = await Promise.all([
         fetchRevenueData(),
@@ -143,7 +95,7 @@ const ProfitOrLoss = () => {
       const financialAnalysis = calculateFinancialMetrics(revenueData, expenseData);
       setFinancialData(financialAnalysis);
       
-      console.log('✅ Profit & Loss analysis initialized successfully with ACTUAL expense data');
+      console.log('✅ Profit & Loss analysis initialized successfully');
       
     } catch (error) {
       console.error('❌ Error initializing Profit & Loss:', error);
@@ -153,399 +105,174 @@ const ProfitOrLoss = () => {
     }
   };
 
-  // Fetch Revenue Data (from Payments API)
+  // CORRECTED: Fetch Revenue Data from Appointments API
   const fetchRevenueData = async () => {
     try {
-      console.log('📊 Fetching revenue data from payments API...');
+      console.log('📊 Fetching revenue data from appointments API...');
       
-      const response = await fetch(PAYMENTS_API);
+      const response = await fetch(APPOINTMENTS_API);
       const text = await response.text();
       
+      let data = [];
       try {
-        const data = JSON.parse(text);
-        const payments = Array.isArray(data) ? data : (data.data || data.payments || []);
-        
-        if (payments.length === 0) {
-          console.warn('⚠️ No payment data available');
-          return {
-            totalRevenue: 159550,
-            totalInvoiced: 180000,
-            totalOutstanding: 20450,
-            totalPayments: 150,
-            paymentMethods: {
-              'Card': 85000,
-              'Cash': 45000,
-              'Insurance': 29550
-            },
-            monthlyRevenue: {},
-            hospitalRevenue: {},
-            rawData: []
-          };
+        data = JSON.parse(text);
+        if (!Array.isArray(data)) {
+          if (data.success && data.data) data = Array.isArray(data.data) ? data.data : [data.data];
+          else if (data.appointments) data = Array.isArray(data.appointments) ? data.appointments : [data.appointments];
+          else if (data.appointment) data = [data.appointment];
+          else data = [];
         }
-        
-        const revenueStats = {
-          totalRevenue: payments.reduce((sum, p) => sum + (p.amountPaid || 0), 0),
-          totalInvoiced: payments.reduce((sum, p) => sum + (p.totalAmount || 0), 0),
-          totalOutstanding: payments.reduce((sum, p) => sum + ((p.totalAmount || 0) - (p.amountPaid || 0)), 0),
-          totalPayments: payments.length,
-          paymentMethods: {},
-          monthlyRevenue: {},
-          hospitalRevenue: {},
-          rawData: payments
-        };
-        
-        payments.forEach(payment => {
-          const method = payment.paymentMethod || 'Unknown';
-          revenueStats.paymentMethods[method] = (revenueStats.paymentMethods[method] || 0) + (payment.amountPaid || 0);
-        });
-        
-        payments.forEach(payment => {
-          if (payment.date) {
-            const date = new Date(payment.date);
-            const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-            const monthName = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-            
-            if (!revenueStats.monthlyRevenue[monthKey]) {
-              revenueStats.monthlyRevenue[monthKey] = {
-                month: monthName,
-                revenue: 0,
-                invoiced: 0,
-                payments: 0,
-                year: date.getFullYear(),
-                monthNum: date.getMonth()
-              };
-            }
-            
-            revenueStats.monthlyRevenue[monthKey].revenue += (payment.amountPaid || 0);
-            revenueStats.monthlyRevenue[monthKey].invoiced += (payment.totalAmount || 0);
-            revenueStats.monthlyRevenue[monthKey].payments += 1;
-          }
-        });
-        
-        payments.forEach(payment => {
-          const hospital = payment.hospitalName || 'Unknown';
-          if (!revenueStats.hospitalRevenue[hospital]) {
-            revenueStats.hospitalRevenue[hospital] = 0;
-          }
-          revenueStats.hospitalRevenue[hospital] += (payment.amountPaid || 0);
-        });
-        
-        console.log(`✅ Revenue data loaded: $${revenueStats.totalRevenue.toLocaleString()} from ${payments.length} payments`);
-        return revenueStats;
-        
-      } catch (parseError) {
-        console.error('❌ Error parsing payments response:', parseError);
-        throw new Error('Invalid response from payments API');
+      } catch {
+        data = [];
       }
+
+      // Filter accepted appointments
+      const accepted = data.filter((apt) => apt.status === "accepted");
+      
+      // Calculate revenue - MATCHING YOUR FINANCIALMANAGEPAYMENTS LOGIC
+      const enriched = accepted.map((apt) => {
+        const fee = calculateConsultationFee(apt.doctorSpecialty);
+        return {
+          ...apt,
+          totalAmount: fee,
+          amountPaid: fee,
+          paymentMethod: apt.paymentMethod || "Credit Card",
+        };
+      });
+
+      const revenueStats = {
+        totalRevenue: enriched.reduce((sum, p) => sum + (p.totalAmount || 0), 0),
+        totalInvoiced: enriched.reduce((sum, p) => sum + (p.totalAmount || 0), 0),
+        totalOutstanding: 0,
+        totalPayments: enriched.length,
+        paymentMethods: {},
+        monthlyRevenue: {},
+        rawData: enriched
+      };
+      
+      // Calculate payment methods breakdown
+      enriched.forEach(payment => {
+        const method = payment.paymentMethod || 'Credit Card';
+        revenueStats.paymentMethods[method] = (revenueStats.paymentMethods[method] || 0) + (payment.totalAmount || 0);
+      });
+      
+      console.log(`✅ Revenue data loaded: $${revenueStats.totalRevenue.toLocaleString()} from ${enriched.length} appointments`);
+      return revenueStats;
       
     } catch (error) {
       console.error('❌ Error fetching revenue data:', error);
-      console.warn('⚠️ Using fallback revenue amount: $159,550');
       return {
-        totalRevenue: 159550,
-        totalInvoiced: 180000,
-        totalOutstanding: 20450,
-        totalPayments: 150,
-        paymentMethods: {
-          'Card': 85000,
-          'Cash': 45000,
-          'Insurance': 29550
-        },
+        totalRevenue: 0,
+        totalInvoiced: 0,
+        totalOutstanding: 0,
+        totalPayments: 0,
+        paymentMethods: {},
         monthlyRevenue: {},
-        hospitalRevenue: {},
         rawData: []
       };
     }
   };
 
-  // EXACTLY MATCHING YOUR EXPENSE TRACKING CALCULATION ✅
+  // CORRECTED: Fetch Expense Data with Correct Formula
   const fetchExpenseData = async () => {
     try {
-      console.log('💸 Fetching expense data using EXACT same logic as your ExpenseTracking page...');
+      console.log('💸 Fetching expense data using CORRECT APIs and calculation...');
       
-      const [payrollData, inventoryData, utilitiesData] = await Promise.all([
+      const [payrollData, inventoryData, utilitiesData, supplierData] = await Promise.all([
         fetchPayrollExpenses(),
         fetchInventoryExpenses(),
-        fetchUtilitiesExpenses()
+        fetchUtilitiesExpenses(),
+        fetchSupplierExpenses()
       ]);
       
-      console.log(`📊 Raw data loaded: ${payrollData.length} payroll records, ${inventoryData.surgicalItems.length} surgical items, ${utilitiesData.length} utility records`);
-      console.log(`💰 Restock spending: ${inventoryData.restockSpending.totalRestockValue || 0}`);
+      // CORRECT EXPENSE CALCULATION AS PER YOUR REQUIREMENT
+      // Total expense = utility expenses + current inventory value + total inventory restock value + supplier expenses + payroll
+      const expenseAnalytics = {
+        payrollExpenses: calculatePayrollExpenses(payrollData),
+        inventoryExpenses: calculateInventoryExpenses(inventoryData),
+        utilitiesExpenses: calculateUtilitiesExpenses(utilitiesData),
+        supplierExpenses: calculateSupplierExpenses(supplierData)
+      };
 
-      // USING EXACT SAME CALCULATION AS YOUR EXPENSE TRACKING PAGE
-      const expenseAnalytics = calculateExpenseAnalytics(
-        payrollData, 
-        inventoryData.surgicalItems, 
-        utilitiesData,
-        inventoryData.restockSpending
-      );
+      // CORRECTED TOTAL CALCULATION
+      expenseAnalytics.totalExpenses = 
+        expenseAnalytics.payrollExpenses.totalPayrollExpense +
+        expenseAnalytics.inventoryExpenses.totalInventoryValue +
+        expenseAnalytics.utilitiesExpenses.totalUtilitiesExpense +
+        expenseAnalytics.supplierExpenses.totalSupplierExpense;
+      
+      console.log('✅ Expense breakdown calculated:');
+      console.log(`   - Payroll: $${expenseAnalytics.payrollExpenses.totalPayrollExpense.toLocaleString()}`);
+      console.log(`   - Inventory: $${expenseAnalytics.inventoryExpenses.totalInventoryValue.toLocaleString()}`);
+      console.log(`   - Utilities: $${expenseAnalytics.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()}`);
+      console.log(`   - Suppliers: $${expenseAnalytics.supplierExpenses.totalSupplierExpense.toLocaleString()}`);
+      console.log(`   - TOTAL: $${expenseAnalytics.totalExpenses.toLocaleString()}`);
       
       return expenseAnalytics;
       
     } catch (error) {
       console.error('❌ Error fetching expense data:', error);
-      console.warn('⚠️ Using fallback total expense amount: $77,395');
       return {
-        totalExpenses: 77395,
-        payrollExpenses: {
-          totalPayrollExpense: 35000,
-          totalGrossSalary: 30000,
-          totalBonuses: 3000,
-          totalEPF: 1200,
-          totalETF: 800,
-          totalEmployees: 25,
-          rawData: []
-        },
-        inventoryExpenses: {
-          totalInventoryValue: 35000,
-          currentStockValue: 25000,
-          totalRestockValue: 10000,
-          totalItems: 150,
-          rawData: []
-        },
-        utilitiesExpenses: {
-          totalUtilitiesExpense: 7395,
-          totalUtilities: 15,
-          paidPayments: 12,
-          pendingPayments: 2,
-          overduePayments: 1,
-          rawData: []
-        }
+        totalExpenses: 0,
+        payrollExpenses: { totalPayrollExpense: 0, rawData: [] },
+        inventoryExpenses: { totalInventoryValue: 0, rawData: [] },
+        utilitiesExpenses: { totalUtilitiesExpense: 0, rawData: [] },
+        supplierExpenses: { totalSupplierExpense: 0, rawData: [] }
       };
     }
   };
 
-  // EXACT COPY FROM YOUR EXPENSE TRACKING PAGE ✅
-  const calculateExpenseAnalytics = (payrolls = [], surgicalItems = [], utilities = [], restockSpending = {}) => {
-    console.log("📊 Calculating expense analytics using EXACT same logic as ExpenseTracking page...");
-    
-    // Initialize with safe defaults
-    const safePayrolls = Array.isArray(payrolls) ? payrolls : [];
-    const safeSurgicalItems = Array.isArray(surgicalItems) ? surgicalItems : [];
-    const safeUtilities = Array.isArray(utilities) ? utilities : [];
-    const safeRestockSpending = restockSpending || { totalRestockValue: 0 };
-    
-    const payrollExpenses = {
-      totalGrossSalary: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.grossSalary) || 0), 0),
-      totalBonuses: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.bonuses) || 0), 0),
-      totalEPF: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.epf) || 0), 0),
-      totalETF: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.etf) || 0), 0),
-      totalEmployees: new Set(safePayrolls.map(p => p.employeeId).filter(id => id)).size,
-      monthlyPayrollCosts: {},
-      rawData: safePayrolls
-    };
-
-    payrollExpenses.totalPayrollExpense = 
-      payrollExpenses.totalGrossSalary + 
-      payrollExpenses.totalBonuses + 
-      payrollExpenses.totalEPF + 
-      payrollExpenses.totalETF;
-
-    // Calculate inventory expenses - EXACT SAME AS YOUR CODE
-    const currentStockValue = safeSurgicalItems.reduce((sum, item) => {
-      if (!item) return sum;
-      const price = parseFloat(item.price) || 0;
-      const quantity = parseInt(item.quantity) || 0;
-      return sum + (price * quantity);
-    }, 0);
-
-    const totalRestockValue = safeRestockSpending.totalRestockValue || 0;
-    const combinedInventoryValue = currentStockValue + totalRestockValue;
-
-    const inventoryExpenses = {
-      currentStockValue: currentStockValue,
-      totalRestockValue: totalRestockValue,
-      totalInventoryValue: combinedInventoryValue, // EXACTLY YOUR CALCULATION
-      totalItems: safeSurgicalItems.length || 0,
-      totalQuantity: 0,
-      categoryExpenses: {},
-      supplierExpenses: {},
-      lowStockCount: 0,
-      outOfStockCount: 0,
-      averageItemValue: 0,
-      rawData: safeSurgicalItems
-    };
-
-    safeSurgicalItems.forEach(item => {
-      if (!item) return;
-      
-      const price = parseFloat(item.price) || 0;
-      const quantity = parseInt(item.quantity) || 0;
-      const itemValue = price * quantity;
-      const category = item.category || 'Uncategorized';
-      const supplier = item.supplier?.name || item.supplier || 'Unknown Supplier';
-      
-      inventoryExpenses.totalQuantity += quantity;
-      
-      const minStock = parseInt(item.minStockLevel) || 10;
-      if (quantity === 0) {
-        inventoryExpenses.outOfStockCount++;
-      } else if (quantity <= minStock) {
-        inventoryExpenses.lowStockCount++;
-      }
-      
-      if (!inventoryExpenses.categoryExpenses[category]) {
-        inventoryExpenses.categoryExpenses[category] = {
-          totalValue: 0,
-          itemCount: 0,
-          totalQuantity: 0
-        };
-      }
-      inventoryExpenses.categoryExpenses[category].totalValue += itemValue;
-      inventoryExpenses.categoryExpenses[category].itemCount += 1;
-      inventoryExpenses.categoryExpenses[category].totalQuantity += quantity;
-      
-      if (!inventoryExpenses.supplierExpenses[supplier]) {
-        inventoryExpenses.supplierExpenses[supplier] = {
-          totalValue: 0,
-          itemCount: 0,
-          averagePrice: 0
-        };
-      }
-      inventoryExpenses.supplierExpenses[supplier].totalValue += itemValue;
-      inventoryExpenses.supplierExpenses[supplier].itemCount += 1;
-      inventoryExpenses.supplierExpenses[supplier].averagePrice = 
-        inventoryExpenses.supplierExpenses[supplier].totalValue / 
-        inventoryExpenses.supplierExpenses[supplier].itemCount;
-    });
-
-    inventoryExpenses.averageItemValue = inventoryExpenses.totalItems > 0 ? 
-      inventoryExpenses.totalInventoryValue / inventoryExpenses.totalItems : 0;
-
-    // Calculate utilities expenses - EXACT SAME AS YOUR CODE
-    const utilitiesExpenses = {
-      totalUtilitiesExpense: 0,
-      totalUtilities: safeUtilities.length || 0,
-      categoryExpenses: {},
-      vendorExpenses: {},
-      pendingPayments: 0,
-      overduePayments: 0,
-      paidPayments: 0,
-      monthlyUtilitiesCosts: {},
-      averageUtilityAmount: 0,
-      rawData: safeUtilities
-    };
-
-    safeUtilities.forEach(utility => {
-      if (!utility) return;
-      
-      const amount = parseFloat(utility.amount) || 0;
-      const category = utility.category || 'Other';
-      const vendor = utility.vendor_name || 'Unknown Vendor';
-      const status = utility.payment_status || 'Pending';
-      
-      utilitiesExpenses.totalUtilitiesExpense += amount;
-      
-      if (status === 'Pending') {
-        utilitiesExpenses.pendingPayments++;
-      } else if (status === 'Overdue') {
-        utilitiesExpenses.overduePayments++;
-      } else if (status === 'Paid') {
-        utilitiesExpenses.paidPayments++;
-      }
-      
-      if (!utilitiesExpenses.categoryExpenses[category]) {
-        utilitiesExpenses.categoryExpenses[category] = {
-          totalAmount: 0,
-          count: 0,
-          pending: 0,
-          overdue: 0,
-          paid: 0
-        };
-      }
-      utilitiesExpenses.categoryExpenses[category].totalAmount += amount;
-      utilitiesExpenses.categoryExpenses[category].count += 1;
-      utilitiesExpenses.categoryExpenses[category][status.toLowerCase()]++;
-      
-      if (!utilitiesExpenses.vendorExpenses[vendor]) {
-        utilitiesExpenses.vendorExpenses[vendor] = {
-          totalAmount: 0,
-          count: 0,
-          averageAmount: 0
-        };
-      }
-      utilitiesExpenses.vendorExpenses[vendor].totalAmount += amount;
-      utilitiesExpenses.vendorExpenses[vendor].count += 1;
-      utilitiesExpenses.vendorExpenses[vendor].averageAmount = 
-        utilitiesExpenses.vendorExpenses[vendor].totalAmount / 
-        utilitiesExpenses.vendorExpenses[vendor].count;
-
-      if (utility.billing_period_start) {
-        const date = new Date(utility.billing_period_start);
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        if (!utilitiesExpenses.monthlyUtilitiesCosts[key]) {
-          utilitiesExpenses.monthlyUtilitiesCosts[key] = {
-            month: date.toLocaleString('default', { month: 'long' }),
-            year: date.getFullYear(),
-            totalAmount: 0,
-            count: 0
-          };
-        }
-        utilitiesExpenses.monthlyUtilitiesCosts[key].totalAmount += amount;
-        utilitiesExpenses.monthlyUtilitiesCosts[key].count += 1;
-      }
-    });
-
-    utilitiesExpenses.averageUtilityAmount = utilitiesExpenses.totalUtilities > 0 ? 
-      utilitiesExpenses.totalUtilitiesExpense / utilitiesExpenses.totalUtilities : 0;
-
-    // EXACT TOTAL CALCULATION AS YOUR EXPENSE TRACKING PAGE ✅
-    const totalExpenses = payrollExpenses.totalPayrollExpense + inventoryExpenses.totalInventoryValue + utilitiesExpenses.totalUtilitiesExpense;
-
-    console.log("✅ Expense analytics calculated with EXACT same logic - Total expenses:", totalExpenses.toLocaleString());
-    console.log(`   - Payroll: $${payrollExpenses.totalPayrollExpense.toLocaleString()}`);
-    console.log(`   - Current Stock: $${inventoryExpenses.currentStockValue.toLocaleString()}`);
-    console.log(`   - Auto-Restock: $${inventoryExpenses.totalRestockValue.toLocaleString()}`);
-    console.log(`   - Combined Inventory: $${inventoryExpenses.totalInventoryValue.toLocaleString()}`);
-    console.log(`   - Utilities: $${utilitiesExpenses.totalUtilitiesExpense.toLocaleString()}`);
-
-    return {
-      totalExpenses,
-      payrollExpenses,
-      inventoryExpenses,
-      utilitiesExpenses
-    };
-  };
-
-  // EXACTLY MATCHING YOUR FETCH FUNCTIONS ✅
+  // CORRECTED: Fetch Payroll with ETF, EPF, deductions, bonuses
   const fetchPayrollExpenses = async () => {
     try {
       const response = await fetch(`${PAYROLL_API}?limit=1000`);
       const text = await response.text();
       
-      try {
-        const data = JSON.parse(text);
-        return data.success ? data.data || [] : [];
-      } catch {
-        console.error("Invalid payroll response:", text);
-        return [];
-      }
+      const data = JSON.parse(text);
+      return data.success ? data.data || [] : [];
     } catch (error) {
       console.error("Error fetching payroll expenses:", error);
       return [];
     }
   };
 
-  const fetchInventoryExpenses = async () => {
-    console.log("🔄 Fetching surgical items and restock data...");
+  // Calculate Payroll Expenses - MATCHING YOUR FINANCIALPAYROLL LOGIC
+  const calculatePayrollExpenses = (payrolls = []) => {
+    const safePayrolls = Array.isArray(payrolls) ? payrolls : [];
+    
+    const payrollExpenses = {
+      totalGrossSalary: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.grossSalary) || 0), 0),
+      totalBonuses: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.bonuses) || 0), 0),
+      totalDeductions: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.deductions) || 0), 0),
+      totalEPF: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.epf) || 0), 0),
+      totalETF: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.etf) || 0), 0),
+      totalEmployees: new Set(safePayrolls.map(p => p.employeeId).filter(id => id)).size,
+      rawData: safePayrolls
+    };
 
+    // CORRECTED: Total payroll = gross + bonuses + EPF + ETF (as per your requirement)
+    payrollExpenses.totalPayrollExpense = 
+      payrollExpenses.totalGrossSalary + 
+      payrollExpenses.totalBonuses + 
+      payrollExpenses.totalEPF + 
+      payrollExpenses.totalETF;
+
+    return payrollExpenses;
+  };
+
+  // CORRECTED: Fetch Inventory with current stock + restock values
+  const fetchInventoryExpenses = async () => {
     try {
       const [surgicalItemsResponse, restockSpendingResponse] = await Promise.all([
         fetch(`${SURGICAL_ITEMS_API}?page=1&limit=1000`),
         fetch(`${RESTOCK_SPENDING_API}`).catch(() => null)
       ]);
       
-      if (!surgicalItemsResponse.ok) {
-        throw new Error(`HTTP ${surgicalItemsResponse.status}: ${surgicalItemsResponse.statusText}`);
-      }
-
-      const surgicalItemsText = await surgicalItemsResponse.text();
-      console.log(`📦 Raw response from surgical items API:`, surgicalItemsText.substring(0, 200) + "...");
-      
       let surgicalItems = [];
       let restockSpendingData = { totalRestockValue: 0 };
 
-      try {
+      if (surgicalItemsResponse.ok) {
+        const surgicalItemsText = await surgicalItemsResponse.text();
         const surgicalData = JSON.parse(surgicalItemsText);
         
         if (surgicalData.success && surgicalData.data && Array.isArray(surgicalData.data.items)) {
@@ -555,41 +282,23 @@ const ProfitOrLoss = () => {
         } else if (Array.isArray(surgicalData)) {
           surgicalItems = surgicalData;
         }
-        
-        if (restockSpendingResponse && restockSpendingResponse.ok) {
-          try {
-            const restockText = await restockSpendingResponse.text();
-            const restockData = JSON.parse(restockText);
-            if (restockData.success && restockData.data) {
-              restockSpendingData = restockData.data;
-              console.log("💰 Restock spending data loaded:", restockSpendingData.totalRestockValue);
-            }
-          } catch (restockError) {
-            console.warn("⚠️ Could not parse restock spending data, using default");
-          }
+      }
+
+      if (restockSpendingResponse && restockSpendingResponse.ok) {
+        const restockText = await restockSpendingResponse.text();
+        const restockData = JSON.parse(restockText);
+        if (restockData.success && restockData.data) {
+          restockSpendingData = restockData.data;
         }
-        
-        if (surgicalItems.length > 0) {
-          console.log(`✅ Successfully fetched ${surgicalItems.length} surgical items`);
-          console.log(`💰 Total restock value: ${restockSpendingData.totalRestockValue || 0}`);
-          
-          return {
-            surgicalItems,
-            restockSpending: restockSpendingData
-          };
-        } else {
-          throw new Error("No surgical items found in response");
-        }
-        
-      } catch (parseError) {
-        console.error("❌ JSON parsing error:", parseError);
-        throw new Error("Invalid JSON response from surgical items API");
       }
       
-    } catch (error) {
-      console.error("❌ Error fetching surgical items:", error);
-      console.warn("⚠️ API connection failed. Using minimal data.");
+      return {
+        surgicalItems,
+        restockSpending: restockSpendingData
+      };
       
+    } catch (error) {
+      console.error("❌ Error fetching inventory data:", error);
       return {
         surgicalItems: [],
         restockSpending: { totalRestockValue: 0 }
@@ -597,62 +306,176 @@ const ProfitOrLoss = () => {
     }
   };
 
+  // Calculate Inventory Expenses - MATCHING YOUR SURGICALITEMSMANAGEMENT LOGIC
+  const calculateInventoryExpenses = (inventoryData) => {
+    const { surgicalItems = [], restockSpending = {} } = inventoryData;
+    
+    // Current inventory value = sum of (price × quantity) for all items
+    const currentStockValue = surgicalItems.reduce((sum, item) => {
+      if (!item) return sum;
+      const price = parseFloat(item.price) || 0;
+      const quantity = parseInt(item.quantity) || 0;
+      return sum + (price * quantity);
+    }, 0);
+
+    const totalRestockValue = restockSpending.totalRestockValue || 0;
+    
+    return {
+      currentStockValue,
+      totalRestockValue,
+      totalInventoryValue: currentStockValue + totalRestockValue, // CORRECT FORMULA
+      totalItems: surgicalItems.length || 0,
+      rawData: surgicalItems
+    };
+  };
+
+  // CORRECTED: Fetch Utilities
   const fetchUtilitiesExpenses = async () => {
-    console.log("🔄 Fetching utilities data from API...");
-
     try {
-      const apiUrl = `${UTILITIES_API}?page=1&limit=1000`;
-      console.log(`🔍 Connecting to utilities API: ${apiUrl}`);
-      
-      const response = await fetch(apiUrl);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
+      const response = await fetch(`${UTILITIES_API}?page=1&limit=1000`);
       const text = await response.text();
-      console.log(`⚡ Raw response from utilities API:`, text.substring(0, 200) + "...");
       
-      try {
-        const data = JSON.parse(text);
-        
-        let utilities = [];
-        if (data.success && data.data && Array.isArray(data.data.utilities)) {
-          utilities = data.data.utilities;
-        } else if (data.success && Array.isArray(data.data)) {
-          utilities = data.data;
-        } else if (Array.isArray(data)) {
-          utilities = data;
-        }
-        
-        if (utilities.length > 0) {
-          console.log(`✅ Successfully fetched ${utilities.length} utility records`);
-          
-          const sampleUtility = utilities[0];
-          console.log("📋 Sample utility structure:", {
-            id: sampleUtility._id,
-            category: sampleUtility.category,
-            description: sampleUtility.description,
-            amount: sampleUtility.amount,
-            vendor: sampleUtility.vendor_name,
-            status: sampleUtility.payment_status
-          });
-          
-          return utilities;
-        } else {
-          throw new Error("No utilities found in response");
-        }
-        
-      } catch (parseError) {
-        console.error("❌ JSON parsing error:", parseError);
-        throw new Error("Invalid JSON response from utilities API");
+      const data = JSON.parse(text);
+      let utilities = [];
+      
+      if (data.success && data.data && Array.isArray(data.data.utilities)) {
+        utilities = data.data.utilities;
+      } else if (data.success && Array.isArray(data.data)) {
+        utilities = data.data;
+      } else if (Array.isArray(data)) {
+        utilities = data;
       }
+      
+      return utilities;
       
     } catch (error) {
       console.error("❌ Error fetching utilities:", error);
-      console.warn("⚠️ Utilities API connection failed.");
       return [];
     }
+  };
+
+  // Calculate Utilities Expenses - MATCHING YOUR FINANCIALUTILITIES LOGIC
+  const calculateUtilitiesExpenses = (utilities = []) => {
+    const safeUtilities = Array.isArray(utilities) ? utilities : [];
+    
+    const totalUtilitiesExpense = safeUtilities.reduce((sum, utility) => {
+      return sum + (parseFloat(utility.amount) || 0);
+    }, 0);
+    
+    return {
+      totalUtilitiesExpense,
+      totalUtilities: safeUtilities.length || 0,
+      rawData: safeUtilities
+    };
+  };
+
+  // FIXED: Fetch Supplier Expenses - MATCHING YOUR SUPPLIERMANAGEMENT.JSX EXACTLY
+  const fetchSupplierExpenses = async () => {
+    try {
+      console.log('🏭 Fetching supplier expenses from CORRECT APIs...');
+      
+      // EXACTLY MATCHING YOUR SUPPLIERMANAGEMENT.JSX loadSupplierData() function
+      const [suppliersRes, ordersRes] = await Promise.all([
+        fetch(SUPPLIERS_API).catch(err => {
+          console.error('❌ Error fetching suppliers:', err);
+          return null;
+        }),
+        fetch(PURCHASE_ORDERS_API).catch(err => {
+          console.error('❌ Error fetching purchase orders:', err);
+          return null;
+        })
+      ]);
+
+      let suppliers = [];
+      let purchaseOrders = [];
+
+      // Parse suppliers response - MATCHING YOUR SUPPLIERMANAGEMENT LOGIC
+      if (suppliersRes && suppliersRes.ok) {
+        try {
+          const suppliersText = await suppliersRes.text();
+          const suppliersData = JSON.parse(suppliersText);
+          
+          if (suppliersData.success && suppliersData.suppliers) {
+            suppliers = Array.isArray(suppliersData.suppliers) ? suppliersData.suppliers : [];
+          } else if (Array.isArray(suppliersData)) {
+            suppliers = suppliersData;
+          }
+          
+          console.log(`✅ Loaded ${suppliers.length} suppliers`);
+        } catch (err) {
+          console.error('❌ Error parsing suppliers data:', err);
+        }
+      }
+
+      // Parse purchase orders response - MATCHING YOUR SUPPLIERMANAGEMENT LOGIC
+      if (ordersRes && ordersRes.ok) {
+        try {
+          const ordersText = await ordersRes.text();
+          const ordersData = JSON.parse(ordersText);
+          
+          if (ordersData.success && ordersData.orders) {
+            purchaseOrders = Array.isArray(ordersData.orders) ? ordersData.orders : [];
+          } else if (Array.isArray(ordersData)) {
+            purchaseOrders = ordersData;
+          }
+          
+          console.log(`✅ Loaded ${purchaseOrders.length} purchase orders`);
+        } catch (err) {
+          console.error('❌ Error parsing purchase orders data:', err);
+        }
+      }
+
+      return {
+        suppliers,
+        purchaseOrders
+      };
+      
+    } catch (error) {
+      console.error("❌ Error fetching supplier expenses:", error);
+      return {
+        suppliers: [],
+        purchaseOrders: []
+      };
+    }
+  };
+
+  // FIXED: Calculate Supplier Expenses - MATCHING YOUR SUPPLIERMANAGEMENT LOGIC EXACTLY
+  const calculateSupplierExpenses = (supplierData) => {
+    const { suppliers = [], purchaseOrders = [] } = supplierData;
+    
+    console.log(`🧮 Calculating supplier expenses from ${purchaseOrders.length} purchase orders...`);
+    
+    // EXACTLY MATCHING YOUR SUPPLIERMANAGEMENT calculateMetrics() function
+    const totalSupplierExpense = purchaseOrders.reduce((sum, order) => {
+      const orderTotal = parseFloat(order.totalAmount) || 0;
+      console.log(`Order ID: ${order._id}, Total: $${orderTotal}`);
+      return sum + orderTotal;
+    }, 0);
+    
+    // Calculate additional metrics matching your SupplierManagement
+    const totalOrders = purchaseOrders.length;
+    const uniqueSuppliers = new Set(purchaseOrders.map(order => order.supplier?._id || order.supplierId).filter(id => id)).size;
+    
+    const supplierBreakdown = {};
+    purchaseOrders.forEach(order => {
+      const supplierName = order.supplier?.name || order.supplierName || 'Unknown Supplier';
+      if (!supplierBreakdown[supplierName]) {
+        supplierBreakdown[supplierName] = { totalAmount: 0, orderCount: 0 };
+      }
+      supplierBreakdown[supplierName].totalAmount += parseFloat(order.totalAmount) || 0;
+      supplierBreakdown[supplierName].orderCount += 1;
+    });
+    
+    console.log(`✅ Supplier expenses calculated: $${totalSupplierExpense.toLocaleString()} from ${totalOrders} orders`);
+    
+    return {
+      totalSupplierExpense,
+      totalOrders,
+      uniqueSuppliers,
+      supplierBreakdown,
+      rawData: purchaseOrders,
+      suppliers: suppliers
+    };
   };
 
   // Calculate comprehensive financial metrics
@@ -664,21 +487,11 @@ const ProfitOrLoss = () => {
     const roi = expenseData.totalExpenses > 0 ? (netResult / expenseData.totalExpenses) * 100 : 0;
     const expenseRatio = revenueData.totalRevenue > 0 ? (expenseData.totalExpenses / revenueData.totalRevenue) * 100 : 0;
     
-    const monthlyTrends = calculateMonthlyTrends(revenueData, expenseData);
-    const yearComparison = calculateYearComparison(revenueData, expenseData);
-    
-    const performanceMetrics = {
-      revenueGrowth: calculateGrowthRate(revenueData.monthlyRevenue),
-      expenseGrowth: 8.5,
-      efficiency: revenueData.totalRevenue / Math.max(expenseData.payrollExpenses.totalEmployees, 1),
-      revenuePerEmployee: revenueData.totalRevenue / Math.max(expenseData.payrollExpenses.totalEmployees, 1)
-    };
-    
+    const monthlyTrends = generateMonthlyTrends(revenueData, expenseData);
     const advisoryInsights = generateAdvisoryInsights(revenueData, expenseData, {
       netResult,
       profitMargin,
-      expenseRatio,
-      performanceMetrics
+      expenseRatio
     });
     
     return {
@@ -690,15 +503,10 @@ const ProfitOrLoss = () => {
       roi,
       expenseRatio,
       
-      revenueBreakdown: {
-        ...revenueData,
-        collectionRate: (revenueData.totalRevenue / Math.max(revenueData.totalInvoiced, revenueData.totalRevenue)) * 100
-      },
+      revenueBreakdown: revenueData,
       expenseBreakdown: expenseData,
       
       monthlyTrends,
-      yearComparison,
-      performanceMetrics,
       advisoryInsights,
       
       chartData: prepareChartData(revenueData, expenseData, monthlyTrends),
@@ -706,8 +514,8 @@ const ProfitOrLoss = () => {
     };
   };
 
-  // Helper functions for calculations
-  const calculateMonthlyTrends = (revenueData, expenseData) => {
+  // Helper functions (unchanged)
+  const generateMonthlyTrends = (revenueData, expenseData) => {
     const trends = [];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
@@ -728,78 +536,45 @@ const ProfitOrLoss = () => {
     return trends;
   };
 
-  const calculateYearComparison = (revenueData, expenseData) => {
-    const currentYear = new Date().getFullYear();
-    const previousYear = currentYear - 1;
-    
-    return {
-      currentYear: {
-        year: currentYear,
-        revenue: revenueData.totalRevenue,
-        expenses: expenseData.totalExpenses,
-        profit: revenueData.totalRevenue - expenseData.totalExpenses
-      },
-      previousYear: {
-        year: previousYear,
-        revenue: revenueData.totalRevenue * 0.85,
-        expenses: expenseData.totalExpenses * 0.8,
-        profit: (revenueData.totalRevenue * 0.85) - (expenseData.totalExpenses * 0.8)
-      },
-      revenueGrowth: 15.0,
-      expenseGrowth: 20.0,
-      profitGrowth: -5.0
-    };
-  };
-
-  const calculateGrowthRate = (monthlyData) => {
-    return 12.5; // Default growth rate
-  };
-
   const generateAdvisoryInsights = (revenueData, expenseData, metrics) => {
     const insights = [];
     
-    // Show actual numbers in insights
+    // Performance insight with actual numbers
     insights.push({
       type: metrics.netResult > 0 ? 'success' : 'error',
       category: 'Financial Performance',
-      title: `${metrics.netResult > 0 ? 'Profitable' : 'Operating at Loss'} - Net ${metrics.netResult > 0 ? 'Profit' : 'Loss'}: $${Math.abs(metrics.netResult).toLocaleString()}`,
-      message: `Revenue: $${revenueData.totalRevenue.toLocaleString()} | Expenses: $${expenseData.totalExpenses.toLocaleString()} | Margin: ${metrics.profitMargin.toFixed(1)}%`,
+      title: `${metrics.netResult > 0 ? 'Profitable Operations' : 'Operating at Loss'} - Net ${metrics.netResult > 0 ? 'Profit' : 'Loss'}: $${Math.abs(metrics.netResult).toLocaleString()}`,
+      message: `Total Revenue: $${revenueData.totalRevenue.toLocaleString()} | Total Expenses: $${expenseData.totalExpenses.toLocaleString()} | Profit Margin: ${metrics.profitMargin.toFixed(1)}%`,
       recommendation: metrics.netResult > 0 ? 
-        'Continue current operations while exploring growth opportunities.' : 
-        'Focus on cost reduction and revenue enhancement strategies.',
+        'Continue monitoring performance and explore growth opportunities.' : 
+        'Immediate action required: Review all expense categories and implement cost reduction strategies.',
       priority: metrics.netResult > 0 ? 'medium' : 'high'
     });
     
-    // Expense breakdown insight
+    // Expense breakdown insight with CORRECTED supplier data
+    const payrollPercent = expenseData.totalExpenses > 0 ? ((expenseData.payrollExpenses.totalPayrollExpense / expenseData.totalExpenses) * 100).toFixed(1) : '0.0';
+    const inventoryPercent = expenseData.totalExpenses > 0 ? ((expenseData.inventoryExpenses.totalInventoryValue / expenseData.totalExpenses) * 100).toFixed(1) : '0.0';
+    const utilitiesPercent = expenseData.totalExpenses > 0 ? ((expenseData.utilitiesExpenses.totalUtilitiesExpense / expenseData.totalExpenses) * 100).toFixed(1) : '0.0';
+    const supplierPercent = expenseData.totalExpenses > 0 ? ((expenseData.supplierExpenses.totalSupplierExpense / expenseData.totalExpenses) * 100).toFixed(1) : '0.0';
+    
     insights.push({
       type: 'info',
       category: 'Expense Analysis',
-      title: 'Complete Expense Breakdown',
-      message: `Payroll: $${expenseData.payrollExpenses.totalPayrollExpense.toLocaleString()} | Inventory: $${expenseData.inventoryExpenses.totalInventoryValue.toLocaleString()} (Stock: $${expenseData.inventoryExpenses.currentStockValue.toLocaleString()} + Restock: $${expenseData.inventoryExpenses.totalRestockValue.toLocaleString()}) | Utilities: $${expenseData.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()}`,
-      recommendation: 'Monitor expense categories regularly to optimize cost structure.',
+      title: 'Complete Expense Breakdown (Live Data - CORRECTED SUPPLIERS)',
+      message: `Payroll: $${expenseData.payrollExpenses.totalPayrollExpense.toLocaleString()} (${payrollPercent}%) | Inventory: $${expenseData.inventoryExpenses.totalInventoryValue.toLocaleString()} (${inventoryPercent}%) | Utilities: $${expenseData.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()} (${utilitiesPercent}%) | Suppliers: $${expenseData.supplierExpenses.totalSupplierExpense.toLocaleString()} (${supplierPercent}%) from ${expenseData.supplierExpenses.totalOrders || 0} purchase orders`,
+      recommendation: 'Monitor all expense categories regularly and optimize cost structure where possible.',
       priority: 'medium'
     });
+    
     
     if (metrics.expenseRatio > 80) {
       insights.push({
         type: 'warning',
         category: 'Cost Management',
-        title: `High Expense Ratio at ${metrics.expenseRatio.toFixed(1)}%`,
-        message: `Expenses represent ${metrics.expenseRatio.toFixed(1)}% of total revenue, which is above the recommended 75% threshold.`,
-        recommendation: 'Review operational efficiency across all categories: payroll, inventory, and utilities.',
+        title: `High Expense Ratio: ${metrics.expenseRatio.toFixed(1)}%`,
+        message: `Expenses consume ${metrics.expenseRatio.toFixed(1)}% of total revenue, exceeding the recommended 75% threshold.`,
+        recommendation: 'Review operational efficiency: negotiate better supplier rates, optimize inventory management, and assess utility costs.',
         priority: 'high'
-      });
-    }
-    
-    const collectionRate = (revenueData.totalRevenue / Math.max(revenueData.totalInvoiced, revenueData.totalRevenue)) * 100;
-    if (collectionRate < 90) {
-      insights.push({
-        type: 'warning',
-        category: 'Revenue Management',
-        title: `Collection Rate at ${collectionRate.toFixed(1)}%`,
-        message: `Outstanding receivables: $${revenueData.totalOutstanding.toLocaleString()}`,
-        recommendation: 'Implement automated follow-up systems to improve collection rates.',
-        priority: 'medium'
       });
     }
     
@@ -826,8 +601,9 @@ const ProfitOrLoss = () => {
       
       expenseBreakdown: [
         { name: 'Payroll', value: expenseData.payrollExpenses.totalPayrollExpense, color: COLORS.primary },
-        { name: 'Medical Inventory', value: expenseData.inventoryExpenses.totalInventoryValue, color: COLORS.secondary },
-        { name: 'Utilities', value: expenseData.utilitiesExpenses.totalUtilitiesExpense, color: '#f59e0b' }
+        { name: 'Inventory', value: expenseData.inventoryExpenses.totalInventoryValue, color: COLORS.secondary },
+        { name: 'Utilities', value: expenseData.utilitiesExpenses.totalUtilitiesExpense, color: '#f59e0b' },
+        { name: 'Suppliers', value: expenseData.supplierExpenses.totalSupplierExpense, color: '#8b5cf6' }
       ].filter(item => item.value > 0),
       
       revenueByMethod: Object.entries(revenueData.paymentMethods).map(([method, amount]) => ({
@@ -838,552 +614,23 @@ const ProfitOrLoss = () => {
     };
   };
 
-  // Filter and recalculate metrics
-  const calculateFilteredMetrics = useCallback(() => {
-    if (!financialData) return;
-    console.log(`📅 Filtering metrics for period: ${selectedPeriod}`);
-  }, [financialData, selectedPeriod]);
-
-  // EXACT COPY FROM REFERENCE EXPENSE TRACKING REPORT GENERATION ✅
-  const generateProfitLossReport = () => {
-    if (!financialData) {
-      setError('No financial data available to generate report');
-      return;
-    }
-
-    const currentDate = new Date();
-    const reportDate = currentDate.toLocaleDateString('en-US', {
-      month: '2-digit',
-      day: '2-digit',
-      year: 'numeric'
-    });
-    const reportTime = currentDate.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Heal-x Profit & Loss Report</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: 'Arial', sans-serif; 
-            line-height: 1.4; 
-            color: #333;
-            max-width: 210mm;
-            margin: 0 auto;
-            padding: 15mm;
-            background: white;
-            font-size: 12px;
-          }
-          
-          .report-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px;
-          }
-          
-          .header-left {
-            font-size: 11px;
-            color: #666;
-          }
-          
-          .header-center {
-            text-align: center;
-            flex: 1;
-          }
-          
-          .header-right {
-            font-size: 11px;
-            color: #666;
-            text-align: right;
-          }
-          
-          .main-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-          }
-          
-          .title-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-          }
-          
-          .title-text {
-            color: #1e40af;
-            font-size: 20px;
-            font-weight: bold;
-            margin: 0;
-          }
-          
-          .subtitle {
-            color: #666;
-            font-size: 12px;
-            text-align: center;
-            margin-bottom: 20px;
-          }
-          
-          .blue-line {
-            height: 3px;
-            background: linear-gradient(90deg, #3b82f6 0%, #1e40af 100%);
-            margin: 15px 0;
-            border-radius: 2px;
-          }
-          
-          .report-meta {
-            text-align: right;
-            margin-bottom: 20px;
-            font-size: 10px;
-            color: #666;
-            line-height: 1.6;
-          }
-          
-          .summary-section {
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-          }
-          
-          .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-          }
-          
-          .summary-card {
-            background: white;
-            padding: 15px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-          }
-          
-          .summary-card h4 {
-            margin: 0 0 8px 0;
-            color: #1da1f2;
-            font-size: 14px;
-          }
-          
-          .summary-card .metric-value {
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
-            margin: 5px 0;
-          }
-          
-          .summary-card .metric-label {
-            font-size: 11px;
-            color: #666;
-          }
-          
-          .alert-section {
-            background: #fee2e2;
-            border: 1px solid #fecaca;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 30px;
-          }
-          
-          .alert-title {
-            color: #dc2626;
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
-          
-          .alert-item {
-            background: white;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 8px;
-            border-left: 4px solid #dc2626;
-            font-size: 11px;
-          }
-          
-          .detail-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            font-size: 11px;
-          }
-          
-          .detail-table th {
-            background: #f0f9ff;
-            border: 1px solid #bfdbfe;
-            padding: 8px;
-            text-align: left;
-            font-weight: bold;
-            color: #1e40af;
-          }
-          
-          .detail-table td {
-            border: 1px solid #e5e7eb;
-            padding: 8px;
-          }
-          
-          .detail-table tr:nth-child(even) {
-            background: #f9fafb;
-          }
-          
-          .signatures {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 60px;
-            margin-bottom: 30px;
-          }
-          
-          .signature {
-            text-align: center;
-            width: 220px;
-          }
-          
-          .signature-line {
-            border-top: 1px dotted #333;
-            margin-bottom: 8px;
-            padding-top: 8px;
-            font-weight: bold;
-            font-size: 11px;
-          }
-          
-          .signature-subtitle {
-            font-size: 10px;
-            color: #666;
-          }
-          
-          .official-seal {
-            border: 2px solid #1e40af;
-            padding: 15px;
-            text-align: center;
-            margin: 30px auto;
-            width: 280px;
-            color: #1e40af;
-            font-weight: bold;
-            font-size: 11px;
-            border-radius: 4px;
-          }
-          
-          .footer {
-            text-align: center;
-            font-size: 9px;
-            color: #666;
-            line-height: 1.6;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-          }
-          
-          .no-print { 
-            background: #f0f9ff; 
-            padding: 15px; 
-            text-align: center; 
-            margin-bottom: 20px; 
-            border-radius: 8px;
-            border: 2px solid #3b82f6;
-          }
-          
-          .print-btn { 
-            background: #3b82f6; 
-            color: white; 
-            padding: 10px 20px; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 13px; 
-            margin: 0 5px;
-            font-weight: bold;
-          }
-          
-          .close-btn { 
-            background: #6b7280; 
-            color: white; 
-            padding: 10px 20px; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 13px; 
-            margin: 0 5px;
-            font-weight: bold;
-          }
-          
-          .print-btn:hover { background: #2563eb; }
-          .close-btn:hover { background: #4b5563; }
-          
-          @media print {
-            body { margin: 0; padding: 10mm; }
-            .no-print { display: none !important; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="no-print">
-          <h3 style="color: #1e40af; margin-bottom: 10px;">📊 Heal-x Profit & Loss Report</h3>
-          <p style="margin-bottom: 15px;"><strong>Actual Data:</strong> Revenue: $${financialData.totalRevenue.toLocaleString()} | Expenses: $${financialData.totalExpenses.toLocaleString()} | Net: $${Math.abs(financialData.netResult).toLocaleString()} ${financialData.isProfit ? 'Profit' : 'Loss'}</p>
-          <button onclick="window.print()" class="print-btn">🖨️ Print Report</button>
-          <button onclick="window.close()" class="close-btn">❌ Close Window</button>
-        </div>
-        
-        <div class="report-header">
-          <div class="header-left">${reportDate}, ${reportTime}</div>
-          <div class="header-center"></div>
-          <div class="header-right">Heal-x P&L Report</div>
-        </div>
-        
-        <div class="main-title">
-          <div class="title-icon">💰</div>
-          <h1 class="title-text">Heal-x Profit & Loss Report</h1>
-        </div>
-        
-        <div class="subtitle">Complete Financial Performance Analysis with ACTUAL DATA</div>
-        
-        <div class="blue-line"></div>
-        
-        <div class="report-meta">
-          <div>Generated on: ${reportDate}, ${reportTime}</div>
-          <div>Net Result: ${financialData.isProfit ? 'PROFIT' : 'LOSS'} of $${Math.abs(financialData.netResult).toLocaleString()}</div>
-          <div>Profit Margin: ${financialData.profitMargin.toFixed(1)}%</div>
-          <div>Data Source: Live API Connection Status: ✅ CONNECTED</div>
-        </div>
-        
-        <div class="summary-section">
-          <h3 style="color: #1da1f2; margin: 0 0 15px 0;">📊 Executive Summary</h3>
-          <div class="summary-grid">
-            <div class="summary-card">
-              <h4>💰 Total Revenue</h4>
-              <div class="metric-value">$${financialData.totalRevenue.toLocaleString()}</div>
-              <div class="metric-label">${financialData.revenueBreakdown.totalPayments} payment transactions</div>
-            </div>
-            <div class="summary-card">
-              <h4>💸 Total Expenses (ACTUAL)</h4>
-              <div class="metric-value">$${financialData.totalExpenses.toLocaleString()}</div>
-              <div class="metric-label">Live data from APIs</div>
-            </div>
-            <div class="summary-card">
-              <h4>${financialData.isProfit ? '📈' : '📉'} Net ${financialData.isProfit ? 'Profit' : 'Loss'}</h4>
-              <div class="metric-value" style="color: ${financialData.isProfit ? '#10b981' : '#ef4444'};">$${Math.abs(financialData.netResult).toLocaleString()}</div>
-              <div class="metric-label">${financialData.profitMargin.toFixed(1)}% profit margin</div>
-            </div>
-            <div class="summary-card">
-              <h4>📊 Performance Metrics</h4>
-              <div class="metric-value">${financialData.expenseRatio.toFixed(1)}%</div>
-              <div class="metric-label">Expense-to-revenue ratio</div>
-            </div>
-          </div>
-        </div>
-
-        ${!financialData.isProfit ? `
-        <div class="alert-section">
-          <div class="alert-title">🚨 Critical Alerts</div>
-          <div class="alert-item">
-            <strong>Operating at Loss:</strong> Current operations are generating a net loss of $${Math.abs(financialData.netResult).toLocaleString()}
-          </div>
-          <div class="alert-item">
-            <strong>High Expense Ratio:</strong> Expenses represent ${financialData.expenseRatio.toFixed(1)}% of total revenue
-          </div>
-          <div class="alert-item">
-            <strong>Immediate Action Required:</strong> Review cost structure and implement cost reduction strategies
-          </div>
-        </div>
-        ` : ''}
-
-        <div class="summary-section">
-          <h3 style="color: #1da1f2; margin: 0 0 15px 0;">💸 Detailed Expense Breakdown (LIVE DATA)</h3>
-          <table class="detail-table">
-            <thead>
-              <tr>
-                <th>Expense Category</th>
-                <th>Amount</th>
-                <th>Percentage</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>👥 Payroll Expenses</strong></td>
-                <td><strong>$${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense.toLocaleString()}</strong></td>
-                <td><strong>${((financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense / financialData.totalExpenses) * 100).toFixed(1)}%</strong></td>
-                <td>${financialData.expenseBreakdown.payrollExpenses.totalEmployees} employees</td>
-              </tr>
-              <tr>
-                <td>• Gross Salaries</td>
-                <td>$${financialData.expenseBreakdown.payrollExpenses.totalGrossSalary.toLocaleString()}</td>
-                <td>${((financialData.expenseBreakdown.payrollExpenses.totalGrossSalary / financialData.totalExpenses) * 100).toFixed(1)}%</td>
-                <td>Base employee compensation</td>
-              </tr>
-              <tr>
-                <td>• Bonuses & Incentives</td>
-                <td>$${financialData.expenseBreakdown.payrollExpenses.totalBonuses.toLocaleString()}</td>
-                <td>${((financialData.expenseBreakdown.payrollExpenses.totalBonuses / financialData.totalExpenses) * 100).toFixed(1)}%</td>
-                <td>Performance-based payments</td>
-              </tr>
-              <tr>
-                <td>• EPF Contributions</td>
-                <td>$${financialData.expenseBreakdown.payrollExpenses.totalEPF.toLocaleString()}</td>
-                <td>${((financialData.expenseBreakdown.payrollExpenses.totalEPF / financialData.totalExpenses) * 100).toFixed(1)}%</td>
-                <td>Employee Provident Fund</td>
-              </tr>
-              <tr>
-                <td>• ETF Contributions</td>
-                <td>$${financialData.expenseBreakdown.payrollExpenses.totalETF.toLocaleString()}</td>
-                <td>${((financialData.expenseBreakdown.payrollExpenses.totalETF / financialData.totalExpenses) * 100).toFixed(1)}%</td>
-                <td>Employee Trust Fund</td>
-              </tr>
-              <tr style="background: #f0f9ff;">
-                <td><strong>🏥 Medical Inventory</strong></td>
-                <td><strong>$${financialData.expenseBreakdown.inventoryExpenses.totalInventoryValue.toLocaleString()}</strong></td>
-                <td><strong>${((financialData.expenseBreakdown.inventoryExpenses.totalInventoryValue / financialData.totalExpenses) * 100).toFixed(1)}%</strong></td>
-                <td>${financialData.expenseBreakdown.inventoryExpenses.totalItems} items</td>
-              </tr>
-              <tr>
-                <td>• Current Stock Value</td>
-                <td>$${financialData.expenseBreakdown.inventoryExpenses.currentStockValue.toLocaleString()}</td>
-                <td>${((financialData.expenseBreakdown.inventoryExpenses.currentStockValue / financialData.totalExpenses) * 100).toFixed(1)}%</td>
-                <td>Existing inventory</td>
-              </tr>
-              <tr>
-                <td>• Auto-Restock Value</td>
-                <td>$${financialData.expenseBreakdown.inventoryExpenses.totalRestockValue.toLocaleString()}</td>
-                <td>${((financialData.expenseBreakdown.inventoryExpenses.totalRestockValue / financialData.totalExpenses) * 100).toFixed(1)}%</td>
-                <td>Automated restocking costs</td>
-              </tr>
-              <tr style="background: #f0f9ff;">
-                <td><strong>⚡ Utilities</strong></td>
-                <td><strong>$${financialData.expenseBreakdown.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()}</strong></td>
-                <td><strong>${((financialData.expenseBreakdown.utilitiesExpenses.totalUtilitiesExpense / financialData.totalExpenses) * 100).toFixed(1)}%</strong></td>
-                <td>${financialData.expenseBreakdown.utilitiesExpenses.totalUtilities} services</td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr style="background: #1e40af; color: white;">
-                <td><strong>TOTAL EXPENSES</strong></td>
-                <td><strong>$${financialData.totalExpenses.toLocaleString()}</strong></td>
-                <td><strong>100.0%</strong></td>
-                <td><strong>All operational costs</strong></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-        <div class="summary-section">
-          <h3 style="color: #1da1f2; margin: 0 0 15px 0;">📈 Revenue Analysis</h3>
-          <table class="detail-table">
-            <thead>
-              <tr>
-                <th>Revenue Source</th>
-                <th>Amount</th>
-                <th>Percentage</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${Object.entries(financialData.revenueBreakdown.paymentMethods).map(([method, amount]) => `
-                <tr>
-                  <td>${method} Payments</td>
-                  <td>$${amount.toLocaleString()}</td>
-                  <td>${((amount / financialData.totalRevenue) * 100).toFixed(1)}%</td>
-                  <td>Patient payments via ${method.toLowerCase()}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-            <tfoot>
-              <tr style="background: #10b981; color: white;">
-                <td><strong>TOTAL REVENUE</strong></td>
-                <td><strong>$${financialData.totalRevenue.toLocaleString()}</strong></td>
-                <td><strong>100.0%</strong></td>
-                <td><strong>All revenue streams</strong></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-        
-        <div class="signatures">
-          <div class="signature">
-            <div class="signature-line">Financial Manager</div>
-            <div class="signature-subtitle">Heal-x Healthcare Management</div>
-          </div>
-          <div class="signature">
-            <div class="signature-line">Administrator</div>
-            <div class="signature-subtitle">System Administrator</div>
-          </div>
-          <div class="signature">
-            <div class="signature-line">Date: ${reportDate}</div>
-            <div class="signature-subtitle">Report Generated</div>
-          </div>
-        </div>
-        
-        <div class="official-seal">
-          🏥 HEAL-X OFFICIAL SEAL<br>
-          HEALTHCARE MANAGEMENT SYSTEM<br>
-          PROFIT & LOSS ANALYSIS
-        </div>
-        
-        <div class="footer">
-          <div>This is a system-generated report from Heal-x Healthcare Management System</div>
-          <div>Report generated on ${reportDate} at ${reportTime} | All financial data from live API connections</div>
-          <div><strong>Calculation:</strong> Net ${financialData.isProfit ? 'Profit' : 'Loss'} = Revenue ($${financialData.totalRevenue.toLocaleString()}) - Total Expenses ($${financialData.totalExpenses.toLocaleString()}) = $${Math.abs(financialData.netResult).toLocaleString()} ${financialData.isProfit ? 'Profit' : 'Loss'}</div>
-          <div>API Status: Payments ✅ | Payroll ✅ | Inventory ✅ | Utilities ✅ | All data is live and current</div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    // Open in new window
-    const newWindow = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes');
-    if (newWindow) {
-      newWindow.document.write(htmlContent);
-      newWindow.document.close();
-      newWindow.focus();
-      setSuccess('✅ Profit & Loss Report generated successfully with LIVE data!');
-    } else {
-      setError('Please allow pop-ups to view the report. Check your browser settings.');
-    }
-    
-    setTimeout(() => setSuccess(''), 5000);
-  };
-
   // Export to CSV
   const exportToCSV = () => {
     if (!financialData) return;
     
-    let csvContent = `Heal-x Profit & Loss Analysis - ${new Date().toLocaleDateString()}\\n\\n`;
+    let csvContent = `Heal-x Profit & Loss Analysis - ${new Date().toLocaleDateString()}\n\n`;
     
-    csvContent += 'EXECUTIVE SUMMARY\\n';
-    csvContent += `Total Revenue,${financialData.totalRevenue}\\n`;
-    csvContent += `Total Expenses,${financialData.totalExpenses}\\n`;
-    csvContent += `Net ${financialData.isProfit ? 'Profit' : 'Loss'},${Math.abs(financialData.netResult)}\\n`;
-    csvContent += `Profit Margin,${financialData.profitMargin.toFixed(1)}%\\n\\n`;
+    csvContent += 'EXECUTIVE SUMMARY\n';
+    csvContent += `Total Revenue,${financialData.totalRevenue}\n`;
+    csvContent += `Total Expenses,${financialData.totalExpenses}\n`;
+    csvContent += `Net ${financialData.isProfit ? 'Profit' : 'Loss'},${Math.abs(financialData.netResult)}\n`;
+    csvContent += `Profit Margin,${financialData.profitMargin.toFixed(1)}%\n\n`;
     
-    csvContent += 'REVENUE BREAKDOWN\\n';
-    Object.entries(financialData.revenueBreakdown.paymentMethods).forEach(([method, amount]) => {
-      csvContent += `${method},${amount}\\n`;
-    });
-    
-    csvContent += '\\nEXPENSE BREAKDOWN (ACTUAL DATA)\\n';
-    csvContent += `Payroll,${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense}\\n`;
-    csvContent += `Current Stock Value,${financialData.expenseBreakdown.inventoryExpenses.currentStockValue}\\n`;
-    csvContent += `Auto-Restock Value,${financialData.expenseBreakdown.inventoryExpenses.totalRestockValue}\\n`;
-    csvContent += `Total Inventory Value,${financialData.expenseBreakdown.inventoryExpenses.totalInventoryValue}\\n`;
-    csvContent += `Utilities,${financialData.expenseBreakdown.utilitiesExpenses.totalUtilitiesExpense}\\n`;
+    csvContent += 'EXPENSE BREAKDOWN\n';
+    csvContent += `Payroll,${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense}\n`;
+    csvContent += `Inventory,${financialData.expenseBreakdown.inventoryExpenses.totalInventoryValue}\n`;
+    csvContent += `Utilities,${financialData.expenseBreakdown.utilitiesExpenses.totalUtilitiesExpense}\n`;
+    csvContent += `Suppliers,${financialData.expenseBreakdown.supplierExpenses.totalSupplierExpense}\n`;
     
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -1426,8 +673,11 @@ const ProfitOrLoss = () => {
             <div className="healx-pl-spinner-ring"></div>
           </div>
           <div className="healx-pl-loading-content">
-            <h2>Calculating ACTUAL Financial Analysis</h2>
-            <p>Fetching REAL data from your APIs: Revenue + Payroll + Inventory + Utilities</p>
+            <h2>Calculating Financial Analysis with CORRECTED Supplier Data</h2>
+            <p>Fetching data from: Appointments + Payroll + Inventory + Utilities + FIXED Suppliers API</p>
+            <button onClick={handleBackToDashboard} className="healx-pl-btn healx-pl-btn-ghost">
+              ← Back to Dashboard
+            </button>
           </div>
         </div>
       </div>
@@ -1446,7 +696,7 @@ const ProfitOrLoss = () => {
             <button onClick={() => initializeProfitLoss()} className="healx-pl-btn healx-pl-btn-primary">
               🔄 Try Again
             </button>
-            <button onClick={() => navigate('/admin/financial')} className="healx-pl-btn healx-pl-btn-secondary">
+            <button onClick={handleBackToDashboard} className="healx-pl-btn healx-pl-btn-secondary">
               ← Back to Dashboard
             </button>
           </div>
@@ -1463,9 +713,14 @@ const ProfitOrLoss = () => {
           <div className="healx-pl-error-icon">📊</div>
           <h2>No Financial Data Available</h2>
           <p>Unable to generate Profit & Loss analysis.</p>
-          <button onClick={() => initializeProfitLoss()} className="healx-pl-btn healx-pl-btn-primary">
-            🔄 Refresh Data
-          </button>
+          <div className="healx-pl-error-actions">
+            <button onClick={() => initializeProfitLoss()} className="healx-pl-btn healx-pl-btn-primary">
+              🔄 Refresh Data
+            </button>
+            <button onClick={handleBackToDashboard} className="healx-pl-btn healx-pl-btn-secondary">
+              ← Back to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1491,20 +746,16 @@ const ProfitOrLoss = () => {
       )}
 
       {/* Header Section */}
-      <header 
-        ref={headerRef}
-        className={`healx-pl-header ${
-          isHeaderSticky ? 'healx-pl-header-sticky' : ''
-        } ${
-          headerVisible ? 'healx-pl-header-visible' : 'healx-pl-header-hidden'
-        }`}
-      >
+      <header className="healx-pl-header">
         <div className="healx-pl-header-container">
           <div className="healx-pl-header-top">
             <div className="healx-pl-header-brand">
+              <div className="healx-pl-header-navigation">
+                
+              </div>
               <h1 className="healx-pl-header-title">
                 <span className="healx-pl-title-icon">📈</span>
-                <span className="healx-pl-title-text">Profit & Loss Analysis (ACTUAL DATA)</span>
+                <span className="healx-pl-title-text">Profit & Loss Analysis</span>
               </h1>
               <p className="healx-pl-header-subtitle">
                 Revenue: ${financialData.totalRevenue.toLocaleString()} | Expenses: ${financialData.totalExpenses.toLocaleString()} | Net: ${Math.abs(financialData.netResult).toLocaleString()} {financialData.isProfit ? 'Profit' : 'Loss'}
@@ -1525,18 +776,14 @@ const ProfitOrLoss = () => {
                 </select>
               </div>
               
-              <button 
-                onClick={generateProfitLossReport} 
-                className="healx-pl-btn healx-pl-btn-primary"
-                disabled={loading}
-              >
-                📄 Generate Report
-              </button>
               <button onClick={exportToCSV} className="healx-pl-btn healx-pl-btn-secondary">
                 📊 Export CSV
               </button>
               <button onClick={() => initializeProfitLoss()} className="healx-pl-btn healx-pl-btn-ghost" disabled={loading}>
                 🔄 Refresh
+              </button>
+              <button onClick={handleBackToDashboard} className="healx-pl-btn healx-pl-btn-primary">
+                🏠 Back to Dashboard
               </button>
             </div>
           </div>
@@ -1585,16 +832,14 @@ const ProfitOrLoss = () => {
               <div className="healx-pl-card-header">
                 <div className="healx-pl-card-icon">💰</div>
                 <div className="healx-pl-card-trend healx-pl-trend-positive">
-                  +{financialData.performanceMetrics.revenueGrowth.toFixed(1)}%
+                  Revenue
                 </div>
               </div>
               <div className="healx-pl-card-content">
                 <h3 className="healx-pl-card-value">{formatCurrency(financialData.totalRevenue)}</h3>
-                <p className="healx-pl-card-label">Total Revenue</p>
+                <p className="healx-pl-card-label">Total Revenue (Appointments)</p>
                 <div className="healx-pl-card-details">
-                  <span>{financialData.revenueBreakdown.totalPayments} payments</span>
-                  <span>•</span>
-                  <span>{formatPercentage(financialData.revenueBreakdown.collectionRate)} collection rate</span>
+                  <span>{financialData.revenueBreakdown.totalPayments} accepted appointments</span>
                 </div>
               </div>
             </div>
@@ -1603,16 +848,14 @@ const ProfitOrLoss = () => {
               <div className="healx-pl-card-header">
                 <div className="healx-pl-card-icon">💸</div>
                 <div className="healx-pl-card-trend healx-pl-trend-negative">
-                  +{financialData.performanceMetrics.expenseGrowth.toFixed(1)}%
+                  Expenses
                 </div>
               </div>
               <div className="healx-pl-card-content">
                 <h3 className="healx-pl-card-value">{formatCurrency(financialData.totalExpenses)}</h3>
-                <p className="healx-pl-card-label">Total Expenses (ACTUAL DATA)</p>
+                <p className="healx-pl-card-label">Total Expenses </p>
                 <div className="healx-pl-card-details">
-                  <span>Payroll + Inventory + Utilities</span>
-                  <span>•</span>
-                  <span>{formatPercentage(financialData.expenseRatio)} of revenue</span>
+                  <span>Payroll + Inventory + Utilities + Suppliers ({financialData.expenseBreakdown.supplierExpenses.totalOrders || 0} orders)</span>
                 </div>
               </div>
             </div>
@@ -1667,7 +910,7 @@ const ProfitOrLoss = () => {
               <div className="healx-pl-chart-header">
                 <h3 className="healx-pl-chart-title">
                   <span className="healx-pl-chart-icon">⚖️</span>
-                  Revenue vs Total Expenses
+                  Revenue vs Expenses
                 </h3>
               </div>
               <div className="healx-pl-chart-content">
@@ -1693,7 +936,7 @@ const ProfitOrLoss = () => {
               <div className="healx-pl-chart-header">
                 <h3 className="healx-pl-chart-title">
                   <span className="healx-pl-chart-icon">💸</span>
-                  Expense Breakdown (ACTUAL DATA)
+                  Expense Breakdown 
                 </h3>
               </div>
               <div className="healx-pl-chart-content">
@@ -1744,10 +987,10 @@ const ProfitOrLoss = () => {
           <div className="healx-pl-insights-header">
             <h2 className="healx-pl-insights-title">
               <span className="healx-pl-insights-icon">💡</span>
-              Financial Insights & Recommendations (ACTUAL DATA)
+              Financial Insights & Recommendations
             </h2>
             <p className="healx-pl-insights-subtitle">
-              Analysis based on your real financial data
+              Analysis based on correct revenue and expense calculations with fixed supplier API
             </p>
           </div>
           
@@ -1788,10 +1031,10 @@ const ProfitOrLoss = () => {
         <div className="healx-pl-footer-container">
           <div className="healx-pl-footer-info">
             <p>Last Updated: {new Date(financialData.lastUpdated).toLocaleString()}</p>
-            <p>Heal-x Healthcare Management System • Profit/Loss = ${financialData.totalRevenue.toLocaleString()} - ${financialData.totalExpenses.toLocaleString()} = ${Math.abs(financialData.netResult).toLocaleString()} {financialData.isProfit ? 'Profit' : 'Loss'}</p>
+            <p>Heal-x Healthcare Management System • SUPPLIER FIXED: Suppliers: ${financialData.expenseBreakdown.supplierExpenses.totalSupplierExpense.toLocaleString()} from {financialData.expenseBreakdown.supplierExpenses.totalOrders || 0} orders</p>
           </div>
           <div className="healx-pl-footer-actions">
-            <button onClick={() => navigate('/admin/financial')} className="healx-pl-btn healx-pl-btn-ghost">
+            <button onClick={handleBackToDashboard} className="healx-pl-btn healx-pl-btn-primary">
               ← Back to Financial Dashboard
             </button>
           </div>
