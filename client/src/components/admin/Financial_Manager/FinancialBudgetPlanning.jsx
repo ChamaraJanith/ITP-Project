@@ -561,7 +561,7 @@ const FinancialBudgetPlanning = () => {
           <div class="report-container">
             <div class="report-header">
               <div class="company-logo">🏥 Heal-x Healthcare</div>
-              <div class="report-title">Budget Planning Report (CORRECTED)</div>
+              <div class="report-title">Budget Planning Report </div>
               <div class="report-subtitle">${activeBudgetPlan.planName}</div>
               <p style="color: #28a745; font-weight: bold;">✅ Total Expenses: ${formatCurrency(realFinancials.totalExpenses)} (Restock Included)</p>
             </div>
@@ -674,7 +674,7 @@ const FinancialBudgetPlanning = () => {
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Financial Data Summary - Heal-x (CORRECTED)</title>
+          <title>Financial Data Summary - Heal-x </title>
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             h1 { color: #2c5282; text-align: center; }
@@ -688,7 +688,7 @@ const FinancialBudgetPlanning = () => {
           </style>
         </head>
         <body>
-          <h1>Financial Data Summary (CORRECTED)</h1>
+          <h1>Financial Data Summary </h1>
           <p>Generated: ${new Date().toLocaleDateString()} - Heal-x Healthcare System</p>
           
           <div class="correction-box">
@@ -704,7 +704,7 @@ const FinancialBudgetPlanning = () => {
             <tr class="total-row"><td><strong>TOTAL REVENUE</strong></td><td class="text-right"><strong>${formatCurrency(realFinancials.totalRevenue)}</strong></td><td><strong>Live Data</strong></td></tr>
           </table>
           
-          <h2>Expense Breakdown (CORRECTED)</h2>
+          <h2>Expense Breakdown </h2>
           <table>
             <tr><th>Category</th><th>Amount</th><th>Records</th></tr>
             <tr><td>Payroll (incl. ETF/EPF)</td><td class="text-right">${formatCurrency(realFinancials.totalPayrollExpenses)}</td><td>${realFinancials.payrolls?.length || 0}</td></tr>
@@ -712,7 +712,7 @@ const FinancialBudgetPlanning = () => {
             <tr class="highlight-row"><td><strong>Restock Value ✅ ADDED</strong></td><td class="text-right"><strong>${formatCurrency(realFinancials.totalRestockValue)}</strong></td><td><strong>Auto-restock</strong></td></tr>
             <tr><td>Utilities</td><td class="text-right">${formatCurrency(realFinancials.totalUtilityExpenses)}</td><td>${realFinancials.utilities?.length || 0}</td></tr>
             <tr><td>Suppliers</td><td class="text-right">${formatCurrency(realFinancials.totalSupplierExpenses)}</td><td>${realFinancials.purchaseOrders?.length || 0}</td></tr>
-            <tr class="total-row"><td><strong>TOTAL EXPENSES (CORRECTED)</strong></td><td class="text-right"><strong>${formatCurrency(realFinancials.totalExpenses)}</strong></td><td><strong>Live Data</strong></td></tr>
+            <tr class="total-row"><td><strong>TOTAL EXPENSES</strong></td><td class="text-right"><strong>${formatCurrency(realFinancials.totalExpenses)}</strong></td><td><strong>Live Data</strong></td></tr>
           </table>
           
           <h2>Net Income</h2>
@@ -1084,7 +1084,7 @@ const FinancialBudgetPlanning = () => {
                 🏭 Suppliers: {realFinancialData.purchaseOrders?.length || 0} purchase orders
               </span>
               <span className="fbp-indicator" style={{backgroundColor: '#d4edda', color: '#155724', fontWeight: 'bold'}}>
-                ✅ Total Expenses: {formatCurrency(realFinancials.totalExpenses)} (CORRECTED)
+                ✅ Total Expenses: {formatCurrency(realFinancials.totalExpenses)} 
               </span>
             </div>
           </div>
@@ -1505,7 +1505,7 @@ const FinancialBudgetPlanning = () => {
                 <li>✅ Restock value properly included ({formatCurrency(processRealFinancialData().totalRestockValue)})</li>
                 <li>✅ Utility expense tracking</li>
                 <li>✅ Supplier cost monitoring</li>
-                <li style={{backgroundColor: '#d4edda', padding: '5px', borderRadius: '3px'}}>✅ <strong>Total Expenses: {formatCurrency(processRealFinancialData().totalExpenses)} (CORRECTED)</strong></li>
+                <li style={{backgroundColor: '#d4edda', padding: '5px', borderRadius: '3px'}}>✅ <strong>Total Expenses: {formatCurrency(processRealFinancialData().totalExpenses)} </strong></li>
               </ul>
             </div>
           </div>
