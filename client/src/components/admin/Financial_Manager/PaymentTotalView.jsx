@@ -75,9 +75,6 @@ const PaymentTotalView = () => {
         consultationFee = 4800;
       }
       
-      // Debug log to see what's happening
-      console.log(`Appointment ${apt._id}: Specialty="${apt.doctorSpecialty}" -> Fee=${consultationFee}`);
-      
       // Calculate age if needed
       let calculatedAge = apt.age;
       if (!calculatedAge && apt.dateOfBirth) {
@@ -96,7 +93,6 @@ const PaymentTotalView = () => {
         patientName: apt.name,
         hospitalName: apt.doctorSpecialty || 'General Medicine',
         doctorName: apt.doctorName,
-        // **UPDATED: Force recalculation by using consultationFee directly**
         totalAmount: consultationFee,
         amountPaid: consultationFee, // Accepted appointments are fully paid
         paymentMethod: ['Credit Card', 'Cash', 'Insurance', 'Bank Transfer'][index % 4],
@@ -147,9 +143,6 @@ const PaymentTotalView = () => {
       paymentMethods,
       hospitalBreakdown
     };
-
-    console.log('Updated payment data with proper fees:', payments);
-    console.log('Updated stats:', stats);
   }
 
   // Calculate additional metrics
@@ -157,8 +150,8 @@ const PaymentTotalView = () => {
   const partiallyPaidPayments = payments.filter(p => (p.amountPaid || 0) > 0 && (p.amountPaid || 0) < (p.totalAmount || 0));
   const unpaidPayments = payments.filter(p => (p.amountPaid || 0) === 0);
 
-  // **UPDATED: Enhanced PDF Generation with Fee Details**
-  const generatePDF = () => {
+  // **NEW: Advanced Report Generation System (matching InventoryTotalView format)**
+  const generateReport = () => {
     if (!payments || payments.length === 0) {
       alert('No payment data available to generate report');
       return;
@@ -166,195 +159,63 @@ const PaymentTotalView = () => {
 
     const currentDate = new Date();
     const reportDate = currentDate.toLocaleDateString('en-US', {
-      month: '2-digit',
-      day: '2-digit',
-      year: 'numeric'
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
     const reportTime = currentDate.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
+      second: '2-digit',
       hour12: true
     });
 
-    // **UPDATED: Generate detailed payment analysis with proper fee breakdown**
-    const generatePaymentAnalysisTableRows = () => {
+    const generatePaymentTableRows = () => {
       let rows = '';
-      let rowIndex = 1;
-      
-      // **NEW: Specialty-wise fee analysis**
-      const specialtyBreakdown = {};
-      payments.forEach(payment => {
-        const specialty = payment.specialty || payment.hospitalName || 'General Medicine';
-        if (!specialtyBreakdown[specialty]) {
-          specialtyBreakdown[specialty] = { 
-            totalDue: 0, 
-            totalPaid: 0, 
-            count: 0, 
-            avgFee: 0,
-            minFee: Infinity,
-            maxFee: 0
-          };
-        }
-        const amount = payment.totalAmount || 0;
-        specialtyBreakdown[specialty].totalDue += amount;
-        specialtyBreakdown[specialty].totalPaid += (payment.amountPaid || 0);
-        specialtyBreakdown[specialty].count += 1;
-        specialtyBreakdown[specialty].minFee = Math.min(specialtyBreakdown[specialty].minFee, amount);
-        specialtyBreakdown[specialty].maxFee = Math.max(specialtyBreakdown[specialty].maxFee, amount);
-      });
+      let runningTotal = 0;
 
-      // Calculate average fees
-      Object.keys(specialtyBreakdown).forEach(specialty => {
-        const data = specialtyBreakdown[specialty];
-        data.avgFee = data.count > 0 ? (data.totalDue / data.count) : 0;
-        if (data.minFee === Infinity) data.minFee = 0;
-      });
-      
-      // Specialty analysis rows
-      Object.entries(specialtyBreakdown).forEach(([specialty, data], index) => {
-        const percentage = stats.totalAmountPaid > 0 ? ((data.totalPaid / stats.totalAmountPaid) * 100).toFixed(1) : '0.0';
-        const collectionRate = data.totalDue > 0 ? ((data.totalPaid / data.totalDue) * 100).toFixed(1) : '100.0';
-        const variance = parseFloat(collectionRate) > 90 ? '+' : parseFloat(collectionRate) > 80 ? '+' : '-';
-        const variancePercent = Math.abs(parseFloat(collectionRate) - 85).toFixed(1);
+      // Sort payments by amount descending for better visual impact
+      const sortedPayments = [...payments].sort((a, b) => (b.totalAmount || 0) - (a.totalAmount || 0));
+
+      sortedPayments.forEach((payment, index) => {
+        runningTotal += (payment.amountPaid || 0);
+        const percentage = stats.totalAmountPaid > 0 ? ((payment.amountPaid || 0) / stats.totalAmountPaid * 100).toFixed(1) : '0.0';
+        const paymentStatus = (payment.amountPaid || 0) >= (payment.totalAmount || 0) ? 'Paid' : 
+                             (payment.amountPaid || 0) > 0 ? 'Partial' : 'Pending';
+        const statusColor = paymentStatus === 'Paid' ? '#10b981' : paymentStatus === 'Partial' ? '#f59e0b' : '#ef4444';
         
         rows += `
-          <tr>
-            <td>SP${rowIndex.toString().padStart(3, '0')}</td>
-            <td>${specialty}</td>
-            <td>MED${(index + 1).toString().padStart(3, '0')}</td>
-            <td>${data.totalDue.toLocaleString()}.00</td>
-            <td>${(data.totalDue - data.totalPaid).toLocaleString()}.00</td>
-            <td>${data.avgFee.toLocaleString()}.00</td>
-            <td>${percentage}%</td>
-            <td>${variance}${variancePercent}%</td>
-            <td>${data.totalPaid.toLocaleString()}.00</td>
-            <td style="color: ${parseFloat(collectionRate) >= 90 ? '#10b981' : parseFloat(collectionRate) >= 80 ? '#f59e0b' : '#ef4444'}; font-weight: bold;">${collectionRate >= 90 ? 'Excellent' : collectionRate >= 80 ? 'Good' : 'Average'}</td>
-            <td>September 2025</td>
-          </tr>
-        `;
-        rowIndex++;
-      });
-
-      // **NEW: Fee range analysis**
-      const feeRanges = {
-        'Budget ($3,000-$4,500)': { min: 3000, max: 4500, count: 0, totalPaid: 0 },
-        'Standard ($4,500-$6,000)': { min: 4500, max: 6000, count: 0, totalPaid: 0 },
-        'Premium ($6,000-$7,500)': { min: 6000, max: 7500, count: 0, totalPaid: 0 },
-        'Luxury ($7,500+)': { min: 7500, max: Infinity, count: 0, totalPaid: 0 }
-      };
-
-      payments.forEach(payment => {
-        const fee = payment.totalAmount || 0;
-        Object.entries(feeRanges).forEach(([range, data]) => {
-          if (fee >= data.min && fee < data.max) {
-            data.count += 1;
-            data.totalPaid += (payment.amountPaid || 0);
-          }
-        });
-      });
-
-      Object.entries(feeRanges).forEach(([range, data], index) => {
-        if (data.count > 0) {
-          const percentage = stats.totalAmountPaid > 0 ? ((data.totalPaid / stats.totalAmountPaid) * 100).toFixed(1) : '0.0';
-          const avgFee = data.count > 0 ? (data.totalPaid / data.count) : 0;
-          
-          rows += `
-            <tr>
-              <td>FR${(index + 1).toString().padStart(3, '0')}</td>
-              <td>${range}</td>
-              <td>FEE${(index + 1).toString().padStart(3, '0')}</td>
-              <td>${data.totalPaid.toLocaleString()}.00</td>
-              <td>0.00</td>
-              <td>${avgFee.toLocaleString()}.00</td>
-              <td>${percentage}%</td>
-              <td>+${(Math.random() * 15 + 5).toFixed(1)}%</td>
-              <td>${data.totalPaid.toLocaleString()}.00</td>
-              <td style="color: #3b82f6; font-weight: bold;">${data.count} Patients</td>
-              <td>September 2025</td>
-            </tr>
-          `;
-        }
-      });
-
-      // Payment method analysis
-      Object.entries(stats.paymentMethods).forEach(([method, amount], index) => {
-        const percentage = stats.totalAmountPaid > 0 ? ((amount / stats.totalAmountPaid) * 100).toFixed(1) : '0.0';
-        const usageCount = payments.filter(p => p.paymentMethod === method).length;
-        const avgTransaction = usageCount > 0 ? (amount / usageCount) : 0;
-        
-        rows += `
-          <tr>
-            <td>PM${(index + 1).toString().padStart(3, '0')}</td>
-            <td>${method}</td>
-            <td>PAY${(index + 1).toString().padStart(3, '0')}</td>
-            <td>${amount.toLocaleString()}.00</td>
-            <td>0.00</td>
-            <td>${avgTransaction.toLocaleString()}.00</td>
-            <td>${percentage}%</td>
-            <td>+${(Math.random() * 10 + 2).toFixed(1)}%</td>
-            <td>${amount.toLocaleString()}.00</td>
-            <td style="color: #10b981; font-weight: bold;">Active</td>
-            <td>September 2025</td>
-          </tr>
-        `;
-      });
-
-      // Collection efficiency analysis
-      const collectionRate = stats.totalAmountDue > 0 ? ((stats.totalAmountPaid / stats.totalAmountDue) * 100).toFixed(1) : '100.0';
-      const efficiency = parseFloat(collectionRate) >= 95 ? 'Excellent' : parseFloat(collectionRate) >= 85 ? 'Very Good' : parseFloat(collectionRate) >= 75 ? 'Good' : 'Needs Improvement';
-      const efficiencyColor = parseFloat(collectionRate) >= 95 ? '#10b981' : parseFloat(collectionRate) >= 85 ? '#3b82f6' : parseFloat(collectionRate) >= 75 ? '#f59e0b' : '#ef4444';
-      
-      rows += `
-        <tr style="background: ${parseFloat(collectionRate) >= 90 ? '#f0fff4' : parseFloat(collectionRate) >= 80 ? '#fefce8' : '#fef2f2'} !important; font-weight: bold;">
-          <td>COL001</td>
-          <td>Total Collection Rate</td>
-          <td>TOTAL</td>
-          <td>${stats.totalAmountDue.toLocaleString()}.00</td>
-          <td>${stats.totalPending.toLocaleString()}.00</td>
-          <td>${(stats.totalAmountDue / stats.totalPayments).toFixed(0).toLocaleString()}.00</td>
-          <td>${collectionRate}%</td>
-          <td>+15.2%</td>
-          <td style="color: ${efficiencyColor};">${stats.totalAmountPaid.toLocaleString()}.00</td>
-          <td style="color: ${efficiencyColor}; font-weight: bold;">${efficiency}</td>
-          <td>September 2025</td>
-        </tr>
-      `;
-
-      // **NEW: Top performing patients/appointments**
-      const topPayments = [...payments]
-        .sort((a, b) => (b.totalAmount || 0) - (a.totalAmount || 0))
-        .slice(0, 5);
-
-      topPayments.forEach((payment, index) => {
-        rows += `
-          <tr>
-            <td>TOP${(index + 1).toString().padStart(2, '0')}</td>
-            <td>${payment.patientName || 'Patient'}</td>
-            <td>PAT${(index + 1).toString().padStart(3, '0')}</td>
+          <tr ${index % 2 === 0 ? 'style="background-color: #f8fafc;"' : ''}>
+            <td>${(index + 1).toString().padStart(3, '0')}</td>
+            <td><strong>${payment.patientName || 'Patient'}</strong></td>
+            <td>${payment.invoiceNumber || `INV-${(index + 1).toString().padStart(6, '0')}`}</td>
+            <td>${payment.hospitalName || payment.specialty || 'General Medicine'}</td>
+            <td>${payment.doctorName || 'Doctor'}</td>
             <td>${(payment.totalAmount || 0).toLocaleString()}.00</td>
-            <td>0.00</td>
-            <td>${(payment.totalAmount || 0).toLocaleString()}.00</td>
-            <td>Individual</td>
-            <td>Top ${index + 1}</td>
-            <td>${(payment.amountPaid || 0).toLocaleString()}.00</td>
-            <td style="color: #10b981; font-weight: bold;">Paid</td>
-            <td>${payment.specialty || 'General'}</td>
+            <td style="color: #10b981; font-weight: bold;">${(payment.amountPaid || 0).toLocaleString()}.00</td>
+            <td>${((payment.totalAmount || 0) - (payment.amountPaid || 0)).toLocaleString()}.00</td>
+            <td>${payment.paymentMethod || 'Cash'}</td>
+            <td style="color: ${statusColor}; font-weight: bold;">${paymentStatus}</td>
+            <td>${percentage}%</td>
+            <td>${new Date(payment.date || new Date()).toLocaleDateString()}</td>
           </tr>
         `;
       });
 
-      // Totals row
+      // Add summary rows
       rows += `
-        <tr style="background: #e6f3ff !important; font-weight: bold; font-size: 14px;">
-          <td colspan="2" style="text-align: center; font-weight: bold;">GRAND TOTALS</td>
+        <tr style="border-top: 2px solid #374151; background: #f0f9ff; font-weight: bold;">
+          <td colspan="2" style="text-align: center;"><strong>SUMMARY TOTALS</strong></td>
+          <td></td>
+          <td></td>
           <td></td>
           <td style="font-weight: bold;">${stats.totalAmountDue.toLocaleString()}.00</td>
-          <td style="font-weight: bold;">${stats.totalPending.toLocaleString()}.00</td>
-          <td style="font-weight: bold;">${(stats.totalAmountDue / stats.totalPayments).toFixed(0).toLocaleString()}.00</td>
+          <td style="color: #10b981; font-weight: bold;">${stats.totalAmountPaid.toLocaleString()}.00</td>
+          <td style="color: #ef4444; font-weight: bold;">${stats.totalPending.toLocaleString()}.00</td>
+          <td></td>
+          <td></td>
           <td style="font-weight: bold;">100.0%</td>
-          <td style="font-weight: bold;">--</td>
-          <td style="font-weight: bold; color: #10b981;">${stats.totalAmountPaid.toLocaleString()}.00</td>
-          <td style="font-weight: bold;">COMPLETED</td>
           <td></td>
         </tr>
       `;
@@ -364,323 +225,495 @@ const PaymentTotalView = () => {
 
     const htmlContent = `
       <!DOCTYPE html>
-      <html>
+      <html lang="en">
       <head>
         <meta charset="UTF-8">
-        <title>Heal-x Payment Analysis Report</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Heal-X Healthcare Payment Analysis Report</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: 'Arial', sans-serif; 
-            line-height: 1.4; 
-            color: #333;
-            max-width: 210mm;
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.5;
+            color: #1f2937;
+            background: #ffffff;
+            padding: 30px;
+            font-size: 13px;
+          }
+          .report-container {
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 15mm;
             background: white;
-            font-size: 12px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
           }
-          
           .report-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px;
-          }
-          
-          .header-left {
-            font-size: 11px;
-            color: #666;
-          }
-          
-          .header-center {
-            text-align: center;
-            flex: 1;
-          }
-          
-          .header-right {
-            font-size: 11px;
-            color: #666;
-            text-align: right;
-          }
-          
-          .main-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-          }
-          
-          .title-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
             color: white;
-            font-size: 20px;
-            font-weight: bold;
-          }
-          
-          .title-text {
-            color: #10b981;
-            font-size: 20px;
-            font-weight: bold;
-            margin: 0;
-          }
-          
-          .subtitle {
-            color: #666;
-            font-size: 12px;
+            padding: 30px;
             text-align: center;
-            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
           }
-          
-          .blue-line {
-            height: 3px;
-            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
-            margin: 15px 0;
-            border-radius: 2px;
+          .report-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+              45deg,
+              transparent,
+              transparent 10px,
+              rgba(255,255,255,0.1) 10px,
+              rgba(255,255,255,0.1) 20px
+            );
+            animation: move 10s linear infinite;
           }
-          
+          @keyframes move {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+          }
+          .report-header h1 {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+          }
+          .report-header p {
+            font-size: 16px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+          }
           .report-meta {
-            text-align: right;
-            margin-bottom: 20px;
-            font-size: 10px;
-            color: #666;
-            line-height: 1.6;
+            background: #f8fafc;
+            padding: 25px 30px;
+            border-left: 5px solid #10b981;
+            margin-bottom: 30px;
           }
-          
+          .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+          }
+          .meta-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            text-align: center;
+          }
+          .meta-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .meta-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #10b981;
+          }
           .report-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 40px;
-            font-size: 10px;
+            margin: 30px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
           }
-          
+          .report-table thead tr {
+            background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+            color: white;
+          }
           .report-table th {
-            background: #f8fafc;
-            color: #374151;
-            font-weight: bold;
-            padding: 8px 6px;
-            text-align: center;
-            border: 1px solid #d1d5db;
-            font-size: 9px;
-            white-space: nowrap;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-right: 1px solid rgba(255,255,255,0.2);
           }
-          
+          .report-table th:last-child {
+            border-right: none;
+          }
           .report-table td {
-            padding: 6px 6px;
-            border: 1px solid #d1d5db;
-            text-align: center;
-            font-size: 9px;
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            border-right: 1px solid #e5e7eb;
           }
-          
-          .report-table tr:nth-child(even) { 
-            background: #f9fafb; 
+          .report-table td:last-child {
+            border-right: none;
           }
-          
-          .report-table tr:hover { 
-            background: #f3f4f6; 
+          .report-table tr:last-child td {
+            border-bottom: none;
           }
-          
+          .report-table tbody tr:hover {
+            background-color: #f0f9ff;
+            transform: scale(1.001);
+            transition: all 0.2s ease;
+          }
           .signatures {
             display: flex;
-            justify-content: space-between;
-            margin-top: 60px;
-            margin-bottom: 30px;
+            justify-content: space-around;
+            margin: 50px 0 30px 0;
+            padding: 30px;
+            background: #f8fafc;
+            border-radius: 8px;
           }
-          
           .signature {
             text-align: center;
-            width: 220px;
+            flex: 1;
+            margin: 0 20px;
           }
-          
           .signature-line {
-            border-top: 1px dotted #333;
-            margin-bottom: 8px;
-            padding-top: 8px;
+            border-top: 2px solid #374151;
+            width: 200px;
+            margin: 40px auto 10px auto;
+            padding-top: 10px;
             font-weight: bold;
-            font-size: 11px;
+            color: #374151;
           }
-          
-          .signature-subtitle {
-            font-size: 10px;
-            color: #666;
+          .signature-title {
+            color: #6b7280;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
           }
-          
-          .official-seal {
-            border: 2px solid #10b981;
-            padding: 15px;
-            text-align: center;
-            margin: 30px auto;
-            width: 280px;
-            color: #10b981;
-            font-weight: bold;
-            font-size: 11px;
-            border-radius: 4px;
-          }
-          
           .footer {
             text-align: center;
-            font-size: 9px;
-            color: #666;
+            padding: 25px;
+            background: #1f2937;
+            color: white;
+            font-size: 11px;
             line-height: 1.6;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
           }
-          
-          .no-print { 
-            background: #f0fff4; 
-            padding: 15px; 
-            text-align: center; 
-            margin-bottom: 20px; 
+          .print-controls {
+            background: #e0f2fe;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
             border-radius: 8px;
             border: 2px solid #10b981;
           }
-          
-          .print-btn { 
-            background: #10b981; 
-            color: white; 
-            padding: 10px 20px; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 13px; 
-            margin: 0 5px;
-            font-weight: bold;
+          .btn {
+            padding: 12px 24px;
+            margin: 0 8px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
           }
-          
-          .close-btn { 
-            background: #6b7280; 
-            color: white; 
-            padding: 10px 20px; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 13px; 
-            margin: 0 5px;
-            font-weight: bold;
+          .btn-primary {
+            background: #10b981;
+            color: white;
           }
-          
-          .print-btn:hover { background: #059669; }
-          .close-btn:hover { background: #4b5563; }
-          
+          .btn-primary:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+          }
+          .btn-secondary {
+            background: #6b7280;
+            color: white;
+          }
+          .btn-secondary:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
+          }
+          .stats-highlight {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border: 2px solid #10b981;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+          }
+          .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+          }
+          .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          }
+          .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #10b981;
+            margin-bottom: 5px;
+          }
+          .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
           @media print {
-            body { margin: 0; padding: 10mm; }
-            .no-print { display: none !important; }
-            .report-table { page-break-inside: avoid; }
-            .signatures { page-break-inside: avoid; }
-          }
-          
-          .fee-highlight {
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%) !important;
-            font-weight: bold;
-            color: #065f46;
+            body { padding: 0; }
+            .print-controls { display: none !important; }
+            .report-table { font-size: 10px; }
+            .report-table th, .report-table td { padding: 8px 6px; }
           }
         </style>
       </head>
       <body>
-        <div class="no-print">
-          <h3 style="color: #10b981; margin-bottom: 10px;">💰 Heal-x Payment Analysis Report Preview</h3>
-          <p style="margin-bottom: 15px;">Comprehensive payment analysis with detailed fee breakdown by specialty. Total Revenue: <strong>$${stats.totalAmountPaid.toLocaleString()}</strong></p>
-          <button onclick="window.print()" class="print-btn">🖨️ Print Report</button>
-          <button onclick="window.close()" class="close-btn">❌ Close Window</button>
+        <div class="print-controls">
+          <h3 style="color: #10b981; margin-bottom: 10px;">💰 Heal-X Payment Analysis Report</h3>
+          <p style="margin-bottom: 15px; color: #374151;">
+            Generated on ${reportDate} at ${reportTime} | Total Payments: ${stats.totalPayments} | Revenue: $${stats.totalAmountPaid.toLocaleString()}
+          </p>
+          <button onclick="window.print()" class="btn btn-primary">🖨️ Print Report</button>
+          <button onclick="exportToCSV()" class="btn btn-primary">📊 Export CSV</button>
+          <button onclick="window.close()" class="btn btn-secondary">✖️ Close</button>
         </div>
         
-        <div class="report-header">
-          <div class="header-left">${reportDate}, ${reportTime}</div>
-          <div class="header-center"></div>
-          <div class="header-right">Heal-x Payment Analysis Report</div>
-        </div>
-        
-        <div class="main-title">
-          <div class="title-icon">💰</div>
-          <h1 class="title-text">Heal-x Healthcare Payment Analysis Report</h1>
-        </div>
-        
-        <div class="subtitle">Comprehensive Revenue Analysis by Medical Specialty & Payment Methods</div>
-        
-        <div class="blue-line"></div>
-        
-        <div class="report-meta">
-          <div><strong>Generated on:</strong> ${reportDate}, ${reportTime}</div>
-          <div><strong>Total Appointments:</strong> ${stats.totalPayments}</div>
-          <div><strong>Total Revenue:</strong> $${stats.totalAmountPaid.toLocaleString()}</div>
-          <div><strong>Collection Rate:</strong> ${stats.collectionRate}%</div>
-          <div><strong>Report Period:</strong> All Accepted Appointments</div>
-        </div>
-        
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th>Analysis ID</th>
-              <th>Category/Specialty</th>
-              <th>Reference Code</th>
-              <th>Gross Amount (LKR)</th>
-              <th>Pending (LKR)</th>
-              <th>Avg Fee (LKR)</th>
-              <th>Share %</th>
-              <th>Performance %</th>
-              <th>Net Revenue (LKR)</th>
-              <th>Status</th>
-              <th>Period</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${generatePaymentAnalysisTableRows()}
-          </tbody>
-        </table>
-        
-        <div class="signatures">
-          <div class="signature">
-            <div class="signature-line">Financial Manager</div>
-            <div class="signature-subtitle">Heal-x Healthcare Management</div>
+        <div class="report-container">
+          <div class="report-header">
+            <h1 style="color: #2563eb">🏥 Heal-X Healthcare Payment Analysis</h1>
+            <p style ="color: #000">Comprehensive Financial Report & Revenue Analysis</p>
           </div>
-          <div class="signature">
-            <div class="signature-line">Date: _______________</div>
-            <div class="signature-subtitle">Report Approved On</div>
+          
+          <div class="report-meta">
+            <h2 style="color: #10b981; margin-bottom: 20px; font-size: 24px;">📊 Executive Summary</h2>
+            <p style="margin-bottom: 20px; color: #374151; font-size: 14px;">
+              This comprehensive payment analysis report covers ${stats.totalPayments} healthcare transactions 
+              with a total revenue collection of <strong>$${stats.totalAmountPaid.toLocaleString()}</strong> 
+              and an overall collection efficiency of <strong>${stats.collectionRate}%</strong>.
+            </p>
+            
+            <div class="stats-highlight">
+              <h3 style="color: #059669; margin-bottom: 15px;">🎯 Key Performance Indicators</h3>
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <div class="stat-value">${stats.totalPayments}</div>
+                  <div class="stat-label">Total Appointments</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value">$${stats.totalAmountDue.toLocaleString()}</div>
+                  <div class="stat-label">Total Due</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value">$${stats.totalAmountPaid.toLocaleString()}</div>
+                  <div class="stat-label">Revenue Collected</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value">${stats.collectionRate}%</div>
+                  <div class="stat-label">Collection Rate</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Patient Name</th>
+                <th>Invoice #</th>
+                <th>Specialty/Department</th>
+                <th>Doctor</th>
+                <th>Total Amount</th>
+                <th>Amount Paid</th>
+                <th>Balance</th>
+                <th>Payment Method</th>
+                <th>Status</th>
+                <th>% of Total</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${generatePaymentTableRows()}
+            </tbody>
+          </table>
+          
+          <div class="signatures">
+            <div class="signature">
+              <div class="signature-line">Financial Manager</div>
+              <div class="signature-title">Heal-X Healthcare</div>
+            </div>
+            <div class="signature">
+              <div class="signature-line">System Administrator</div>
+              <div class="signature-title">Report Generated</div>
+            </div>
+            <div class="signature">
+              <div class="signature-line">Date: ${reportDate}</div>
+              <div class="signature-title">Approval Date</div>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <strong>🏥 HEAL-X HEALTHCARE MANAGEMENT SYSTEM</strong><br>
+            Payment Analysis Report | Generated: ${reportDate} ${reportTime}<br>
+            This is a computer-generated report. All financial figures are in USD.<br>
+            For questions about this report, contact the Financial Department.
           </div>
         </div>
         
-        <div class="official-seal">
-          🏥 HEAL-X OFFICIAL HEALTHCARE SEAL<br>
-          PAYMENT MANAGEMENT SYSTEM
-        </div>
-        
-        <div class="footer">
-          <div><strong>This is a system-generated report from Heal-x Healthcare Management System</strong></div>
-          <div>Report generated on ${reportDate} at ${reportTime} | All amounts are in Sri Lankan Rupees (LKR)</div>
-          <div>Specialty fee structure: Cardiology/Orthopedic: $6,000 | Dermatology/Gynecology: $5,500 | Neurology: $7,000 | General: $4,000</div>
-          <div>For queries regarding this report, contact the Financial Department at Heal-x Healthcare</div>
-        </div>
+        <script>
+          function exportToCSV() {
+            const csvContent = [
+              ['No.', 'Patient Name', 'Invoice #', 'Specialty', 'Doctor', 'Total Amount', 'Amount Paid', 'Balance', 'Payment Method', 'Status', '% of Total', 'Date'],
+              ${payments.map((payment, index) => {
+                const percentage = stats.totalAmountPaid > 0 ? ((payment.amountPaid || 0) / stats.totalAmountPaid * 100).toFixed(1) : '0.0';
+                const paymentStatus = (payment.amountPaid || 0) >= (payment.totalAmount || 0) ? 'Paid' : 
+                                     (payment.amountPaid || 0) > 0 ? 'Partial' : 'Pending';
+                return `['${index + 1}', '${payment.patientName || 'Patient'}', '${payment.invoiceNumber || `INV-${(index + 1).toString().padStart(6, '0')}`}', '${payment.hospitalName || payment.specialty || 'General Medicine'}', '${payment.doctorName || 'Doctor'}', '${(payment.totalAmount || 0).toLocaleString()}.00', '${(payment.amountPaid || 0).toLocaleString()}.00', '${((payment.totalAmount || 0) - (payment.amountPaid || 0)).toLocaleString()}.00', '${payment.paymentMethod || 'Cash'}', '${paymentStatus}', '${percentage}%', '${new Date(payment.date || new Date()).toLocaleDateString()}']`;
+              }).join(',\n              ')}
+            ].map(row => Array.isArray(row) ? row.join(',') : row).join('\\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'heal-x-payment-analysis-' + new Date().toISOString().split('T')[0] + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            alert('✅ Payment data exported to CSV successfully!');
+          }
+        </script>
       </body>
       </html>
     `;
 
-    // Open in new window
-    const newWindow = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes');
-    if (newWindow) {
-      newWindow.document.write(htmlContent);
-      newWindow.document.close();
-      newWindow.focus();
-      alert(`💰 Comprehensive payment analysis report generated successfully! 
+    const reportWindow = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    if (reportWindow) {
+      reportWindow.document.write(htmlContent);
+      reportWindow.document.close();
+      reportWindow.focus();
       
-Total Revenue: $${stats.totalAmountPaid.toLocaleString()}
-Appointments: ${stats.totalPayments}
-Collection Rate: ${stats.collectionRate}%
-
-Click "Print Report" to save as PDF.`);
+      alert(`📊 Payment Analysis Report Generated Successfully! \n\n` +
+            `📈 Key Metrics:\n` +
+            `• Total Appointments: ${stats.totalPayments}\n` +
+            `• Revenue Collected: $${stats.totalAmountPaid.toLocaleString()}\n` +
+            `• Collection Rate: ${stats.collectionRate}%\n` +
+            `• Outstanding: $${stats.totalPending.toLocaleString()}\n\n` +
+            `Use the Print button to save as PDF or Export CSV for data analysis.`);
     } else {
-      alert('Please allow pop-ups to view the report. Check your browser settings.');
+      alert('❌ Pop-up blocked! Please allow pop-ups and try again.');
     }
   };
 
-  // **REST OF THE COMPONENT REMAINS THE SAME BUT WITH UPDATED DISPLAY VALUES**
+  // **NEW: CSV Export Function (matching InventoryTotalView format)**
+  const exportToCSV = () => {
+    if (!payments || payments.length === 0) {
+      alert('No payment data available for export');
+      return;
+    }
+
+    const csvHeaders = [
+      'No.',
+      'Patient Name',
+      'Invoice Number',
+      'Specialty/Department',
+      'Doctor Name',
+      'Total Amount ($)',
+      'Amount Paid ($)',
+      'Balance ($)',
+      'Payment Method',
+      'Status',
+      '% of Total Revenue',
+      'Payment Date',
+      'Appointment Date',
+      'Patient Email',
+      'Patient Phone',
+      'Age',
+      'Urgency',
+      'Symptoms'
+    ];
+
+    const csvData = payments.map((payment, index) => {
+      const percentage = stats.totalAmountPaid > 0 ? ((payment.amountPaid || 0) / stats.totalAmountPaid * 100).toFixed(1) : '0.0';
+      const paymentStatus = (payment.amountPaid || 0) >= (payment.totalAmount || 0) ? 'Fully Paid' : 
+                           (payment.amountPaid || 0) > 0 ? 'Partially Paid' : 'Unpaid';
+      
+      return [
+        index + 1,
+        payment.patientName || 'N/A',
+        payment.invoiceNumber || `INV-${(index + 1).toString().padStart(6, '0')}`,
+        payment.hospitalName || payment.specialty || 'General Medicine',
+        payment.doctorName || 'N/A',
+        (payment.totalAmount || 0).toFixed(2),
+        (payment.amountPaid || 0).toFixed(2),
+        ((payment.totalAmount || 0) - (payment.amountPaid || 0)).toFixed(2),
+        payment.paymentMethod || 'Cash',
+        paymentStatus,
+        `${percentage}%`,
+        new Date(payment.date || new Date()).toLocaleDateString(),
+        payment.appointmentDate ? new Date(payment.appointmentDate).toLocaleDateString() : 'N/A',
+        payment.patientEmail || 'N/A',
+        payment.patientPhone || 'N/A',
+        payment.age || 'N/A',
+        payment.urgency || 'N/A',
+        payment.symptoms ? payment.symptoms.substring(0, 100) : 'N/A'
+      ];
+    });
+
+    // Add summary row
+    csvData.push([
+      'TOTAL',
+      '',
+      '',
+      '',
+      '',
+      stats.totalAmountDue.toFixed(2),
+      stats.totalAmountPaid.toFixed(2),
+      stats.totalPending.toFixed(2),
+      '',
+      `${stats.collectionRate}% Collection Rate`,
+      '100.0%',
+      new Date().toLocaleDateString(),
+      '',
+      '',
+      '',
+      '',
+      '',
+      `${stats.totalPayments} Total Appointments`
+    ]);
+
+    const csvContent = [csvHeaders, ...csvData]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `heal-x-payment-analysis-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      alert(`📊 Payment data exported successfully!\n\n` +
+            `File: heal-x-payment-analysis-${new Date().toISOString().split('T')[0]}.csv\n` +
+            `Records: ${payments.length} payments\n` +
+            `Total Revenue: $${stats.totalAmountPaid.toLocaleString()}\n\n` +
+            `The file has been downloaded to your computer.`);
+    } else {
+      alert('CSV export is not supported in this browser');
+    }
+  };
 
   // Payment Status Chart Data
   const paymentStatusData = {
@@ -708,7 +741,7 @@ Click "Print Report" to save as PDF.`);
     }]
   };
 
-  // **UPDATED: Hospital/Specialty Performance Chart Data**
+  // Hospital/Specialty Performance Chart Data
   const hospitalChartData = {
     labels: Object.keys(stats.hospitalBreakdown).slice(0, 10),
     datasets: [{
@@ -724,7 +757,7 @@ Click "Print Report" to save as PDF.`);
     }]
   };
 
-  // Monthly trend data (if payments have dates)
+  // Monthly trend data
   const getMonthlyTrend = () => {
     const monthlyData = {};
     payments.forEach(payment => {
@@ -770,14 +803,17 @@ Click "Print Report" to save as PDF.`);
             <button onClick={() => window.print()} className="payment-total-print-btn">
               🖨️ Print Report
             </button>
-            <button onClick={generatePDF} className="payment-total-export-btn">
-              📤 Export Detailed Report
+            <button onClick={generateReport} className="payment-total-export-btn">
+              📤 Generate Detailed Report
+            </button>
+            <button onClick={exportToCSV} className="payment-total-csv-btn">
+              📊 Export to CSV
             </button>
           </div>
         </div>
       </div>
 
-      {/* **UPDATED: Summary Cards with Real Revenue Data** */}
+      {/* Summary Cards */}
       <div className="payment-total-summary-grid">
         <div className="payment-total-summary-card payment-total-primary-card">
           <div className="payment-total-card-icon">🏥</div>
@@ -836,7 +872,7 @@ Click "Print Report" to save as PDF.`);
         </div>
       </div>
 
-      {/* **UPDATED: Charts Section with Healthcare Focus** */}
+      {/* Charts Section */}
       <div className="payment-total-charts-section">
         {/* Payment Status */}
         <div className="payment-total-chart-container">
@@ -892,7 +928,7 @@ Click "Print Report" to save as PDF.`);
         </div>
       </div>
 
-      {/* **UPDATED: Specialty Performance Analysis** */}
+      {/* Specialty Performance Analysis */}
       <div className="payment-total-chart-container payment-total-full-width">
         <div className="payment-total-chart-header">
           <h3>🩺 Medical Specialty Revenue Analysis</h3>
@@ -962,10 +998,10 @@ Click "Print Report" to save as PDF.`);
         </div>
       )}
 
-      {/* **UPDATED: Detailed Analysis Tables with Specialty Focus** */}
+      {/* Detailed Analysis Tables */}
       <div className="payment-total-analysis-section">
         <div className="payment-total-analysis-grid">
-          {/* **UPDATED: Specialty Analysis Table** */}
+          {/* Specialty Analysis Table */}
           <div className="payment-total-analysis-card">
             <h3>🩺 Medical Specialty Analysis</h3>
             <div className="payment-total-analysis-table-container">
@@ -987,7 +1023,7 @@ Click "Print Report" to save as PDF.`);
                       const collectionRate = data.totalDue > 0 ? ((data.totalPaid / data.totalDue) * 100).toFixed(1) : 100;
                       const avgPerPatient = data.count > 0 ? (data.totalPaid / data.count) : 0;
                       
-                      // **NEW: Get standard fee for specialty**
+                      // Get standard fee for specialty
                       let standardFee = 5000;
                       const spec = specialty.toLowerCase();
                       if (spec.includes('cardio')) standardFee = 6000;
@@ -1066,7 +1102,7 @@ Click "Print Report" to save as PDF.`);
         </div>
       </div>
 
-      {/* Outstanding Payments (if any) */}
+      {/* Outstanding Payments */}
       {(partiallyPaidPayments.length > 0 || unpaidPayments.length > 0) && (
         <div className="payment-total-critical-items-section">
           <h3>🚨 Outstanding Payments Requiring Attention</h3>
@@ -1089,7 +1125,7 @@ Click "Print Report" to save as PDF.`);
         </div>
       )}
 
-      {/* **UPDATED: Executive Summary with Healthcare Focus** */}
+      {/* Executive Summary */}
       <div className="payment-total-summary-report">
         <h3>📋 Healthcare Revenue Executive Summary</h3>
         <div className="payment-total-report-grid">

@@ -1372,3 +1372,29 @@
 .payment-total-view ::-webkit-scrollbar-thumb:hover {
   background: var(--payment-total-gradient-success);
 }
+
+.payment-total-csv-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-10) var(--space-20);
+  border-radius: var(--radius-xl);
+  background: rgb(179, 179, 80);
+  color: var(--color-btn-primary-text);
+  box-shadow: var(--shadow-colored-sm);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-out);
+  border: none;
+  text-decoration: none;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.payment-total-csv-btn:hover{
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(var(--color-blue-500-rgb), 0.2);
+}
