@@ -26,7 +26,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
   color: white;
   padding: 24px 32px;
   border-radius: 16px;
@@ -68,16 +68,16 @@ body {
 }
 
 .btn-home {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(58, 202, 137);
   backdrop-filter: blur(10px);
 }
 
 .btn-analysis {
-  background: rgba(59, 130, 246, 0.8);
+  background: rgba(59, 187, 246, 0.8);
 }
 
 .btn-inventory {
-  background: rgba(139, 92, 246, 0.8);
+  background: rgba(120, 130, 53, 0.8);
 }
 
 .btn-base:hover {
