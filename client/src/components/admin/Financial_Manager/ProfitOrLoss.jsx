@@ -614,6 +614,326 @@ const ProfitOrLoss = () => {
     };
   };
 
+  // Manual PDF Report Generation - MATCHING YOUR EXPENSETRACKING FORMAT
+  const exportToPDF = () => {
+    if (!financialData) {
+      setError("No data to export");
+      return;
+    }
+
+    const currentDate = new Date();
+    const reportTitle = 'Profit & Loss Analysis Report';
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Heal-x ${reportTitle}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; line-height: 1.4; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1da1f2; padding-bottom: 20px; }
+          .header h1 { color: #1da1f2; margin: 0; font-size: 24px; font-weight: bold; }
+          .header p { margin: 10px 0 0 0; color: #666; font-size: 14px; }
+          .info { margin-bottom: 20px; text-align: right; font-size: 11px; color: #555; }
+          .summary-section { margin-bottom: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; }
+          .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+          .summary-card { background: white; padding: 15px; border-radius: 5px; border: 1px solid #ddd; }
+          .summary-card h4 { margin: 0 0 8px 0; color: #1da1f2; font-size: 14px; }
+          .summary-card .metric-value { font-size: 18px; font-weight: bold; color: #333; margin: 5px 0; }
+          .summary-card .metric-label { font-size: 11px; color: #666; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #1da1f2; color: white; font-weight: bold; text-align: center; }
+          .currency { text-align: right; }
+          .totals-row { background-color: #f0f8ff; font-weight: bold; }
+          .signature-section { margin-top: 60px; margin-bottom: 30px; width: 100%; page-break-inside: avoid; }
+          .signature-section h3 { color: #1da1f2; border-bottom: 1px solid #1da1f2; padding-bottom: 5px; margin-bottom: 20px; }
+          .signature-container { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; }
+          .signature-block { width: 30%; text-align: center; }
+          .signature-line { border-bottom: 2px dotted #333; width: 200px; height: 50px; margin: 0 auto 10px auto; position: relative; }
+          .signature-text { font-size: 11px; font-weight: bold; color: #333; margin-top: 5px; }
+          .signature-title { font-size: 10px; color: #666; margin-top: 2px; }
+          .company-stamp { text-align: center; margin-top: 30px; padding: 15px; border: 2px solid #1da1f2; display: inline-block; font-size: 10px; color: #1da1f2; font-weight: bold; }
+          .report-footer { margin-top: 40px; text-align: center; font-size: 9px; color: #888; border-top: 1px solid #ddd; padding-top: 15px; }
+          .alert-section { margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; }
+          .alert-title { font-weight: bold; color: #856404; margin-bottom: 8px; }
+          @media print {
+            body { margin: 10px; }
+            .no-print { display: none; }
+            .signature-section { page-break-inside: avoid; }
+          }
+          .profit-section { background-color: ${financialData.isProfit ? '#d4edda' : '#f8d7da'}; border: 1px solid ${financialData.isProfit ? '#c3e6cb' : '#f5c6cb'}; }
+          .profit-amount { color: ${financialData.isProfit ? '#155724' : '#721c24'}; }
+        </style>
+      </head>
+      <body>
+        <!-- Header -->
+        <div class="header">
+          <h1>🏥 Heal-x ${reportTitle}</h1>
+          <p>Healthcare Financial Management System</p>
+        </div>
+        
+        <!-- Report Info -->
+        <div class="info">
+          <strong>Generated on:</strong> ${currentDate.toLocaleString()}<br>
+          <strong>Report Type:</strong> Comprehensive Profit & Loss Analysis<br>
+          <strong>Financial Result:</strong> ${financialData.isProfit ? 'PROFIT' : 'LOSS'}<br>
+          <strong>Filter Period:</strong> ${selectedPeriod === 'all' ? 'All Time' : selectedPeriod}
+        </div>
+        
+        <!-- Executive Summary -->
+        <div class="summary-section profit-section">
+          <h3 style="color: #1da1f2; margin: 0 0 15px 0;">📊 Executive Summary</h3>
+          <div class="summary-grid">
+            <div class="summary-card">
+              <h4>💰 Total Revenue</h4>
+              <div class="metric-value">$${financialData.totalRevenue.toLocaleString()}</div>
+              <div class="metric-label">From ${financialData.revenueBreakdown.totalPayments} accepted appointments</div>
+            </div>
+            <div class="summary-card">
+              <h4>💸 Total Expenses</h4>
+              <div class="metric-value">$${financialData.totalExpenses.toLocaleString()}</div>
+              <div class="metric-label">Payroll + Inventory + Utilities + Suppliers</div>
+            </div>
+            <div class="summary-card">
+              <h4>${financialData.isProfit ? '📈' : '📉'} Net ${financialData.isProfit ? 'Profit' : 'Loss'}</h4>
+              <div class="metric-value profit-amount">$${Math.abs(financialData.netResult).toLocaleString()}</div>
+              <div class="metric-label">${Math.abs(financialData.profitMargin).toFixed(1)}% margin • ${financialData.roi.toFixed(1)}% ROI</div>
+            </div>
+            <div class="summary-card">
+              <h4>📊 Expense Ratio</h4>
+              <div class="metric-value">${financialData.expenseRatio.toFixed(1)}%</div>
+              <div class="metric-label">Expenses as percentage of revenue</div>
+            </div>
+          </div>
+        </div>
+
+        ${financialData.isProfit ? 
+          '<div class="alert-section" style="background-color: #d4edda; border-color: #c3e6cb;"><div class="alert-title" style="color: #155724;">✅ Profitable Operations</div><p>Your healthcare facility is operating profitably with a positive net result of $' + Math.abs(financialData.netResult).toLocaleString() + '. Continue monitoring performance and explore growth opportunities.</p></div>' :
+          '<div class="alert-section" style="background-color: #f8d7da; border-color: #f5c6cb;"><div class="alert-title" style="color: #721c24;">🚨 Operating at Loss</div><p>Your healthcare facility is currently operating at a loss of $' + Math.abs(financialData.netResult).toLocaleString() + '. Immediate action required to review expenses and improve revenue streams.</p></div>'
+        }
+
+        <!-- Financial Breakdown -->
+        <h3 style="color: #1da1f2; margin-top: 30px;">📊 Financial Breakdown</h3>
+        <table>
+          <thead>
+            <tr>
+              <th colspan="2">💰 Revenue Analysis</th>
+              <th colspan="2">💸 Expense Analysis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Total Revenue</td>
+              <td class="currency">$${financialData.totalRevenue.toLocaleString()}</td>
+              <td>Total Expenses</td>
+              <td class="currency">$${financialData.totalExpenses.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Accepted Appointments</td>
+              <td class="currency">${financialData.revenueBreakdown.totalPayments}</td>
+              <td>Payroll Expenses</td>
+              <td class="currency">$${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Outstanding Payments</td>
+              <td class="currency">$${financialData.revenueBreakdown.totalOutstanding.toLocaleString()}</td>
+              <td>Inventory Value</td>
+              <td class="currency">$${financialData.expenseBreakdown.inventoryExpenses.totalInventoryValue.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td>Utilities Expenses</td>
+              <td class="currency">$${financialData.expenseBreakdown.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td>Supplier Expenses</td>
+              <td class="currency">$${financialData.expenseBreakdown.supplierExpenses.totalSupplierExpense.toLocaleString()}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Key Financial Metrics -->
+        <h3 style="color: #1da1f2; margin-top: 30px;">📈 Key Financial Metrics</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Value</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Profit Margin</strong></td>
+              <td class="currency profit-amount"><strong>${financialData.profitMargin.toFixed(1)}%</strong></td>
+              <td>Net result as percentage of revenue</td>
+            </tr>
+            <tr>
+              <td><strong>Return on Investment</strong></td>
+              <td class="currency"><strong>${financialData.roi.toFixed(1)}%</strong></td>
+              <td>Net result as percentage of expenses</td>
+            </tr>
+            <tr>
+              <td><strong>Expense Ratio</strong></td>
+              <td class="currency"><strong>${financialData.expenseRatio.toFixed(1)}%</strong></td>
+              <td>Expenses as percentage of revenue</td>
+            </tr>
+            <tr>
+              <td><strong>Total Employees</strong></td>
+              <td class="currency"><strong>${financialData.expenseBreakdown.payrollExpenses.totalEmployees}</strong></td>
+              <td>Staff members on payroll</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Detailed Expense Breakdown -->
+        <h3 style="color: #1da1f2; margin-top: 30px;">🔍 Detailed Expense Breakdown</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>👥 Payroll</strong></td>
+              <td class="currency"><strong>$${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense.toLocaleString()}</strong></td>
+              <td>Gross: $${financialData.expenseBreakdown.payrollExpenses.totalGrossSalary.toLocaleString()} | Bonuses: $${financialData.expenseBreakdown.payrollExpenses.totalBonuses.toLocaleString()} | EPF: $${financialData.expenseBreakdown.payrollExpenses.totalEPF.toLocaleString()} | ETF: $${financialData.expenseBreakdown.payrollExpenses.totalETF.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td><strong>🏥 Inventory</strong></td>
+              <td class="currency"><strong>$${financialData.expenseBreakdown.inventoryExpenses.totalInventoryValue.toLocaleString()}</strong></td>
+              <td>Current Stock: $${financialData.expenseBreakdown.inventoryExpenses.currentStockValue.toLocaleString()} | Restock: $${financialData.expenseBreakdown.inventoryExpenses.totalRestockValue.toLocaleString()} | Items: ${financialData.expenseBreakdown.inventoryExpenses.totalItems}</td>
+            </tr>
+            <tr>
+              <td><strong>⚡ Utilities</strong></td>
+              <td class="currency"><strong>$${financialData.expenseBreakdown.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()}</strong></td>
+              <td>Services: ${financialData.expenseBreakdown.utilitiesExpenses.totalUtilities}</td>
+            </tr>
+            <tr>
+              <td><strong>🤝 Suppliers</strong></td>
+              <td class="currency"><strong>$${financialData.expenseBreakdown.supplierExpenses.totalSupplierExpense.toLocaleString()}</strong></td>
+              <td>Suppliers: ${financialData.expenseBreakdown.supplierExpenses.uniqueSuppliers} | Orders: ${financialData.expenseBreakdown.supplierExpenses.totalOrders}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Revenue by Payment Method -->
+        <h3 style="color: #1da1f2; margin-top: 30px;">💳 Revenue by Payment Method</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Payment Method</th>
+              <th>Amount</th>
+              <th>Percentage</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.entries(financialData.revenueBreakdown.paymentMethods).map(([method, amount]) => `
+              <tr>
+                <td>${method}</td>
+                <td class="currency">$${amount.toLocaleString()}</td>
+                <td class="currency">${((amount / financialData.totalRevenue) * 100).toFixed(1)}%</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <!-- Financial Insights -->
+        <h3 style="color: #1da1f2; margin-top: 30px;">💡 Financial Insights & Recommendations</h3>
+        ${financialData.advisoryInsights.map(insight => `
+          <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: ${insight.type === 'success' ? '#d4edda' : insight.type === 'warning' ? '#fff3cd' : insight.type === 'error' ? '#f8d7da' : '#d1ecf1'};">
+            <div style="font-weight: bold; margin-bottom: 5px; color: ${insight.type === 'success' ? '#155724' : insight.type === 'warning' ? '#856404' : insight.type === 'error' ? '#721c24' : '#0c5460'};">
+              ${insight.type === 'success' ? '✅' : insight.type === 'warning' ? '⚠️' : insight.type === 'error' ? '🚨' : 'ℹ️'} ${insight.title} <span style="font-size: 10px; background: #666; color: white; padding: 2px 6px; border-radius: 10px; margin-left: 10px;">${insight.priority.toUpperCase()}</span>
+            </div>
+            <div style="font-size: 11px; margin-bottom: 5px;">${insight.message}</div>
+            <div style="font-size: 10px; padding: 5px; background-color: rgba(0,0,0,0.05); border-radius: 3px;"><strong>Recommendation:</strong> ${insight.recommendation}</div>
+          </div>
+        `).join('')}
+
+        ${financialData.expenseBreakdown.supplierExpenses.totalOrders > 0 ? `
+          <!-- Supplier Analysis -->
+          <h3 style="color: #1da1f2; margin-top: 30px;">🏭 Supplier Analysis</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Supplier</th>
+                <th>Orders</th>
+                <th>Total Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(financialData.expenseBreakdown.supplierExpenses.supplierBreakdown || {}).map(([supplier, data]) => `
+                <tr>
+                  <td>${supplier}</td>
+                  <td class="currency">${data.orderCount}</td>
+                  <td class="currency">$${data.totalAmount.toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : ''}
+
+        <!-- Professional Signature Section -->
+        <div class="signature-section">
+          <h3>📋 Report Authorization</h3>
+          <div class="signature-container">
+            <div class="signature-block">
+              <div class="signature-line"></div>
+              <div class="signature-text">Financial Manager</div>
+              <div class="signature-title">Heal-x Healthcare Management</div>
+            </div>
+            <div class="signature-block">
+              <div class="signature-line"></div>
+              <div class="signature-text">Report Approved By</div>
+              <div class="signature-title">Admin Of Heal-x Healthcare Management</div>
+            </div>
+            <div class="signature-block">
+              <div class="signature-line"></div>
+              <div class="signature-text">Board Representative</div>
+              <div class="signature-title">Financial Oversight</div>
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 30px;">
+            <div class="company-stamp">
+              HEAL-X OFFICIAL SEAL<br>
+              HEALTHCARE MANAGEMENT SYSTEM
+            </div>
+          </div>
+        </div>
+
+        <!-- Report Footer -->
+        <div class="report-footer">
+          <p><strong>This is a system-generated report from Heal-x Healthcare Management System</strong></p>
+          <p>Report generated on ${currentDate.toLocaleString()} • All amounts are in Sri Lankan Rupees</p>
+          <p>For queries regarding this report, contact the Financial Department at Heal-x Healthcare</p>
+          <p>Data Sources: Appointments API • Payroll API • Inventory API • Utilities API • Suppliers API</p>
+        </div>
+
+        <!-- Print Controls -->
+        <div class="no-print" style="margin-top: 30px; text-align: center;">
+          <button onclick="window.print()" style="background: #1da1f2; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 14px; cursor: pointer;">🖨️ Print PDF Report</button>
+          <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 14px; cursor: pointer; margin-left: 10px;">✕ Close</button>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    setSuccess("PDF report opened! Use Ctrl+P to save as PDF.");
+    setTimeout(() => setSuccess(""), 3000);
+  };
+
   // Export to CSV
   const exportToCSV = () => {
     if (!financialData) return;
@@ -750,9 +1070,6 @@ const ProfitOrLoss = () => {
         <div className="healx-pl-header-container">
           <div className="healx-pl-header-top">
             <div className="healx-pl-header-brand">
-              <div className="healx-pl-header-navigation">
-                
-              </div>
               <h1 className="healx-pl-header-title">
                 <span className="healx-pl-title-icon">📈</span>
                 <span className="healx-pl-title-text">Profit & Loss Analysis</span>
@@ -776,6 +1093,9 @@ const ProfitOrLoss = () => {
                 </select>
               </div>
               
+              <button onClick={exportToPDF} className="healx-pl-btn healx-pl-btn-secondary">
+                📄 Generate PDF Report
+              </button>
               <button onClick={exportToCSV} className="healx-pl-btn healx-pl-btn-secondary">
                 📊 Export CSV
               </button>
