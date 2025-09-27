@@ -20,11 +20,11 @@ import {
 import "./FinancialDashboard.css";
 
 const FINANCIAL_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
-const API_URL = "http://localhost:7000/api/appointments"; // **CHANGED: From payments to appointments**
+const API_URL = "http://localhost:7000/api/appointments";
 
 const FinancialDashboard = () => {
   const [admin, setAdmin] = useState(null);
-  const [payments, setPayments] = useState([]); // Keep variable name for compatibility
+  const [payments, setPayments] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -37,10 +37,15 @@ const FinancialDashboard = () => {
     initializeDashboard();
   }, []);
 
-  // **UPDATED: Fetch appointments and convert to payment-like data**
+  // Fetch appointments and convert to payment-like data
   const fetchPayments = async () => {
     try {
       const response = await fetch(API_URL);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const text = await response.text();
 
       try {
@@ -63,43 +68,43 @@ const FinancialDashboard = () => {
         );
         
         // Convert to payment-like structure for existing logic compatibility
-const paymentsData = acceptedAppointments.map((apt, index) => {
-  // Calculate fee based on specialty
-  let consultationFee = 5000; // Default
-  const specialty = (apt.doctorSpecialty || '').toLowerCase();
-  
-  // More comprehensive specialty matching
-  if (specialty.includes('cardio')) {
-    consultationFee = 6000;
-  } else if (specialty.includes('orthopedic')) {
-    consultationFee = 6000;
-  } else if (specialty.includes('dermatologist') || specialty.includes('dermatology') || specialty.includes('skin')) {
-    consultationFee = 5500;
-  } else if (specialty.includes('general') && specialty.includes('physician')) {
-    consultationFee = 4000;
-  } else if (specialty.includes('neurologist') || specialty.includes('neurology') || specialty.includes('brain') || specialty.includes('nerve')) {
-    consultationFee = 7000;
-  } else if (specialty.includes('pediatrician') || specialty.includes('pediatric') || specialty.includes('child')) {
-    consultationFee = 4500;
-  } else if (specialty.includes('gynecologist') || specialty.includes('gynecology') || specialty.includes('women')) {
-    consultationFee = 5500;
-  } else if (specialty.includes('psychiatrist') || specialty.includes('psychiatry') || specialty.includes('mental')) {
-    consultationFee = 6500;
-  } else if (specialty.includes('dentist') || specialty.includes('dental')) {
-    consultationFee = 3500;
-  } else if (specialty.includes('eye') || specialty.includes('ophthalmologist') || specialty.includes('ophthalmology')) {
-    consultationFee = 5000;
-  } else if (specialty.includes('ent') || specialty.includes('ear') || specialty.includes('nose') || specialty.includes('throat')) {
-    consultationFee = 4800;
-  }
+        const paymentsData = acceptedAppointments.map((apt, index) => {
+          // Calculate fee based on specialty
+          let consultationFee = 5000; // Default
+          const specialty = (apt.doctorSpecialty || '').toLowerCase();
+          
+          // More comprehensive specialty matching
+          if (specialty.includes('cardio')) {
+            consultationFee = 6000;
+          } else if (specialty.includes('orthopedic')) {
+            consultationFee = 6000;
+          } else if (specialty.includes('dermatologist') || specialty.includes('dermatology') || specialty.includes('skin')) {
+            consultationFee = 5500;
+          } else if (specialty.includes('general') && specialty.includes('physician')) {
+            consultationFee = 4000;
+          } else if (specialty.includes('neurologist') || specialty.includes('neurology') || specialty.includes('brain') || specialty.includes('nerve')) {
+            consultationFee = 7000;
+          } else if (specialty.includes('pediatrician') || specialty.includes('pediatric') || specialty.includes('child')) {
+            consultationFee = 4500;
+          } else if (specialty.includes('gynecologist') || specialty.includes('gynecology') || specialty.includes('women')) {
+            consultationFee = 5500;
+          } else if (specialty.includes('psychiatrist') || specialty.includes('psychiatry') || specialty.includes('mental')) {
+            consultationFee = 6500;
+          } else if (specialty.includes('dentist') || specialty.includes('dental')) {
+            consultationFee = 3500;
+          } else if (specialty.includes('eye') || specialty.includes('ophthalmologist') || specialty.includes('ophthalmology')) {
+            consultationFee = 5000;
+          } else if (specialty.includes('ent') || specialty.includes('ear') || specialty.includes('nose') || specialty.includes('throat')) {
+            consultationFee = 4800;
+          }
 
           return {
             // Keep payment structure for compatibility
-            _id: apt._id,
+            _id: apt._id || `temp-${index}`,
             invoiceNumber: `INV-${apt._id?.slice(-6) || Math.random().toString(36).substr(2, 6)}`,
-            patientName: apt.name,
+            patientName: apt.name || 'Unknown Patient',
             hospitalName: apt.doctorSpecialty || 'General Medicine',
-            doctorName: apt.doctorName,
+            doctorName: apt.doctorName || 'Dr. Unknown',
             totalAmount: consultationFee,
             amountPaid: consultationFee, // Accepted = Fully Paid
             paymentMethod: ['Credit Card', 'Cash', 'Insurance', 'Bank Transfer'][index % 4],
@@ -116,23 +121,26 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
         
         console.log("Converted to payment structure:", paymentsData);
         return paymentsData || [];
+        
       } catch (parseError) {
+        console.error("JSON Parse Error:", parseError);
         console.error("Raw response (should be JSON):", text);
-        throw new Error("Not valid JSON. Check console for raw response.");
+        throw new Error(`Invalid JSON response: ${parseError.message}`);
       }
     } catch (error) {
       console.error("Error fetching appointments:", error);
-      throw error;
+      // Return empty array instead of throwing to prevent dashboard crash
+      return [];
     }
   };
 
-  // **KEEP ORIGINAL: Calculate real-time statistics (same logic as original)**
+  // Calculate real-time statistics
   const calculateRealTimeStats = (paymentsData) => {
     if (!paymentsData || paymentsData.length === 0) {
       return {
         todayRevenue: 0,
         pendingPayments: 0,
-        monthlyTarget: 125000, // Keep as target
+        monthlyTarget: 125000,
         collectionRate: 0,
         weekRevenue: 0,
         monthRevenue: 0,
@@ -145,9 +153,11 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
       };
     }
 
-    const today = new Date();
-    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     // Calculate totals
     const totalPayments = paymentsData.length;
@@ -159,9 +169,12 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
     const todayRevenue = paymentsData
       .filter(payment => {
         if (!payment.date) return false;
-        const paymentDate = new Date(payment.date);
-        const today = new Date();
-        return paymentDate.toDateString() === today.toDateString();
+        try {
+          const paymentDate = new Date(payment.date);
+          return paymentDate >= today && paymentDate < new Date(today.getTime() + 24 * 60 * 60 * 1000);
+        } catch (e) {
+          return false;
+        }
       })
       .reduce((sum, payment) => sum + (payment.amountPaid || 0), 0);
 
@@ -169,8 +182,12 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
     const weekRevenue = paymentsData
       .filter(payment => {
         if (!payment.date) return false;
-        const paymentDate = new Date(payment.date);
-        return paymentDate >= startOfWeek;
+        try {
+          const paymentDate = new Date(payment.date);
+          return paymentDate >= startOfWeek;
+        } catch (e) {
+          return false;
+        }
       })
       .reduce((sum, payment) => sum + (payment.amountPaid || 0), 0);
 
@@ -178,12 +195,16 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
     const monthRevenue = paymentsData
       .filter(payment => {
         if (!payment.date) return false;
-        const paymentDate = new Date(payment.date);
-        return paymentDate >= startOfMonth;
+        try {
+          const paymentDate = new Date(payment.date);
+          return paymentDate >= startOfMonth;
+        } catch (e) {
+          return false;
+        }
       })
       .reduce((sum, payment) => sum + (payment.amountPaid || 0), 0);
 
-    // Collection rate (should be 100% since all accepted appointments are paid)
+    // Collection rate
     const collectionRate = totalAmountDue > 0 ? Math.round((totalAmountPaid / totalAmountDue) * 100) : 100;
 
     // Payment methods breakdown
@@ -208,7 +229,7 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
     return {
       todayRevenue,
       pendingPayments: totalPending,
-      monthlyTarget: 125000, // Keep as target
+      monthlyTarget: 125000,
       collectionRate,
       weekRevenue,
       monthRevenue,
@@ -221,21 +242,29 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
     };
   };
 
-  // **KEEP ORIGINAL: Generate recent activities from real data**
+  // Generate recent activities from real data
   const generateRecentActivities = (paymentsData) => {
-    if (!paymentsData || paymentsData.length === 0) return [];
+    if (!paymentsData || paymentsData.length === 0) {
+      return ["📊 No recent activities to display", "🔄 Refresh data to see updates"];
+    }
 
     const activities = [];
 
     // Get recent payments (last 10)
     const recentPayments = paymentsData
       .filter(payment => payment.date)
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .sort((a, b) => {
+        try {
+          return new Date(b.date) - new Date(a.date);
+        } catch (e) {
+          return 0;
+        }
+      })
       .slice(0, 10);
 
     recentPayments.forEach(payment => {
       if (payment.amountPaid > 0) {
-        activities.push(`💰 Payment of $${payment.amountPaid.toLocaleString()} received from ${payment.patientName}`);
+        activities.push(`💰 Payment of $${payment.amountPaid.toLocaleString()} received from ${payment.patientName || 'Unknown'}`);
       }
       if (payment.totalAmount > payment.amountPaid) {
         const pending = payment.totalAmount - payment.amountPaid;
@@ -249,21 +278,23 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
     activities.push(`🏥 Managing ${Object.keys(stats.hospitalBreakdown).length} specialties`);
     activities.push(`💳 ${Object.keys(stats.paymentMethods).length} payment methods in use`);
 
-    return activities.slice(0, 10); // Return top 10 activities
+    return activities.slice(0, 10);
   };
 
   const initializeDashboard = async () => {
     try {
+      setError(""); // Clear previous errors
+      
       const adminData = localStorage.getItem("admin");
       if (adminData) {
         setAdmin(JSON.parse(adminData));
       }
 
-      // **UPDATED: Fetch appointment data converted to payment structure**
+      // Fetch appointment data converted to payment structure
       const paymentsData = await fetchPayments();
       setPayments(paymentsData);
 
-      // **KEEP ORIGINAL: Calculate real-time statistics**
+      // Calculate real-time statistics
       const realTimeStats = calculateRealTimeStats(paymentsData);
       const recentActivities = generateRecentActivities(paymentsData);
 
@@ -274,24 +305,30 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
 
     } catch (error) {
       console.error("❌ Error loading financial dashboard:", error);
-      setError("Failed to load financial dashboard");
+      setError(`Failed to load financial dashboard: ${error.message}`);
+      
+      // Set empty data to prevent crashes
+      setDashboardData({
+        stats: calculateRealTimeStats([]),
+        recentActivities: ["❌ Error loading data", "🔄 Please refresh to try again"]
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // **KEEP ORIGINAL: Refresh data function**
+  // Refresh data function
   const refreshDashboardData = async () => {
     setLoading(true);
     try {
       await initializeDashboard();
       console.log("✅ Dashboard data refreshed");
     } catch (error) {
-      setError("Failed to refresh data");
+      setError(`Failed to refresh data: ${error.message}`);
     }
   };
 
-  // **KEEP ORIGINAL: Function to scroll to specific chart**
+  // Function to scroll to specific chart
   const scrollToFinancialChart = (chartId) => {
     const chartElement = document.getElementById(chartId);
     if (chartElement) {
@@ -299,7 +336,7 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
     }
   };
 
-  // **KEEP ORIGINAL: Handle feature button clicks**
+  // Handle feature button clicks
   const handleFinancialFeatureClick = (feature) => {
     switch (feature) {
       case "view_billing":
@@ -311,7 +348,6 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
         break;
 
       case "Real time analytics":
-        // **KEEP ORIGINAL: Navigate with payment data structure**
         navigate("/admin/financial/payments/total-view", {
           state: {
             payments: payments,
@@ -359,7 +395,7 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
     }
   };
 
-  // **KEEP ORIGINAL: Handle operational task clicks**
+  // Handle operational task clicks
   const handleOperationalTaskClick = (task) => {
     switch (task) {
       case "send_emails":
@@ -379,7 +415,7 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
     }
   };
 
-  // **KEEP ORIGINAL: Handle analytics selection**
+  // Handle analytics selection
   const handleFinancialAnalyticsSelection = (analyticsType) => {
     setShowAnalyticsModal(false);
 
@@ -407,12 +443,12 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
     );
   }
 
-  // **KEEP ORIGINAL: Chart Data with real values from appointments**
+  // Chart Data with real values from appointments
   const pieData = dashboardData?.stats
     ? [
         { name: "Collected Revenue", value: dashboardData.stats.totalAmountPaid || 0 },
         { name: "Pending Payments", value: dashboardData.stats.pendingPayments || 0 },
-      ]
+      ].filter(item => item.value > 0) // Only show non-zero values
     : [];
 
   const barData = dashboardData?.stats
@@ -459,7 +495,7 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
 
         {dashboardData && (
           <>
-            {/* **KEEP ORIGINAL: Stats Grid with Real Data from Appointments** */}
+            {/* Stats Grid with Real Data from Appointments */}
             <div className="fd-stats-grid">
               <div className="fd-stat-card fd-today-revenue" onClick={() => scrollToFinancialChart("fd-todays-revenue-chart")}>
                 <div className="fd-stat-info">
@@ -497,19 +533,23 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
               </div>
             </div>
 
-            {/* **KEEP ORIGINAL: Charts Section - Charts will now show real data** */}
+            {/* Charts Section - Charts will now show real data */}
             <div className="fd-charts-section">
               <div id="fd-todays-revenue-chart" className="fd-revenue-pie-chart">
                 <h2>📊 Revenue vs Pending</h2>
-                <PieChart width={400} height={300}>
-                  <Pie data={pieData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label>
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={FINANCIAL_COLORS[index % FINANCIAL_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
-                  <Legend />
-                </PieChart>
+                {pieData.length > 0 ? (
+                  <PieChart width={400} height={300}>
+                    <Pie data={pieData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label>
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={FINANCIAL_COLORS[index % FINANCIAL_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
+                    <Legend />
+                  </PieChart>
+                ) : (
+                  <div className="no-data-message">No revenue data available</div>
+                )}
               </div>
 
               <div id="fd-monthly-revenue-chart" className="fd-revenue-bar-chart">
@@ -561,7 +601,7 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
               </div>
             </div>
 
-            {/* **KEEP ORIGINAL: Features Section** */}
+            {/* Features Section */}
             <div className="fd-features-section">
               <h2>💼 Financial Features</h2>
               <div className="fd-features-grid">
@@ -637,7 +677,7 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
               </div>
             </div>
 
-            {/* **KEEP ORIGINAL: Operational Tasks Section** */}
+            {/* Operational Tasks Section */}
             <div className="fd-operational-section">
               <h2>⚙️ Operational Tasks</h2>
               <div className="fd-operational-grid">
@@ -664,27 +704,31 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
               </div>
             </div>
 
-            {/* **KEEP ORIGINAL: Billing Modal with appointment data** */}
+            {/* Billing Modal with appointment data */}
             {showBilling && (
               <div className="fd-billing-modal">
                 <div className="fd-billing-content">
                   <h2>🧾 Recent Billing Information</h2>
-                  {payments.slice(0, 3).map((payment, index) => (
-                    <div key={index} className="fd-bill-card">
-                      <p><strong>Invoice #:</strong> {payment.invoiceNumber}</p>
-                      <p><strong>Specialty:</strong> {payment.hospitalName}</p>
-                      <p><strong>Patient:</strong> {payment.patientName}</p>
-                      <p><strong>Doctor:</strong> {payment.doctorName}</p>
-                      <p><strong>Amount:</strong> ${(payment.totalAmount || 0).toLocaleString()}</p>
-                      <p><strong>Paid:</strong> ${(payment.amountPaid || 0).toLocaleString()}</p>
-                      <p><strong>Status:</strong> 
-                        {payment.amountPaid >= payment.totalAmount ? 
-                          <span style={{color: 'green'}}> Paid ✅</span> : 
-                          <span style={{color: 'orange'}}> Pending ⏳</span>
-                        }
-                      </p>
-                    </div>
-                  ))}
+                  {payments.length > 0 ? (
+                    payments.slice(0, 3).map((payment, index) => (
+                      <div key={index} className="fd-bill-card">
+                        <p><strong>Invoice #:</strong> {payment.invoiceNumber}</p>
+                        <p><strong>Specialty:</strong> {payment.hospitalName}</p>
+                        <p><strong>Patient:</strong> {payment.patientName}</p>
+                        <p><strong>Doctor:</strong> {payment.doctorName}</p>
+                        <p><strong>Amount:</strong> ${(payment.totalAmount || 0).toLocaleString()}</p>
+                        <p><strong>Paid:</strong> ${(payment.amountPaid || 0).toLocaleString()}</p>
+                        <p><strong>Status:</strong> 
+                          {payment.amountPaid >= payment.totalAmount ? 
+                            <span style={{color: 'green'}}> Paid ✅</span> : 
+                            <span style={{color: 'orange'}}> Pending ⏳</span>
+                          }
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="no-data-message">No billing information available</div>
+                  )}
                   <button className="fd-close-btn" onClick={() => setShowBilling(false)}>
                     Close
                   </button>
@@ -692,7 +736,7 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
               </div>
             )}
 
-            {/* **KEEP ORIGINAL: Analytics Selection Modal** */}
+            {/* Analytics Selection Modal */}
             {showAnalyticsModal && (
               <div className="fd-analytics-modal">
                 <div className="fd-analytics-modal-content">
@@ -734,7 +778,7 @@ const paymentsData = acceptedAppointments.map((apt, index) => {
               </div>
             )}
 
-            {/* **KEEP ORIGINAL: Recent Activities - Now showing real appointment data** */}
+            {/* Recent Activities - Now showing real appointment data */}
             <div className="fd-activity-section">
               <h2>📋 Recent Financial Activities</h2>
               <div className="fd-activity-list">
