@@ -511,252 +511,453 @@ const FinancialBudgetPlanning = () => {
     return finalSummary;
   };
 
-  // ✅ REPORT GENERATION FUNCTIONS
+  // ✅ MANUAL PDF REPORT GENERATION - MATCHING YOUR PROFITORLOSS FORMAT
   const exportToPDF = () => {
-    try {
-      if (!activeBudgetPlan) {
-        setError("Please select an active budget plan to generate report.");
-        return;
-      }
+    if (!activeBudgetPlan) {
+      setError("No data to export - Please select an active budget plan");
+      return;
+    }
 
-      const realFinancials = processRealFinancialData();
-      const currentDate = new Date();
+    const realFinancials = processRealFinancialData();
+    const currentDate = new Date();
+    const reportTitle = 'Budget Planning Analysis Report';
 
-      const printWindow = window.open('', '_blank', 'width=800,height=600');
-      if (!printWindow) {
-        setError("Please allow popups to generate PDF reports.");
-        return;
-      }
-
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Budget Planning Report - ${activeBudgetPlan.planName}</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Arial', sans-serif; line-height: 1.4; color: #333; background: white; }
-            .report-container { max-width: 210mm; margin: 0 auto; padding: 20mm; background: white; }
-            .report-header { text-align: center; border-bottom: 3px solid #2c5282; padding-bottom: 20px; margin-bottom: 30px; }
-            .company-logo { font-size: 32px; font-weight: bold; color: #2c5282; margin-bottom: 8px; }
-            .report-title { font-size: 24px; color: #2d3748; margin-bottom: 10px; font-weight: bold; }
-            .report-subtitle { font-size: 16px; color: #4a5568; margin-bottom: 15px; }
-            .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 25px; }
-            .summary-card { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #2c5282; }
-            .summary-card h4 { color: #2d3748; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; }
-            .summary-value { font-size: 24px; font-weight: bold; color: #2c5282; }
-            .data-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px; }
-            .data-table th, .data-table td { border: 1px solid #e2e8f0; padding: 12px 8px; text-align: left; }
-            .data-table th { background: #2c5282; color: white; font-weight: bold; }
-            .data-table tbody tr:nth-child(even) { background: #f8f9fa; }
-            .total-row { background: #2c5282 !important; color: white !important; font-weight: bold; }
-            .total-row td { background: #2c5282; color: white; }
-            .text-right { text-align: right; }
-            .text-center { text-align: center; }
-            .highlight-row { background: #fff3cd !important; border-left: 4px solid #ffc107 !important; }
-          </style>
-        </head>
-        <body>
-          <div class="report-container">
-            <div class="report-header">
-              <div class="company-logo">🏥 Heal-x Healthcare</div>
-              <div class="report-title">Budget Planning Report </div>
-              <div class="report-subtitle">${activeBudgetPlan.planName}</div>
-              <p style="color: #28a745; font-weight: bold;">✅ Total Expenses: ${formatCurrency(realFinancials.totalExpenses)} (Restock Included)</p>
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Heal-x ${reportTitle}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; line-height: 1.4; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1da1f2; padding-bottom: 20px; }
+          .header h1 { color: #1da1f2; margin: 0; font-size: 24px; font-weight: bold; }
+          .header p { margin: 10px 0 0 0; color: #666; font-size: 14px; }
+          .info { margin-bottom: 20px; text-align: right; font-size: 11px; color: #555; }
+          .summary-section { margin-bottom: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; }
+          .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+          .summary-card { background: white; padding: 15px; border-radius: 5px; border: 1px solid #ddd; }
+          .summary-card h4 { margin: 0 0 8px 0; color: #1da1f2; font-size: 14px; }
+          .summary-card .metric-value { font-size: 18px; font-weight: bold; color: #333; margin: 5px 0; }
+          .summary-card .metric-label { font-size: 11px; color: #666; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #1da1f2; color: white; font-weight: bold; text-align: center; }
+          .currency { text-align: right; }
+          .totals-row { background-color: #f0f8ff; font-weight: bold; }
+          .signature-section { margin-top: 60px; margin-bottom: 30px; width: 100%; page-break-inside: avoid; }
+          .signature-section h3 { color: #1da1f2; border-bottom: 1px solid #1da1f2; padding-bottom: 5px; margin-bottom: 20px; }
+          .signature-container { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; }
+          .signature-block { width: 30%; text-align: center; }
+          .signature-line { border-bottom: 2px dotted #333; width: 200px; height: 50px; margin: 0 auto 10px auto; position: relative; }
+          .signature-text { font-size: 11px; font-weight: bold; color: #333; margin-top: 5px; }
+          .signature-title { font-size: 10px; color: #666; margin-top: 2px; }
+          .company-stamp { text-align: center; margin-top: 30px; padding: 15px; border: 2px solid #1da1f2; display: inline-block; font-size: 10px; color: #1da1f2; font-weight: bold; }
+          .report-footer { margin-top: 40px; text-align: center; font-size: 9px; color: #888; border-top: 1px solid #ddd; padding-top: 15px; }
+          .alert-section { margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; }
+          .alert-title { font-weight: bold; color: #856404; margin-bottom: 8px; }
+          @media print {
+            body { margin: 10px; }
+            .no-print { display: none; }
+            .signature-section { page-break-inside: avoid; }
+          }
+          .budget-section { background-color: ${realFinancials.netIncome > 0 ? '#d4edda' : '#f8d7da'}; border: 1px solid ${realFinancials.netIncome > 0 ? '#c3e6cb' : '#f5c6cb'}; }
+          .budget-amount { color: ${realFinancials.netIncome > 0 ? '#155724' : '#721c24'}; }
+        </style>
+      </head>
+      <body>
+        <!-- Header -->
+        <div class="header">
+          <h1>🏥 Heal-x ${reportTitle}</h1>
+          <p>Healthcare Budget Planning & Financial Analysis System</p>
+        </div>
+        
+        <!-- Report Info -->
+        <div class="info">
+          <strong>Generated on:</strong> ${currentDate.toLocaleString()}<br>
+          <strong>Budget Plan:</strong> ${activeBudgetPlan.planName}<br>
+          <strong>Report Type:</strong> Comprehensive Budget Analysis<br>
+          <strong>Planning Period:</strong> ${activeBudgetPlan.startYear} - ${activeBudgetPlan.endYear}<br>
+          <strong>Budget Type:</strong> ${activeBudgetPlan.budgetType.charAt(0).toUpperCase() + activeBudgetPlan.budgetType.slice(1)}<br>
+          <strong>Financial Status:</strong> ${realFinancials.netIncome > 0 ? 'PROFITABLE' : 'OPERATING AT LOSS'}
+        </div>
+        
+        <!-- Executive Summary -->
+        <div class="summary-section budget-section">
+          <h3 style="color: #1da1f2; margin: 0 0 15px 0;">📊 Budget Planning Executive Summary</h3>
+          <div class="summary-grid">
+            <div class="summary-card">
+              <h4>💰 Current Revenue Performance</h4>
+              <div class="metric-value">${formatCurrency(realFinancials.totalRevenue)}</div>
+              <div class="metric-label">From ${realFinancials.acceptedAppointments?.length || 0} accepted appointments</div>
             </div>
-
-            <div class="summary-grid">
-              <div class="summary-card">
-                <h4>Total Revenue</h4>
-                <div class="summary-value">${formatCurrency(realFinancials.totalRevenue)}</div>
-              </div>
-              <div class="summary-card">
-                <h4>Total Expenses </h4>
-                <div class="summary-value">${formatCurrency(realFinancials.totalExpenses)}</div>
-              </div>
-              <div class="summary-card">
-                <h4>Net Income</h4>
-                <div class="summary-value">${formatCurrency(realFinancials.netIncome)}</div>
-              </div>
-              <div class="summary-card">
-                <h4>Data Source</h4>
-                <div class="summary-value">100% Live</div>
-              </div>
+            <div class="summary-card">
+              <h4>💸 Total Operating Expenses</h4>
+              <div class="metric-value">${formatCurrency(realFinancials.totalExpenses)}</div>
+              <div class="metric-label">All categories included (corrected calculation)</div>
             </div>
-
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Expense Category</th>
-                  <th class="text-right">Amount</th>
-                  <th class="text-right">Percentage</th>
-                  <th class="text-center">Data Records</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Payroll Expenses (incl. ETF/EPF)</td>
-                  <td class="text-right">${formatCurrency(realFinancials.totalPayrollExpenses)}</td>
-                  <td class="text-right">${((realFinancials.totalPayrollExpenses / realFinancials.totalExpenses) * 100).toFixed(1)}%</td>
-                  <td class="text-center">${realFinancials.payrolls?.length || 0} records</td>
-                </tr>
-                <tr>
-                  <td>Current Inventory Value</td>
-                  <td class="text-right">${formatCurrency(realFinancials.currentInventoryValue)}</td>
-                  <td class="text-right">${((realFinancials.currentInventoryValue / realFinancials.totalExpenses) * 100).toFixed(1)}%</td>
-                  <td class="text-center">${realFinancials.inventoryItems?.length || 0} items</td>
-                </tr>
-                <tr class="highlight-row">
-                  <td><strong>Inventory Restock Value ✅</strong></td>
-                  <td class="text-right"><strong>${formatCurrency(realFinancials.totalRestockValue)}</strong></td>
-                  <td class="text-right"><strong>${((realFinancials.totalRestockValue / realFinancials.totalExpenses) * 100).toFixed(1)}%</strong></td>
-                  <td class="text-center"><strong>Auto-restock</strong></td>
-                </tr>
-                <tr>
-                  <td>Utility Expenses</td>
-                  <td class="text-right">${formatCurrency(realFinancials.totalUtilityExpenses)}</td>
-                  <td class="text-right">${((realFinancials.totalUtilityExpenses / realFinancials.totalExpenses) * 100).toFixed(1)}%</td>
-                  <td class="text-center">${realFinancials.utilities?.length || 0} bills</td>
-                </tr>
-                <tr>
-                  <td>Supplier Expenses</td>
-                  <td class="text-right">${formatCurrency(realFinancials.totalSupplierExpenses)}</td>
-                  <td class="text-right">${((realFinancials.totalSupplierExpenses / realFinancials.totalExpenses) * 100).toFixed(1)}%</td>
-                  <td class="text-center">${realFinancials.purchaseOrders?.length || 0} orders</td>
-                </tr>
-                <tr class="total-row">
-                  <td><strong>TOTAL EXPENSES </strong></td>
-                  <td class="text-right"><strong>${formatCurrency(realFinancials.totalExpenses)}</strong></td>
-                  <td class="text-right"><strong>100.0%</strong></td>
-                  <td class="text-center"><strong>Live Data</strong></td>
-                </tr>
-              </tbody>
-            </table>
-            
-            <div style="background: #d4edda; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745; margin-top: 20px;">
-              <h4 style="color: #155724; margin-bottom: 10px;">✅ Expense Calculation Fixed:</h4>
-              <p style="color: #155724;">
-                <strong>Payroll + Utilities + Current Inventory + Restock Value + Suppliers = ${formatCurrency(realFinancials.totalExpenses)}</strong><br>
-                <em>Restock value (${formatCurrency(realFinancials.totalRestockValue)}) is now properly included in total expenses.</em>
-              </p>
+            <div class="summary-card">
+              <h4>${realFinancials.netIncome > 0 ? '📈' : '📉'} Net Financial Position</h4>
+              <div class="metric-value budget-amount">${formatCurrency(Math.abs(realFinancials.netIncome))}</div>
+              <div class="metric-label">${realFinancials.netIncome > 0 ? 'Profitable' : 'Loss'} Operation</div>
+            </div>
+            <div class="summary-card">
+              <h4>📅 Budget Planning Horizon</h4>
+              <div class="metric-value">${activeBudgetPlan.endYear - activeBudgetPlan.startYear} Years</div>
+              <div class="metric-label">${activeBudgetPlan.startYear} to ${activeBudgetPlan.endYear}</div>
             </div>
           </div>
-        </body>
-        </html>
-      `);
+        </div>
 
-      printWindow.document.close();
-      setTimeout(() => {
-        printWindow.print();
-        setTimeout(() => printWindow.close(), 1000);
-      }, 500);
+        ${realFinancials.netIncome > 0 ? 
+          '<div class="alert-section" style="background-color: #d4edda; border-color: #c3e6cb;"><div class="alert-title" style="color: #155724;">✅ Profitable Budget Planning</div><p>Current financial performance shows positive net income of $' + Math.abs(realFinancials.netIncome).toLocaleString() + ', providing a strong foundation for future budget planning and strategic investments.</p></div>' :
+          '<div class="alert-section" style="background-color: #f8d7da; border-color: #f5c6cb;"><div class="alert-title" style="color: #721c24;">🚨 Budget Optimization Required</div><p>Current operations show a loss of $' + Math.abs(realFinancials.netIncome).toLocaleString() + '. Budget planning should focus on revenue enhancement and cost optimization strategies.</p></div>'
+        }
 
-      setSuccess("Financial budget report generated successfully with corrected total!");
-      
-    } catch (error) {
-      console.error("Export to PDF error:", error);
-      setError("Failed to generate PDF report: " + error.message);
-    }
-  };
+        <!-- Current Financial Performance Analysis -->
+        <h3 style="color: #1da1f2; margin-top: 30px;">📊 Current Financial Performance Analysis</h3>
+        <table>
+          <thead>
+            <tr>
+              <th colspan="2">💰 Revenue Performance</th>
+              <th colspan="2">💸 Expense Analysis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Current Revenue</td>
+              <td class="currency">${formatCurrency(realFinancials.totalRevenue)}</td>
+              <td>Total Operating Expenses</td>
+              <td class="currency">${formatCurrency(realFinancials.totalExpenses)}</td>
+            </tr>
+            <tr>
+              <td>Accepted Appointments</td>
+              <td class="currency">${realFinancials.acceptedAppointments?.length || 0}</td>
+              <td>Payroll & Benefits</td>
+              <td class="currency">${formatCurrency(realFinancials.totalPayrollExpenses)}</td>
+            </tr>
+            <tr>
+              <td>Average per Appointment</td>
+              <td class="currency">${formatCurrency(realFinancials.totalRevenue / (realFinancials.acceptedAppointments?.length || 1))}</td>
+              <td>Inventory & Stock</td>
+              <td class="currency">${formatCurrency(realFinancials.currentInventoryValue)}</td>
+            </tr>
+            <tr>
+              <td>Revenue Growth Target</td>
+              <td class="currency">+15% YoY</td>
+              <td>Restock & Replenishment</td>
+              <td class="currency">${formatCurrency(realFinancials.totalRestockValue)}</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td>Utilities & Operations</td>
+              <td class="currency">${formatCurrency(realFinancials.totalUtilityExpenses)}</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td>Supplier & Vendor Costs</td>
+              <td class="currency">${formatCurrency(realFinancials.totalSupplierExpenses)}</td>
+            </tr>
+          </tbody>
+        </table>
 
-  const printTable = () => {
-    try {
-      const realFinancials = processRealFinancialData();
-      
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        setError("Please allow popups to print reports.");
-        return;
-      }
+        <!-- Budget Planning Metrics -->
+        <h3 style="color: #1da1f2; margin-top: 30px;">📈 Budget Planning Key Metrics</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Financial Metric</th>
+              <th>Current Value</th>
+              <th>Budget Target</th>
+              <th>Variance Analysis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Net Profit Margin</strong></td>
+              <td class="currency budget-amount"><strong>${((realFinancials.netIncome / realFinancials.totalRevenue) * 100).toFixed(1)}%</strong></td>
+              <td class="currency"><strong>15-20%</strong></td>
+              <td>Industry benchmark for healthcare</td>
+            </tr>
+            <tr>
+              <td><strong>Operating Expense Ratio</strong></td>
+              <td class="currency"><strong>${((realFinancials.totalExpenses / realFinancials.totalRevenue) * 100).toFixed(1)}%</strong></td>
+              <td class="currency"><strong>75-80%</strong></td>
+              <td>Optimal operational efficiency</td>
+            </tr>
+            <tr>
+              <td><strong>Payroll Cost Percentage</strong></td>
+              <td class="currency"><strong>${((realFinancials.totalPayrollExpenses / realFinancials.totalExpenses) * 100).toFixed(1)}%</strong></td>
+              <td class="currency"><strong>50-60%</strong></td>
+              <td>Healthcare industry standard</td>
+            </tr>
+            <tr>
+              <td><strong>Revenue per Employee</strong></td>
+              <td class="currency"><strong>${formatCurrency(realFinancials.totalRevenue / (realFinancials.payrolls?.length || 1))}</strong></td>
+              <td class="currency"><strong>$150K-200K</strong></td>
+              <td>Productivity measurement</td>
+            </tr>
+          </tbody>
+        </table>
 
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Financial Data Summary - Heal-x </title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            h1 { color: #2c5282; text-align: center; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #2c5282; color: white; }
-            .text-right { text-align: right; }
-            .total-row { background-color: #f0f8ff; font-weight: bold; }
-            .highlight-row { background-color: #fff3cd; font-weight: bold; }
-            .correction-box { background-color: #d4edda; padding: 15px; margin: 20px 0; border-left: 4px solid #28a745; }
-          </style>
-        </head>
-        <body>
-          <h1>Financial Data Summary </h1>
-          <p>Generated: ${new Date().toLocaleDateString()} - Heal-x Healthcare System</p>
-          
-          <div class="correction-box">
-            <strong>✅ Total Expenses Calculation Fixed:</strong><br>
-            Previous: $64,160 (Missing Restock Value)<br>
-            <strong>Corrected: ${formatCurrency(realFinancials.totalExpenses)} (All Components Included)</strong>
+        <!-- Detailed Budget Breakdown -->
+        <h3 style="color: #1da1f2; margin-top: 30px;">🔍 Detailed Budget Category Analysis</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Budget Category</th>
+              <th>Current Amount</th>
+              <th>% of Total Expenses</th>
+              <th>Budget Allocation</th>
+              <th>Optimization Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>👥 Human Resources</strong></td>
+              <td class="currency"><strong>${formatCurrency(realFinancials.totalPayrollExpenses)}</strong></td>
+              <td class="currency"><strong>${((realFinancials.totalPayrollExpenses / realFinancials.totalExpenses) * 100).toFixed(1)}%</strong></td>
+              <td>Salaries, ETF, EPF, Bonuses</td>
+              <td>Monitor staff productivity ratios</td>
+            </tr>
+            <tr>
+              <td><strong>📦 Medical Inventory</strong></td>
+              <td class="currency"><strong>${formatCurrency(realFinancials.currentInventoryValue)}</strong></td>
+              <td class="currency"><strong>${((realFinancials.currentInventoryValue / realFinancials.totalExpenses) * 100).toFixed(1)}%</strong></td>
+              <td>Current stock valuation</td>
+              <td>Optimize inventory turnover</td>
+            </tr>
+            <tr>
+              <td><strong>🔄 Stock Replenishment</strong></td>
+              <td class="currency"><strong>${formatCurrency(realFinancials.totalRestockValue)}</strong></td>
+              <td class="currency"><strong>${((realFinancials.totalRestockValue / realFinancials.totalExpenses) * 100).toFixed(1)}%</strong></td>
+              <td>Automated restock system</td>
+              <td>Consider bulk purchasing discounts</td>
+            </tr>
+            <tr>
+              <td><strong>⚡ Operational Utilities</strong></td>
+              <td class="currency"><strong>${formatCurrency(realFinancials.totalUtilityExpenses)}</strong></td>
+              <td class="currency"><strong>${((realFinancials.totalUtilityExpenses / realFinancials.totalExpenses) * 100).toFixed(1)}%</strong></td>
+              <td>Electricity, water, communications</td>
+              <td>Evaluate energy efficiency programs</td>
+            </tr>
+            <tr>
+              <td><strong>🤝 Vendor & Suppliers</strong></td>
+              <td class="currency"><strong>${formatCurrency(realFinancials.totalSupplierExpenses)}</strong></td>
+              <td class="currency"><strong>${((realFinancials.totalSupplierExpenses / realFinancials.totalExpenses) * 100).toFixed(1)}%</strong></td>
+              <td>External procurement</td>
+              <td>Negotiate long-term contracts</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Budget Planning Recommendations -->
+        <h3 style="color: #1da1f2; margin-top: 30px;">💡 Budget Planning Recommendations</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Priority</th>
+              <th>Recommendation</th>
+              <th>Impact Area</th>
+              <th>Expected Outcome</th>
+              <th>Timeline</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong style="color: #dc3545;">HIGH</strong></td>
+              <td>${realFinancials.netIncome > 0 ? 'Maintain current profitability levels' : 'Implement cost reduction strategies'}</td>
+              <td>Overall Financial Health</td>
+              <td>${realFinancials.netIncome > 0 ? 'Sustained growth' : 'Return to profitability'}</td>
+              <td>Q1 2025</td>
+            </tr>
+            <tr>
+              <td><strong style="color: #fd7e14;">MEDIUM</strong></td>
+              <td>Optimize inventory management system</td>
+              <td>Operating Expenses</td>
+              <td>5-10% reduction in inventory costs</td>
+              <td>Q2 2025</td>
+            </tr>
+            <tr>
+              <td><strong style="color: #28a745;">LOW</strong></td>
+              <td>Diversify revenue streams</td>
+              <td>Revenue Generation</td>
+              <td>10-15% increase in non-appointment revenue</td>
+              <td>Q3-Q4 2025</td>
+            </tr>
+            <tr>
+              <td><strong style="color: #fd7e14;">MEDIUM</strong></td>
+              <td>Renegotiate supplier contracts</td>
+              <td>Procurement Costs</td>
+              <td>3-7% savings on supplier expenses</td>
+              <td>Q2 2025</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Quarterly Budget Projections -->
+        <h3 style="color: #1da1f2; margin-top: 30px;">📅 Quarterly Budget Projections (${activeBudgetPlan.startYear})</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Quarter</th>
+              <th>Projected Revenue</th>
+              <th>Projected Expenses</th>
+              <th>Projected Net Income</th>
+              <th>Key Focus Areas</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${[1, 2, 3, 4].map(quarter => {
+              const projectedRevenue = realFinancials.totalRevenue * 1.05; // 5% growth
+              const projectedExpenses = realFinancials.totalExpenses * 0.95; // 5% cost reduction
+              const projectedNetIncome = projectedRevenue - projectedExpenses;
+              return `
+                <tr>
+                  <td><strong>Q${quarter} ${activeBudgetPlan.startYear}</strong></td>
+                  <td class="currency">${formatCurrency(projectedRevenue / 4)}</td>
+                  <td class="currency">${formatCurrency(projectedExpenses / 4)}</td>
+                  <td class="currency budget-amount">${formatCurrency(projectedNetIncome / 4)}</td>
+                  <td>${quarter === 1 ? 'Revenue optimization' : quarter === 2 ? 'Cost management' : quarter === 3 ? 'Process efficiency' : 'Year-end analysis'}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+
+        <!-- Budget Plan Details -->
+        <h3 style="color: #1da1f2; margin-top: 30px;">📋 Active Budget Plan Details</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Plan Attribute</th>
+              <th>Details</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Budget Plan Name</strong></td>
+              <td>${activeBudgetPlan.planName}</td>
+              <td><span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 12px; font-size: 9px;">ACTIVE</span></td>
+            </tr>
+            <tr>
+              <td><strong>Planning Period</strong></td>
+              <td>${activeBudgetPlan.startYear} - ${activeBudgetPlan.endYear}</td>
+              <td>${activeBudgetPlan.endYear - activeBudgetPlan.startYear} Year Plan</td>
+            </tr>
+            <tr>
+              <td><strong>Budget Type</strong></td>
+              <td>${activeBudgetPlan.budgetType.charAt(0).toUpperCase() + activeBudgetPlan.budgetType.slice(1)} Budget</td>
+              <td>Healthcare Operations</td>
+            </tr>
+            <tr>
+              <td><strong>Creation Date</strong></td>
+              <td>${new Date(activeBudgetPlan.createdAt).toLocaleDateString()}</td>
+              <td>System Generated</td>
+            </tr>
+            <tr>
+              <td><strong>Data Sources</strong></td>
+              <td>Live API Integration</td>
+              <td>Real-time Data</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Professional Signature Section -->
+        <div class="signature-section">
+          <h3>📋 Budget Plan Authorization</h3>
+          <div class="signature-container">
+            <div class="signature-block">
+              <div class="signature-line"></div>
+              <div class="signature-text">Budget Manager</div>
+              <div class="signature-title">Heal-x Healthcare Management</div>
+            </div>
+            <div class="signature-block">
+              <div class="signature-line"></div>
+              <div class="signature-text">Admin Heal-X Healthcare Management</div>
+              <div class="signature-title">Budget Plan Approved By</div>
+            </div>
+            <div class="signature-block">
+              <div class="signature-line"></div>
+              <div class="signature-text">Executive Director</div>
+              <div class="signature-title">Strategic Planning Oversight</div>
+            </div>
           </div>
-          
-          <h2>Revenue Summary</h2>
-          <table>
-            <tr><th>Source</th><th>Amount</th><th>Records</th></tr>
-            <tr><td>Accepted Appointments</td><td class="text-right">${formatCurrency(realFinancials.totalRevenue)}</td><td>${realFinancials.acceptedAppointments?.length || 0}</td></tr>
-            <tr class="total-row"><td><strong>TOTAL REVENUE</strong></td><td class="text-right"><strong>${formatCurrency(realFinancials.totalRevenue)}</strong></td><td><strong>Live Data</strong></td></tr>
-          </table>
-          
-          <h2>Expense Breakdown </h2>
-          <table>
-            <tr><th>Category</th><th>Amount</th><th>Records</th></tr>
-            <tr><td>Payroll (incl. ETF/EPF)</td><td class="text-right">${formatCurrency(realFinancials.totalPayrollExpenses)}</td><td>${realFinancials.payrolls?.length || 0}</td></tr>
-            <tr><td>Current Inventory</td><td class="text-right">${formatCurrency(realFinancials.currentInventoryValue)}</td><td>${realFinancials.inventoryItems?.length || 0}</td></tr>
-            <tr class="highlight-row"><td><strong>Restock Value ✅ ADDED</strong></td><td class="text-right"><strong>${formatCurrency(realFinancials.totalRestockValue)}</strong></td><td><strong>Auto-restock</strong></td></tr>
-            <tr><td>Utilities</td><td class="text-right">${formatCurrency(realFinancials.totalUtilityExpenses)}</td><td>${realFinancials.utilities?.length || 0}</td></tr>
-            <tr><td>Suppliers</td><td class="text-right">${formatCurrency(realFinancials.totalSupplierExpenses)}</td><td>${realFinancials.purchaseOrders?.length || 0}</td></tr>
-            <tr class="total-row"><td><strong>TOTAL EXPENSES</strong></td><td class="text-right"><strong>${formatCurrency(realFinancials.totalExpenses)}</strong></td><td><strong>Live Data</strong></td></tr>
-          </table>
-          
-          <h2>Net Income</h2>
-          <table>
-            <tr><th>Calculation</th><th>Amount</th></tr>
-            <tr><td>Total Revenue</td><td class="text-right">${formatCurrency(realFinancials.totalRevenue)}</td></tr>
-            <tr><td>Total Expenses (Corrected)</td><td class="text-right">${formatCurrency(realFinancials.totalExpenses)}</td></tr>
-            <tr class="total-row"><td><strong>NET INCOME</strong></td><td class="text-right"><strong>${formatCurrency(realFinancials.netIncome)}</strong></td></tr>
-          </table>
-        </body>
-        </html>
-      `);
+          <div style="text-align: center; margin-top: 30px;">
+            <div class="company-stamp">
+              HEAL-X OFFICIAL SEAL<br>
+              BUDGET PLANNING DEPARTMENT
+            </div>
+          </div>
+        </div>
 
-      printWindow.document.close();
-      printWindow.print();
-      
-      setSuccess("Corrected financial data table printed successfully!");
-      
-    } catch (error) {
-      console.error("Print table error:", error);
-      setError("Failed to print table: " + error.message);
-    }
+        <!-- Report Footer -->
+        <div class="report-footer">
+          <p><strong>This is a system-generated budget planning report from Heal-x Healthcare Management System</strong></p>
+          <p>Report generated on ${currentDate.toLocaleString()} • Budget Plan: ${activeBudgetPlan.planName}</p>
+          <p>For queries regarding this budget analysis, contact the Financial Planning Department at Heal-x Healthcare</p>
+          <p>Data Sources: Live API Integration • Appointments • Payroll • Inventory • Utilities • Suppliers</p>
+          <p>Budget Planning Horizon: ${activeBudgetPlan.startYear}-${activeBudgetPlan.endYear} • Report Type: Comprehensive Analysis</p>
+        </div>
+
+        <!-- Print Controls -->
+        <div class="no-print" style="margin-top: 30px; text-align: center;">
+          <button onclick="window.print()" style="background: #1da1f2; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 14px; cursor: pointer;">🖨️ Print Budget Report</button>
+          <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 14px; cursor: pointer; margin-left: 10px;">✕ Close</button>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    setSuccess("Budget Planning PDF report opened! Use Ctrl+P to save as PDF.");
+    setTimeout(() => setSuccess(""), 3000);
   };
 
-  const prepareReportData = () => {
-    if (!activeBudgetPlan || !activeBudgetPlan.quarters) return [];
+  // Export to CSV
+  const exportToCSV = () => {
+    if (!activeBudgetPlan) {
+      setError("No active budget plan selected for CSV export");
+      return;
+    }
+
+    const realFinancials = processRealFinancialData();
     
-    return activeBudgetPlan.quarters.map(quarter => {
-      const budgetedRevenue = Object.values(quarter.budget.revenue).reduce((a, b) => a + b, 0);
-      const budgetedExpenses = Object.values(quarter.budget.expenses).reduce((a, b) => a + b, 0);
-      const actualRevenue = quarter.actual ? Object.values(quarter.actual.revenue).reduce((a, b) => a + b, 0) : 0;
-      const actualExpenses = quarter.actual ? Object.values(quarter.actual.expenses).reduce((a, b) => a + b, 0) : 0;
-      const variance = quarter.actual ? (actualRevenue - actualExpenses) - (budgetedRevenue - budgetedExpenses) : 0;
-      
-      return {
-        quarter: quarter.quarter,
-        year: quarter.year,
-        budgetedRevenue,
-        budgetedExpenses,
-        actualRevenue,
-        actualExpenses,
-        variance
-      };
-    });
+    let csvContent = `Heal-x Budget Planning Analysis - ${new Date().toLocaleDateString()}\n\n`;
+    
+    csvContent += 'BUDGET PLAN SUMMARY\n';
+    csvContent += `Plan Name,${activeBudgetPlan.planName}\n`;
+    csvContent += `Planning Period,${activeBudgetPlan.startYear} - ${activeBudgetPlan.endYear}\n`;
+    csvContent += `Budget Type,${activeBudgetPlan.budgetType}\n\n`;
+    
+    csvContent += 'CURRENT FINANCIAL PERFORMANCE\n';
+    csvContent += `Total Revenue,${realFinancials.totalRevenue}\n`;
+    csvContent += `Total Expenses,${realFinancials.totalExpenses}\n`;
+    csvContent += `Net Income,${realFinancials.netIncome}\n\n`;
+    
+    csvContent += 'EXPENSE BREAKDOWN\n';
+    csvContent += `Payroll,${realFinancials.totalPayrollExpenses}\n`;
+    csvContent += `Inventory,${realFinancials.currentInventoryValue}\n`;
+    csvContent += `Restock,${realFinancials.totalRestockValue}\n`;
+    csvContent += `Utilities,${realFinancials.totalUtilityExpenses}\n`;
+    csvContent += `Suppliers,${realFinancials.totalSupplierExpenses}\n`;
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Heal-x_Budget_Planning_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+    
+    setSuccess('✅ Budget Planning data exported to CSV successfully!');
+    setTimeout(() => setSuccess(''), 3000);
   };
 
   // ✅ BUDGET PLAN MANAGEMENT FUNCTIONS
@@ -912,25 +1113,25 @@ const FinancialBudgetPlanning = () => {
         {/* Report Generation Section */}
         <div className="fbp-report-section">
           <div className="fbp-section-header">
-            <h3>Real Financial Reports </h3>
+            <h3>Budget Planning Reports </h3>
             <div className="fbp-report-actions">
               <button 
                 className="fbp-btn-report fbp-btn-pdf"
                 onClick={exportToPDF}
                 disabled={!activeBudgetPlan}
-                title="Generate PDF Report with Corrected Total Expenses"
+                title="Generate Budget Planning PDF Report"
               >
                 <MdGetApp size={18} />
-                Generate PDF (FIXED)
+                Generate PDF Report
               </button>
               <button 
                 className="fbp-btn-report fbp-btn-print"
-                onClick={printTable}
+                onClick={exportToCSV}
                 disabled={!activeBudgetPlan}
-                title="Print Corrected Financial Data Table"
+                title="Export Budget Data to CSV"
               >
                 <MdPrint size={18} />
-                Print Data (FIXED)
+                Export CSV Data
               </button>
             </div>
           </div>
