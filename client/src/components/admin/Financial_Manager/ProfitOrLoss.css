@@ -265,7 +265,7 @@ body {
   align-items: center;
   gap: var(--healx-space-2);
   margin: 0 0 var(--healx-space-1);
-  font-size: var(--healx-font-xl);
+  font-size: 2.5rem;
   font-weight: 800;
   background: linear-gradient(135deg, var(--healx-primary) 0%, var(--healx-secondary) 100%);
   -webkit-background-clip: text;
