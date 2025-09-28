@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Search, User, AlertTriangle, MapPin, Activity } from 'lucide-react';
 import './CreateAlertModal.css';
 
+
 const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
   const [formData, setFormData] = useState({
     patientId: '',
@@ -20,7 +21,7 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
       bloodSugar: ''
     }
   });
-  
+
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -28,12 +29,26 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
   const [errors, setErrors] = useState({});
   const [currentSymptom, setCurrentSymptom] = useState('');
 
+
   // Common symptoms for quick selection
   const commonSymptoms = [
     'Chest pain', 'Shortness of breath', 'Dizziness', 'Nausea', 'Vomiting',
     'Fever', 'Headache', 'Abdominal pain', 'Back pain', 'Weakness',
     'Confusion', 'Rapid heartbeat', 'Low blood pressure', 'High blood pressure'
   ];
+
+  // Input validation functions
+  const validateLocation = (value) => {
+    // Only alphabetical, numerical, spaces, hyphens, and commas allowed
+    const locationRegex = /^[a-zA-Z0-9\s\-,]*$/;
+    return locationRegex.test(value);
+  };
+
+  const validateDescription = (value) => {
+    // Only alphabetical characters and spaces allowed, max 100 characters
+    const descriptionRegex = /^[a-zA-Z\s]*$/;
+    return descriptionRegex.test(value) && value.length <= 100;
+  };
 
   // Search patients
   const searchPatients = async (term) => {
@@ -46,7 +61,7 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
       setLoading(true);
       const response = await fetch(`http://localhost:7000/api/patients?search=${encodeURIComponent(term)}`);
       const data = await response.json();
-      
+
       if (Array.isArray(data)) {
         setSearchResults(data);
       } else {
@@ -64,7 +79,7 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
     const timeoutId = setTimeout(() => {
       searchPatients(searchTerm);
     }, 300);
-    
+
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
@@ -79,10 +94,21 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
     setSearchTerm(`${patient.firstName} ${patient.lastName}`);
   };
 
-  // Handle form input changes
+  // Handle form input changes with validation
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
+    // Apply validation based on field name
+    if (name === 'location') {
+      if (!validateLocation(value)) {
+        return; // Don't update state if validation fails
+      }
+    } else if (name === 'description') {
+      if (!validateDescription(value)) {
+        return; // Don't update state if validation fails
+      }
+    }
+
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       if (parent === 'bloodPressure') {
@@ -144,11 +170,11 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!selectedPatient) newErrors.patient = 'Please select a patient';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
     if (!formData.location.trim()) newErrors.location = 'Location is required';
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -156,9 +182,9 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
+
     // Clean up vital signs data
     const cleanedVitalSigns = {};
     Object.keys(formData.vitalSigns).forEach(key => {
@@ -185,7 +211,7 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
     };
 
     onSubmit(alertData);
-    
+
     // Reset form
     setFormData({
       patientId: '',
@@ -252,7 +278,7 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
                   className={`eap-form-input eap-search-input ${errors.patient ? 'eap-input-error' : ''}`}
                 />
               </div>
-              
+
               {/* Search Results */}
               {searchResults.length > 0 && (
                 <div className="eap-search-results">
@@ -277,7 +303,7 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
                   ))}
                 </div>
               )}
-              
+
               {loading && (
                 <div className="eap-search-loading">
                   <div className="eap-spinner"></div>
@@ -285,7 +311,7 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
               )}
             </div>
             {errors.patient && <p className="eap-error-message">{errors.patient}</p>}
-            
+
             {/* Selected Patient Info */}
             {selectedPatient && (
               <div className="eap-selected-patient">
@@ -315,7 +341,7 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
                 <option value="Non-urgent">🔵 Non-urgent - Can wait</option>
               </select>
             </div>
-            
+
             <div className="eap-form-col">
               <label className="eap-form-label">Priority</label>
               <select
@@ -331,7 +357,7 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
             </div>
           </div>
 
-          {/* Location */}
+          {/* Location with Validation */}
           <div className="eap-form-group">
             <label className="eap-form-label">
               Location *
@@ -347,29 +373,39 @@ const CreateAlertModal = ({ isOpen, onClose, onSubmit, doctorInfo }) => {
                 className={`eap-form-input ${errors.location ? 'eap-input-error' : ''}`}
               />
             </div>
+            <div className="eap-input-help">
+              <small className="eap-input-hint">
+                📍 Preview: {formData.location || 'Enter location (letters, numbers, spaces, hyphens, commas only)'}
+              </small>
+            </div>
             {errors.location && <p className="eap-error-message">{errors.location}</p>}
           </div>
 
-          {/* Description */}
+          {/* Description with Validation */}
           <div className="eap-form-group">
             <label className="eap-form-label">
-              Description *
+              Description * ({formData.description.length}/100 characters)
             </label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleInputChange}
               rows={4}
-              placeholder="Describe the emergency situation, symptoms observed, and any immediate actions needed..."
+              placeholder="Describe the emergency situation and symptoms observed..."
               className={`eap-form-textarea ${errors.description ? 'eap-input-error' : ''}`}
             />
+            <div className="eap-input-help">
+              <small className={`eap-input-hint ${formData.description.length > 90 ? 'eap-char-warning' : ''}`}>
+                ✍️ Preview: {formData.description || 'Enter description (letters and spaces only, max 100 characters)'}
+              </small>
+            </div>
             {errors.description && <p className="eap-error-message">{errors.description}</p>}
           </div>
 
           {/* Symptoms */}
           <div className="eap-form-group">
             <label className="eap-form-label">Symptoms</label>
-            
+
             {/* Add Custom Symptom */}
             <div className="eap-symptom-input-group">
               <input
