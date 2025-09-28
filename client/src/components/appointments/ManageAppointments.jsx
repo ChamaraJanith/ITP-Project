@@ -7,7 +7,7 @@ const ManageAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState('all'); // all, pending, accepted, rejected
+  const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [actionLoading, setActionLoading] = useState({});
 
@@ -24,13 +24,9 @@ const ManageAppointments = () => {
     try {
       const response = await axios.get(`${backendUrl}/api/appointments`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // If using auth
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
-      console.log('API Response:', response.data); // Debug log
-      
-      // Handle different response structures
       if (response.data.appointments) {
         setAppointments(response.data.appointments);
       } else if (Array.isArray(response.data)) {
@@ -42,7 +38,6 @@ const ManageAppointments = () => {
         setError('Unexpected response format');
       }
     } catch (error) {
-      console.error('Fetch error:', error);
       setAppointments([]);
       setError(error.response?.data?.message || 'Failed to load appointments');
     } finally {
@@ -52,7 +47,6 @@ const ManageAppointments = () => {
 
   const handleAction = async (appointmentId, action) => {
     setActionLoading(prev => ({ ...prev, [appointmentId]: action }));
-    
     try {
       const response = await axios.put(
         `${backendUrl}/api/appointments/${appointmentId}/${action}`,
@@ -63,22 +57,17 @@ const ManageAppointments = () => {
           }
         }
       );
-
       if (response.data.success) {
-        // Update the specific appointment in state instead of refetching all
-        setAppointments(prev => 
-          prev.map(appointment => 
-            appointment._id === appointmentId 
+        setAppointments(prev =>
+          prev.map(appointment =>
+            appointment._id === appointmentId
               ? { ...appointment, status: action === 'accept' ? 'accepted' : 'rejected' }
               : appointment
           )
         );
-        
-        // Show success message
         alert(`Appointment ${action}ed successfully!`);
       }
     } catch (error) {
-      console.error(`${action} error:`, error);
       alert(`Failed to ${action} appointment: ${error.response?.data?.message || 'Unknown error'}`);
     } finally {
       setActionLoading(prev => ({ ...prev, [appointmentId]: false }));
@@ -89,47 +78,31 @@ const ManageAppointments = () => {
     navigate('/admin/receptionist');
   };
 
-  // Enhanced search function with better null handling and multiple property checks
   const filteredAppointments = appointments.filter(appointment => {
     const matchesFilter = filter === 'all' || appointment.status === filter;
-    
-    // If no search term, only apply status filter
     if (!searchTerm || searchTerm.trim() === '') {
       return matchesFilter;
     }
-    
     const searchLower = searchTerm.toLowerCase().trim();
-    
-    // Helper function to safely check if a value contains the search term
     const containsSearchTerm = (value) => {
       if (!value) return false;
       return String(value).toLowerCase().includes(searchLower);
     };
-    
-    // Check multiple possible property names for patient info
-    const matchesSearch = 
-      // Patient name variations
+    const matchesSearch =
       containsSearchTerm(appointment.name) ||
       containsSearchTerm(appointment.patientName) ||
       containsSearchTerm(appointment.patient?.name) ||
-      
-      // Email variations
       containsSearchTerm(appointment.email) ||
       containsSearchTerm(appointment.patientEmail) ||
       containsSearchTerm(appointment.patient?.email) ||
-      
-      // Phone variations
       containsSearchTerm(appointment.phone) ||
       containsSearchTerm(appointment.phoneNumber) ||
       containsSearchTerm(appointment.patientPhone) ||
       containsSearchTerm(appointment.patient?.phone) ||
       containsSearchTerm(appointment.patient?.phoneNumber) ||
-      
-      // Additional searchable fields
       containsSearchTerm(appointment.emergencyContactName) ||
       containsSearchTerm(appointment.doctorSpecialty) ||
       containsSearchTerm(appointment.appointmentType);
-    
     return matchesFilter && matchesSearch;
   });
 
@@ -139,7 +112,6 @@ const ManageAppointments = () => {
       'accepted': 'ma-unique-status-accepted',
       'rejected': 'ma-unique-status-rejected'
     };
-    
     return (
       <span className={`ma-unique-status-badge ${statusClass[status] || 'ma-unique-status-pending'}`}>
         {status || 'pending'}
@@ -153,7 +125,6 @@ const ManageAppointments = () => {
       'urgent': 'ma-unique-urgency-urgent',
       'emergency': 'ma-unique-urgency-emergency'
     };
-    
     return (
       <span className={`ma-unique-urgency-badge ${urgencyClass[urgency] || 'ma-unique-urgency-normal'}`}>
         {urgency || 'normal'}
@@ -171,41 +142,212 @@ const ManageAppointments = () => {
   };
 
   const formatTime = (timeString) => {
-    // Add null/undefined check
     if (!timeString || typeof timeString !== 'string') {
       return 'Time not set';
     }
-    
-    // Check if timeString contains ':'
     if (!timeString.includes(':')) {
-      return timeString; // Return as-is if it's not in HH:MM format
+      return timeString;
     }
-    
     try {
       const [hours, minutes] = timeString.split(':');
-      
-      // Additional validation
       if (!hours || !minutes) {
-        return timeString; // Return original if split didn't work properly
+        return timeString;
       }
-      
       const hour = parseInt(hours);
       const ampm = hour >= 12 ? 'PM' : 'AM';
       const displayHour = hour % 12 || 12;
       return `${displayHour}:${minutes} ${ampm}`;
     } catch (error) {
-      console.error('Error formatting time:', error);
       return timeString || 'Invalid time';
     }
   };
 
-  // Helper function to safely get patient data
   const getPatientData = (appointment, field) => {
-    return appointment[field] || 
-           appointment.patient?.[field] || 
-           appointment[`patient${field.charAt(0).toUpperCase() + field.slice(1)}`] || 
-           'N/A';
+    return appointment[field] ||
+      appointment.patient?.[field] ||
+      appointment[`patient${field.charAt(0).toUpperCase() + field.slice(1)}`] ||
+      'N/A';
   };
+
+  // --- REPORT GENERATION SECTION ---
+  const exportToPDF = () => {
+    const currentDate = new Date();
+    const pendingCount = appointments.filter(a => a.status === 'pending' || !a.status).length;
+    const acceptedCount = appointments.filter(a => a.status === 'accepted').length;
+    const rejectedCount = appointments.filter(a => a.status === 'rejected').length;
+    const totalCount = appointments.length;
+
+    const tableRows = filteredAppointments.map(appointment => `
+      <tr>
+        <td>
+          <div><strong>${getPatientData(appointment, 'name')}</strong></div>
+          <div>Age: ${getPatientData(appointment, 'age')}</div>
+          <div>Gender: ${getPatientData(appointment, 'gender')}</div>
+          <div>Blood: ${getPatientData(appointment, 'bloodGroup') || appointment.bloodType || 'N/A'}</div>
+        </td>
+        <td>
+          <div>${getPatientData(appointment, 'email')}</div>
+          <div>${getPatientData(appointment, 'phone') || getPatientData(appointment, 'phoneNumber')}</div>
+        </td>
+        <td>
+          <div>📅 ${formatDate(appointment.appointmentDate || appointment.date)}</div>
+          <div>🕐 ${formatTime(appointment.appointmentTime || appointment.time)}</div>
+          <div>🩺 ${appointment.doctorSpecialty || appointment.specialty || appointment.doctor || 'N/A'}</div>
+          <div>📋 ${appointment.appointmentType || appointment.type || 'General'}</div>
+        </td>
+        <td>
+          ${appointment.allergies ? `<div><strong>Allergies:</strong> ${appointment.allergies}</div>` : ''}
+          ${appointment.symptoms ? `<div><strong>Symptoms:</strong> ${appointment.symptoms}</div>` : ''}
+          ${appointment.emergencyContactName ? `<div><strong>Emergency:</strong> ${appointment.emergencyContactName} (${appointment.emergencyContactPhone})</div>` : ''}
+          ${!appointment.allergies && !appointment.symptoms && !appointment.emergencyContactName ? `<div>No additional medical info</div>` : ''}
+        </td>
+        <td>
+          <span style="padding:3px 9px; border-radius:10px; background:${
+            appointment.status === 'accepted'
+              ? '#D1FAE5'
+              : appointment.status === 'rejected'
+              ? '#FEE2E2'
+              : '#FEF9C3'
+          }; color:#222;">
+            ${appointment.status ? appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1) : 'Pending'}
+          </span>
+        </td>
+        <td>
+          <span style="padding:3px 9px; border-radius:10px; background:${
+            appointment.urgency === 'emergency'
+              ? '#F87171'
+              : appointment.urgency === 'urgent'
+              ? '#FBBF24'
+              : '#A7F3D0'
+          }; color:#111;">
+            ${appointment.urgency || appointment.priority || 'normal'}
+          </span>
+        </td>
+      </tr>
+    `).join('');
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8" />
+      <title>Appointments Report</title>
+      <style>
+        body { font-family: Arial,sans-serif; margin: 20px; font-size: 12px; color: #222; }
+        .header { text-align: center; border-bottom: 2px solid #1da1f2; padding-bottom: 16px; margin-bottom: 20px;}
+        .header h1 { color: #1da1f2; font-size: 23px; margin: 0;}
+        .header p { margin: 6px 0 0 0; color: #666; font-size: 14px;}
+        .info { text-align: right; color: #555; font-size: 11px; margin-bottom: 14px;}
+        .summary-section { background: #f8f9fa; border-radius: 6px; padding: 12px 20px; margin-bottom: 30px;}
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap:14px;}
+        .summary-card { background: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 12px;}
+        .summary-card h4 { color: #1da1f2; font-size: 13px; margin:0 0 3px 0;}
+        .summary-card .metric-value { font-size: 18px; font-weight:bold; color:#222;}
+        .summary-card .metric-label { font-size:11px; color:#888;}
+        table { width: 100%; border-collapse: collapse; margin-bottom: 23px; font-size:10px;}
+        th, td { border: 1px solid #ddd; padding: 8px; vertical-align:top;}
+        th { background: #1da1f2; color:#fff; font-weight:bold;}
+        tr:nth-child(even) { background: #f4f8fb; }
+        .footer { text-align:center; color: #888; font-size:10px; border-top:1px solid #ddd; padding-top:11px; margin-top:26px; }
+        .company-stamp { text-align:center; margin-top:24px; margin-left:270px ;padding:10px; border:2px solid #1da1f2; display:inline-block; font-size: 11px; color: #1da1f2; font-weight: bold;}
+        @media print { .no-print {display:none;} body{margin:10px;} }
+        .no-print { margin-top:22px; text-align:center;}
+        .signature-section { margin-top:40px; }
+        .signature-block { width:30%; display:inline-block; text-align:center; margin:10px;}
+        .signature-line { border-bottom:2px dotted #222; width:140px; height:32px; margin:0 auto 5px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Heal-X Appointments Report</h1>
+        <p>Manual Export &ndash; All Appointment Data Summary</p>
+      </div>
+      <div class="info">
+        <strong>Generated on:</strong> ${currentDate.toLocaleString()}<br>
+        <strong>Report Type:</strong> Appointment Management<br>
+        <strong>Data Source:</strong> Live Database API<br>
+        <strong>Filter:</strong> Status = ${filter.charAt(0).toUpperCase() + filter.slice(1)}, Search = "${searchTerm || 'None'}"
+      </div>
+      <div class="summary-section">
+        <div class="summary-grid">
+          <div class="summary-card">
+            <h4>Pending</h4>
+            <div class="metric-value">${pendingCount}</div>
+            <div class="metric-label">Unprocessed</div>
+          </div>
+          <div class="summary-card">
+            <h4>Accepted</h4>
+            <div class="metric-value">${acceptedCount}</div>
+            <div class="metric-label">Confirmed</div>
+          </div>
+          <div class="summary-card">
+            <h4>Rejected</h4>
+            <div class="metric-value">${rejectedCount}</div>
+            <div class="metric-label">Cancelled</div>
+          </div>
+          <div class="summary-card">
+            <h4>Total Appointments</h4>
+            <div class="metric-value">${totalCount}</div>
+            <div class="metric-label">Overall</div>
+          </div>
+          <div class="summary-card">
+            <h4>Filtered Results</h4>
+            <div class="metric-value">${filteredAppointments.length}</div>
+            <div class="metric-label">For Current Search/Filter</div>
+          </div>
+        </div>
+      </div>
+      <h3 style="color:#1da1f2;margin-bottom:5px;">Appointments Table</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Patient Info</th>
+            <th>Contact</th>
+            <th>Appointment Details</th>
+            <th>Medical Info</th>
+            <th>Status</th>
+            <th>Urgency</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows || `<tr><td colspan="7" style="text-align:center;color:#999;">No data found</td></tr>`}
+        </tbody>
+      </table>
+      <div class="signature-section">
+        <div class="signature-block">
+          <div class="signature-line"></div>
+          <div style="font-size:11px;font-weight:bold;">Receptionist / Clerk</div>
+        </div>
+        <div class="signature-block">
+          <div class="signature-line"></div>
+          <div style="font-size:11px;font-weight:bold;">Admin (Heal-X)</div>
+        </div>
+        <div class="signature-block">
+          <div class="signature-line"></div>
+          <div style="font-size:11px;font-weight:bold;">Authorized By</div>
+        </div>
+      </div>
+      <div class="company-stamp">
+        SEAL<br>HEAL-X OFFICIAL<br>HEALTHCARE MANAGEMENT SYSTEM
+      </div>
+      <div class="footer">
+        <p><strong>This report is system generated &mdash; Heal-X Healthcare</strong></p>
+        <p>Contact: info@heal-x.com | All data confidential</p>
+        <p>Generated: ${currentDate.toLocaleString()} | For official use only</p>
+      </div>
+      <div class="no-print">
+        <button onclick="window.print()" style="background:#1da1f2;color:#fff;border:none;padding:10px 24px;border-radius:5px;font-size:13px;cursor:pointer;">Print PDF Report</button>
+        <button onclick="window.close()" style="background:#6c757d;color:#fff;border:none;padding:10px 24px;border-radius:5px;font-size:13px;cursor:pointer;margin-left:10px;">Close</button>
+      </div>
+    </body>
+    </html>
+    `;
+
+    const printWindow = window.open('', '', 'width=1200,height=700');
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+  // --- END REPORT GENERATION SECTION ---
 
   if (loading) {
     return (
@@ -221,8 +363,8 @@ const ManageAppointments = () => {
   return (
     <div className="ma-unique-manage-appointments">
       <div className="ma-unique-page-header">
-        <button 
-          onClick={handleBackToDashboard} 
+        <button
+          onClick={handleBackToDashboard}
           className="ma-unique-back-btn"
         >
           ← Back to Dashboard
@@ -271,6 +413,25 @@ const ManageAppointments = () => {
         <button onClick={fetchAppointments} className="ma-unique-refresh-btn">
           🔄 Refresh
         </button>
+
+        {/* --- PDF Report Button --- */}
+        <button
+          onClick={exportToPDF}
+          className="ma-unique-report-btn"
+          style={{
+            marginLeft: '16px',
+            background: '#1da1f2',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '5px',
+            padding: '9px 22px',
+            fontWeight: 'bold',
+            fontSize: '13px',
+            cursor: 'pointer'
+          }}
+        >
+          📄 Generate PDF Report
+        </button>
       </div>
 
       <div className="ma-unique-appointments-stats">
@@ -292,7 +453,6 @@ const ManageAppointments = () => {
         </div>
       </div>
 
-      {/* Search Results Info */}
       {searchTerm && (
         <div className="ma-unique-search-info">
           <p>
@@ -351,7 +511,6 @@ const ManageAppointments = () => {
                       <span>Blood: {getPatientData(appointment, 'bloodGroup') || appointment.bloodType || 'N/A'}</span>
                     </div>
                   </td>
-
                   <td className="ma-unique-contact-info">
                     <div className="ma-unique-contact-email">
                       {getPatientData(appointment, 'email')}
@@ -360,7 +519,6 @@ const ManageAppointments = () => {
                       {getPatientData(appointment, 'phone') || getPatientData(appointment, 'phoneNumber')}
                     </div>
                   </td>
-
                   <td className="ma-unique-appointment-details">
                     <div className="ma-unique-appointment-date">
                       📅 {formatDate(appointment.appointmentDate || appointment.date)}
@@ -375,7 +533,6 @@ const ManageAppointments = () => {
                       📋 {appointment.appointmentType || appointment.type || 'General'}
                     </div>
                   </td>
-
                   <td className="ma-unique-medical-info">
                     {appointment.allergies && (
                       <div className="ma-unique-allergies">
@@ -397,15 +554,12 @@ const ManageAppointments = () => {
                       <div className="ma-unique-no-medical-info">No additional medical info</div>
                     )}
                   </td>
-
                   <td className="ma-unique-status-cell">
                     {getStatusBadge(appointment.status)}
                   </td>
-
                   <td className="ma-unique-urgency-cell">
                     {getUrgencyBadge(appointment.urgency || appointment.priority)}
                   </td>
-
                   <td className="ma-unique-actions-cell">
                     {(!appointment.status || appointment.status === 'pending') && (
                       <div className="ma-unique-action-buttons">
@@ -425,7 +579,6 @@ const ManageAppointments = () => {
                             </>
                           )}
                         </button>
-
                         <button
                           onClick={() => handleAction(appointment._id, 'reject')}
                           disabled={actionLoading[appointment._id] === 'reject'}
@@ -444,13 +597,11 @@ const ManageAppointments = () => {
                         </button>
                       </div>
                     )}
-
                     {appointment.status === 'accepted' && (
                       <div className="ma-unique-status-message ma-unique-accepted">
                         ✅ Accepted
                       </div>
                     )}
-
                     {appointment.status === 'rejected' && (
                       <div className="ma-unique-status-message ma-unique-rejected">
                         ❌ Rejected
