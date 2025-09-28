@@ -171,7 +171,6 @@ const RegisterUser = () => {
 
   return (
     <div className="register-container">
-      <MedicalNavbar />
       <div className="register-card">
         <div className="register-header">
           <h2>Create Account</h2>
@@ -368,6 +367,6 @@ const RegisterUser = () => {
       </div>
     </div>
   );
-};
+}; // ← This closing brace was missing!
 
 export default RegisterUser;
