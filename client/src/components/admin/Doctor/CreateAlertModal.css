@@ -537,3 +537,96 @@
     width: 100%;
   }
 }
+
+/* Add these styles to your CreateAlertModal.css file */
+
+/* Input hint/help text styles */
+.eap-input-help {
+  margin-top: 4px;
+}
+
+.eap-input-hint {
+  color: #666;
+  font-size: 12px;
+  display: block;
+  margin-top: 2px;
+  background-color: #f8f9fa;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border-left: 3px solid #3b82f6;
+  margin-top: 4px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Character count warning for description */
+.eap-char-warning {
+  color: #f59e0b !important;
+  font-weight: 500;
+  border-left-color: #f59e0b !important;
+}
+
+/* Character count in label */
+.eap-form-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+/* Validation state indicators */
+.eap-form-input:valid {
+  border-color: #10b981;
+}
+
+.eap-form-textarea:valid {
+  border-color: #10b981;
+}
+
+.eap-form-input:invalid {
+  border-color: #ef4444;
+}
+
+.eap-form-textarea:invalid {
+  border-color: #ef4444;
+}
+
+/* Focus states for validated inputs */
+.eap-form-input:focus:valid {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+.eap-form-textarea:focus:valid {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+/* Invalid input styling */
+.eap-form-input:focus:invalid {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+}
+
+.eap-form-textarea:focus:invalid {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+}
+
+/* Preview text styling */
+.eap-input-hint {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.eap-input-hint:hover {
+  background-color: #e5e7eb;
+}
+
+/* Responsive design for previews */
+@media (max-width: 768px) {
+  .eap-input-hint {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+}
