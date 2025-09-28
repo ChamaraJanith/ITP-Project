@@ -395,7 +395,7 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.setTextColor(0, 0, 0);
-      doc.text(`Name: Dr. ${doctor?.name || "N/A"}`, margin + 3, y + 16);
+      doc.text(`Name: ${doctor?.name || "N/A"}`, margin + 3, y + 16);
       doc.text(`Specialization: ${doctor?.specialization || "N/A"}`, margin + 3, y + 22);
       
       // Standard medical credentials
@@ -597,7 +597,7 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
       doc.line(margin + 3, y + 25, margin + 50, y + 25);
       
       // Physician information
-      doc.text(`Dr. ${doctor?.name || "N/A"}`, margin + 3, y + 32);
+      doc.text(` ${doctor?.name || "N/A"}`, margin + 3, y + 32);
       doc.text(`${doctor?.specialization || "N/A"}`, margin + 3, y + 37);
       doc.text(`License: MD-12345`, margin + 3, y + 42);
       
