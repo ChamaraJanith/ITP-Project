@@ -288,6 +288,7 @@
   background: var(--payment-total-gradient-primary);
   color: var(--color-btn-primary-text);
   border: none;
+  height: 25px;
   padding: var(--space-12) var(--space-24);
   border-radius: var(--radius-xl);
   font-size: var(--font-size-lg);
