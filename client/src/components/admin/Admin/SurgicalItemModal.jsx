@@ -219,7 +219,7 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
     name: (value) => {
       if (!value || !value.trim()) return 'Item name is required';
       if (value.trim().length < 3) return 'Item name must be at least 3 characters';
-      if (value.trim().length > 100) return 'Item name must be less than 100 characters';
+      if (value.trim().length > 15) return 'Item name must be less than 15 characters';
       return '';
     },
     category: (value) => {
@@ -685,24 +685,7 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
           <button className="simodel-close-btn" onClick={onClose}>×</button>
         </div>
 
-        {/* Error Summary */}
-        {Object.keys(errors).length > 0 && (
-          <div style={{
-            background: '#f8d7da',
-            border: '1px solid #f5c6cb',
-            borderRadius: '6px',
-            padding: '12px',
-            margin: '16px 0',
-            color: '#721c24'
-          }}>
-            <strong>⚠️ Please fix the following errors:</strong>
-            <ul style={{ margin: '8px 0 0 20px', paddingLeft: '0' }}>
-              {Object.entries(errors).map(([field, error], index) => (
-                <li key={index} style={{ marginBottom: '4px' }}>{error}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+        
 
         <form onSubmit={handleSubmit} className="item-form">
           <div className="form-grid">
@@ -719,6 +702,7 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   className={errors.name ? 'error' : ''}
                   placeholder="Enter item name (letters only)"
+                  maxLength={15}
                   required
                   style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                 />
