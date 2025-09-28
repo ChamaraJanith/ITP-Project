@@ -36,6 +36,7 @@ import router from './routes/appointment.js';
 import supplierRoutes from './routes/suppliers.js';
 import purchaseOrderRoutes from './routes/purchaseOrders.js';
 import AppointmentRoutes from './routes/appointment.js';
+import disrouter from './routes/disposalRoutes.js';
 
 // Database imports
 const { default: connectDB } = await import("./config/mongodb.js");
@@ -154,6 +155,8 @@ app.use("/api/emails", financemailrouter);
 app.use('/api/financial-utilities', utilitiesrouter);
 app.use('/api/appointments', router);
 app.use('/api/appointments', AppointmentRoutes);
+app.use('/api/disposalrecords', disrouter)
+
 
 console.log('🚨 Mounting emergency alerts router at /api/doctor/emergency-alerts');
 app.use('/api/doctor/emergency-alerts', emergencyAlertRouter);
