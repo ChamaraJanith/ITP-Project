@@ -133,7 +133,9 @@
 
 .itv-unique-back-btn,
 .itv-unique-print-btn,
-.itv-unique-export-btn {
+.itv-unique-export-btn,
+.itv-unique-professional-btn,
+.itv-unique-excel-btn {
   display: inline-flex;
   align-items: center;
   border: none;
@@ -161,8 +163,13 @@
   background: var(--itv-gradient-success);
   color: var(--color-btn-primary-text);
 }
-.itv-unique-back-btn:hover, .itv-unique-print-btn:hover, .itv-unique-export-btn:hover {
+.itv-unique-back-btn:hover,.itv-unique-print-btn:hover,.itv-unique-export-btn:hover,.itv-unique-professional-btn:hover,.itv-unique-excel-btn:hover {
   filter: brightness(0.98) saturate(1.2);
+  transform: translateY(-2px) scale(1.03);
+}
+
+.itv-unique-print-btn:hover{
+   filter: brightness(0.98) saturate(1.2);
   transform: translateY(-2px) scale(1.03);
 }
 
