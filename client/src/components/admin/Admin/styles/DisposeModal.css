@@ -63,7 +63,7 @@
   margin: 0 !important;
 }
 
-.close-btn {
+.disposal-close-btn {
   all: initial; /* Reset all styles */
   display: flex !important;
   align-items: center !important;
@@ -80,7 +80,7 @@
   padding: 0 !important;
 }
 
-.close-btn:hover {
+.disposal-close-btn:hover {
   background: #c0392b !important;
   transform: scale(1.1) !important;
 }
