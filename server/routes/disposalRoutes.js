@@ -1,14 +1,26 @@
-// routes/disposalRoutes.js
+// FIXED disposalRoutes.js
 import express from 'express';
-import { disposeItem, getDisposalHistory, bulkDispose } from '../controller/disposalController.js';
+import { 
+  disposeItem, 
+  disposeItems,
+  getDisposalHistory, 
+  clearDisposalHistory,
+  getDisposalStats,
+  getAllItems,
+  bulkDisposeItems
+} from '../controller/disposalController.js';
 
-const router = express.Router();
+const disrouter = express.Router();
 
-// Single item disposal
-router.post('/surgical-items/:id/dispose', disposeItem);
+// ⭐ ADD THIS CRITICAL MISSING LINE:
+disrouter.get('/items', getAllItems);
 
-// Future routes for disposal functionality
-router.get('/disposal-history', getDisposalHistory);
-router.post('/bulk-dispose', bulkDispose);
+// EXISTING ROUTES (keep all these):
+disrouter.post('/dispose-items', disposeItems);
+disrouter.get('/disposal-history', getDisposalHistory);
+disrouter.delete('/disposal-history', clearDisposalHistory);
+disrouter.post('/surgical-items/:id/dispose', disposeItem);
+disrouter.get('/disposal-stats', getDisposalStats);
+disrouter.post('/bulk-dispose', bulkDisposeItems);
 
-export default router;
+export default disrouter;

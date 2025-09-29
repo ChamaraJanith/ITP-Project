@@ -33,6 +33,7 @@ import PrescriptionPage from './components/admin/Doctor/PrescriptionPage';
 import PaymentTotalView from './components/admin/Financial_Manager/PaymentTotalView';
 import PatientDetailsWithCharts from './components/admin/Admin/PatientDetailsWithCharts';
 import EmergencyAlertsPage from './components/admin/Doctor/EmergencyAlertsPage';
+import DisposalModal from './components/admin/Admin/disposeModal'; // keep modal import [21]
 
 import DoctorItemRequestModal from "./components/admin/Doctor/DoctorInventoryPage"; // keep modal import [21]
 
@@ -243,6 +244,7 @@ function App() {
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminLandingPage />} />
             <Route path="/reset-password" element={<ResetPassword/>}/>
+            <Route path="/admin/dispose-modal" apiBaseUrl="http://localhost:7000/api/disposalrecords" element={<DisposalModal /> } />  {/* keep modal route [21] */}
             
             {/* Protected Admin Routes */}
             <Route 

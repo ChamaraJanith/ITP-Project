@@ -181,7 +181,7 @@ const CompanyNameDropdown = ({
   );
 };
 
-// ✅ COMPLETE: Full SurgicalItemModal with working company dropdown
+// ✅ ENHANCED: Full SurgicalItemModal with comprehensive validation and input filtering
 const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBaseUrl }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -214,6 +214,201 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // ✅ UPDATED: Validation functions with your specific requirements
+  const validators = {
+    name: (value) => {
+      if (!value || !value.trim()) return 'Item name is required';
+      if (value.trim().length < 3) return 'Item name must be at least 3 characters';
+      if (value.trim().length > 15) return 'Item name must be less than 15 characters';
+      return '';
+    },
+    category: (value) => {
+      if (!value) return 'Category is required';
+      return '';
+    },
+    description: (value) => {
+      if (value && value.length > 500) return 'Description must be less than 500 characters';
+      return '';
+    },
+    quantity: (value) => {
+      if (value < 0) return 'Quantity cannot be negative';
+      if (value > 10000) return 'Quantity seems too high, please verify';
+      return '';
+    },
+    price: (value) => {
+      if (value < 0) return 'Price cannot be negative';
+      if (value > 10000) return 'Price seems too high, please verify';
+      return '';
+    },
+    'autoRestock.minStockLevel': (value) => {
+      if (value < 0) return 'Minimum stock level cannot be negative';
+      return '';
+    },
+    'autoRestock.maxStockLevel': (value, formData) => {
+      if (value < 0) return 'Maximum stock level cannot be negative';
+      if (value <= formData.autoRestock.minStockLevel) return 'Maximum must be greater than minimum';
+      return '';
+    },
+    'autoRestock.reorderQuantity': (value, formData) => {
+      if (value < 0) return 'Reorder quantity cannot be negative';
+      if (value > formData.autoRestock.maxStockLevel) return 'Reorder quantity cannot exceed maximum stock level';
+      return '';
+    },
+    companyId: (value, formData) => {
+      if (!value && !formData.supplier.name.trim()) {
+        return 'Please select a company or enter supplier name';
+      }
+      return '';
+    },
+    'supplier.name': (value, formData) => {
+      if (!formData.companyId && (!value || !value.trim())) {
+        return 'Supplier name is required when no company is selected';
+      }
+      return '';
+    },
+    'supplier.email': (value) => {
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return 'Please enter a valid email address';
+      }
+      return '';
+    },
+    'supplier.contact': (value) => {
+      if (value && !/^[\d\s\-\+\(\)]+$/.test(value)) {
+        return 'Contact should contain only numbers, spaces, and + - ( )';
+      }
+      return '';
+    },
+    'location.room': (value) => {
+      if (value && !/^Room-\d+$/.test(value)) {
+        return 'Room must be in format "Room-101" (letters, hyphen, numbers only)';
+      }
+      return '';
+    },
+    'location.shelf': (value) => {
+      if (value && !/^Shelf-[A-Za-z]\d*$/.test(value)) {
+        return 'Shelf must be in format "Shelf-A1" (letters, hyphen, optional numbers)';
+      }
+      return '';
+    },
+    'location.bin': (value) => {
+      if (value && !/^Bin-[A-Za-z]\d*$/.test(value)) {
+        return 'Bin must be in format "Bin-B12" (letters, hyphen, optional numbers)';
+      }
+      return '';
+    },
+    expiryDate: (value) => {
+      if (value) {
+        const selectedDate = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (selectedDate < today) {
+          return 'Expiry date cannot be in the past';
+        }
+      }
+      return '';
+    },
+    batchNumber: (value) => {
+      if (value && !/^BATCH-\d{4}-\d{3}$/.test(value)) {
+        return 'Batch number must be in format "BATCH-2025-001"';
+      }
+      return '';
+    },
+    serialNumber: (value) => {
+      if (value && value.length > 10) {
+        return 'Serial number must be 10 characters or less';
+      }
+      if (value && !/^[A-Z0-9\-]+$/i.test(value)) {
+        return 'Serial number can only contain letters, numbers, and hyphens';
+      }
+      return '';
+    }
+  };
+
+  // ✅ NEW: Input filtering functions to prevent invalid characters
+  const inputFilters = {
+    name: (value) => {
+      // Only allow letters and spaces
+      return value.replace(/[^A-Za-z\s]/g, '');
+    },
+    'location.room': (value) => {
+      // Only allow "Room-" followed by digits
+      // If user starts typing, we can help by adding "Room-" prefix
+      if (!value.startsWith('Room-') && value.length > 0) {
+        return 'Room-';
+      }
+      // After "Room-", only allow digits
+      const roomPart = value.substring(5);
+      return 'Room-' + roomPart.replace(/[^\d]/g, '');
+    },
+    'location.shelf': (value) => {
+      // Only allow "Shelf-" followed by a letter and optional digits
+      if (!value.startsWith('Shelf-') && value.length > 0) {
+        return 'Shelf-';
+      }
+      const shelfPart = value.substring(6);
+      if (shelfPart.length === 0) return value;
+      // First character after hyphen must be a letter
+      const firstChar = shelfPart.charAt(0);
+      if (!/^[A-Za-z]$/.test(firstChar)) {
+        return 'Shelf-';
+      }
+      // Remaining characters can be digits
+      const remaining = shelfPart.substring(1);
+      return 'Shelf-' + firstChar + remaining.replace(/[^\d]/g, '');
+    },
+    'location.bin': (value) => {
+      // Only allow "Bin-" followed by a letter and optional digits
+      if (!value.startsWith('Bin-') && value.length > 0) {
+        return 'Bin-';
+      }
+      const binPart = value.substring(4);
+      if (binPart.length === 0) return value;
+      // First character after hyphen must be a letter
+      const firstChar = binPart.charAt(0);
+      if (!/^[A-Za-z]$/.test(firstChar)) {
+        return 'Bin-';
+      }
+      // Remaining characters can be digits
+      const remaining = binPart.substring(1);
+      return 'Bin-' + firstChar + remaining.replace(/[^\d]/g, '');
+    },
+    batchNumber: (value) => {
+      // Format: BATCH-YYYY-XXX
+      if (!value.startsWith('BATCH-') && value.length > 0) {
+        return 'BATCH-';
+      }
+      const batchPart = value.substring(6);
+      if (batchPart.length === 0) return value;
+      
+      // Split by hyphen
+      const parts = batchPart.split('-');
+      if (parts.length === 1) {
+        // Only year part so far
+        const year = parts[0].replace(/[^\d]/g, '');
+        return 'BATCH-' + year.substring(0, 4);
+      } else if (parts.length === 2) {
+        // Year and number parts
+        const year = parts[0].replace(/[^\d]/g, '').substring(0, 4);
+        const number = parts[1].replace(/[^\d]/g, '').substring(0, 3);
+        return 'BATCH-' + year + '-' + number;
+      }
+      return value;
+    },
+    serialNumber: (value) => {
+      // Only allow alphanumeric and hyphens, max 10 characters
+      return value.replace(/[^A-Za-z0-9\-]/g, '').substring(0, 10);
+    }
+  };
+
+  // ✅ FIXED: Validate a single field and update state
+  const validateField = (fieldName, value) => {
+    const validator = validators[fieldName];
+    if (validator) {
+      return validator(value, formData);
+    }
+    return '';
+  };
+
   // Handle company selection from dropdown
   const handleCompanyChange = (companyId, companyData) => {
     console.log('🏢 Company selected:', companyData);
@@ -228,165 +423,195 @@ const SurgicalItemModal = ({ isOpen, onClose, item, categories, onSuccess, apiBa
       }
     }));
     
-    // Clear company error
-    if (errors.companyId) {
-      setErrors(prev => ({ ...prev, companyId: '' }));
-    }
+    // Clear company and supplier related errors
+    const companyFields = ['companyId', 'supplier.name', 'supplier.email', 'supplier.contact'];
+    const newErrors = { ...errors };
+    companyFields.forEach(field => {
+      delete newErrors[field];
+    });
+    setErrors(newErrors);
   };
 
-  // Handle input changes
+  // ✅ FIXED: Handle input changes with immediate validation and filtering
   const handleInputChange = (field, value) => {
+    // Convert value to appropriate type
+    let processedValue = value;
+    if (field === 'quantity' || field === 'price' || 
+        field === 'autoRestock.minStockLevel' || 
+        field === 'autoRestock.maxStockLevel' || 
+        field === 'autoRestock.reorderQuantity') {
+      processedValue = Number(value) || 0;
+    } else if (field === 'autoRestock.isEnabled') {
+      processedValue = value === 'true';
+    } else {
+      // Apply input filtering if a filter exists for this field
+      if (inputFilters[field]) {
+        processedValue = inputFilters[field](value);
+      }
+    }
+
+    // Update form data
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setFormData(prev => ({
         ...prev,
         [parent]: {
           ...prev[parent],
-          [child]: value
+          [child]: processedValue
         }
       }));
     } else {
       setFormData(prev => ({
         ...prev,
-        [field]: value
+        [field]: processedValue
       }));
     }
 
-    // Clear field error
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
+    // Always validate the field on change for immediate feedback
+    const error = validateField(field, processedValue);
+    setErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
   };
 
-  // Form validation
+  // ✅ FIXED: Comprehensive form validation
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.name.trim()) newErrors.name = 'Item name is required';
-    if (!formData.category) newErrors.category = 'Category is required';
-    if (!formData.companyId && !formData.supplier.name.trim()) {
-      newErrors.companyId = 'Please select a company or enter supplier name';
-    }
-    if (formData.quantity < 0) newErrors.quantity = 'Quantity cannot be negative';
-    if (formData.price < 0) newErrors.price = 'Price cannot be negative';
-
+    
+    // Validate all fields
+    Object.keys(validators).forEach(field => {
+      const value = field.includes('.') 
+        ? field.split('.').reduce((obj, key) => obj && obj[key], formData)
+        : formData[field];
+        
+      const error = validators[field](value, formData);
+      if (error) {
+        newErrors[field] = error;
+      }
+    });
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // Form submission
-// ✅ FIXED: Enhanced form submission with onSuccess safety check
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!validateForm()) {
-    return;
-  }
-
-  setLoading(true);
-  
-  try {
-    // ✅ CORRECT: Using the right API endpoint for surgical items
-    const url = item 
-      ? `http://localhost:7000/api/inventory/surgical-items/${item._id}` 
-      : `http://localhost:7000/api/inventory/surgical-items`;
-    const method = item ? 'PUT' : 'POST';
-
-    console.log('🚀 Submitting to CORRECT endpoint:', url);
-    console.log('📋 Form data:', formData);
-
-    const response = await fetch(url, {
-      method,
-      headers: { 
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(formData),
-    });
-
-    console.log('📡 Response status:', response.status);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    // ✅ ENHANCED: Better response handling
-    let data;
-    const contentType = response.headers.get('content-type');
-    
-    if (contentType && contentType.includes('application/json')) {
-      try {
-        data = await response.json();
-        console.log('📋 Response data:', data);
-      } catch (jsonError) {
-        console.error('❌ JSON parsing error:', jsonError);
-        throw new Error('Server returned invalid JSON response');
+    if (!validateForm()) {
+      // Scroll to first error
+      const firstErrorField = document.querySelector('.error');
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    } else {
-      // If not JSON, get text content for debugging
-      const textResponse = await response.text();
-      console.log('📄 Non-JSON response:', textResponse);
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      // ✅ CORRECT: Using the right API endpoint for surgical items
+      const url = item 
+        ? `http://localhost:7000/api/inventory/surgical-items/${item._id}` 
+        : `http://localhost:7000/api/inventory/surgical-items`;
+      const method = item ? 'PUT' : 'POST';
+
+      console.log('🚀 Submitting to CORRECT endpoint:', url);
+      console.log('📋 Form data:', formData);
+
+      const response = await fetch(url, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData),
+      });
+
+      console.log('📡 Response status:', response.status);
       
-      if (response.ok) {
-        // Sometimes servers return success with empty body or plain text
+      // ✅ ENHANCED: Better response handling
+      let data;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+          console.log('📋 Response data:', data);
+        } catch (jsonError) {
+          console.error('❌ JSON parsing error:', jsonError);
+          throw new Error('Server returned invalid JSON response');
+        }
+      } else {
+        // If not JSON, get text content for debugging
+        const textResponse = await response.text();
+        console.log('📄 Non-JSON response:', textResponse);
+        
+        if (response.ok) {
+          // Sometimes servers return success with empty body or plain text
+          alert(`✅ Item ${item ? 'updated' : 'created'} successfully!`);
+          
+          // ✅ FIXED: Safe onSuccess call with fallback
+          if (typeof onSuccess === 'function') {
+            onSuccess();
+          } else {
+            console.warn('⚠️ onSuccess prop is not a function, skipping callback');
+            // Optionally refresh the page or perform other actions
+            window.location.reload();
+          }
+          onClose();
+          return;
+        } else {
+          throw new Error(`Server error: ${response.status} - ${textResponse || 'No response body'}`);
+        }
+      }
+
+      // Handle JSON response
+      if (response.ok || (data && (data.success || data.message?.includes('success')))) {
         alert(`✅ Item ${item ? 'updated' : 'created'} successfully!`);
         
         // ✅ FIXED: Safe onSuccess call with fallback
         if (typeof onSuccess === 'function') {
           onSuccess();
+          console.log('✅ onSuccess callback executed');
         } else {
-          console.warn('⚠️ onSuccess prop is not a function, skipping callback');
-          // Optionally refresh the page or perform other actions
-          window.location.reload();
+          console.warn('⚠️ onSuccess prop is not a function or not provided');
+          console.log('Available props:', { onSuccess, onClose, item, categories, apiBaseUrl });
+          // Fallback: refresh the page to show updated data
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
         }
         onClose();
-        return;
       } else {
-        throw new Error(`Server error: ${response.status} - ${textResponse || 'No response body'}`);
+        throw new Error(data?.message || `Server error: ${response.status}`);
       }
-    }
-
-    // Handle JSON response
-    if (response.ok || (data && (data.success || data.message?.includes('success')))) {
-      alert(`✅ Item ${item ? 'updated' : 'created'} successfully!`);
       
-      // ✅ FIXED: Safe onSuccess call with fallback
-      if (typeof onSuccess === 'function') {
-        onSuccess();
-        console.log('✅ onSuccess callback executed');
-      } else {
-        console.warn('⚠️ onSuccess prop is not a function or not provided');
-        console.log('Available props:', { onSuccess, onClose, item, categories, apiBaseUrl });
-        // Fallback: refresh the page to show updated data
+    } catch (error) {
+      console.error('❌ Error saving item:', error);
+      
+      // ✅ BETTER: More specific error messages
+      let errorMessage = error.message;
+      
+      if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Cannot connect to server. Check if backend is running on port 7000.';
+      } else if (error.message.includes('JSON')) {
+        errorMessage = 'Server returned invalid response. Check server logs for errors.';
+      } else if (error.message.includes('Route') && error.message.includes('not found')) {
+        errorMessage = 'API endpoint not found. Using: http://localhost:7000/api/inventory/surgical-items';
+      } else if (error.message.includes('onSuccess is not a function')) {
+        errorMessage = 'Item created successfully, but callback function is missing. Page will refresh automatically.';
+        // Auto-refresh after showing message
         setTimeout(() => {
           window.location.reload();
-        }, 1000);
+        }, 2000);
       }
-      onClose();
-    } else {
-      throw new Error(data?.message || `Server error: ${response.status}`);
+      
+      alert(`❌ Failed to ${item ? 'update' : 'create'} item: ${errorMessage}`);
+    } finally {
+      setLoading(false);
     }
-    
-  } catch (error) {
-    console.error('❌ Error saving item:', error);
-    
-    // ✅ BETTER: More specific error messages
-    let errorMessage = error.message;
-    
-    if (error.message.includes('Failed to fetch')) {
-      errorMessage = 'Cannot connect to server. Check if backend is running on port 7000.';
-    } else if (error.message.includes('JSON')) {
-      errorMessage = 'Server returned invalid response. Check server logs for errors.';
-    } else if (error.message.includes('Route') && error.message.includes('not found')) {
-      errorMessage = 'API endpoint not found. Using: http://localhost:7000/api/inventory/surgical-items';
-    } else if (error.message.includes('onSuccess is not a function')) {
-      errorMessage = 'Item created successfully, but callback function is missing. Page will refresh automatically.';
-      // Auto-refresh after showing message
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
-    }
-    
-    alert(`❌ Failed to ${item ? 'update' : 'create'} item: ${errorMessage}`);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // Initialize form data
   useEffect(() => {
@@ -457,27 +682,10 @@ const handleSubmit = async (e) => {
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{item ? '✏️ Edit Surgical Item' : '➕ Add New Surgical Item'}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <button className="simodel-close-btn" onClick={onClose}>×</button>
         </div>
 
-        {/* Error Summary */}
-        {Object.keys(errors).length > 0 && (
-          <div style={{
-            background: '#f8d7da',
-            border: '1px solid #f5c6cb',
-            borderRadius: '6px',
-            padding: '12px',
-            margin: '16px 0',
-            color: '#721c24'
-          }}>
-            <strong>⚠️ Please fix the following errors:</strong>
-            <ul style={{ margin: '8px 0 0 20px', paddingLeft: '0' }}>
-              {Object.entries(errors).map(([field, error], index) => (
-                <li key={index} style={{ marginBottom: '4px' }}>{error}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+        
 
         <form onSubmit={handleSubmit} className="item-form">
           <div className="form-grid">
@@ -493,11 +701,19 @@ const handleSubmit = async (e) => {
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   className={errors.name ? 'error' : ''}
-                  placeholder="Enter item name"
+                  placeholder="Enter item name (letters only)"
+                  maxLength={15}
                   required
                   style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                 />
-                {errors.name && <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>{errors.name}</span>}
+                {errors.name && (
+                  <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                    {errors.name}
+                  </span>
+                )}
+                <small style={{ color: '#6c757d', fontSize: '11px', display: 'block', marginTop: '2px' }}>
+                  💡 Only letters and spaces are allowed
+                </small>
               </div>
 
               <div className="form-group">
@@ -514,7 +730,11 @@ const handleSubmit = async (e) => {
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
-                {errors.category && <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>{errors.category}</span>}
+                {errors.category && (
+                  <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                    {errors.category}
+                  </span>
+                )}
               </div>
 
               <div className="form-group">
@@ -524,8 +744,14 @@ const handleSubmit = async (e) => {
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   placeholder="Enter item description"
                   rows="3"
+                  className={errors.description ? 'error' : ''}
                   style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px', resize: 'vertical' }}
                 />
+                {errors.description && (
+                  <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                    {errors.description}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -539,12 +765,16 @@ const handleSubmit = async (e) => {
                   <input
                     type="number"
                     value={formData.quantity}
-                    onChange={(e) => handleInputChange('quantity', parseInt(e.target.value) || 0)}
+                    onChange={(e) => handleInputChange('quantity', e.target.value)}
                     className={errors.quantity ? 'error' : ''}
                     min="0"
                     style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
-                  {errors.quantity && <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>{errors.quantity}</span>}
+                  {errors.quantity && (
+                    <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      {errors.quantity}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group" style={{ flex: 1 }}>
@@ -552,13 +782,17 @@ const handleSubmit = async (e) => {
                   <input
                     type="number"
                     value={formData.price}
-                    onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleInputChange('price', e.target.value)}
                     className={errors.price ? 'error' : ''}
                     min="0"
                     step="0.01"
                     style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
-                  {errors.price && <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>{errors.price}</span>}
+                  {errors.price && (
+                    <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      {errors.price}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -579,10 +813,16 @@ const handleSubmit = async (e) => {
                   <input
                     type="number"
                     value={formData.autoRestock.minStockLevel}
-                    onChange={(e) => handleInputChange('autoRestock.minStockLevel', parseInt(e.target.value) || 0)}
+                    onChange={(e) => handleInputChange('autoRestock.minStockLevel', e.target.value)}
+                    className={errors['autoRestock.minStockLevel'] ? 'error' : ''}
                     min="0"
                     style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
+                  {errors['autoRestock.minStockLevel'] && (
+                    <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      {errors['autoRestock.minStockLevel']}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group" style={{ flex: 1 }}>
@@ -590,10 +830,16 @@ const handleSubmit = async (e) => {
                   <input
                     type="number"
                     value={formData.autoRestock.maxStockLevel}
-                    onChange={(e) => handleInputChange('autoRestock.maxStockLevel', parseInt(e.target.value) || 0)}
+                    onChange={(e) => handleInputChange('autoRestock.maxStockLevel', e.target.value)}
+                    className={errors['autoRestock.maxStockLevel'] ? 'error' : ''}
                     min="0"
                     style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
+                  {errors['autoRestock.maxStockLevel'] && (
+                    <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      {errors['autoRestock.maxStockLevel']}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group" style={{ flex: 1 }}>
@@ -601,10 +847,16 @@ const handleSubmit = async (e) => {
                   <input
                     type="number"
                     value={formData.autoRestock.reorderQuantity}
-                    onChange={(e) => handleInputChange('autoRestock.reorderQuantity', parseInt(e.target.value) || 0)}
+                    onChange={(e) => handleInputChange('autoRestock.reorderQuantity', e.target.value)}
+                    className={errors['autoRestock.reorderQuantity'] ? 'error' : ''}
                     min="0"
                     style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
+                  {errors['autoRestock.reorderQuantity'] && (
+                    <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      {errors['autoRestock.reorderQuantity']}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -612,7 +864,7 @@ const handleSubmit = async (e) => {
                 <label>Auto-Restock Enabled</label>
                 <select
                   value={formData.autoRestock.isEnabled}
-                  onChange={(e) => handleInputChange('autoRestock.isEnabled', e.target.value === 'true')}
+                  onChange={(e) => handleInputChange('autoRestock.isEnabled', e.target.value)}
                   style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                 >
                   <option value={true}>✅ Yes - Enable Auto-Restock</option>
@@ -634,7 +886,11 @@ const handleSubmit = async (e) => {
                   placeholder="Select company name"
                   required={true}
                 />
-                {errors.companyId && <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>{errors.companyId}</span>}
+                {errors.companyId && (
+                  <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                    {errors.companyId}
+                  </span>
+                )}
               </div>
 
               {/* Auto-filled supplier details */}
@@ -662,6 +918,7 @@ const handleSubmit = async (e) => {
                         value={formData.supplier.name}
                         onChange={(e) => handleInputChange('supplier.name', e.target.value)}
                         readOnly={!!formData.companyId}
+                        className={errors['supplier.name'] ? 'error' : ''}
                         style={{ 
                           width: '100%', 
                           padding: '10px', 
@@ -671,6 +928,11 @@ const handleSubmit = async (e) => {
                           cursor: formData.companyId ? 'not-allowed' : 'text'
                         }}
                       />
+                      {errors['supplier.name'] && (
+                        <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                          {errors['supplier.name']}
+                        </span>
+                      )}
                     </div>
                     
                     <div className="form-group" style={{ flex: 1 }}>
@@ -680,6 +942,7 @@ const handleSubmit = async (e) => {
                         value={formData.supplier.contact}
                         onChange={(e) => handleInputChange('supplier.contact', e.target.value)}
                         readOnly={!!formData.companyId}
+                        className={errors['supplier.contact'] ? 'error' : ''}
                         style={{ 
                           width: '100%', 
                           padding: '10px', 
@@ -689,6 +952,11 @@ const handleSubmit = async (e) => {
                           cursor: formData.companyId ? 'not-allowed' : 'text'
                         }}
                       />
+                      {errors['supplier.contact'] && (
+                        <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                          {errors['supplier.contact']}
+                        </span>
+                      )}
                     </div>
                     
                     <div className="form-group" style={{ flex: 1 }}>
@@ -698,6 +966,7 @@ const handleSubmit = async (e) => {
                         value={formData.supplier.email}
                         onChange={(e) => handleInputChange('supplier.email', e.target.value)}
                         readOnly={!!formData.companyId}
+                        className={errors['supplier.email'] ? 'error' : ''}
                         style={{ 
                           width: '100%', 
                           padding: '10px', 
@@ -707,6 +976,11 @@ const handleSubmit = async (e) => {
                           cursor: formData.companyId ? 'not-allowed' : 'text'
                         }}
                       />
+                      {errors['supplier.email'] && (
+                        <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                          {errors['supplier.email']}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -725,8 +999,17 @@ const handleSubmit = async (e) => {
                     value={formData.location.room}
                     onChange={(e) => handleInputChange('location.room', e.target.value)}
                     placeholder="Room-101"
+                    className={errors['location.room'] ? 'error' : ''}
                     style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
+                  {errors['location.room'] && (
+                    <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      {errors['location.room']}
+                    </span>
+                  )}
+                  <small style={{ color: '#6c757d', fontSize: '11px', display: 'block', marginTop: '2px' }}>
+                    💡 Format: Room-101 (auto-formatted)
+                  </small>
                 </div>
 
                 <div className="form-group" style={{ flex: 1 }}>
@@ -736,8 +1019,17 @@ const handleSubmit = async (e) => {
                     value={formData.location.shelf}
                     onChange={(e) => handleInputChange('location.shelf', e.target.value)}
                     placeholder="Shelf-A1"
+                    className={errors['location.shelf'] ? 'error' : ''}
                     style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
+                  {errors['location.shelf'] && (
+                    <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      {errors['location.shelf']}
+                    </span>
+                  )}
+                  <small style={{ color: '#6c757d', fontSize: '11px', display: 'block', marginTop: '2px' }}>
+                    💡 Format: Shelf-A1 (auto-formatted)
+                  </small>
                 </div>
 
                 <div className="form-group" style={{ flex: 1 }}>
@@ -747,8 +1039,17 @@ const handleSubmit = async (e) => {
                     value={formData.location.bin}
                     onChange={(e) => handleInputChange('location.bin', e.target.value)}
                     placeholder="Bin-B12"
+                    className={errors['location.bin'] ? 'error' : ''}
                     style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
+                  {errors['location.bin'] && (
+                    <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      {errors['location.bin']}
+                    </span>
+                  )}
+                  <small style={{ color: '#6c757d', fontSize: '11px', display: 'block', marginTop: '2px' }}>
+                    💡 Format: Bin-B12 (auto-formatted)
+                  </small>
                 </div>
               </div>
 
@@ -760,8 +1061,14 @@ const handleSubmit = async (e) => {
                     value={formData.expiryDate}
                     onChange={(e) => handleInputChange('expiryDate', e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
+                    className={errors.expiryDate ? 'error' : ''}
                     style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
+                  {errors.expiryDate && (
+                    <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      {errors.expiryDate}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group" style={{ flex: 1 }}>
@@ -771,8 +1078,17 @@ const handleSubmit = async (e) => {
                     value={formData.batchNumber}
                     onChange={(e) => handleInputChange('batchNumber', e.target.value)}
                     placeholder="BATCH-2025-001"
+                    className={errors.batchNumber ? 'error' : ''}
                     style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
+                  {errors.batchNumber && (
+                    <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      {errors.batchNumber}
+                    </span>
+                  )}
+                  <small style={{ color: '#6c757d', fontSize: '11px', display: 'block', marginTop: '2px' }}>
+                    💡 Format: BATCH-2025-001 (auto-formatted)
+                  </small>
                 </div>
 
                 <div className="form-group" style={{ flex: 1 }}>
@@ -782,8 +1098,18 @@ const handleSubmit = async (e) => {
                     value={formData.serialNumber}
                     onChange={(e) => handleInputChange('serialNumber', e.target.value)}
                     placeholder="SN-123456789"
+                    maxLength={10}
+                    className={errors.serialNumber ? 'error' : ''}
                     style={{ width: '100%', padding: '10px', border: '1px solid #ced4da', borderRadius: '4px' }}
                   />
+                  {errors.serialNumber && (
+                    <span style={{ color: '#dc3545', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      {errors.serialNumber}
+                    </span>
+                  )}
+                  <small style={{ color: '#6c757d', fontSize: '11px', display: 'block', marginTop: '2px' }}>
+                    💡 Max 10 characters, alphanumeric and hyphens only
+                  </small>
                 </div>
               </div>
             </div>

@@ -211,6 +211,67 @@ const SupplierManagement = () => {
     setErrors(prev => ({ ...prev, rating: '' }));
   };
 
+  // Enhanced Order Items validation
+  const handleProductInput = (value, index) => {
+    // Only allow letters and spaces, maximum 15 characters
+    const sanitized = value.replace(/[^a-zA-Z\s]/g, '').slice(0, 15);
+    updateOrderItem(index, 'product', sanitized);
+    
+    // Validate product name
+    if (sanitized.trim()) {
+      setErrors(prev => ({ ...prev, [`item_${index}_product`]: '' }));
+    } else {
+      setErrors(prev => ({ ...prev, [`item_${index}_product`]: 'Product name is required' }));
+    }
+  };
+
+  const handleQuantityInput = (value, index) => {
+    // Only allow positive integers
+    const sanitized = value.replace(/\D/g, '');
+    const numValue = parseInt(sanitized) || 0;
+    const finalValue = Math.max(1, numValue); // Minimum 1
+    updateOrderItem(index, 'quantity', finalValue);
+    
+    // Validate quantity
+    if (finalValue >= 1) {
+      setErrors(prev => ({ ...prev, [`item_${index}_quantity`]: '' }));
+    } else {
+      setErrors(prev => ({ ...prev, [`item_${index}_quantity`]: 'Quantity must be at least 1' }));
+    }
+  };
+
+  const handleUnitPriceInput = (value, index) => {
+    // Only allow positive numbers with up to 2 decimal places
+    const sanitized = value.replace(/[^0-9.]/g, '');
+    const parts = sanitized.split('.');
+    let cleanValue = parts[0];
+    if (parts.length > 1) cleanValue += '.' + parts[1].slice(0, 2);
+    const numValue = parseFloat(cleanValue) || 0;
+    const finalValue = Math.max(0.01, numValue); // Minimum 0.01
+    updateOrderItem(index, 'unitPrice', finalValue);
+    
+    // Validate unit price
+    if (finalValue >= 0.01) {
+      setErrors(prev => ({ ...prev, [`item_${index}_unitPrice`]: '' }));
+    } else {
+      setErrors(prev => ({ ...prev, [`item_${index}_unitPrice`]: 'Unit price must be at least $0.01' }));
+    }
+  };
+
+  // Check if an order item is valid
+  const isOrderItemValid = (item) => {
+    return (
+      item.product.trim() !== '' &&
+      item.quantity >= 1 &&
+      item.unitPrice >= 0.01
+    );
+  };
+
+  // Check if all order items are valid
+  const areAllOrderItemsValid = () => {
+    return orderForm.items.every(item => isOrderItemValid(item));
+  };
+
   // Form validation
   const validateSupplierForm = () => {
     const newErrors = {};
@@ -266,14 +327,16 @@ const SupplierManagement = () => {
       orderForm.items.forEach((item, index) => {
         if (!item.product.trim()) {
           newErrors[`item_${index}_product`] = 'Product name is required';
-        } else if (!isValidText(item.product, 1, 100)) {
-          newErrors[`item_${index}_product`] = 'Product name must be 1-100 characters';
+        } else if (!isValidText(item.product, 1, 15)) {
+          newErrors[`item_${index}_product`] = 'Product name must be 1-15 characters';
+        } else if (!/^[a-zA-Z\s]+$/.test(item.product)) {
+          newErrors[`item_${index}_product`] = 'Only letters and spaces allowed';
         }
-        if (!isPositiveNumber(item.quantity) || item.quantity < 1) {
+        if (item.quantity < 1) {
           newErrors[`item_${index}_quantity`] = 'Quantity must be at least 1';
         }
-        if (!isPositiveNumber(item.unitPrice)) {
-          newErrors[`item_${index}_unitPrice`] = 'Unit price must be greater than 0';
+        if (item.unitPrice < 0.01) {
+          newErrors[`item_${index}_unitPrice`] = 'Unit price must be at least $0.01';
         }
       });
     }
@@ -446,10 +509,30 @@ const SupplierManagement = () => {
   };
 
   const addOrderItem = () => {
-    setOrderForm({
-      ...orderForm,
-      items: [...orderForm.items, { product: '', quantity: 1, unitPrice: 0 }]
-    });
+    // Only add new item if the last item is valid
+    const lastItem = orderForm.items[orderForm.items.length - 1];
+    if (isOrderItemValid(lastItem)) {
+      setOrderForm({
+        ...orderForm,
+        items: [...orderForm.items, { product: '', quantity: 1, unitPrice: 0 }]
+      });
+    } else {
+      // Show error for the invalid item
+      const index = orderForm.items.length - 1;
+      if (!lastItem.product.trim()) {
+        setErrors(prev => ({ ...prev, [`item_${index}_product`]: 'Product name is required' }));
+      } else if (!/^[a-zA-Z\s]+$/.test(lastItem.product)) {
+        setErrors(prev => ({ ...prev, [`item_${index}_product`]: 'Only letters and spaces allowed' }));
+      } else if (lastItem.product.length > 15) {
+        setErrors(prev => ({ ...prev, [`item_${index}_product`]: 'Maximum 15 characters allowed' }));
+      }
+      if (lastItem.quantity < 1) {
+        setErrors(prev => ({ ...prev, [`item_${index}_quantity`]: 'Quantity must be at least 1' }));
+      }
+      if (lastItem.unitPrice < 0.01) {
+        setErrors(prev => ({ ...prev, [`item_${index}_unitPrice`]: 'Unit price must be at least $0.01' }));
+      }
+    }
   };
 
   const updateOrderItem = (index, field, value) => {
@@ -457,19 +540,22 @@ const SupplierManagement = () => {
     newItems[index][field] = value;
     setOrderForm({ ...orderForm, items: newItems });
 
+    // Clear errors when valid input is provided
     if (field === 'product' && value.trim()) {
       setErrors(prev => ({ ...prev, [`item_${index}_product`]: '' }));
-    } else if (field === 'quantity' && isPositiveNumber(value) && value >= 1) {
+    } else if (field === 'quantity' && value >= 1) {
       setErrors(prev => ({ ...prev, [`item_${index}_quantity`]: '' }));
-    } else if (field === 'unitPrice' && isPositiveNumber(value)) {
+    } else if (field === 'unitPrice' && value >= 0.01) {
       setErrors(prev => ({ ...prev, [`item_${index}_unitPrice`]: '' }));
     }
   };
 
   const removeOrderItem = (index) => {
+    if (orderForm.items.length <= 1) return; // Prevent removing all items
     const newItems = orderForm.items.filter((_, i) => i !== index);
     setOrderForm({ ...orderForm, items: newItems });
 
+    // Remove errors for the deleted item
     const newErrors = { ...errors };
     delete newErrors[`item_${index}_product`];
     delete newErrors[`item_${index}_quantity`];
@@ -1200,6 +1286,8 @@ const SupplierManagement = () => {
                       className={errors.name ? 'supplier-management-error' : ''}
                       maxLength="100"
                       required
+                      pattern="[a-zA-Z\s\.\-]{2,100}"
+                      title="Only letters, spaces, periods, and hyphens allowed (2-100 characters)"
                     />
                     <ErrorMessage error={errors.name} />
                   </div>
@@ -1213,6 +1301,8 @@ const SupplierManagement = () => {
                       className={errors.email ? 'supplier-management-error' : ''}
                       maxLength="100"
                       required
+                      pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                      title="Please enter a valid email address"
                     />
                     <ErrorMessage error={errors.email} />
                   </div>
@@ -1227,6 +1317,8 @@ const SupplierManagement = () => {
                       placeholder="+1234567890"
                       maxLength="20"
                       required
+                      pattern="[\+]?[0-9\s\-\(\)]{7,20}"
+                      title="Please enter a valid phone number (7-20 digits, may include +, spaces, hyphens, and parentheses)"
                     />
                     <ErrorMessage error={errors.phone} />
                   </div>
@@ -1268,11 +1360,17 @@ const SupplierManagement = () => {
                     <input
                       type="text"
                       value={supplierForm.address.street}
-                      onChange={(e) => setSupplierForm({
-                        ...supplierForm, 
-                        address: {...supplierForm.address, street: e.target.value.slice(0, 200)}
-                      })}
+                      onChange={(e) => {
+                        // Allow alphanumeric, spaces, and common address characters
+                        const sanitized = e.target.value.replace(/[^a-zA-Z0-9\s\.\,\#\-\']/g, '').slice(0, 200);
+                        setSupplierForm({
+                          ...supplierForm, 
+                          address: {...supplierForm.address, street: sanitized}
+                        });
+                      }}
                       maxLength="200"
+                      pattern="[a-zA-Z0-9\s\.\,\#\-\']{1,200}"
+                      title="Only letters, numbers, spaces, and common address characters allowed"
                     />
                   </div>
 
@@ -1284,6 +1382,8 @@ const SupplierManagement = () => {
                       onChange={(e) => handleNameInput(e.target.value, 'address.city')}
                       className={errors['address.city'] ? 'supplier-management-error' : ''}
                       maxLength="50"
+                      pattern="[a-zA-Z\s\.\-]{2,50}"
+                      title="Only letters, spaces, periods, and hyphens allowed (2-50 characters)"
                     />
                     <ErrorMessage error={errors['address.city']} />
                   </div>
@@ -1296,6 +1396,8 @@ const SupplierManagement = () => {
                       onChange={(e) => handleNameInput(e.target.value, 'address.state')}
                       className={errors['address.state'] ? 'supplier-management-error' : ''}
                       maxLength="50"
+                      pattern="[a-zA-Z\s\.\-]{2,50}"
+                      title="Only letters, spaces, periods, and hyphens allowed (2-50 characters)"
                     />
                     <ErrorMessage error={errors['address.state']} />
                   </div>
@@ -1309,6 +1411,8 @@ const SupplierManagement = () => {
                       className={errors['address.zipCode'] ? 'supplier-management-error' : ''}
                       placeholder="12345"
                       maxLength="10"
+                      pattern="[0-9A-Za-z\s\-]{3,10}"
+                      title="Only alphanumeric characters, spaces, and hyphens allowed (3-10 characters)"
                     />
                     <ErrorMessage error={errors['address.zipCode']} />
                   </div>
@@ -1321,6 +1425,8 @@ const SupplierManagement = () => {
                       onChange={(e) => handleNameInput(e.target.value, 'address.country')}
                       className={errors['address.country'] ? 'supplier-management-error' : ''}
                       maxLength="50"
+                      pattern="[a-zA-Z\s\.\-]{2,50}"
+                      title="Only letters, spaces, periods, and hyphens allowed (2-50 characters)"
                     />
                     <ErrorMessage error={errors['address.country']} />
                   </div>
@@ -1391,6 +1497,8 @@ const SupplierManagement = () => {
                         onChange={(e) => handleRatingInput(e.target.value)}
                         className={errors.rating ? 'supplier-management-error' : ''}
                         required
+                        pattern="[1-5]"
+                        title="Rating must be between 1 and 5"
                       />
                       <div className="supplier-management-rating-stars-preview">
                         {'⭐'.repeat(orderForm.rating)} ({orderForm.rating}/5)
@@ -1416,12 +1524,16 @@ const SupplierManagement = () => {
                   </div>
                 </div>
 
-                
-
                 <div className="supplier-management-form-section">
                   <div className="supplier-management-section-header">
                     <h3>Order Items *</h3>
-                    <button type="button" onClick={addOrderItem} className="supplier-management-add-item-btn">
+                    <button 
+                      type="button" 
+                      onClick={addOrderItem} 
+                      className="supplier-management-add-item-btn"
+                      disabled={!areAllOrderItemsValid()}
+                      title={areAllOrderItemsValid() ? "Add another item" : "Please complete current item before adding a new one"}
+                    >
                       + Add Item
                     </button>
                   </div>
@@ -1436,13 +1548,12 @@ const SupplierManagement = () => {
                             type="text"
                             placeholder="Product name *"
                             value={item.product}
-                            onChange={(e) => {
-                              const value = e.target.value.slice(0, 100);
-                              updateOrderItem(index, 'product', value);
-                            }}
+                            onChange={(e) => handleProductInput(e.target.value, index)}
                             className={errors[`item_${index}_product`] ? 'supplier-management-error' : ''}
-                            maxLength="100"
+                            maxLength="15"
                             required
+                            pattern="[a-zA-Z\s]{1,15}"
+                            title="Only letters and spaces allowed (maximum 15 characters)"
                           />
                           <ErrorMessage error={errors[`item_${index}_product`]} />
                         </div>
@@ -1452,11 +1563,13 @@ const SupplierManagement = () => {
                             type="number"
                             placeholder="Quantity *"
                             value={item.quantity}
-                            onChange={(e) => handleNumberInput(e.target.value, index, 'quantity')}
+                            onChange={(e) => handleQuantityInput(e.target.value, index)}
                             className={errors[`item_${index}_quantity`] ? 'supplier-management-error' : ''}
                             min="1"
                             max="999999"
                             required
+                            pattern="[0-9]+"
+                            title="Quantity must be a positive integer"
                           />
                           <ErrorMessage error={errors[`item_${index}_quantity`]} />
                         </div>
@@ -1466,12 +1579,14 @@ const SupplierManagement = () => {
                             type="number"
                             placeholder="Unit Price ($) *"
                             value={item.unitPrice}
-                            onChange={(e) => handleNumberInput(e.target.value, index, 'unitPrice')}
+                            onChange={(e) => handleUnitPriceInput(e.target.value, index)}
                             className={errors[`item_${index}_unitPrice`] ? 'supplier-management-error' : ''}
                             min="0.01"
                             max="999999"
                             step="0.01"
                             required
+                            pattern="[0-9]+(\.[0-9]{1,2})?"
+                            title="Unit price must be a positive number with up to 2 decimal places"
                           />
                           <ErrorMessage error={errors[`item_${index}_unitPrice`]} />
                         </div>
@@ -1485,6 +1600,7 @@ const SupplierManagement = () => {
                             type="button"
                             onClick={() => removeOrderItem(index)}
                             className="supplier-management-remove-item-btn"
+                            title="Remove this item"
                           >
                             ×
                           </button>
@@ -1507,6 +1623,7 @@ const SupplierManagement = () => {
                   <textarea
                     value={orderForm.notes}
                     onChange={(e) => {
+                      // Allow most characters but limit length
                       const value = e.target.value.slice(0, 500);
                       setOrderForm({...orderForm, notes: value});
                       if (value.length <= 500) setErrors(prev => ({ ...prev, notes: '' }));
@@ -1524,7 +1641,7 @@ const SupplierManagement = () => {
                   <button type="button" onClick={() => setShowModal(false)}>
                     Cancel
                   </button>
-                  <button type="submit" disabled={isSubmitting}>
+                  <button type="submit" disabled={isSubmitting || !areAllOrderItemsValid()}>
                     {isSubmitting ? 'Creating...' : 'Create Order'}
                   </button>
                 </div>

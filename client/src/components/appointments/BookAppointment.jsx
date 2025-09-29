@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../appointments/styles/Appointment.css';
 
+
 const Appointment = () => {
   const [formData, setFormData] = useState({
     // Personal Information - Empty for patient to fill
@@ -35,7 +36,9 @@ const Appointment = () => {
   const [step, setStep] = useState(1); // Multi-step form
   const navigate = useNavigate();
 
+
   const backendUrl = 'http://localhost:7000';
+
 
   // Check if user is logged in and pre-fill some data
   useEffect(() => {
@@ -57,6 +60,7 @@ const Appointment = () => {
     }
   }, []);
 
+
   // Calculate age from date of birth
   useEffect(() => {
     if (formData.dateOfBirth) {
@@ -73,6 +77,45 @@ const Appointment = () => {
     }
   }, [formData.dateOfBirth]);
 
+
+  // Validation handlers for different input types
+  const handleAlphabeticalInput = (e, fieldName) => {
+    const { value } = e.target;
+    // Allow only letters and spaces
+    const alphabeticalValue = value.replace(/[^a-zA-Z\s]/g, '');
+    
+    setFormData(prev => ({
+      ...prev,
+      [fieldName]: alphabeticalValue
+    }));
+  };
+
+  const handleNumericalInput = (e, fieldName, maxLength = null) => {
+    const { value } = e.target;
+    // Allow only numbers
+    const numericalValue = value.replace(/[^0-9]/g, '');
+    
+    // Apply length restriction if specified
+    const finalValue = maxLength ? numericalValue.slice(0, maxLength) : numericalValue;
+    
+    setFormData(prev => ({
+      ...prev,
+      [fieldName]: finalValue
+    }));
+  };
+
+  const handleNoSpecialCharactersInput = (e, fieldName) => {
+    const { value } = e.target;
+    // Allow letters, numbers, spaces, and basic punctuation (.,!?-)
+    const cleanValue = value.replace(/[^a-zA-Z0-9\s.,!?\-]/g, '');
+    
+    setFormData(prev => ({
+      ...prev,
+      [fieldName]: cleanValue
+    }));
+  };
+
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -80,6 +123,7 @@ const Appointment = () => {
       [name]: value
     }));
   };
+
 
   const validateStep1 = () => {
     const { name, gender, dateOfBirth, email, phone, bloodGroup } = formData;
@@ -115,8 +159,8 @@ const Appointment = () => {
       return false;
     }
     
-    if (phone.length < 10) {
-      setMessage('❌ Please enter a valid phone number');
+    if (phone.length !== 10) {
+      setMessage('❌ Please enter a valid 10-digit phone number');
       return false;
     }
     
@@ -128,8 +172,9 @@ const Appointment = () => {
     return true;
   };
 
+
   const validateStep2 = () => {
-    const { appointmentDate, appointmentTime, doctorSpecialty, appointmentType } = formData;
+    const { appointmentDate, appointmentTime, doctorSpecialty, appointmentType, emergencyContactPhone } = formData;
     
     if (!appointmentDate) {
       setMessage('❌ Appointment date is required');
@@ -160,9 +205,16 @@ const Appointment = () => {
       setMessage('❌ Appointment type is required');
       return false;
     }
+
+    // Validate emergency contact phone if provided
+    if (emergencyContactPhone && emergencyContactPhone.length !== 10) {
+      setMessage('❌ Emergency contact phone must be 10 digits');
+      return false;
+    }
     
     return true;
   };
+
 
   const handleNext = () => {
     setMessage('');
@@ -171,20 +223,25 @@ const Appointment = () => {
     }
   };
 
+
   const handleBack = () => {
     setMessage('');
     setStep(1);
   };
 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
+
 
     if (!validateStep2()) {
       return;
     }
 
+
     setLoading(true);
+
 
     try {
       console.log('📅 Booking appointment:', formData);
@@ -211,9 +268,12 @@ const Appointment = () => {
         emergencyContactRelationship: formData.emergencyContactRelationship || ''
       };
 
+
       const response = await axios.post(`${backendUrl}/api/appointments/book`, appointmentData);
 
+
       console.log('✅ Appointment booked:', response.data);
+
 
       if (response.data.success || response.data.appointment) {
         setMessage('✅ Appointment booked successfully! Redirecting to payment...');
@@ -239,6 +299,7 @@ const Appointment = () => {
     }
   };
 
+
   // Generate time slots
   const generateTimeSlots = () => {
     const slots = [];
@@ -251,7 +312,9 @@ const Appointment = () => {
     return slots;
   };
 
+
   const timeSlots = generateTimeSlots();
+
 
   return (
     <div className="appointment-container">
@@ -274,11 +337,13 @@ const Appointment = () => {
           </div>
         </div>
 
+
         {message && (
           <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>
             {message}
           </div>
         )}
+
 
         <form onSubmit={handleSubmit} className="appointment-form">
           {step === 1 && (
@@ -297,11 +362,12 @@ const Appointment = () => {
                     id="name"
                     name="name"
                     value={formData.name}
-                    onChange={handleInputChange}
+                    onChange={(e) => handleAlphabeticalInput(e, 'name')}
                     placeholder="Enter your full name"
                     required
                   />
                 </div>
+
 
                 <div className="form-group">
                   <label htmlFor="gender">
@@ -323,6 +389,7 @@ const Appointment = () => {
                 </div>
               </div>
 
+
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="dateOfBirth">
@@ -339,6 +406,7 @@ const Appointment = () => {
                     required
                   />
                 </div>
+
 
                 <div className="form-group">
                   <label htmlFor="age">
@@ -357,6 +425,7 @@ const Appointment = () => {
                 </div>
               </div>
 
+
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="email">
@@ -374,6 +443,7 @@ const Appointment = () => {
                   />
                 </div>
 
+
                 <div className="form-group">
                   <label htmlFor="phone">
                     <span className="label-icon">📱</span>
@@ -384,12 +454,13 @@ const Appointment = () => {
                     id="phone"
                     name="phone"
                     value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="Enter your phone number"
+                    onChange={(e) => handleNumericalInput(e, 'phone', 10)}
+                    placeholder="Enter your 10-digit phone number"
                     required
                   />
                 </div>
               </div>
+
 
               <div className="form-row">
                 <div className="form-group">
@@ -416,6 +487,7 @@ const Appointment = () => {
                   </select>
                 </div>
 
+
                 <div className="form-group">
                   <label htmlFor="allergies">
                     <span className="label-icon">⚠️</span>
@@ -426,11 +498,12 @@ const Appointment = () => {
                     id="allergies"
                     name="allergies"
                     value={formData.allergies}
-                    onChange={handleInputChange}
+                    onChange={(e) => handleNoSpecialCharactersInput(e, 'allergies')}
                     placeholder="Enter any known allergies (optional)"
                   />
                 </div>
               </div>
+
 
               <button
                 type="button"
@@ -441,6 +514,7 @@ const Appointment = () => {
               </button>
             </div>
           )}
+
 
           {step === 2 && (
             <div className="form-step">
@@ -464,6 +538,7 @@ const Appointment = () => {
                   />
                 </div>
 
+
                 <div className="form-group">
                   <label htmlFor="appointmentTime">
                     <span className="label-icon">🕐</span>
@@ -485,6 +560,7 @@ const Appointment = () => {
                   </select>
                 </div>
               </div>
+
 
               <div className="form-row">
                 <div className="form-group">
@@ -514,6 +590,7 @@ const Appointment = () => {
                   </select>
                 </div>
 
+
                 <div className="form-group">
                   <label htmlFor="appointmentType">
                     <span className="label-icon">📋</span>
@@ -534,6 +611,7 @@ const Appointment = () => {
                 </div>
               </div>
 
+
               <div className="form-group">
                 <label htmlFor="doctorName">
                   <span className="label-icon">👨‍⚕️</span>
@@ -544,10 +622,11 @@ const Appointment = () => {
                   id="doctorName"
                   name="doctorName"
                   value={formData.doctorName}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleAlphabeticalInput(e, 'doctorName')}
                   placeholder="Enter doctor's name if you have a preference"
                 />
               </div>
+
 
               <div className="form-group">
                 <label htmlFor="symptoms">
@@ -558,11 +637,12 @@ const Appointment = () => {
                   id="symptoms"
                   name="symptoms"
                   value={formData.symptoms}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleNoSpecialCharactersInput(e, 'symptoms')}
                   placeholder="Please describe your symptoms or the reason for your visit (this helps us prepare better for your consultation)"
                   rows="4"
                 ></textarea>
               </div>
+
 
               <div className="form-group">
                 <label htmlFor="urgency">
@@ -581,9 +661,11 @@ const Appointment = () => {
                 </select>
               </div>
 
+
               <div className="emergency-contact-section">
                 <h4>Emergency Contact (Optional but Recommended)</h4>
                 <p className="section-description">Please provide an emergency contact in case we need to reach someone on your behalf</p>
+
 
                 <div className="form-row">
                   <div className="form-group">
@@ -596,10 +678,11 @@ const Appointment = () => {
                       id="emergencyContactName"
                       name="emergencyContactName"
                       value={formData.emergencyContactName}
-                      onChange={handleInputChange}
+                      onChange={(e) => handleAlphabeticalInput(e, 'emergencyContactName')}
                       placeholder="Enter emergency contact name"
                     />
                   </div>
+
 
                   <div className="form-group">
                     <label htmlFor="emergencyContactPhone">
@@ -611,11 +694,12 @@ const Appointment = () => {
                       id="emergencyContactPhone"
                       name="emergencyContactPhone"
                       value={formData.emergencyContactPhone}
-                      onChange={handleInputChange}
-                      placeholder="Enter emergency contact phone"
+                      onChange={(e) => handleNumericalInput(e, 'emergencyContactPhone', 10)}
+                      placeholder="Enter 10-digit emergency contact phone"
                     />
                   </div>
                 </div>
+
 
                 <div className="form-group">
                   <label htmlFor="emergencyContactRelationship">
@@ -639,6 +723,7 @@ const Appointment = () => {
                   </select>
                 </div>
               </div>
+
 
               <div className="form-actions">
                 <button
@@ -664,5 +749,6 @@ const Appointment = () => {
     </div>
   );
 };
+
 
 export default Appointment;
