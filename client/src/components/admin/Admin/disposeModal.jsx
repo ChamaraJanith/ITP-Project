@@ -23,10 +23,14 @@ const DisposeModal = ({
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [currentInventory, setCurrentInventory] = useState([]);
   const [errors, setErrors] = useState({});
+  const API_BASE_URL = 'http://localhost:7000/api/disposalrecords';
+
+  
 
   const validateQuantity = (itemId, value) => {
     const item = items.find(i => i._id === itemId);
     if (!item) return { isValid: true, value: 0 };
+    
     
     // Parse as integer
     const numValue = parseInt(value, 10);
@@ -123,7 +127,7 @@ const DisposeModal = ({
     
     setLoading(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/dispose-items`, {
+      const res = await fetch(`${API_BASE_URL}/dispose-items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -135,11 +139,24 @@ const DisposeModal = ({
           }))
         })
       });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
       const data = await res.json();
       showNotification?.(data.message, data.success ? 'success' : 'error');
-      if (data.success) { onSuccess(); onClose(); }
+      if (data.success) { 
+        onSuccess(); 
+        onClose(); 
+        // Reset form state
+        setSelectedItems([]);
+        setReason('');
+        setErrors({});
+      }
     } catch (err) {
-      showNotification?.(err.message, 'error');
+      console.error('Dispose error:', err);
+      showNotification?.('Failed to dispose items. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -150,9 +167,13 @@ const DisposeModal = ({
     try {
       // Fetch both history and current inventory
       const [historyRes, inventoryRes] = await Promise.all([
-        fetch(`${apiBaseUrl}/disposal-history`),
-        fetch(`${apiBaseUrl}/items`)
+        fetch(`${API_BASE_URL}/disposal-history`),  // ✅ Now correct
+        fetch(`${API_BASE_URL}/items`) 
       ]);
+      
+      if (!historyRes.ok || !inventoryRes.ok) {
+        throw new Error('Failed to fetch data from server');
+      }
       
       const historyData = await historyRes.json();
       const inventoryData = await inventoryRes.json();
@@ -163,7 +184,10 @@ const DisposeModal = ({
       setHistory(Array.isArray(disposals) ? disposals : []);
       setCurrentInventory(inventoryItems);
     } catch (err) {
-      showNotification?.(err.message, 'error');
+      console.error('Fetch history error:', err);
+      showNotification?.('Failed to load disposal history', 'error');
+      setHistory([]);
+      setCurrentInventory([]);
     } finally {
       setHistoryLoading(false);
     }
@@ -280,35 +304,34 @@ const DisposeModal = ({
 
     setClearingHistory(true);
     try {
-      // Since DELETE endpoint is not available, we'll use a POST request to a clear endpoint
-      const res = await fetch(`${apiBaseUrl}/disposal-history/clear`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      // Use DELETE method to clear all disposal history records
+       const res = await fetch(`${API_BASE_URL}/disposal-history`, {
+        method: 'DELETE',
+        headers: { 
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          clearedBy: admin.name
+          clearedBy: admin.name,
+          clearAll: true
         })
       });
       
-      // If the clear endpoint doesn't exist, we'll simulate clearing by emptying the local state
-      if (res.status === 404) {
-        console.warn('Clear history endpoint not found, simulating clear operation');
-        setHistory([]);
-        showNotification?.('History cleared (local only)', 'success');
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        // Refresh the history from database to ensure consistency
+        await fetchHistory();
+        showNotification?.('Disposal history cleared successfully', 'success');
       } else {
-        const data = await res.json();
-        
-        if (data.success) {
-          setHistory([]);
-          showNotification?.('History cleared successfully', 'success');
-        } else {
-          showNotification?.(data.message || 'Failed to clear history', 'error');
-        }
+        throw new Error(data.message || 'Failed to clear history');
       }
     } catch (err) {
       console.error('Clear history error:', err);
-      // If there's any error, we'll still clear the local history as a fallback
-      setHistory([]);
-      showNotification?.('History cleared (local only)', 'success');
+      showNotification?.('Failed to clear disposal history. Please try again.', 'error');
     } finally {
       setClearingHistory(false);
       setShowClearConfirm(false);
@@ -316,12 +339,13 @@ const DisposeModal = ({
   };
 
   if (!isOpen) return null;
+  
   return (
     <div className="modal-backdrop">
       <div className="dispose-modal-content">
         <div className="dispose-modal-header">
           <h2>🗑️ Dispose Items</h2>
-          <button className="close-btn" onClick={onClose} type="button">×</button>
+          <button className="disposal-close-btn" onClick={onClose} type="button">×</button>
         </div>
 
         {!showHistory ? (

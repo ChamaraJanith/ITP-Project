@@ -445,7 +445,7 @@ const PatientRecords = () => {
           <div class="header">
             <div class="hospital-logo">HX</div>
             <div class="hospital-info">
-              <div class="hospital-name">HEALX HOSPITAL</div>
+              <div class="hospital-name">HealX Healthcare Center</div>
               <div class="hospital-tagline">Advanced Healthcare for Everyone</div>
             </div>
           </div>

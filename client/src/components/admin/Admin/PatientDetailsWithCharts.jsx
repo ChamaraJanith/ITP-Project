@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import '../Admin/styles/PatientDetailsDisplay.css';
+import { useNavigate } from 'react-router-dom';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -36,12 +37,20 @@ const PatientDetailsDisplay = () => {
   const [showPrintMenu, setShowPrintMenu] = useState(false);
   const [printLoading, setPrintLoading] = useState(false);
 
+  // Add navigation hook
+  const navigate = useNavigate();
+
+  // Navigation function
+  const handleBackToDashboard = () => {
+    navigate('/admin/dashboard');
+  };
+
   // Fetch data from API
   const fetchData = async () => {
     setLoading(true);
     try {
       const response = await axios.get('http://localhost:7000/api/patients/count/detailed');
-      
+
       if (response.data.success) {
         setData(response.data.data);
         setLastUpdated(new Date());
@@ -66,467 +75,502 @@ const PatientDetailsDisplay = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // ✅ BLACK & WHITE PROFESSIONAL PDF GENERATION
-// ✅ BLACK & WHITE PROFESSIONAL PDF GENERATION WITH SIGNATURES
-const generateBlackWhitePDF = () => {
-  if (!data) {
-    toast.error('No data available for PDF generation');
-    return;
-  }
-
-  setPrintLoading(true);
-  
-  try {
-    // Create new jsPDF instance
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
-    
-    // ============= HEADER SECTION =============
-    // Header border
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(2);
-    doc.rect(10, 10, pageWidth - 20, 35);
-    
-    // Inner header border
-    doc.setLineWidth(0.5);
-    doc.rect(12, 12, pageWidth - 24, 31);
-    
-    // Company logo area (simple text-based)
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('HEALTHCARE', 20, 25);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text('MANAGEMENT SYSTEM', 20, 32);
-    
-    // Title
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PATIENT ANALYTICS REPORT', pageWidth - 20, 25, { align: 'right' });
-    
-    // Date and time
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const currentDate = new Date();
-    doc.text(`Report Generated: ${currentDate.toLocaleDateString()}`, pageWidth - 20, 32, { align: 'right' });
-    doc.text(`Time: ${currentDate.toLocaleTimeString()}`, pageWidth - 20, 38, { align: 'right' });
-
-    let yPosition = 60;
-
-    // ============= EXECUTIVE SUMMARY =============
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('EXECUTIVE SUMMARY', 20, yPosition);
-    
-    // Underline
-    doc.setLineWidth(1);
-    doc.line(20, yPosition + 2, 120, yPosition + 2);
-    yPosition += 15;
-
-    // Summary Statistics Box
-    doc.setLineWidth(0.5);
-    doc.rect(20, yPosition - 5, pageWidth - 40, 25);
-    
-    // Calculate metrics
-    const growthRate = data.thisMonthPatients && data.totalPatients ? 
-      (((data.thisMonthPatients / (data.totalPatients - data.thisMonthPatients)) * 100).toFixed(1)) : '0';
-    const dailyAverage = Math.round((data.thisMonthPatients || 0) / 30);
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Total Registered Patients: ${(data.totalPatients || 0).toLocaleString()}`, 25, yPosition + 3);
-    doc.text(`New Registrations This Month: ${(data.thisMonthPatients || 0).toLocaleString()}`, 25, yPosition + 8);
-    doc.text(`New Registrations Today: ${(data.todayPatients || 0).toLocaleString()}`, 25, yPosition + 13);
-    doc.text(`Monthly Growth Rate: ${growthRate}%`, pageWidth - 25, yPosition + 3, { align: 'right' });
-    doc.text(`Daily Average: ${dailyAverage} patients`, pageWidth - 25, yPosition + 8, { align: 'right' });
-    doc.text(`Database Status: Active`, pageWidth - 25, yPosition + 13, { align: 'right' });
-
-    yPosition += 35;
-
-    // ============= DETAILED STATISTICS TABLE =============
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('DETAILED STATISTICS', 20, yPosition);
-    yPosition += 10;
-
-    const detailedStatsData = [
-      ['METRIC', 'VALUE', 'PERCENTAGE', 'NOTES'],
-      ['Total Patients', (data.totalPatients || 0).toLocaleString(), '100.0%', 'Complete database'],
-      ['This Month', (data.thisMonthPatients || 0).toLocaleString(), 
-       `${data.totalPatients ? ((data.thisMonthPatients / data.totalPatients) * 100).toFixed(1) : '0'}%`, 'New registrations'],
-      ['Today', (data.todayPatients || 0).toLocaleString(), 
-       `${data.thisMonthPatients ? ((data.todayPatients / data.thisMonthPatients) * 100).toFixed(1) : '0'}%`, 'Daily activity'],
-      ['Growth Rate', `${growthRate}%`, 'Monthly', 'Registration trend'],
-      ['Daily Average', `${dailyAverage}`, 'Per day', 'Average registrations']
-    ];
-
-    doc.autoTable({
-      startY: yPosition,
-      head: [detailedStatsData[0]],
-      body: detailedStatsData.slice(1),
-      theme: 'grid',
-      styles: { 
-        textColor: [0, 0, 0],
-        fontSize: 9,
-        cellPadding: 4
-      },
-      headStyles: { 
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-        lineColor: [0, 0, 0],
-        lineWidth: 0.5
-      },
-      bodyStyles: {
-        lineColor: [0, 0, 0],
-        lineWidth: 0.3
-      },
-      alternateRowStyles: { 
-        fillColor: [245, 245, 245]
-      },
-      columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 35 },
-        1: { halign: 'center', cellWidth: 25 },
-        2: { halign: 'center', cellWidth: 20 },
-        3: { cellWidth: 'auto' }
-      },
-      margin: { left: 20, right: 20 }
-    });
-
-    yPosition = doc.lastAutoTable.finalY + 20;
-
-    // ============= DEMOGRAPHIC ANALYSIS =============
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('DEMOGRAPHIC ANALYSIS', 20, yPosition);
-    yPosition += 10;
-
-    // Gender Distribution Table
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Gender Distribution', 20, yPosition);
-    yPosition += 8;
-
-    const genderTableData = [
-      ['GENDER', 'COUNT', 'PERCENTAGE', 'RATIO']
-    ];
-
-    data.genderCounts?.forEach(item => {
-      const percentage = ((item.count / data.totalPatients) * 100).toFixed(1);
-      const ratio = `1:${Math.round(data.totalPatients / item.count)}`;
-      genderTableData.push([
-        (item._id || 'NOT SPECIFIED').toUpperCase(),
-        item.count.toLocaleString(),
-        `${percentage}%`,
-        ratio
-      ]);
-    });
-
-    doc.autoTable({
-      startY: yPosition,
-      head: [genderTableData[0]],
-      body: genderTableData.slice(1),
-      theme: 'striped',
-      styles: { 
-        textColor: [0, 0, 0],
-        fontSize: 9,
-        cellPadding: 4
-      },
-      headStyles: { 
-        fillColor: [240, 240, 240],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-        lineColor: [0, 0, 0]
-      },
-      alternateRowStyles: { 
-        fillColor: [250, 250, 250]
-      },
-      columnStyles: {
-        0: { fontStyle: 'bold' },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'center' }
-      },
-      margin: { left: 20, right: 20 }
-    });
-
-    yPosition = doc.lastAutoTable.finalY + 15;
-
-    // Check for new page
-    if (yPosition > pageHeight - 120) {
-      doc.addPage();
-      yPosition = 30;
+  // ✅ UPDATED PROFESSIONAL HTML-BASED PDF REPORT GENERATION - MATCHING PROFIT/LOSS FORMAT
+  const exportToPDF = () => {
+    if (!data) {
+      toast.error('No data available for PDF generation');
+      return;
     }
 
-    // Blood Group Distribution
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Blood Group Distribution', 20, yPosition);
-    yPosition += 8;
+    setPrintLoading(true);
 
-    const bloodGroupTableData = [
-      ['BLOOD GROUP', 'PATIENT COUNT', 'PERCENTAGE', 'RH FACTOR', 'CLINICAL NOTES']
-    ];
+    try {
+      const currentDate = new Date();
+      const reportTitle = 'Patient Analytics Report';
 
-    data.bloodGroupCounts?.sort((a, b) => b.count - a.count).forEach(item => {
-      const percentage = ((item.count / data.totalPatients) * 100).toFixed(1);
-      const rhFactor = item._id.includes('+') ? 'POSITIVE' : 'NEGATIVE';
-      const clinicalNote = item._id.includes('+') ? 'Common donor type' : 'Universal recipient';
-      
-      bloodGroupTableData.push([
-        item._id.toUpperCase(),
-        `${item.count.toLocaleString()} patients`,
-        `${percentage}%`,
-        rhFactor,
-        clinicalNote
-      ]);
-    });
+      // Calculate metrics for the report
+      const growthRate = data.thisMonthPatients && data.totalPatients ? 
+        (((data.thisMonthPatients / (data.totalPatients - data.thisMonthPatients)) * 100).toFixed(1)) : '0';
+      const dailyAverage = Math.round((data.thisMonthPatients || 0) / 30);
 
-    doc.autoTable({
-      startY: yPosition,
-      head: [bloodGroupTableData[0]],
-      body: bloodGroupTableData.slice(1),
-      theme: 'grid',
-      styles: { 
-        textColor: [0, 0, 0],
-        fontSize: 8,
-        cellPadding: 3
-      },
-      headStyles: { 
-        fillColor: [235, 235, 235],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-        lineColor: [0, 0, 0]
-      },
-      alternateRowStyles: { 
-        fillColor: [248, 248, 248]
-      },
-      columnStyles: {
-        0: { fontStyle: 'bold', halign: 'center', cellWidth: 25 },
-        1: { halign: 'center', cellWidth: 30 },
-        2: { halign: 'center', cellWidth: 20 },
-        3: { halign: 'center', cellWidth: 25 },
-        4: { fontSize: 7, cellWidth: 'auto' }
-      },
-      margin: { left: 20, right: 20 }
-    });
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Heal-x ${reportTitle}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              font-size: 12px;
+              line-height: 1.4;
+            }
 
-    yPosition = doc.lastAutoTable.finalY + 15;
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #1da1f2;
+              padding-bottom: 20px;
+            }
 
-    // Age Group Distribution (if available)
-    if (data.ageGroupCounts && data.ageGroupCounts.length > 0) {
-      if (yPosition > pageHeight - 80) {
-        doc.addPage();
-        yPosition = 30;
-      }
+            .header h1 {
+              color: #1da1f2;
+              margin: 0;
+              font-size: 24px;
+              font-weight: bold;
+            }
 
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Age Group Distribution', 20, yPosition);
-      yPosition += 8;
+            .header p {
+              margin: 10px 0 0 0;
+              color: #666;
+              font-size: 14px;
+            }
 
-      const ageGroupTableData = [
-        ['AGE GROUP', 'PATIENT COUNT', 'PERCENTAGE', 'CATEGORY']
-      ];
+            .info {
+              margin-bottom: 20px;
+              text-align: right;
+              font-size: 11px;
+              color: #555;
+            }
 
-      data.ageGroupCounts.forEach(item => {
-        const percentage = ((item.count / data.totalPatients) * 100).toFixed(1);
-        let category = 'ADULT';
-        if (item._id.includes('Under 18')) category = 'MINOR';
-        else if (item._id.includes('65+')) category = 'SENIOR';
-        
-        ageGroupTableData.push([
-          item._id.toUpperCase(),
-          `${item.count.toLocaleString()} patients`,
-          `${percentage}%`,
-          category
-        ]);
-      });
+            .summary-section {
+              margin-bottom: 30px;
+              padding: 15px;
+              background-color: #f8f9fa;
+              border-radius: 5px;
+            }
 
-      doc.autoTable({
-        startY: yPosition,
-        head: [ageGroupTableData[0]],
-        body: ageGroupTableData.slice(1),
-        theme: 'plain',
-        styles: { 
-          textColor: [0, 0, 0],
-          fontSize: 9,
-          cellPadding: 4
-        },
-        headStyles: { 
-          fillColor: [230, 230, 230],
-          textColor: [0, 0, 0],
-          fontStyle: 'bold',
-          lineColor: [0, 0, 0],
-          lineWidth: 1
-        },
-        bodyStyles: {
-          lineColor: [0, 0, 0],
-          lineWidth: 0.3
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold' },
-          1: { halign: 'center' },
-          2: { halign: 'center' },
-          3: { halign: 'center', fontStyle: 'bold' }
-        },
-        margin: { left: 20, right: 20 }
-      });
+            .summary-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+              gap: 15px;
+              margin-top: 15px;
+            }
 
-      yPosition = doc.lastAutoTable.finalY + 15;
+            .summary-card {
+              background: white;
+              padding: 15px;
+              border-radius: 5px;
+              border: 1px solid #ddd;
+            }
+
+            .summary-card h4 {
+              margin: 0 0 8px 0;
+              color: #1da1f2;
+              font-size: 14px;
+            }
+
+            .summary-card .metric-value {
+              font-size: 18px;
+              font-weight: bold;
+              color: #333;
+              margin: 5px 0;
+            }
+
+            .summary-card .metric-label {
+              font-size: 11px;
+              color: #666;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 20px;
+              font-size: 10px;
+            }
+
+            th, td {
+              border: 1px solid #ddd;
+              padding: 8px;
+              text-align: left;
+            }
+
+            th {
+              background-color: #1da1f2;
+              color: white;
+              font-weight: bold;
+              text-align: center;
+            }
+
+            .currency {
+              text-align: right;
+            }
+
+            .totals-row {
+              background-color: #f0f8ff;
+              font-weight: bold;
+            }
+
+            .signature-section {
+              margin-top: 60px;
+              margin-bottom: 30px;
+              width: 100%;
+              page-break-inside: avoid;
+            }
+
+            .signature-section h3 {
+              color: #1da1f2;
+              border-bottom: 1px solid #1da1f2;
+              padding-bottom: 5px;
+              margin-bottom: 20px;
+            }
+
+            .signature-container {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-end;
+              margin-top: 40px;
+            }
+
+            .signature-block {
+              width: 30%;
+              text-align: center;
+            }
+
+            .signature-line {
+              border-bottom: 2px dotted #333;
+              width: 200px;
+              height: 50px;
+              margin: 0 auto 10px auto;
+              position: relative;
+            }
+
+            .signature-text {
+              font-size: 11px;
+              font-weight: bold;
+              color: #333;
+              margin-top: 5px;
+            }
+
+            .signature-title {
+              font-size: 10px;
+              color: #666;
+              margin-top: 2px;
+            }
+
+            .company-stamp {
+              text-align: center;
+              margin-top: 30px;
+              padding: 15px;
+              border: 2px solid #1da1f2;
+              display: inline-block;
+              font-size: 10px;
+              color: #1da1f2;
+              font-weight: bold;
+            }
+
+            .report-footer {
+              margin-top: 40px;
+              text-align: center;
+              font-size: 9px;
+              color: #888;
+              border-top: 1px solid #ddd;
+              padding-top: 15px;
+            }
+
+            .alert-section {
+              margin: 20px 0;
+              padding: 15px;
+              background-color: #fff3cd;
+              border: 1px solid #ffc107;
+              border-radius: 5px;
+            }
+
+            .alert-title {
+              font-weight: bold;
+              color: #856404;
+              margin-bottom: 8px;
+            }
+
+            @media print {
+              body { margin: 10px; }
+              .no-print { display: none; }
+              .signature-section { page-break-inside: avoid; }
+            }
+
+            .success-section {
+              background-color: #d4edda;
+              border: 1px solid #c3e6cb;
+            }
+
+            .growth-amount {
+              color: #155724;
+            }
+          </style>
+        </head>
+        <body>
+          <!-- Header -->
+          <div class="header">
+            <h1>Heal-x ${reportTitle}</h1>
+            <p>Healthcare Management System - Patient Analytics Dashboard</p>
+          </div>
+
+          <!-- Report Info -->
+          <div class="info">
+            <strong>Generated on:</strong> ${currentDate.toLocaleString()}<br>
+            <strong>Report Type:</strong> Comprehensive Patient Analytics Report<br>
+            <strong>Database Status:</strong> Active & Current<br>
+            <strong>Data Period:</strong> All Time (Complete Database)
+          </div>
+
+          <!-- Executive Summary -->
+          <div class="summary-section success-section">
+            <h3 style="color: #1da1f2; margin: 0 0 15px 0;">Executive Summary</h3>
+            <div class="summary-grid">
+              <div class="summary-card">
+                <h4>Total Registered Patients</h4>
+                <div class="metric-value">${(data.totalPatients || 0).toLocaleString()}</div>
+                <div class="metric-label">Complete patient database records</div>
+              </div>
+
+              <div class="summary-card">
+                <h4>New Registrations This Month</h4>
+                <div class="metric-value">${(data.thisMonthPatients || 0).toLocaleString()}</div>
+                <div class="metric-label">${data.totalPatients ? Math.round((data.thisMonthPatients / data.totalPatients) * 100) : 0}% of total database</div>
+              </div>
+
+              <div class="summary-card">
+                <h4>Today's New Registrations</h4>
+                <div class="metric-value">${(data.todayPatients || 0).toLocaleString()}</div>
+                <div class="metric-label">${data.thisMonthPatients ? Math.round((data.todayPatients / data.thisMonthPatients) * 100) : 0}% of monthly registrations</div>
+              </div>
+
+              <div class="summary-card">
+                <h4>Monthly Growth Rate</h4>
+                <div class="metric-value growth-amount">${growthRate}%</div>
+                <div class="metric-label">Daily average: ${dailyAverage} patients/day</div>
+              </div>
+            </div>
+          </div>
+
+          ${growthRate > 0 ? `
+          <div class="alert-section success-section">
+            <div class="alert-title" style="color: #155724;">✓ Positive Growth Trend</div>
+            <p>Your healthcare facility is experiencing positive patient registration growth with a ${growthRate}% monthly growth rate. Continue monitoring patient satisfaction and service quality to maintain this positive trend.</p>
+          </div>
+          ` : `
+          <div class="alert-section">
+            <div class="alert-title">⚠ Registration Monitoring</div>
+            <p>Current registration growth rate is ${growthRate}%. Consider implementing patient outreach programs and service improvements to enhance patient acquisition.</p>
+          </div>
+          `}
+
+          <!-- Patient Demographics Analysis -->
+          <h3 style="color: #1da1f2; margin-top: 30px;">Patient Demographics Analysis</h3>
+
+          <!-- Gender Distribution Table -->
+          <table>
+            <thead>
+              <tr>
+                <th colspan="2">Gender Distribution Analysis</th>
+                <th colspan="2">Statistical Breakdown</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Total Male Patients</strong></td>
+                <td class="currency">${data.genderCounts?.find(g => g._id === 'Male')?.count || 0}</td>
+                <td><strong>Percentage</strong></td>
+                <td class="currency">${data.totalPatients ? ((data.genderCounts?.find(g => g._id === 'Male')?.count || 0) / data.totalPatients * 100).toFixed(1) : 0}%</td>
+              </tr>
+              <tr>
+                <td><strong>Total Female Patients</strong></td>
+                <td class="currency">${data.genderCounts?.find(g => g._id === 'Female')?.count || 0}</td>
+                <td><strong>Percentage</strong></td>
+                <td class="currency">${data.totalPatients ? ((data.genderCounts?.find(g => g._id === 'Female')?.count || 0) / data.totalPatients * 100).toFixed(1) : 0}%</td>
+              </tr>
+              <tr>
+                <td><strong>Other/Unspecified</strong></td>
+                <td class="currency">${data.genderCounts?.find(g => g._id !== 'Male' && g._id !== 'Female')?.count || 0}</td>
+                <td><strong>Gender Ratio</strong></td>
+                <td class="currency">1:${Math.round((data.genderCounts?.find(g => g._id === 'Female')?.count || 1) / (data.genderCounts?.find(g => g._id === 'Male')?.count || 1))}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Blood Group Distribution -->
+          <h3 style="color: #1da1f2; margin-top: 30px;">Blood Group Distribution</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Blood Group</th>
+                <th>Patient Count</th>
+                <th>Percentage</th>
+                <th>Clinical Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.bloodGroupCounts?.sort((a, b) => b.count - a.count).map(item => {
+                const percentage = ((item.count / data.totalPatients) * 100).toFixed(1);
+                const clinicalNote = item._id.includes('+') ? 'Universal donor compatible' : 'Requires specific matching';
+                return `
+                  <tr>
+                    <td><strong>${item._id}</strong></td>
+                    <td class="currency">${item.count} patients</td>
+                    <td class="currency">${percentage}%</td>
+                    <td>${clinicalNote}</td>
+                  </tr>
+                `;
+              }).join('') || '<tr><td colspan="4">No blood group data available</td></tr>'}
+            </tbody>
+          </table>
+
+          <!-- Key Patient Metrics -->
+          <h3 style="color: #1da1f2; margin-top: 30px;">Key Patient Metrics</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Value</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Database Completion</strong></td>
+                <td class="currency"><strong>100%</strong></td>
+                <td>All patient records contain complete demographic data</td>
+              </tr>
+              <tr>
+                <td><strong>Registration Velocity</strong></td>
+                <td class="currency"><strong>${dailyAverage}/day</strong></td>
+                <td>Average daily patient registrations</td>
+              </tr>
+              <tr>
+                <td><strong>Monthly Growth</strong></td>
+                <td class="currency growth-amount"><strong>${growthRate}%</strong></td>
+                <td>Month-over-month registration growth rate</td>
+              </tr>
+              <tr>
+                <td><strong>Most Common Blood Group</strong></td>
+                <td class="currency"><strong>${data.bloodGroupCounts?.[0]?._id || 'N/A'}</strong></td>
+                <td>${data.bloodGroupCounts?.[0] ? ((data.bloodGroupCounts[0].count/data.totalPatients)*100).toFixed(1) : '0'}% of total patient population</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Detailed Patient Statistics -->
+          <h3 style="color: #1da1f2; margin-top: 30px;">Detailed Patient Statistics</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Count</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Total Patients</strong></td>
+                <td class="currency"><strong>${data.totalPatients?.toLocaleString() || 0}</strong></td>
+                <td>Complete patient database with full demographic information</td>
+              </tr>
+              <tr>
+                <td><strong>Current Month</strong></td>
+                <td class="currency"><strong>${data.thisMonthPatients?.toLocaleString() || 0}</strong></td>
+                <td>New patient registrations in current month (${((data.thisMonthPatients/data.totalPatients)*100).toFixed(1)}% of total)</td>
+              </tr>
+              <tr>
+                <td><strong>Today</strong></td>
+                <td class="currency"><strong>${data.todayPatients?.toLocaleString() || 0}</strong></td>
+                <td>New registrations today (${data.thisMonthPatients ? ((data.todayPatients/data.thisMonthPatients)*100).toFixed(1) : '0'}% of monthly target)</td>
+              </tr>
+              <tr>
+                <td><strong>Gender Distribution</strong></td>
+                <td class="currency"><strong>${data.genderCounts?.length || 0} categories</strong></td>
+                <td>Complete gender demographic breakdown with statistical analysis</td>
+              </tr>
+              <tr>
+                <td><strong>Blood Groups</strong></td>
+                <td class="currency"><strong>${data.bloodGroupCounts?.length || 0} types</strong></td>
+                <td>Comprehensive blood group distribution for medical planning</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Patient Analytics Insights -->
+          <h3 style="color: #1da1f2; margin-top: 30px;">Patient Analytics Insights & Recommendations</h3>
+          <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #f8f9fa;">
+            <div style="font-weight: bold; margin-bottom: 5px; color: #1da1f2;">📊 Database Statistics</div>
+            <div style="font-size: 11px; margin-bottom: 5px;">Patient database contains ${data.totalPatients} complete records with comprehensive demographic data for healthcare planning and analysis.</div>
+            <div style="font-size: 10px; padding: 5px; background-color: rgba(0,0,0,0.05); border-radius: 3px;"><strong>Recommendation:</strong> Continue maintaining complete patient records and consider implementing advanced analytics for patient care optimization.</div>
+          </div>
+
+          <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: ${growthRate > 0 ? '#d4edda' : '#fff3cd'};">
+            <div style="font-weight: bold; margin-bottom: 5px; color: ${growthRate > 0 ? '#155724' : '#856404'};">📈 Growth Analysis</div>
+            <div style="font-size: 11px; margin-bottom: 5px;">Monthly registration growth rate of ${growthRate}% indicates ${growthRate > 0 ? 'positive' : 'stable'} patient acquisition trends with ${dailyAverage} average daily registrations.</div>
+            <div style="font-size: 10px; padding: 5px; background-color: rgba(0,0,0,0.05); border-radius: 3px;"><strong>Recommendation:</strong> ${growthRate > 0 ? 'Maintain current patient outreach strategies and monitor service quality metrics.' : 'Consider implementing patient referral programs and community outreach initiatives.'}</div>
+          </div>
+
+          <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #f8d7da;">
+            <div style="font-weight: bold; margin-bottom: 5px; color: #721c24;">🩸 Medical Planning</div>
+            <div style="font-size: 11px; margin-bottom: 5px;">Blood group distribution shows ${data.bloodGroupCounts?.[0]?._id || 'N/A'} as most prevalent (${data.bloodGroupCounts?.[0] ? ((data.bloodGroupCounts[0].count/data.totalPatients)*100).toFixed(1) : '0'}%), enabling strategic blood bank and emergency planning.</div>
+            <div style="font-size: 10px; padding: 5px; background-color: rgba(0,0,0,0.05); border-radius: 3px;"><strong>Recommendation:</strong> Use blood group distribution data for inventory planning and emergency preparedness protocols.</div>
+          </div>
+
+          <!-- Professional Signature Section -->
+          <div class="signature-section">
+            <h3>Report Authorization</h3>
+            <div class="signature-container">
+              <div class="signature-block">
+                <div class="signature-line"></div>
+                <div class="signature-text">System Administrator</div>
+                <div class="signature-title">Heal-x Healthcare Management</div>
+              </div>
+
+              <div class="signature-block">
+                <div class="signature-line"></div>
+                <div class="signature-text">Report Approved By</div>
+                <div class="signature-title">Medical Director</div>
+              </div>
+
+              <div class="signature-block">
+                <div class="signature-line"></div>
+                <div class="signature-text">Data Analyst</div>
+                <div class="signature-title">Healthcare Analytics Team</div>
+              </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+              <div class="company-stamp">
+                HEAL-X OFFICIAL SEAL<br>
+                HEALTHCARE MANAGEMENT SYSTEM
+              </div>
+            </div>
+          </div>
+
+          <!-- Report Footer -->
+          <div class="report-footer">
+            <p><strong>This is a system-generated report from Heal-x Healthcare Management System</strong></p>
+            <p>Report generated on ${currentDate.toLocaleString()} | All data is current and validated</p>
+            <p>For queries regarding this report, contact the Analytics Department at Heal-x Healthcare</p>
+            <p><strong>Data Sources:</strong> Patient Registration API | Demographics API | Analytics Engine</p>
+          </div>
+
+          <!-- Print Controls -->
+          <div class="no-print" style="margin-top: 30px; text-align: center;">
+            <button onclick="window.print()" style="background: #1da1f2; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 14px; cursor: pointer;">📄 Print PDF Report</button>
+            <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 14px; cursor: pointer; margin-left: 10px;">✕ Close</button>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+
+      toast.success('Professional PDF report opened! Use Ctrl+P to save as PDF.');
+      setShowPrintMenu(false);
+
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast.error(`Failed to generate PDF: ${error.message}`);
+    } finally {
+      setPrintLoading(false);
     }
-
-    // ============= STATISTICAL ANALYSIS =============
-    if (yPosition > pageHeight - 90) {
-      doc.addPage();
-      yPosition = 30;
-    }
-
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('STATISTICAL ANALYSIS', 20, yPosition);
-    yPosition += 10;
-
-    // Analysis Box
-    doc.setLineWidth(0.5);
-    doc.rect(20, yPosition - 5, pageWidth - 40, 35);
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    const analysisText = [
-      `• Database contains ${data.totalPatients} complete patient records with comprehensive demographic data`,
-      `• Monthly registration rate: ${data.thisMonthPatients} patients (${((data.thisMonthPatients/data.totalPatients)*100).toFixed(1)}% of total database)`,
-      `• Daily registration average: ${dailyAverage} patients per day indicating ${growthRate > 0 ? 'positive' : 'stable'} growth trend`,
-      `• Most prevalent blood group: ${data.bloodGroupCounts?.[0]?._id || 'N/A'} representing ${data.bloodGroupCounts?.[0] ? ((data.bloodGroupCounts[0].count/data.totalPatients)*100).toFixed(1) : '0'}% of population`,
-      `• Gender distribution shows ${data.genderCounts?.find(g => g._id === 'Male')?.count > data.genderCounts?.find(g => g._id === 'Female')?.count ? 'male' : 'female'} majority in patient demographics`,
-      `• Data integrity: 100% - All records contain required demographic information for analysis`
-    ];
-
-    analysisText.forEach((text, index) => {
-      doc.text(text, 25, yPosition + 2 + (index * 5));
-    });
-
-    yPosition += 45;
-
-    // ============= SIGNATURES SECTION =============
-    // Check if we need space for signatures (need at least 80mm)
-    if (yPosition > pageHeight - 80) {
-      doc.addPage();
-      yPosition = 30;
-    }
-
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('OFFICIAL SIGNATURES', 20, yPosition);
-    
-    // Underline
-    doc.setLineWidth(1);
-    doc.line(20, yPosition + 2, 120, yPosition + 2);
-    yPosition += 15;
-
-    // Signature boxes dimensions
-    const signatureBoxWidth = 70;
-    const signatureBoxHeight = 35;
-    const signatureMargin = 20;
-    const adminSignatureX = signatureMargin;
-    const doctorSignatureX = pageWidth - signatureBoxWidth - signatureMargin;
-
-    // Admin Signature Box
-    doc.setLineWidth(1);
-    doc.rect(adminSignatureX, yPosition, signatureBoxWidth, signatureBoxHeight);
-    
-    // Admin signature area (inner box for actual signature)
-    doc.setLineWidth(0.3);
-    doc.rect(adminSignatureX + 5, yPosition + 5, signatureBoxWidth - 10, signatureBoxHeight - 20);
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('ADMIN SIGNATURE', adminSignatureX + signatureBoxWidth/2, yPosition + signatureBoxHeight - 10, { align: 'center' });
-    
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Administrator', adminSignatureX + signatureBoxWidth/2, yPosition + signatureBoxHeight - 5, { align: 'center' });
-
-    // Doctor Signature Box
-    doc.setLineWidth(1);
-    doc.rect(doctorSignatureX, yPosition, signatureBoxWidth, signatureBoxHeight);
-    
-    // Doctor signature area (inner box for actual signature)
-    doc.setLineWidth(0.3);
-    doc.rect(doctorSignatureX + 5, yPosition + 5, signatureBoxWidth - 10, signatureBoxHeight - 20);
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('DOCTOR SIGNATURE', doctorSignatureX + signatureBoxWidth/2, yPosition + signatureBoxHeight - 10, { align: 'center' });
-    
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Chief Medical Officer', doctorSignatureX + signatureBoxWidth/2, yPosition + signatureBoxHeight - 5, { align: 'center' });
-
-    yPosition += signatureBoxHeight + 15;
-
-    // Date and Name fields for signatures
-    // Admin Date & Name
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Date: ________________', adminSignatureX, yPosition);
-    doc.text('Name: ________________', adminSignatureX, yPosition + 8);
-    doc.text('Position: Administrator', adminSignatureX, yPosition + 16);
-
-    // Doctor Date & Name
-    doc.text('Date: ________________', doctorSignatureX, yPosition);
-    doc.text('Name: ________________', doctorSignatureX, yPosition + 8);
-    doc.text('Position: Chief Medical Officer', doctorSignatureX, yPosition + 16);
-
-    yPosition += 25;
-
-    // Verification Statement
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'italic');
-    const verificationText = 'I hereby certify that the information contained in this report is accurate and complete to the best of my knowledge.';
-    doc.text(verificationText, pageWidth/2, yPosition, { align: 'center', maxWidth: pageWidth - 40 });
-
-    // ============= FOOTER =============
-    const addFooter = (pageNum) => {
-      // Footer border
-      doc.setLineWidth(0.5);
-      doc.line(20, pageHeight - 25, pageWidth - 20, pageHeight - 25);
-      
-      // Footer content
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text('HEALTHCARE MANAGEMENT SYSTEM', 20, pageHeight - 18);
-      doc.text('PATIENT ANALYTICS REPORT - CONFIDENTIAL DOCUMENT', 20, pageHeight - 12);
-      doc.text('This report contains sensitive patient information. Handle according to HIPAA guidelines.', 20, pageHeight - 6);
-      
-      // Page number and generation info
-      doc.text(`Page ${pageNum}`, pageWidth - 20, pageHeight - 12, { align: 'right' });
-      doc.text(`Generated: ${currentDate.toLocaleDateString()}`, pageWidth - 20, pageHeight - 6, { align: 'right' });
-    };
-
-    // Add footer to all pages
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      addFooter(i);
-    }
-
-    // Generate filename and save
-    const filename = `patient-analytics-report-signed-${new Date().toISOString().split('T')[0]}.pdf`;
-    doc.save(filename);
-    
-    toast.success('Professional PDF with signatures generated successfully!');
-    setShowPrintMenu(false);
-    
-  } catch (error) {
-    console.error('PDF generation error:', error);
-    toast.error(`Failed to generate PDF: ${error.message}`);
-  } finally {
-    setPrintLoading(false);
-  }
-};
+  };
 
   // Regular Print Function (same as before)
   const handlePrint = () => {
@@ -536,10 +580,10 @@ const generateBlackWhitePDF = () => {
     }
 
     setPrintLoading(true);
-    
+
     try {
       const printWindow = window.open('', '_blank', 'width=800,height=600');
-      
+
       const printContent = `
         <!DOCTYPE html>
         <html>
@@ -678,11 +722,11 @@ const generateBlackWhitePDF = () => {
         </body>
         </html>
       `;
-      
+
       printWindow.document.write(printContent);
       printWindow.document.close();
       printWindow.focus();
-      
+
       setTimeout(() => {
         printWindow.print();
         printWindow.close();
@@ -690,7 +734,7 @@ const generateBlackWhitePDF = () => {
         setShowPrintMenu(false);
         toast.success('Print dialog opened successfully');
       }, 500);
-      
+
     } catch (error) {
       console.error('Print error:', error);
       toast.error('Failed to prepare print');
@@ -824,13 +868,65 @@ const generateBlackWhitePDF = () => {
   return (
     <div className="pd-display-wrapper">
       <div className="pd-display-container">
-        {/* Header */}
+        {/* ✅ HEADER WITH INTEGRATED DASHBOARD BUTTON */}
         <div className="pd-display-header">
           <div className="pd-display-header-content">
-            <div>
-              <h1 className="pd-display-title">Patient Analytics</h1>
-              <p className="pd-display-subtitle">Real-time patient data and insights</p>
+            {/* Left Side - Dashboard Button + Title */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              {/* Dashboard Button */}
+              <button
+                onClick={handleBackToDashboard}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 18px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  color: 'white',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '25px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  minWidth: '160px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.25)';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.15)';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }}
+                aria-label="Back to Dashboard"
+              >
+                <span style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '20px',
+                  height: '20px',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  borderRadius: '50%',
+                  fontSize: '14px'
+                }}>
+                  ←
+                </span>
+                <span>Back to Dashboard</span>
+              </button>
+
+              {/* Title and Subtitle */}
+              <div>
+                <h1 className="pd-display-title">Patient Analytics</h1>
+                <p className="pd-display-subtitle">Real-time patient data and insights</p>
+              </div>
             </div>
+
+            {/* Right Side - Timestamp and Refresh Button */}
             <div className="pd-display-header-actions">
               {lastUpdated && (
                 <p className="pd-display-timestamp">
@@ -1020,7 +1116,7 @@ const generateBlackWhitePDF = () => {
         </div>
       </div>
 
-      {/* ✅ FLOATING PRINT/PDF BUBBLE WITH BLACK & WHITE OPTION */}
+      {/* ✅ FLOATING PRINT/PDF BUBBLE - UPDATED MATCHING PROFIT/LOSS FORMAT */}
       <div style={{
         position: 'fixed',
         bottom: '30px',
@@ -1077,7 +1173,7 @@ const generateBlackWhitePDF = () => {
               position: 'relative'
             }}>
               📊 Report Options
-              
+
               {/* Close Button */}
               <button
                 onClick={() => setShowPrintMenu(false)}
@@ -1112,14 +1208,14 @@ const generateBlackWhitePDF = () => {
             </div>
 
             <div style={{ padding: '20px' }}>
-              {/* BLACK & WHITE PDF Download Button */}
+              {/* PROFESSIONAL PDF Download Button */}
               <button
-                onClick={generateBlackWhitePDF}
+                onClick={exportToPDF}
                 disabled={printLoading}
                 style={{
                   width: '100%',
                   padding: '18px 20px',
-                  background: printLoading ? '#94A3B8' : 'linear-gradient(135deg, #374151, #1F2937)',
+                  background: printLoading ? '#94A3B8' : 'linear-gradient(135deg, #1da1f2, #0d8bd9)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '15px',
@@ -1136,7 +1232,7 @@ const generateBlackWhitePDF = () => {
                 onMouseEnter={(e) => {
                   if (!printLoading) {
                     e.target.style.transform = 'translateY(-3px)';
-                    e.target.style.boxShadow = '0 8px 20px rgba(55, 65, 81, 0.3)';
+                    e.target.style.boxShadow = '0 8px 20px rgba(29, 161, 242, 0.3)';
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -1144,13 +1240,13 @@ const generateBlackWhitePDF = () => {
                   e.target.style.boxShadow = 'none';
                 }}
               >
-                <span style={{ fontSize: '24px' }}>📝</span>
+                <span style={{ fontSize: '24px' }}>📄</span>
                 <div style={{ textAlign: 'left', flex: 1 }}>
                   <div style={{ fontSize: '16px' }}>
-                    {printLoading ? 'Generating B&W PDF...' : 'Download B&W PDF'}
+                    {printLoading ? 'Generating PDF...' : 'Generate Professional PDF'}
                   </div>
                   <div style={{ fontSize: '12px', opacity: '0.9', marginTop: '2px' }}>
-                    Professional black & white format
+                    Professional analytics report format
                   </div>
                 </div>
               </button>
@@ -1192,7 +1288,7 @@ const generateBlackWhitePDF = () => {
                     {printLoading ? 'Preparing Print...' : 'Print Report'}
                   </div>
                   <div style={{ fontSize: '12px', opacity: '0.9', marginTop: '2px' }}>
-                    Professional print layout
+                    Quick print layout
                   </div>
                 </div>
               </button>

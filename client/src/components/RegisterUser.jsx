@@ -24,9 +24,87 @@ const RegisterUser = () => {
 
   const backendUrl = 'http://localhost:7000';
 
+  // Enhanced input change handler with validations
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    let filteredValue = value;
+
+    // Apply field-specific validations
+    switch (name) {
+      case 'name':
+        // Only allow alphabetical characters and spaces
+        filteredValue = value.replace(/[^A-Za-z\s]/g, '');
+        break;
+        
+      case 'phone':
+        // Only allow numerical characters and limit to 10 digits
+        filteredValue = value.replace(/[^0-9]/g, '').slice(0, 10);
+        break;
+        
+      case 'email':
+        // Keep email as is (no filtering, just validation on submit)
+        filteredValue = value;
+        break;
+        
+      case 'password':
+      case 'confirmPassword':
+      case 'dateOfBirth':
+      case 'gender':
+      case 'role':
+        // No filtering for these fields
+        filteredValue = value;
+        break;
+        
+      default:
+        filteredValue = value;
+    }
+
+    setFormData(prev => ({ ...prev, [name]: filteredValue }));
+  };
+
+  // Prevent paste of invalid characters
+  const handlePaste = (e, fieldType) => {
+    e.preventDefault();
+    const pasteData = (e.clipboardData || window.clipboardData).getData('text');
+    let filteredData = pasteData;
+
+    switch (fieldType) {
+      case 'name':
+        // Only allow alphabetical characters and spaces
+        filteredData = pasteData.replace(/[^A-Za-z\s]/g, '');
+        break;
+      case 'phone':
+        // Only allow numerical characters and limit to 10 digits
+        filteredData = pasteData.replace(/[^0-9]/g, '').slice(0, 10);
+        break;
+      default:
+        filteredData = pasteData;
+    }
+
+    const { name } = e.target;
+    setFormData(prev => ({ ...prev, [name]: filteredData }));
+  };
+
+  // Prevent certain key presses for specific fields
+  const handleKeyPress = (e, fieldType) => {
+    switch (fieldType) {
+      case 'name':
+        // Prevent non-alphabetical characters and non-space keys
+        if (!/[A-Za-z\s]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          e.preventDefault();
+        }
+        break;
+      case 'phone':
+        // Prevent non-numerical characters
+        if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          e.preventDefault();
+        }
+        // Prevent typing if already 10 digits
+        if (e.target.value.length >= 10 && !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          e.preventDefault();
+        }
+        break;
+    }
   };
 
   const validateStep1 = () => {
@@ -61,8 +139,8 @@ const RegisterUser = () => {
 
   const validateStep2 = () => {
     const { phone, dateOfBirth } = formData;
-    if (phone && phone.length < 10) {
-      setMessage('❌ Please enter a valid phone number');
+    if (phone && phone.length !== 10) {
+      setMessage('❌ Phone number must be exactly 10 digits');
       return false;
     }
     if (dateOfBirth) {
@@ -171,7 +249,6 @@ const RegisterUser = () => {
 
   return (
     <div className="register-container">
-      <MedicalNavbar />
       <div className="register-card">
         <div className="register-header">
           <h2>Create Account</h2>
@@ -207,9 +284,15 @@ const RegisterUser = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
+                  onPaste={(e) => handlePaste(e, 'name')}
+                  onKeyDown={(e) => handleKeyPress(e, 'name')}
                   placeholder="Enter your full name"
+                  title="Only letters and spaces are allowed"
                   required
                 />
+                <small style={{ color: '#666', fontSize: '0.8em' }}>
+                  ℹ️ Only letters and spaces allowed
+                </small>
               </div>
               <div className="form-group">
                 <label htmlFor="email"><span className="label-icon">📧</span>Email Address</label>
@@ -295,8 +378,15 @@ const RegisterUser = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
+                  onPaste={(e) => handlePaste(e, 'phone')}
+                  onKeyDown={(e) => handleKeyPress(e, 'phone')}
                   placeholder="Enter your phone number"
+                  title="Only numbers are allowed, exactly 10 digits"
+                  maxLength="10"
                 />
+                <small style={{ color: '#666', fontSize: '0.8em' }}>
+                  ℹ️ Only numbers allowed (10 digits) {formData.phone && `(${formData.phone.length}/10)`}
+                </small>
               </div>
               <div className="form-row">
                 <div className="form-group">
