@@ -2502,12 +2502,8 @@
   transition: opacity var(--transition-normal);
 }
 
-.support-option:hover::before {
-  opacity: 1;
-}
-
 .support-option:hover {
-  background: var(--white);
+  background: black;
   border-color: transparent;
   transform: translateY(-8px) scale(1.05);
   box-shadow: 0 20px 40px rgba(102, 126, 234, 0.4), var(--shadow-glow);
