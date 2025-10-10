@@ -126,7 +126,7 @@ const Appointment = () => {
 
 
   const validateStep1 = () => {
-    const { name, gender, dateOfBirth, email, phone, bloodGroup } = formData;
+    const { name, gender, dateOfBirth, email, age, phone, bloodGroup } = formData;
     
     if (!name.trim()) {
       setMessage('❌ Full name is required');
@@ -143,16 +143,23 @@ const Appointment = () => {
       return false;
     }
     
+     // Age validation: must be >= 18
+    if (!age || parseInt(age) < 18) {
+      setMessage('❌ You must be at least 18 years old to book an appointment');
+      return false;
+  }
+
+
     if (!email.trim()) {
       setMessage('❌ Email is required');
       return false;
     }
     
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
     if (!emailRegex.test(email)) {
-      setMessage('❌ Please enter a valid email address');
+      setMessage('❌ Please enter a valid Gmail address (e.g., abc@gmail.com)');
       return false;
-    }
+}
     
     if (!phone.trim()) {
       setMessage('❌ Phone number is required');
@@ -195,6 +202,18 @@ const Appointment = () => {
       setMessage('❌ Appointment time is required');
       return false;
     }
+
+    // Validate appointment time is within available hours (08:00 to 18:00)
+    const [hour, minute] = appointmentTime.split(':').map(Number);
+    const totalMinutes = hour * 60 + minute;
+    const minMinutes = 8 * 60;      // 08:00
+    const maxMinutes = 18 * 60;     // 18:00
+
+   if (totalMinutes < minMinutes || totalMinutes > maxMinutes) {
+    setMessage('❌ Please select a time between 08:00 and 18:00');
+    return false;
+}
+
     
     if (!doctorSpecialty) {
       setMessage('❌ Doctor specialty is required');
@@ -301,17 +320,17 @@ const Appointment = () => {
 
 
   // Generate time slots
-  const generateTimeSlots = () => {
+    const generateTimeSlots = () => {
     const slots = [];
-    for (let hour = 9; hour <= 17; hour++) {
+    for (let hour = 8; hour <= 18; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
+        if (hour === 18 && minute > 0) break; // End at 18:00
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         slots.push(timeString);
       }
     }
     return slots;
   };
-
 
   const timeSlots = generateTimeSlots();
 
@@ -402,7 +421,7 @@ const Appointment = () => {
                     name="dateOfBirth"
                     value={formData.dateOfBirth}
                     onChange={handleInputChange}
-                    max={new Date().toISOString().split('T')[0]}
+                    max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
                     required
                   />
                 </div>
@@ -433,11 +452,22 @@ const Appointment = () => {
                     Email Address *
                   </label>
                   <input
-                    type="email"
+                     type="email"
                     id="email"
                     name="email"
                     value={formData.email}
-                    onChange={handleInputChange}
+                    onChange={e => {
+                      let value = e.target.value;
+                      // Deny typing after '.com'
+                      const comIndex = value.indexOf('.com');
+                      if (comIndex !== -1 && value.length > comIndex + 4) {
+                        value = value.slice(0, comIndex + 4);
+                      }
+                      setFormData(prev => ({
+                        ...prev,
+                        email: value
+                      }));
+                    }}
                     placeholder="Enter your email address"
                     required
                   />
