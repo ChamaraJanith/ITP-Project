@@ -16,10 +16,30 @@ import {
   Line,
   RadialBarChart,
   RadialBar,
+  AreaChart,
+  Area,
+  ComposedChart,
+  ResponsiveContainer,
+  ReferenceLine
 } from "recharts";
 import "./FinancialDashboard.css";
 
-const FINANCIAL_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+// Modern Financial Color Schemes for 2025
+const MODERN_FINANCIAL_COLORS = {
+  primary: ["#667eea", "#764ba2", "#f093fb", "#f5576c"],
+  revenue: ["#10B981", "#34D399", "#6EE7B7", "#A7F3D0"],
+  warning: ["#F59E0B", "#FBBF24", "#FCD34D", "#FDE68A"],
+  danger: ["#EF4444", "#F87171", "#FCA5A5", "#FECACA"],
+  success: ["#059669", "#10B981", "#34D399", "#6EE7B7"],
+  neutral: ["#6B7280", "#9CA3AF", "#D1D5DB", "#F3F4F6"],
+  gradients: {
+    blueViolet: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    greenBlue: "linear-gradient(135deg, #10B981 0%, #0891B2 100%)",
+    orangeRed: "linear-gradient(135deg, #F59E0B 0%, #EF4444 100%)",
+    purplePink: "linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)"
+  }
+};
+
 const API_URL = "http://localhost:7000/api/appointments";
 
 const FinancialDashboard = () => {
@@ -37,7 +57,120 @@ const FinancialDashboard = () => {
     initializeDashboard();
   }, []);
 
-  // Fetch appointments and convert to payment-like data
+  // **UPDATED: Use exact same fee calculation logic as FinancialManagePayments.jsx**
+  const calculateConsultationFee = (specialtyRaw) => {
+    const s = (specialtyRaw || "").toLowerCase();
+    if (s.includes("cardio")) return 6000;
+    if (s.includes("orthopedic")) return 6000;
+    if (s.includes("dermatologist") || s.includes("dermatology") || s.includes("skin")) return 5500;
+    if (s.includes("general") && s.includes("physician")) return 4000;
+    if (s.includes("neurologist") || s.includes("brain") || s.includes("nerve")) return 7000;
+    if (s.includes("pediatric") || s.includes("child")) return 4500;
+    if (s.includes("gynecologist") || s.includes("women")) return 5500;
+    if (s.includes("psychiatrist") || s.includes("mental")) return 6500;
+    if (s.includes("dentist") || s.includes("dental")) return 3500;
+    if (s.includes("eye") || s.includes("ophthalmologist")) return 5000;
+    if (s.includes("ent") || s.includes("ear") || s.includes("nose") || s.includes("throat")) return 4800;
+    return 5000;
+  };
+
+  // Custom Tooltip Components for Modern Look
+  const CustomPieTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    
+    return (
+      <div className="modern-tooltip">
+        <div className="tooltip-header">💰 Revenue Breakdown</div>
+        <div className="tooltip-body">
+          <div className="tooltip-item">
+            <div className="tooltip-color" style={{ backgroundColor: payload[0].fill }}></div>
+            <span className="tooltip-label">{payload[0].name}:</span>
+            <span className="tooltip-value">${payload[0].value.toLocaleString()}</span>
+          </div>
+          <div className="tooltip-percentage">
+            {((payload[0].value / (dashboardData?.stats?.totalAmountDue || 1)) * 100).toFixed(1)}% of total
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const CustomBarTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    
+    return (
+      <div className="modern-tooltip">
+        <div className="tooltip-header">📈 {label} Revenue</div>
+        <div className="tooltip-body">
+          <div className="tooltip-item">
+            <div className="tooltip-color" style={{ backgroundColor: payload[0].fill }}></div>
+            <span className="tooltip-value">${payload[0].value.toLocaleString()}</span>
+          </div>
+          <div className="tooltip-trend">
+            {payload[0].value > 0 ? "🔥 Active Period" : "💤 No Activity"}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const CustomLineTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    
+    return (
+      <div className="modern-tooltip">
+        <div className="tooltip-header">📊 {label} Trend</div>
+        <div className="tooltip-body">
+          <div className="tooltip-item">
+            <div className="tooltip-color" style={{ backgroundColor: payload[0].stroke }}></div>
+            <span className="tooltip-label">Amount:</span>
+            <span className="tooltip-value">${payload[0].value.toLocaleString()}</span>
+          </div>
+          <div className="tooltip-growth">
+            Growth pattern analysis
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const CustomRadialTooltip = ({ active, payload }) => {
+    if (!active || !payload || !payload.length) return null;
+    
+    const rate = payload[0].value;
+    const getPerformanceText = (rate) => {
+      if (rate >= 90) return "🎯 Excellent Performance";
+      if (rate >= 80) return "✅ Good Performance";
+      if (rate >= 70) return "⚠️ Average Performance";
+      return "🚨 Needs Improvement";
+    };
+
+    return (
+      <div className="modern-tooltip">
+        <div className="tooltip-header">🎯 Collection Efficiency</div>
+        <div className="tooltip-body">
+          <div className="tooltip-item">
+            <div className="tooltip-color" style={{ backgroundColor: payload[0].fill }}></div>
+            <span className="tooltip-value">{rate}%</span>
+          </div>
+          <div className="tooltip-status">
+            {getPerformanceText(rate)}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Format functions for better number display
+  const formatCurrency = (value) => {
+    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
+    return `$${value.toLocaleString()}`;
+  };
+
+  const formatPercentage = (value) => `${value}%`;
+
+  // **UPDATED: Enhanced fetch function with exact same logic as FinancialManagePayments.jsx**
   const fetchPayments = async () => {
     try {
       const response = await fetch(API_URL);
@@ -52,7 +185,7 @@ const FinancialDashboard = () => {
         const data = JSON.parse(text);
         console.log("Fetched appointments:", data);
         
-        // Handle different response structures
+        // **UPDATED: Use exact same data parsing logic**
         let appointmentsData = [];
         if (Array.isArray(data)) {
           appointmentsData = data;
@@ -60,43 +193,30 @@ const FinancialDashboard = () => {
           appointmentsData = Array.isArray(data.data) ? data.data : [data.data];
         } else if (data.appointments) {
           appointmentsData = Array.isArray(data.appointments) ? data.appointments : [data.appointments];
+        } else if (data.appointment) {
+          appointmentsData = [data.appointment];
         }
         
-        // Filter only accepted appointments and convert to payment structure
+        // Filter only accepted appointments
         const acceptedAppointments = appointmentsData.filter(apt => 
           apt && apt.status === 'accepted'
         );
         
-        // Convert to payment-like structure for existing logic compatibility
+        // **UPDATED: Use exact same transformation logic**
         const paymentsData = acceptedAppointments.map((apt, index) => {
-          // Calculate fee based on specialty
-          let consultationFee = 5000; // Default
-          const specialty = (apt.doctorSpecialty || '').toLowerCase();
+          const consultationFee = calculateConsultationFee(apt.doctorSpecialty);
           
-          // More comprehensive specialty matching
-          if (specialty.includes('cardio')) {
-            consultationFee = 6000;
-          } else if (specialty.includes('orthopedic')) {
-            consultationFee = 6000;
-          } else if (specialty.includes('dermatologist') || specialty.includes('dermatology') || specialty.includes('skin')) {
-            consultationFee = 5500;
-          } else if (specialty.includes('general') && specialty.includes('physician')) {
-            consultationFee = 4000;
-          } else if (specialty.includes('neurologist') || specialty.includes('neurology') || specialty.includes('brain') || specialty.includes('nerve')) {
-            consultationFee = 7000;
-          } else if (specialty.includes('pediatrician') || specialty.includes('pediatric') || specialty.includes('child')) {
-            consultationFee = 4500;
-          } else if (specialty.includes('gynecologist') || specialty.includes('gynecology') || specialty.includes('women')) {
-            consultationFee = 5500;
-          } else if (specialty.includes('psychiatrist') || specialty.includes('psychiatry') || specialty.includes('mental')) {
-            consultationFee = 6500;
-          } else if (specialty.includes('dentist') || specialty.includes('dental')) {
-            consultationFee = 3500;
-          } else if (specialty.includes('eye') || specialty.includes('ophthalmologist') || specialty.includes('ophthalmology')) {
-            consultationFee = 5000;
-          } else if (specialty.includes('ent') || specialty.includes('ear') || specialty.includes('nose') || specialty.includes('throat')) {
-            consultationFee = 4800;
-          }
+          // Calculate age using same logic as payments component
+          const age = apt.age || (
+            apt.dateOfBirth
+              ? (() => {
+                  const d = new Date(apt.dateOfBirth), t = new Date();
+                  let a = t.getFullYear() - d.getFullYear();
+                  if (t.getMonth() < d.getMonth() || (t.getMonth() === d.getMonth() && t.getDate() < d.getDate())) a--;
+                  return a;
+                })()
+              : ""
+          );
 
           return {
             // Keep payment structure for compatibility
@@ -107,7 +227,7 @@ const FinancialDashboard = () => {
             doctorName: apt.doctorName || 'Dr. Unknown',
             totalAmount: consultationFee,
             amountPaid: consultationFee, // Accepted = Fully Paid
-            paymentMethod: ['Credit Card', 'Cash', 'Insurance', 'Bank Transfer'][index % 4],
+            paymentMethod: apt.paymentMethod || ['Credit Card', 'Cash', 'Insurance', 'Bank Transfer'][index % 4],
             date: apt.acceptedAt || apt.updatedAt || new Date().toISOString(),
             
             // Additional appointment data
@@ -115,7 +235,14 @@ const FinancialDashboard = () => {
             appointmentTime: apt.appointmentTime,
             specialty: apt.doctorSpecialty,
             patientEmail: apt.email,
-            patientPhone: apt.phone
+            patientPhone: apt.phone,
+            age: age,
+            
+            // Payment tracking fields
+            transactionId: apt.transactionId || `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`,
+            paymentDate: apt.paymentDate || apt.acceptedAt || new Date().toISOString(),
+            paymentStatus: "paid",
+            formattedAppointmentDate: apt.appointmentDate ? apt.appointmentDate.split("T")[0] : ""
           };
         });
         
@@ -129,12 +256,11 @@ const FinancialDashboard = () => {
       }
     } catch (error) {
       console.error("Error fetching appointments:", error);
-      // Return empty array instead of throwing to prevent dashboard crash
       return [];
     }
   };
 
-  // Calculate real-time statistics
+  // **UPDATED: Enhanced statistics calculation with more detailed breakdowns**
   const calculateRealTimeStats = (paymentsData) => {
     if (!paymentsData || paymentsData.length === 0) {
       return {
@@ -149,7 +275,11 @@ const FinancialDashboard = () => {
         totalAmountPaid: 0,
         totalPending: 0,
         paymentMethods: {},
-        hospitalBreakdown: {}
+        hospitalBreakdown: {},
+        specialtyBreakdown: {},
+        uniquePatients: 0,
+        uniqueDoctors: 0,
+        averagePayment: 0
       };
     }
 
@@ -159,13 +289,11 @@ const FinancialDashboard = () => {
     startOfWeek.setDate(today.getDate() - today.getDay());
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // Calculate totals
     const totalPayments = paymentsData.length;
     const totalAmountDue = paymentsData.reduce((sum, payment) => sum + (payment.totalAmount || 0), 0);
     const totalAmountPaid = paymentsData.reduce((sum, payment) => sum + (payment.amountPaid || 0), 0);
     const totalPending = totalAmountDue - totalAmountPaid;
 
-    // Calculate today's revenue
     const todayRevenue = paymentsData
       .filter(payment => {
         if (!payment.date) return false;
@@ -178,7 +306,6 @@ const FinancialDashboard = () => {
       })
       .reduce((sum, payment) => sum + (payment.amountPaid || 0), 0);
 
-    // Calculate week revenue
     const weekRevenue = paymentsData
       .filter(payment => {
         if (!payment.date) return false;
@@ -191,7 +318,6 @@ const FinancialDashboard = () => {
       })
       .reduce((sum, payment) => sum + (payment.amountPaid || 0), 0);
 
-    // Calculate month revenue
     const monthRevenue = paymentsData
       .filter(payment => {
         if (!payment.date) return false;
@@ -204,7 +330,6 @@ const FinancialDashboard = () => {
       })
       .reduce((sum, payment) => sum + (payment.amountPaid || 0), 0);
 
-    // Collection rate
     const collectionRate = totalAmountDue > 0 ? Math.round((totalAmountPaid / totalAmountDue) * 100) : 100;
 
     // Payment methods breakdown
@@ -226,6 +351,21 @@ const FinancialDashboard = () => {
       hospitalBreakdown[hospital].count += 1;
     });
 
+    // **ADDED: Enhanced analytics**
+    const specialtyBreakdown = {};
+    paymentsData.forEach(payment => {
+      const specialty = payment.specialty || payment.hospitalName || 'General Medicine';
+      if (!specialtyBreakdown[specialty]) {
+        specialtyBreakdown[specialty] = { count: 0, revenue: 0 };
+      }
+      specialtyBreakdown[specialty].count += 1;
+      specialtyBreakdown[specialty].revenue += (payment.amountPaid || 0);
+    });
+
+    const uniquePatients = new Set(paymentsData.map(p => p.patientName)).size;
+    const uniqueDoctors = new Set(paymentsData.map(p => p.doctorName)).size;
+    const averagePayment = totalAmountPaid > 0 ? totalAmountPaid / totalPayments : 0;
+
     return {
       todayRevenue,
       pendingPayments: totalPending,
@@ -238,11 +378,15 @@ const FinancialDashboard = () => {
       totalAmountPaid,
       totalPending,
       paymentMethods,
-      hospitalBreakdown
+      hospitalBreakdown,
+      specialtyBreakdown,
+      uniquePatients,
+      uniqueDoctors,
+      averagePayment
     };
   };
 
-  // Generate recent activities from real data
+  // **UPDATED: Enhanced recent activities with more detailed information**
   const generateRecentActivities = (paymentsData) => {
     if (!paymentsData || paymentsData.length === 0) {
       return ["📊 No recent activities to display", "🔄 Refresh data to see updates"];
@@ -264,7 +408,7 @@ const FinancialDashboard = () => {
 
     recentPayments.forEach(payment => {
       if (payment.amountPaid > 0) {
-        activities.push(`💰 Payment of $${payment.amountPaid.toLocaleString()} received from ${payment.patientName || 'Unknown'}`);
+        activities.push(`💰 Payment of $${payment.amountPaid.toLocaleString()} received from ${payment.patientName || 'Unknown'} - ${payment.specialty || 'General'}`);
       }
       if (payment.totalAmount > payment.amountPaid) {
         const pending = payment.totalAmount - payment.amountPaid;
@@ -274,16 +418,18 @@ const FinancialDashboard = () => {
 
     // Add some general activities
     const stats = calculateRealTimeStats(paymentsData);
-    activities.push(`📊 Total collection rate: ${stats.collectionRate}%`);
-    activities.push(`🏥 Managing ${Object.keys(stats.hospitalBreakdown).length} specialties`);
-    activities.push(`💳 ${Object.keys(stats.paymentMethods).length} payment methods in use`);
+    activities.push(`📊 Total collection rate: ${stats.collectionRate}% (Excellent performance!)`);
+    activities.push(`🏥 Managing ${Object.keys(stats.specialtyBreakdown).length} medical specialties`);
+    activities.push(`💳 ${Object.keys(stats.paymentMethods).length} payment methods in active use`);
+    activities.push(`👥 Serving ${stats.uniquePatients} unique patients`);
+    activities.push(`👨‍⚕️ ${stats.uniqueDoctors} healthcare providers active`);
 
     return activities.slice(0, 10);
   };
 
   const initializeDashboard = async () => {
     try {
-      setError(""); // Clear previous errors
+      setError("");
       
       const adminData = localStorage.getItem("admin");
       if (adminData) {
@@ -342,11 +488,9 @@ const FinancialDashboard = () => {
       case "view_billing":
         navigate("/billing");
         break;
-
       case "manage_payments":
         navigate("/admin/financial/payments");
         break;
-
       case "Real time analytics":
         navigate("/admin/financial/payments/total-view", {
           state: {
@@ -356,31 +500,24 @@ const FinancialDashboard = () => {
           }
         });
         break;
-
       case "profit_or_loss":
         navigate("/admin/financial/profit-loss");
         break;
-
       case "payroll_processing":
         navigate("/admin/financial/payrolls");
         break;
-
       case "expense_tracking":
         navigate("/admin/financial/expenses");
         break;
-
       case "explore_trends":
         navigate("/admin/financial/trends");
         break;
-
       case "utility_management":
         navigate("/admin/financial/utities");
         break; 
-        
       case "budget_plan":
         navigate("/admin/financial/budget-planning");
         break;
-
       case "payroll_analytics":
         navigate("/admin/financial/payrolls/total-view", {
           state: {
@@ -389,7 +526,6 @@ const FinancialDashboard = () => {
           }
         });
         break; 
-
       default:
         console.log("Clicked feature:", feature);
     }
@@ -401,15 +537,12 @@ const FinancialDashboard = () => {
       case "send_emails":
         navigate("/admin/financial/send-email");
         break;
-
       case "send_notifications":
         navigate("/admin/notifications");
         break;
-
       case "generate_reports":
         navigate("/admin/reports");
         break;
-
       default:
         console.log("Clicked operational task:", task);
     }
@@ -443,27 +576,35 @@ const FinancialDashboard = () => {
     );
   }
 
-  // Chart Data with real values from appointments
+  // Enhanced Chart Data with real values from appointments
   const pieData = dashboardData?.stats
     ? [
-        { name: "Collected Revenue", value: dashboardData.stats.totalAmountPaid || 0 },
-        { name: "Pending Payments", value: dashboardData.stats.pendingPayments || 0 },
-      ].filter(item => item.value > 0) // Only show non-zero values
+        { 
+          name: "Collected Revenue", 
+          value: dashboardData.stats.totalAmountPaid || 0,
+          percentage: ((dashboardData.stats.totalAmountPaid / (dashboardData.stats.totalAmountDue || 1)) * 100).toFixed(1)
+        },
+        { 
+          name: "Pending Payments", 
+          value: dashboardData.stats.pendingPayments || 0,
+          percentage: ((dashboardData.stats.pendingPayments / (dashboardData.stats.totalAmountDue || 1)) * 100).toFixed(1)
+        },
+      ].filter(item => item.value > 0)
     : [];
 
   const barData = dashboardData?.stats
     ? [
-        { name: "Today", revenue: dashboardData.stats.todayRevenue || 0 },
-        { name: "This Week", revenue: dashboardData.stats.weekRevenue || 0 },
-        { name: "This Month", revenue: dashboardData.stats.monthRevenue || 0 },
+        { name: "Today", revenue: dashboardData.stats.todayRevenue || 0, target: 5000 },
+        { name: "This Week", revenue: dashboardData.stats.weekRevenue || 0, target: 25000 },
+        { name: "This Month", revenue: dashboardData.stats.monthRevenue || 0, target: dashboardData.stats.monthlyTarget || 125000 },
       ]
     : [];
 
   const lineData = dashboardData?.stats
     ? [
-        { period: "Today", amount: dashboardData.stats.todayRevenue || 0 },
-        { period: "This Week", amount: dashboardData.stats.weekRevenue || 0 },
-        { period: "This Month", amount: dashboardData.stats.monthRevenue || 0 },
+        { period: "Today", amount: dashboardData.stats.todayRevenue || 0, forecast: (dashboardData.stats.todayRevenue || 0) * 1.1 },
+        { period: "This Week", amount: dashboardData.stats.weekRevenue || 0, forecast: (dashboardData.stats.weekRevenue || 0) * 1.05 },
+        { period: "This Month", amount: dashboardData.stats.monthRevenue || 0, forecast: (dashboardData.stats.monthRevenue || 0) * 1.02 },
       ]
     : [];
 
@@ -471,10 +612,34 @@ const FinancialDashboard = () => {
     {
       name: "Collection Rate",
       value: dashboardData?.stats?.collectionRate || 0,
-      fill: dashboardData?.stats?.collectionRate >= 80 ? "#10B981" : 
-           dashboardData?.stats?.collectionRate >= 60 ? "#F59E0B" : "#EF4444",
+      fill: dashboardData?.stats?.collectionRate >= 90 ? "#10B981" : 
+           dashboardData?.stats?.collectionRate >= 80 ? "#3B82F6" :
+           dashboardData?.stats?.collectionRate >= 70 ? "#F59E0B" : "#EF4444",
     },
   ];
+
+  // Additional Chart: Payment Methods Breakdown
+  const paymentMethodsData = dashboardData?.stats?.paymentMethods 
+    ? Object.entries(dashboardData.stats.paymentMethods).map(([method, amount]) => ({
+        name: method,
+        value: amount,
+        percentage: ((amount / (dashboardData.stats.totalAmountPaid || 1)) * 100).toFixed(1)
+      }))
+    : [];
+
+  // **ADDED: Specialty Revenue Breakdown Chart**
+  const specialtyRevenueData = dashboardData?.stats?.specialtyBreakdown
+    ? Object.entries(dashboardData.stats.specialtyBreakdown)
+        .sort((a, b) => b[1].revenue - a[1].revenue)
+        .slice(0, 6) // Top 6 specialties
+        .map(([specialty, data]) => ({
+          name: specialty.length > 15 ? specialty.substring(0, 15) + '...' : specialty,
+          fullName: specialty,
+          revenue: data.revenue,
+          count: data.count,
+          average: (data.revenue / data.count).toFixed(0)
+        }))
+    : [];
 
   return (
     <AdminLayout admin={admin} title="Financial Dashboard">
@@ -495,7 +660,7 @@ const FinancialDashboard = () => {
 
         {dashboardData && (
           <>
-            {/* Stats Grid with Real Data from Appointments */}
+            {/* **UPDATED: Enhanced Stats Grid with additional metrics** */}
             <div className="fd-stats-grid">
               <div className="fd-stat-card fd-today-revenue" onClick={() => scrollToFinancialChart("fd-todays-revenue-chart")}>
                 <div className="fd-stat-info">
@@ -531,74 +696,298 @@ const FinancialDashboard = () => {
                   <small>Target: ${dashboardData.stats?.monthlyTarget?.toLocaleString() || 0}</small>
                 </div>
               </div>
+
+              {/* **ADDED: New additional stat cards** */}
+              <div className="fd-stat-card fd-unique-patients">
+                <div className="fd-stat-info">
+                  <h3>{dashboardData.stats?.uniquePatients || 0}</h3>
+                  <p>Unique Patients</p>
+                  <small>Active patient base</small>
+                </div>
+              </div>
+
+              <div className="fd-stat-card fd-average-payment">
+                <div className="fd-stat-info">
+                  <h3>${dashboardData.stats?.averagePayment?.toLocaleString() || 0}</h3>
+                  <p>Average Payment</p>
+                  <small>Per successful appointment</small>
+                </div>
+              </div>
             </div>
 
-            {/* Charts Section - Charts will now show real data */}
+            {/* Enhanced Charts Section - Modern Design */}
             <div className="fd-charts-section">
-              <div id="fd-todays-revenue-chart" className="fd-revenue-pie-chart">
-                <h2>📊 Revenue vs Pending</h2>
+              {/* Enhanced Pie Chart with Modern Design */}
+              <div id="fd-todays-revenue-chart" className="fd-revenue-pie-chart modern-chart">
+                <h2>💰 Revenue Distribution</h2>
                 {pieData.length > 0 ? (
-                  <PieChart width={400} height={300}>
-                    <Pie data={pieData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label>
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={FINANCIAL_COLORS[index % FINANCIAL_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
-                    <Legend />
-                  </PieChart>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <PieChart>
+                      <defs>
+                        <linearGradient id="pieGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#10B981" />
+                          <stop offset="100%" stopColor="#059669" />
+                        </linearGradient>
+                        <linearGradient id="pieGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#F59E0B" />
+                          <stop offset="100%" stopColor="#D97706" />
+                        </linearGradient>
+                      </defs>
+                      <Pie 
+                        data={pieData} 
+                        cx="50%" 
+                        cy="50%" 
+                        labelLine={false}
+                        label={({name, percentage}) => `${name}: ${percentage}%`}
+                        outerRadius={120}
+                        innerRadius={40}
+                        dataKey="value"
+                        animationDuration={1000}
+                        animationBegin={0}
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={index === 0 ? "url(#pieGradient1)" : "url(#pieGradient2)"}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CustomPieTooltip />} />
+                      <Legend 
+                        verticalAlign="bottom" 
+                        height={36}
+                        formatter={(value, entry) => `${value} (${entry.payload.percentage}%)`}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
                 ) : (
                   <div className="no-data-message">No revenue data available</div>
                 )}
               </div>
 
-              <div id="fd-monthly-revenue-chart" className="fd-revenue-bar-chart">
-                <h2>📈 Revenue Timeline</h2>
-                <BarChart width={500} height={300} data={barData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                  <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']} />
-                  <Legend />
-                  <Bar dataKey="revenue" fill="#8884d8" />
-                </BarChart>
+              {/* Enhanced Bar Chart with Targets */}
+              <div id="fd-monthly-revenue-chart" className="fd-revenue-bar-chart modern-chart">
+                <h2>📊 Revenue vs Targets</h2>
+                <ResponsiveContainer width="100%" height={400}>
+                  <ComposedChart data={barData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="barGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#667eea" />
+                        <stop offset="100%" stopColor="#764ba2" />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: '#666' }}
+                    />
+                    <YAxis 
+                      tickFormatter={formatCurrency}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: '#666' }}
+                    />
+                    <Tooltip content={<CustomBarTooltip />} />
+                    <Legend />
+                    <Bar 
+                      dataKey="revenue" 
+                      fill="url(#barGradient)"
+                      radius={[4, 4, 0, 0]}
+                      name="Actual Revenue"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="target" 
+                      stroke="#EF4444" 
+                      strokeWidth={3}
+                      strokeDasharray="5 5"
+                      name="Target"
+                      dot={{ fill: '#EF4444', strokeWidth: 2, r: 4 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
               </div>
 
-              <div id="fd-pending-payments-chart" className="fd-revenue-line-chart">
-                <h2>📉 Revenue Trend</h2>
-                <LineChart width={500} height={300} data={lineData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="period" />
-                  <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                  <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Amount']} />
-                  <Legend />
-                  <Line type="monotone" dataKey="amount" stroke="#82ca9d" strokeWidth={3} />
-                </LineChart>
+              {/* Enhanced Area Chart with Forecast */}
+              <div id="fd-pending-payments-chart" className="fd-revenue-line-chart modern-chart">
+                <h2>📈 Revenue Trend & Forecast</h2>
+                <ResponsiveContainer width="100%" height={400}>
+                  <AreaChart data={lineData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#10B981" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="#10B981" stopOpacity={0.1} />
+                      </linearGradient>
+                      <linearGradient id="forecastGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.6} />
+                        <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="period" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: '#666' }}
+                    />
+                    <YAxis 
+                      tickFormatter={formatCurrency}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: '#666' }}
+                    />
+                    <Tooltip content={<CustomLineTooltip />} />
+                    <Legend />
+                    <Area 
+                      type="monotone" 
+                      dataKey="amount" 
+                      stroke="#10B981" 
+                      strokeWidth={3}
+                      fill="url(#areaGradient)"
+                      name="Actual Revenue"
+                      dot={{ fill: '#10B981', strokeWidth: 2, r: 5 }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="forecast" 
+                      stroke="#3B82F6" 
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      fill="url(#forecastGradient)"
+                      name="Forecasted"
+                      dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
 
-              <div id="fd-overdue-payments-chart" className="fd-collection-radial-chart">
-                <h2>🎯 Collection Rate</h2>
-                <RadialBarChart
-                  width={300}
-                  height={300}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius="80%"
-                  outerRadius="100%"
-                  barSize={20}
-                  data={radialData}
-                >
-                  <RadialBar
-                    minAngle={15}
-                    label={{ position: "insideStart", fill: "#fff" }}
-                    background
-                    clockWise
-                    dataKey="value"
-                  />
-                  <Legend iconSize={10} layout="vertical" verticalAlign="middle" />
-                  <Tooltip formatter={(value) => [`${value}%`, 'Collection Rate']} />
-                </RadialBarChart>
+              {/* Enhanced Radial Chart with Better Styling */}
+              <div id="fd-overdue-payments-chart" className="fd-collection-radial-chart modern-chart">
+                <h2>🎯 Collection Performance</h2>
+                <ResponsiveContainer width="100%" height={400}>
+                  <RadialBarChart
+                    cx="50%"
+                    cy="50%"
+                    innerRadius="60%"
+                    outerRadius="90%"
+                    barSize={30}
+                    data={radialData}
+                    startAngle={90}
+                    endAngle={-270}
+                  >
+                    <RadialBar
+                      minAngle={15}
+                      label={{
+                        position: "insideStart",
+                        fill: "#fff",
+                        fontSize: 16,
+                        fontWeight: 'bold'
+                      }}
+                      background={{ fill: "#f3f4f6" }}
+                      clockWise
+                      dataKey="value"
+                      cornerRadius={10}
+                    />
+                    <Legend 
+                      iconSize={12} 
+                      layout="vertical" 
+                      verticalAlign="bottom" 
+                      wrapperStyle={{ fontSize: '14px', fontWeight: '500' }}
+                    />
+                    <Tooltip content={<CustomRadialTooltip />} />
+                  </RadialBarChart>
+                </ResponsiveContainer>
               </div>
+
+              {/* **ADDED: New Specialty Revenue Chart** */}
+              {specialtyRevenueData.length > 0 && (
+                <div className="fd-specialty-revenue-chart modern-chart">
+                  <h2>🏥 Top Medical Specialties by Revenue</h2>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart data={specialtyRevenueData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <defs>
+                        <linearGradient id="specialtyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="#8B5CF6" />
+                          <stop offset="100%" stopColor="#EC4899" />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis 
+                        dataKey="name" 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 11, fill: '#666' }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis 
+                        tickFormatter={formatCurrency}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 12, fill: '#666' }}
+                      />
+                      <Tooltip 
+                        formatter={(value, name) => [`$${value.toLocaleString()}`, 'Revenue']}
+                        labelFormatter={(label, payload) => {
+                          const data = payload && payload[0] && payload[0].payload;
+                          return data ? `${data.fullName} (${data.count} appointments)` : label;
+                        }}
+                      />
+                      <Legend />
+                      <Bar 
+                        dataKey="revenue" 
+                        fill="url(#specialtyGradient)"
+                        radius={[4, 4, 0, 0]}
+                        name="Revenue by Specialty"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* New Payment Methods Chart */}
+              {paymentMethodsData.length > 0 && (
+                <div className="fd-payment-methods-chart modern-chart">
+                  <h2>💳 Payment Methods Distribution</h2>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <PieChart>
+                      <defs>
+                        {MODERN_FINANCIAL_COLORS.primary.map((color, index) => (
+                          <linearGradient key={index} id={`methodGradient${index}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor={color} />
+                            <stop offset="100%" stopColor={color + "CC"} />
+                          </linearGradient>
+                        ))}
+                      </defs>
+                      <Pie
+                        data={paymentMethodsData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({name, percentage}) => `${name}: ${percentage}%`}
+                        outerRadius={120}
+                        dataKey="value"
+                        animationDuration={1500}
+                      >
+                        {paymentMethodsData.map((entry, index) => (
+                          <Cell 
+                            key={`method-${index}`} 
+                            fill={`url(#methodGradient${index % MODERN_FINANCIAL_COLORS.primary.length})`}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value) => [`$${value.toLocaleString()}`, 'Amount']}
+                        labelFormatter={(label) => `Payment Method: ${label}`}
+                      />
+                      <Legend verticalAlign="bottom" height={36} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
 
             {/* Features Section */}
@@ -710,7 +1099,7 @@ const FinancialDashboard = () => {
                 <div className="fd-billing-content">
                   <h2>🧾 Recent Billing Information</h2>
                   {payments.length > 0 ? (
-                    payments.slice(0, 3).map((payment, index) => (
+                    payments.slice(0, 5).map((payment, index) => (
                       <div key={index} className="fd-bill-card">
                         <p><strong>Invoice #:</strong> {payment.invoiceNumber}</p>
                         <p><strong>Specialty:</strong> {payment.hospitalName}</p>
@@ -718,6 +1107,7 @@ const FinancialDashboard = () => {
                         <p><strong>Doctor:</strong> {payment.doctorName}</p>
                         <p><strong>Amount:</strong> ${(payment.totalAmount || 0).toLocaleString()}</p>
                         <p><strong>Paid:</strong> ${(payment.amountPaid || 0).toLocaleString()}</p>
+                        <p><strong>Transaction ID:</strong> {payment.transactionId}</p>
                         <p><strong>Status:</strong> 
                           {payment.amountPaid >= payment.totalAmount ? 
                             <span style={{color: 'green'}}> Paid ✅</span> : 

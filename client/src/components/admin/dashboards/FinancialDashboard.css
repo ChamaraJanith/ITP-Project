@@ -1,4 +1,3 @@
-
 .fd-container {
   padding: 2rem 0;
   max-width: 1400px;
@@ -76,7 +75,7 @@
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
 }
 
-/* Stats Grid */
+/* Stats Grid - Enhanced for 6 cards */
 .fd-stats-grid {
   background-color: transparent;
   color: black;
@@ -122,7 +121,7 @@
   width: 6px;
 }
 
-/* Individual Card Color Coding */
+/* Individual Card Color Coding - Updated with new cards */
 .fd-today-revenue::before {
   background: linear-gradient(135deg, #10B981 0%, #059669 100%);
 }
@@ -137,6 +136,15 @@
 
 .fd-monthly-target::before {
   background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+}
+
+/* **ADDED: New stat card color schemes** */
+.fd-unique-patients::before {
+  background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
+}
+
+.fd-average-payment::before {
+  background: linear-gradient(135deg, #EC4899 0%, #BE185D 100%);
 }
 
 .fd-stat-info {
@@ -170,13 +178,193 @@
   margin-top: 0.25rem;
 }
 
-/* Charts Section */
+/* Modern Charts Section - Enhanced */
 .fd-charts-section {
   display: block;
   width: 100%;
   margin: 4rem 0;
 }
 
+.modern-chart {
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  padding: 2.5rem;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  margin-bottom: 3rem;
+  width: 100%;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s ease;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-chart::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  border-radius: 24px 24px 0 0;
+}
+
+.fd-revenue-pie-chart::before {
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.fd-revenue-bar-chart::before {
+  background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+}
+
+.fd-revenue-line-chart::before {
+  background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.fd-collection-radial-chart::before {
+  background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+}
+
+/* **ADDED: New chart color schemes** */
+.fd-specialty-revenue-chart::before {
+  background: linear-gradient(90deg, #8B5CF6 0%, #EC4899 100%);
+}
+
+.fd-payment-methods-chart::before {
+  background: linear-gradient(90deg, #fa709a 0%, #fee140 100%);
+}
+
+.modern-chart h2 {
+  margin-bottom: 2rem;
+  font-size: 1.6rem;
+  color: #1f2937;
+  font-weight: 700;
+  text-align: center;
+  width: 100%;
+  position: relative;
+}
+
+.modern-chart h2::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 2px;
+}
+
+.modern-chart:hover {
+  transform: translateY(-12px);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+}
+
+/* **ADDED: Custom Modern Tooltips** */
+.modern-tooltip {
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  border: none;
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  font-family: 'Inter', sans-serif;
+  min-width: 200px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.tooltip-header {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tooltip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tooltip-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.tooltip-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.tooltip-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.tooltip-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-left: auto;
+}
+
+.tooltip-percentage,
+.tooltip-trend,
+.tooltip-growth,
+.tooltip-status {
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
+  text-align: center;
+  padding: 4px 8px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 8px;
+  margin-top: 4px;
+}
+
+.tooltip-status {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+  color: #059669;
+  font-weight: 600;
+}
+
+/* **ADDED: No Data Message Enhancement** */
+.no-data-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #9ca3af;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.no-data-message::before {
+  content: '📊';
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+/* Legacy chart classes - keeping for backwards compatibility */
 .fd-revenue-pie-chart,
 .fd-revenue-bar-chart,
 .fd-revenue-line-chart,
@@ -197,35 +385,6 @@
   transition: all 0.3s ease;
   border: 1px solid #f3f4f6;
   position: relative;
-}
-
-.fd-revenue-pie-chart::before,
-.fd-revenue-bar-chart::before,
-.fd-revenue-line-chart::before,
-.fd-collection-radial-chart::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  border-radius: 20px 20px 0 0;
-}
-
-.fd-revenue-pie-chart::before {
-  background: linear-gradient(90deg, #0088FE 0%, #00C49F 100%);
-}
-
-.fd-revenue-bar-chart::before {
-  background: linear-gradient(90deg, #00C49F 0%, #FFBB28 100%);
-}
-
-.fd-revenue-line-chart::before {
-  background: linear-gradient(90deg, #FFBB28 0%, #FF8042 100%);
-}
-
-.fd-collection-radial-chart::before {
-  background: linear-gradient(90deg, #FF8042 0%, #8B5CF6 100%);
 }
 
 .fd-revenue-pie-chart h2,
@@ -778,6 +937,28 @@
   100% { transform: rotate(360deg); }
 }
 
+/* Enhanced Chart Responsive Container */
+.recharts-responsive-container {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* Custom Recharts Styling */
+.recharts-cartesian-axis-tick-value {
+  fill: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.recharts-legend-item-text {
+  color: #374151 !important;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.recharts-default-legend {
+  padding-top: 10px;
+}
+
 /* Recharts Tooltip Styling */
 .recharts-tooltip-wrapper {
   font-size: 0.875rem;
@@ -819,6 +1000,11 @@ html {
   .fd-stat-info h3 {
     font-size: 2rem;
   }
+  
+  .modern-chart {
+    max-width: 100%;
+    padding: 2rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -852,13 +1038,11 @@ html {
     padding: 0;
   }
   
-  .fd-revenue-pie-chart,
-  .fd-revenue-bar-chart,
-  .fd-revenue-line-chart,
-  .fd-collection-radial-chart {
+  .modern-chart {
     max-width: 100%;
     padding: 1.5rem;
     margin-bottom: 2rem;
+    border-radius: 16px;
   }
   
   .fd-features-grid {
@@ -912,10 +1096,7 @@ html {
     font-size: 1.5rem;
   }
   
-  .fd-revenue-pie-chart,
-  .fd-revenue-bar-chart,
-  .fd-revenue-line-chart,
-  .fd-collection-radial-chart {
+  .modern-chart {
     padding: 1.25rem;
   }
   
