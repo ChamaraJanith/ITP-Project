@@ -225,230 +225,254 @@ const calculateAge = (dateOfBirth) => {
   return age;
 };
 
-// PROFESSIONAL: Standard Medical Prescription PDF generation
+// COMPACT: Optimized Medical Prescription PDF generation with minimal spacing
 const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNotes, doctor, date, signature, hospitalLogo) => {
   return new Promise((resolve, reject) => {
     try {
       const doc = new jsPDF({ unit: "mm", format: "a4" });
       const pageWidth = 210;
       const pageHeight = 297;
-      const margin = 15;
-      const usableWidth = pageWidth - margin * 2;
-      let y = 10;
-
-      // Clean white background
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-      // Professional Header with Medical Practice Information
-      // Top border in medical blue
-      doc.setFillColor(0, 51, 102); // Medical blue
-      doc.rect(0, 0, pageWidth, 3, 'F');
-
-      // Logo and Practice Information - Fixed logo handling
-      try {
-        if (hospitalLogo) {
-          // For imported images, we need to convert to data URL first
-          const img = new Image();
-          img.src = hospitalLogo;
-          
-          // Calculate appropriate logo size (30mm width, maintaining aspect ratio)
-          const logoWidth = 30;
-          const logoHeight = (img.height / img.width) * logoWidth;
-          
-          // Add logo to PDF
-          doc.addImage(hospitalLogo, 'PNG', margin, y, logoWidth, logoHeight);
-        }
-      } catch (e) {
-        console.error("Error adding logo to PDF:", e);
-        
-        // Fallback: Add text-based logo if image fails
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(20);
-        doc.setTextColor(0, 51, 102);
-        doc.text("HEAL X", margin, y + 10);
-        doc.setFontSize(12);
-        doc.text("Healthcare Center", margin, y + 18);
-      }
-
-      // Practice Name and Information - Adjusted position based on logo
-      const logoWidth = 30; // Same as above
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.setTextColor(0, 51, 102);
-      doc.text("HealX Healthcare Center", margin + logoWidth + 10, y + 8);
-      
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(60, 60, 60);
-      doc.text("123 Healthcare Avenue, Medical District, MD 12345", margin + logoWidth + 10, y + 14);
-      doc.text("Tel: (555) 123-4567 | Fax: (555) 123-4568", margin + logoWidth + 10, y + 18);
-      doc.text("Email: info@healxmedical.com | Web: www.healxmedical.com", margin + logoWidth + 10, y + 22);
-      
-      y += 28;
-
-      // Prescription Header with Rx Symbol
-      doc.setDrawColor(0, 51, 102);
-      doc.setLineWidth(0.5);
-      doc.line(margin, y, pageWidth - margin, y);
-      
-      // Rx Symbol in circle (standard medical prescription symbol)
-      doc.setFillColor(0, 51, 102);
-      doc.circle(margin + 8, y + 8, 6, 'FD');
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(255, 255, 255);
-      doc.text("Rx", margin + 8, y + 11, { align: 'center' });
-      
-      // Prescription Title
-      doc.setTextColor(0, 51, 102);
-      doc.setFontSize(18);
-      doc.text("PRESCRIPTION", margin + 20, y + 8);
-      
-      // Prescription Number and Date
-      const prescriptionId = `RX-${Date.now().toString(36).toUpperCase()}`;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
-      doc.text(`Prescription #: ${prescriptionId}`, pageWidth - margin - 5, y + 8, { align: 'right' });
-      
-      const now = new Date();
-      const dateStr = date || now.toISOString().slice(0, 10);
-      const formattedDate = new Date(dateStr).toLocaleDateString('en-US', {
+      const margin = 8; // Reduced from 12 to 8
+      const usableWidth = pageWidth - margin * 2; // 194mm (increased from 186mm)
+      const signatureSectionHeight = 50; // Reduced from 65 to 50
+      const footerHeight = 15; // Reduced from 25 to 15
+      let y = 5; // Reduced from 8 to 5
+      let currentPage = 1;
+      let prescriptionId = `RX-${Date.now().toString(36).toUpperCase()}`;
+      let patientName = `${selectedPatient.firstName || ""} ${selectedPatient.lastName || ""}`.trim();
+      let formattedDate = new Date(date || new Date().toISOString().slice(0, 10)).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       });
-      doc.text(`Date: ${formattedDate}`, pageWidth - margin - 5, y + 14, { align: 'right' });
-      
-      // Add generation time
-      const formattedTime = now.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
-      doc.text(`Generated: ${formattedTime}`, pageWidth - margin - 5, y + 20, { align: 'right' });
-      
-      y += 28; // Increased from 22 to 28 to accommodate the time line
 
-      // Patient Information Section
+      // Function to add page header
+      const addPageHeader = (pageNum, isContinuation = false) => {
+        // Clean white background
+        doc.setFillColor(255, 255, 255);
+        doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+        // Top border in medical blue
+        doc.setFillColor(0, 51, 102); // Medical blue
+        doc.rect(0, 0, pageWidth, 2, 'F');
+
+        if (isContinuation) {
+          // Simplified header for continuation pages
+          doc.setFillColor(240, 248, 255);
+          doc.rect(margin, y, usableWidth, 12, 'F'); // Reduced from 15 to 12
+          
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11); // Reduced from 12 to 11
+          doc.setTextColor(0, 51, 102);
+          doc.text("PRESCRIPTION (Continued)", margin + 3, y + 6); // Adjusted position
+          
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8); // Reduced from 9 to 8
+          doc.setTextColor(60, 60, 60);
+          doc.text(`Prescription #: ${prescriptionId}`, margin + 3, y + 10); // Adjusted position
+          doc.text(`Patient: ${patientName}`, margin + 70, y + 10); // Adjusted position
+          doc.text(`Date: ${formattedDate}`, pageWidth - margin - 5, y + 10, { align: 'right' }); // Adjusted position
+          doc.text(`Page ${pageNum}`, pageWidth - margin - 5, y + 14, { align: 'right' }); // Adjusted position
+          
+          y += 18; // Reduced from 22 to 18
+        } else {
+          // Full header for first page
+          // Logo and Practice Information
+          try {
+            if (hospitalLogo) {
+              // For imported images, we need to convert to data URL first
+              const img = new Image();
+              img.src = hospitalLogo;
+              
+              // Calculate appropriate logo size (20mm width, reduced from 25mm)
+              const logoWidth = 20;
+              const logoHeight = (img.height / img.width) * logoWidth;
+              
+              // Add logo to PDF
+              doc.addImage(hospitalLogo, 'PNG', margin, y + 2, logoWidth, logoHeight);
+            }
+          } catch (e) {
+            console.error("Error adding logo to PDF:", e);
+            
+            // Fallback: Add text-based logo if image fails
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16); // Reduced from 18 to 16
+            doc.setTextColor(0, 51, 102);
+            doc.text("HEAL X", margin, y + 8); // Adjusted position
+            doc.setFontSize(9); // Reduced from 10 to 9
+            doc.text("Healthcare Center", margin, y + 13); // Adjusted position
+          }
+
+          // Practice Name and Information
+          const logoWidth = 20; // Same as above
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(12); // Reduced from 14 to 12
+          doc.setTextColor(0, 51, 102);
+          doc.text("HealX Healthcare Center", margin + logoWidth + 6, y + 6); // Adjusted position
+          
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7); // Reduced from 8 to 7
+          doc.setTextColor(60, 60, 60);
+          doc.text("123 Healthcare Avenue, Medical District, MD 12345", margin + logoWidth + 6, y + 10); // Adjusted position
+          doc.text("Tel: (555) 123-4567 | Email: info@healxmedical.com", margin + logoWidth + 6, y + 14); // Adjusted position
+          
+          y += 20; // Reduced from 25 to 20
+
+          // Prescription Header with Rx Symbol
+          doc.setDrawColor(0, 51, 102);
+          doc.setLineWidth(0.5);
+          doc.line(margin, y, pageWidth - margin, y);
+          
+          // Rx Symbol in circle (standard medical prescription symbol)
+          doc.setFillColor(0, 51, 102);
+          doc.circle(margin + 6, y + 5, 4, 'FD'); // Reduced size and adjusted position
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(9); // Reduced from 10 to 9
+          doc.setTextColor(255, 255, 255);
+          doc.text("Rx", margin + 6, y + 7, { align: 'center' }); // Adjusted position
+          
+          // Prescription Title
+          doc.setTextColor(0, 51, 102);
+          doc.setFontSize(14); // Reduced from 16 to 14
+          doc.text("PRESCRIPTION", margin + 14, y + 7); // Adjusted position
+          
+          // Prescription Number and Date
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8); // Reduced from 9 to 8
+          doc.setTextColor(60, 60, 60);
+          doc.text(`Prescription #: ${prescriptionId}`, pageWidth - margin - 5, y + 5, { align: 'right' }); // Adjusted position
+          doc.text(`Date: ${formattedDate}`, pageWidth - margin - 5, y + 10, { align: 'right' }); // Adjusted position
+          
+          // Add page number
+          doc.text(`Page ${pageNum}`, pageWidth - margin - 5, y + 15, { align: 'right' }); // Adjusted position
+          
+          y += 20; // Reduced from 25 to 20
+        }
+
+        return y;
+      };
+
+      // Initialize first page
+      y = addPageHeader(currentPage, false);
+
+      // Patient Information Section - More compact layout
       doc.setDrawColor(0, 51, 102);
       doc.setLineWidth(0.3);
-      doc.rect(margin, y, usableWidth, 45); // Increased height from 40 to 45
+      doc.rect(margin, y, usableWidth, 22); // Reduced from 30 to 22
       
       // Patient Information Header
       doc.setFillColor(240, 248, 255);
-      doc.rect(margin, y, usableWidth, 8, 'F');
+      doc.rect(margin, y, usableWidth, 5, 'F'); // Reduced from 6 to 5
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
+      doc.setFontSize(9); // Reduced from 10 to 9
       doc.setTextColor(0, 51, 102);
-      doc.text("PATIENT INFORMATION", margin + 3, y + 5);
+      doc.text("PATIENT INFORMATION", margin + 3, y + 3.5); // Adjusted position
       
-      // Patient Details
+      // Patient Details - Two column layout
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
+      doc.setFontSize(8); // Reduced from 9 to 8
       doc.setTextColor(0, 0, 0);
       
-      const patientName = `${selectedPatient.firstName || ""} ${selectedPatient.lastName || ""}`.trim();
       const patientId = selectedPatient.patientId || selectedPatient._id || "N/A";
       const dob = selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : "N/A";
       const age = selectedPatient.dateOfBirth ? calculateAge(selectedPatient.dateOfBirth) : "N/A";
       
       // Left column
-      doc.text(`Name: ${patientName}`, margin + 3, y + 16);
-      doc.text(`ID: ${patientId}`, margin + 3, y + 22);
-      doc.text(`Gender: ${selectedPatient.gender || "N/A"}`, margin + 3, y + 28);
-      doc.text(`DOB: ${dob}`, margin + 3, y + 34);
-      doc.text(`Age: ${age} years`, margin + 3, y + 40);
+      doc.text(`Name: ${patientName}`, margin + 3, y + 9); // Adjusted position
+      doc.text(`ID: ${patientId}`, margin + 3, y + 13); // Adjusted position
+      doc.text(`DOB: ${dob} (${age} years)`, margin + 3, y + 17); // Adjusted position
+      doc.text(`Gender: ${selectedPatient.gender || "N/A"}`, margin + 3, y + 21); // Adjusted position
       
       // Right column
-      doc.text(`Phone: ${selectedPatient.phone || "N/A"}`, margin + 80, y + 16);
-      doc.text(`Email: ${selectedPatient.email || "N/A"}`, margin + 80, y + 22);
-      doc.text(`Blood Type: ${selectedPatient.bloodGroup || "N/A"}`, margin + 80, y + 28);
+      doc.text(`Phone: ${selectedPatient.phone || "N/A"}`, margin + 90, y + 9); // Adjusted position
+      doc.text(`Email: ${selectedPatient.email || "N/A"}`, margin + 90, y + 13); // Adjusted position
+      doc.text(`Blood Type: ${selectedPatient.bloodGroup || "N/A"}`, margin + 90, y + 17); // Adjusted position
       
-      // Allergies warning if present - moved to right column
+      // Allergies warning if present
       if (selectedPatient.allergies && selectedPatient.allergies.length > 0) {
         doc.setTextColor(200, 0, 0);
         doc.setFont("helvetica", "bold");
         const allergiesText = `ALLERGIES: ${selectedPatient.allergies.join(", ")}`;
-        const splitText = doc.splitTextToSize(allergiesText, usableWidth - 85);
-        doc.text(splitText, margin + 80, y + 34);
+        const splitText = doc.splitTextToSize(allergiesText, usableWidth - 95);
+        doc.text(splitText, margin + 90, y + 21); // Adjusted position
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "normal");
       }
       
-      y += 50; // Increased from 55 to 50 to accommodate the increased height
+      y += 25; // Reduced from 35 to 25
 
-      // Prescribing Physician Information
+      // Prescribing Physician Information - More compact
       doc.setDrawColor(0, 51, 102);
-      doc.rect(margin, y, usableWidth, 25);
+      doc.rect(margin, y, usableWidth, 15); // Reduced from 20 to 15
       
       // Physician Header
       doc.setFillColor(240, 248, 255);
-      doc.rect(margin, y, usableWidth, 8, 'F');
+      doc.rect(margin, y, usableWidth, 5, 'F'); // Reduced from 6 to 5
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
+      doc.setFontSize(9); // Reduced from 10 to 9
       doc.setTextColor(0, 51, 102);
-      doc.text("PRESCRIBING PHYSICIAN", margin + 3, y + 5);
+      doc.text("PRESCRIBING PHYSICIAN", margin + 3, y + 3.5); // Adjusted position
       
       // Physician Details
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
+      doc.setFontSize(8); // Reduced from 9 to 8
       doc.setTextColor(0, 0, 0);
-      doc.text(`Name: ${doctor?.name || "N/A"}`, margin + 3, y + 16);
-      doc.text(`Specialization: ${doctor?.specialization || "N/A"}`, margin + 3, y + 22);
+      doc.text(`Name: ${doctor?.name || "N/A"}`, margin + 3, y + 9); // Adjusted position
+      doc.text(`Specialization: ${doctor?.specialization || "N/A"}`, margin + 3, y + 13); // Adjusted position
       
       // Standard medical credentials
-      doc.text(`License: MD-12345 | DEA: AB1234567 | NPI: 1234567890`, margin + 80, y + 16);
-      doc.text(`Phone: (555) 987-6543`, margin + 80, y + 22);
+      doc.text(`License: MD-12345 | DEA: AB1234567`, margin + 90, y + 9); // Adjusted position
+      doc.text(`Phone: (555) 987-6543`, margin + 90, y + 13); // Adjusted position
       
-      y += 30;
+      y += 18; // Reduced from 25 to 18
 
-      // Diagnosis Section
+      // Diagnosis Section - More compact
       doc.setDrawColor(0, 51, 102);
-      doc.rect(margin, y, usableWidth, 25);
+      doc.rect(margin, y, usableWidth, 18); // Reduced from 25 to 18
       
       // Diagnosis Header
       doc.setFillColor(240, 248, 255);
-      doc.rect(margin, y, usableWidth, 8, 'F');
+      doc.rect(margin, y, usableWidth, 5, 'F'); // Reduced from 6 to 5
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
+      doc.setFontSize(9); // Reduced from 10 to 9
       doc.setTextColor(0, 51, 102);
-      doc.text("DIAGNOSIS / CLINICAL INDICATIONS", margin + 3, y + 5);
+      doc.text("DIAGNOSIS", margin + 3, y + 3.5); // Adjusted position
       
       // Diagnosis Details
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
+      doc.setFontSize(8); // Reduced from 9 to 8
       doc.setTextColor(0, 0, 0);
       
       const diagLines = doc.splitTextToSize(diagnosis || "N/A", usableWidth - 6);
-      let diagY = y + 16;
+      let diagY = y + 9; // Adjusted position
       diagLines.forEach(line => {
         doc.text(line, margin + 3, diagY);
-        diagY += 5;
+        diagY += 3.5; // Reduced from 4 to 3.5
       });
       
-      y += 30;
+      // Adjust y based on actual diagnosis height
+      const actualDiagHeight = 5 + diagLines.length * 3.5 + 5; // Reduced spacing
+      y += actualDiagHeight;
 
-      // Medications Section
+      // Medications Section - More compact table
       doc.setDrawColor(0, 51, 102);
-      doc.rect(margin, y, usableWidth, 15);
+      doc.rect(margin, y, usableWidth, 8); // Reduced from 12 to 8
       
       // Medications Header
       doc.setFillColor(240, 248, 255);
-      doc.rect(margin, y, usableWidth, 8, 'F');
+      doc.rect(margin, y, usableWidth, 5, 'F'); // Reduced from 6 to 5
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
+      doc.setFontSize(9); // Reduced from 10 to 9
       doc.setTextColor(0, 51, 102);
-      doc.text("MEDICATION ORDERS", margin + 3, y + 5);
+      doc.text("MEDICATION ORDERS", margin + 3, y + 3.5); // Adjusted position
       
-      y += 12;
+      y += 7; // Reduced from 10 to 7
 
-      // Table Headers
-      doc.setFontSize(9);
-      const colWidths = [8, 35, 20, 30, 25, 40, 27];
-      const headers = ["#", "Medication", "Strength", "Dosage", "Frequency", "Duration", "Instructions"];
-      const headerHeight = 7;
+      // Table Headers - Adjusted for more compact layout
+      doc.setFontSize(7); // Reduced from 8 to 7
+      const colWidths = [5, 55, 28, 28, 18, 60]; // Adjusted to use more space (total: 194mm)
+      const headers = ["#", "Medication", "Dosage", "Frequency", "Duration", "Instructions"];
+      const headerHeight = 5; // Reduced from 6 to 5
       
       // Draw header background
       doc.setFillColor(0, 51, 102);
@@ -462,7 +486,7 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
       doc.setFont("helvetica", "bold");
       for (let i = 0; i < headers.length; i++) {
         doc.rect(x, y, colWidths[i], headerHeight);
-        doc.text(headers[i], x + 1, y + 4.5);
+        doc.text(headers[i], x + 1, y + 3.5); // Adjusted position
         x += colWidths[i];
       }
       y += headerHeight;
@@ -471,53 +495,67 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0, 0, 0);
       const rowPadding = 1;
-      (medicines || []).forEach((med, idx) => {
-        const rowTexts = [
-          [(idx + 1).toString()],
-          doc.splitTextToSize(med.name || "", colWidths[1] - rowPadding),
-          [med.dosage?.match(/[0-9]+(\.[0-9]+)?\s*(mg|g|ml|l|tablet|tablets|capsule|capsules|drop|drops|tsp|tbsp|unit|units)?/i)?.[0] || ""],
-          doc.splitTextToSize(med.dosage || "", colWidths[3] - rowPadding),
-          doc.splitTextToSize(med.frequency || "", colWidths[4] - rowPadding),
-          doc.splitTextToSize(med.duration || "", colWidths[5] - rowPadding),
-          doc.splitTextToSize(med.notes || "Take as directed", colWidths[6] - rowPadding),
-        ];
-
-        const maxLines = Math.max(...rowTexts.map(c => c.length));
-        const lineHeight = 4;
-        const rowHeight = Math.max(7, maxLines * lineHeight + 3);
-
-        // Check if we need a new page
-        if (y + rowHeight > 260) {
+      
+      // Calculate maximum Y position before signature section
+      const getMaxYPosition = () => {
+        return pageHeight - signatureSectionHeight - footerHeight - 5; // Reduced margin
+      };
+      
+      // Function to check if we need a new page and add it if needed
+      const checkAndAddNewPage = (requiredHeight) => {
+        const maxYPosition = getMaxYPosition();
+        if (y + requiredHeight > maxYPosition) {
           doc.addPage();
-          y = 15;
+          currentPage++;
+          y = addPageHeader(currentPage, true); // Pass true to indicate this is a continuation page
           
-          // Redraw header on new page
+          // Redraw table header on new page
           doc.setFillColor(240, 248, 255);
-          doc.rect(margin, y, usableWidth, 15, 'FD');
+          doc.rect(margin, y, usableWidth, 8, 'FD'); // Reduced from 12 to 8
           
           doc.setFont("helvetica", "bold");
-          doc.setFontSize(11);
+          doc.setFontSize(9); // Reduced from 10 to 9
           doc.setTextColor(0, 51, 102);
-          doc.text("MEDICATION ORDERS (Continued)", margin + 3, y + 5);
+          doc.text("MEDICATION ORDERS (Continued)", margin + 3, y + 3.5); // Adjusted position
           
-          y += 12;
+          y += 7; // Reduced from 10 to 7
           
           // Redraw table header
           doc.setFillColor(0, 51, 102);
           doc.rect(margin, y, usableWidth, headerHeight, "F");
           x = margin;
-          doc.setFontSize(9);
+          doc.setFontSize(7); // Reduced from 8 to 7
           doc.setFont("helvetica", "bold");
           doc.setTextColor(255, 255, 255);
           for (let i = 0; i < headers.length; i++) {
             doc.rect(x, y, colWidths[i], headerHeight);
-            doc.text(headers[i], x + 1, y + 4.5);
+            doc.text(headers[i], x + 1, y + 3.5); // Adjusted position
             x += colWidths[i];
           }
           y += headerHeight;
           doc.setFont("helvetica", "normal");
           doc.setTextColor(0, 0, 0);
+          return true;
         }
+        return false;
+      };
+      
+      (medicines || []).forEach((med, idx) => {
+        const rowTexts = [
+          [(idx + 1).toString()],
+          doc.splitTextToSize(med.name || "", colWidths[1] - rowPadding),
+          doc.splitTextToSize(med.dosage || "", colWidths[2] - rowPadding),
+          doc.splitTextToSize(med.frequency || "", colWidths[3] - rowPadding),
+          doc.splitTextToSize(med.duration || "", colWidths[4] - rowPadding),
+          doc.splitTextToSize(med.notes || "Take as directed", colWidths[5] - rowPadding),
+        ];
+
+        const maxLines = Math.max(...rowTexts.map(c => c.length));
+        const lineHeight = 3; // Reduced from 3.5 to 3
+        const rowHeight = Math.max(5, maxLines * lineHeight + 2); // Reduced minimum height
+
+        // Check if we need a new page
+        checkAndAddNewPage(rowHeight);
 
         // Draw row borders with alternating background
         x = margin;
@@ -536,7 +574,7 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
         for (let c = 0; c < rowTexts.length; c++) {
           const lines = rowTexts[c];
           for (let li = 0; li < lines.length; li++) {
-            const textY = y + 3 + li * lineHeight;
+            const textY = y + 2 + li * lineHeight; // Adjusted position
             doc.text(String(lines[li] || ""), x + 1, textY);
           }
           x += colWidths[c];
@@ -545,66 +583,87 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
         y += rowHeight;
       });
 
-      y += 10;
+      y += 5; // Reduced from 8 to 5
 
-      // Additional Instructions
+      // Additional Instructions - More compact
       if (additionalNotes) {
+        // Calculate the height needed for the additional notes
+        const noteLines = doc.splitTextToSize(additionalNotes, usableWidth - 6);
+        const notesHeight = 5 + noteLines.length * 3.5 + 3; // Reduced spacing
+        
+        // Check if we need a new page
+        checkAndAddNewPage(notesHeight);
+        
         doc.setDrawColor(0, 51, 102);
-        doc.rect(margin, y, usableWidth, 25);
+        doc.rect(margin, y, usableWidth, notesHeight);
         
         // Instructions Header
         doc.setFillColor(240, 248, 255);
-        doc.rect(margin, y, usableWidth, 8, 'F');
+        doc.rect(margin, y, usableWidth, 5, 'F'); // Reduced from 6 to 5
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(11);
+        doc.setFontSize(9); // Reduced from 10 to 9
         doc.setTextColor(0, 51, 102);
-        doc.text("ADDITIONAL INSTRUCTIONS", margin + 3, y + 5);
+        doc.text("ADDITIONAL INSTRUCTIONS", margin + 3, y + 3.5); // Adjusted position
         
         // Instructions Details
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
+        doc.setFontSize(8); // Reduced from 9 to 8
         doc.setTextColor(0, 0, 0);
         
-        const noteLines = doc.splitTextToSize(additionalNotes, usableWidth - 6);
-        let noteY = y + 16;
+        let noteY = y + 9; // Adjusted position
         noteLines.forEach(line => {
           doc.text(line, margin + 3, noteY);
-          noteY += 5;
+          noteY += 3.5; // Reduced from 4 to 3.5
         });
         
-        y += 30;
+        y += notesHeight;
       }
 
-      // Signature and Authorization Section
+      // PHYSICIAN SIGNATURE & AUTHORIZATION - Always at the bottom
+      const signatureY = pageHeight - signatureSectionHeight - footerHeight;
+      
+      // Ensure we're on the correct page for signature
+      if (y > signatureY) {
+        doc.addPage();
+        currentPage++;
+        y = addPageHeader(currentPage, true); // Pass true to indicate this is a continuation page
+      }
+      
+      // Position signature section at fixed bottom position
+      y = signatureY;
+      
       doc.setDrawColor(0, 51, 102);
-      doc.rect(margin, y, usableWidth, 50);
+      doc.rect(margin, y, usableWidth, signatureSectionHeight);
       
       // Signature Header
       doc.setFillColor(240, 248, 255);
-      doc.rect(margin, y, usableWidth, 8, 'F');
+      doc.rect(margin, y, usableWidth, 5, 'F'); // Reduced from 6 to 5
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
+      doc.setFontSize(9); // Reduced from 10 to 9
       doc.setTextColor(0, 51, 102);
-      doc.text("PHYSICIAN SIGNATURE & AUTHORIZATION", margin + 3, y + 5);
+      doc.text("PHYSICIAN SIGNATURE & AUTHORIZATION", margin + 3, y + 3.5); // Adjusted position
       
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
+      doc.setFontSize(8); // Reduced from 9 to 8
       doc.setTextColor(0, 0, 0);
       
       // Signature line
       doc.setDrawColor(0, 51, 102);
       doc.setLineWidth(0.5);
-      doc.line(margin + 3, y + 25, margin + 50, y + 25);
+      doc.line(margin + 3, y + 20, margin + 45, y + 20); // Adjusted position
       
       // Physician information
-      doc.text(` ${doctor?.name || "N/A"}`, margin + 3, y + 32);
-      doc.text(`${doctor?.specialization || "N/A"}`, margin + 3, y + 37);
-      doc.text(`License: MD-12345`, margin + 3, y + 42);
+      doc.text(` ${doctor?.name || "N/A"}`, margin + 3, y + 25); // Adjusted position
+      doc.text(`${doctor?.specialization || "N/A"}`, margin + 3, y + 29); // Adjusted position
+      doc.text(`License: MD-12345`, margin + 3, y + 33); // Adjusted position
+      doc.text(`DEA: AB1234567`, margin + 3, y + 37); // Adjusted position
+      doc.text(`NPI: 1234567890`, margin + 3, y + 41); // Adjusted position
+      doc.text(`Phone: (555) 987-6543`, margin + 3, y + 45); // Adjusted position
       
       // Add signature image if available
       if (signature) {
         try {
-          doc.addImage(signature, 'PNG', margin + 3, y + 12, 35, 12);
+          doc.addImage(signature, 'PNG', margin + 3, y + 7, 30, 12); // Adjusted size and position
         } catch (e) {
           console.error("Error adding signature to PDF:", e);
         }
@@ -612,28 +671,31 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
       
       // Date and Refill information
       const signatureDate = new Date().toLocaleDateString();
-      doc.text(`Date: ${signatureDate}`, margin + 60, y + 25);
-      doc.text("Refills: 0", margin + 60, y + 32);
-      doc.text("Substitution: Permitted", margin + 60, y + 37);
-      doc.text("DAW: ☐ Generic  ☐ Brand  ☐ Either", margin + 60, y + 42);
-      
-      y += 55;
+      doc.text(`Date: ${signatureDate}`, margin + 55, y + 20); // Adjusted position
+      doc.text("Refills: 0", margin + 55, y + 25); // Adjusted position
+      doc.text("Substitution: Permitted", margin + 55, y + 29); // Adjusted position
+      doc.text("DAW: ☐ Generic  ☐ Brand  ☐ Either", margin + 55, y + 33); // Adjusted position
+      doc.text("Pharmacy: Any", margin + 55, y + 37); // Adjusted position
+      doc.text("Valid until: 90 days from issue", margin + 55, y + 41); // Adjusted position
+      doc.text("Controlled Substance: No", margin + 55, y + 45); // Adjusted position
 
-      // Professional Footer
+      // Professional Footer - Always at the bottom of the page
+      const footerY = pageHeight - footerHeight;
+      
       doc.setDrawColor(0, 51, 102);
-      doc.rect(margin, y, usableWidth, 20);
+      doc.rect(margin, footerY, usableWidth, footerHeight - 3); // Reduced height
       
       doc.setFont("helvetica", "italic");
-      doc.setFontSize(8);
+      doc.setFontSize(6); // Reduced from 7 to 6
       doc.setTextColor(60, 60, 60);
       
       const disclaimer1 = "This prescription is valid only when signed by a licensed physician. Medications should be taken exactly as prescribed.";
       const disclaimer2 = "For medical emergencies, call 911 or visit the nearest emergency room. Keep all medications out of reach of children.";
       const contact = "Heal X Medical Center | (555) 123-4567 | www.healxmedical.com";
       
-      doc.text(disclaimer1, margin + 3, y + 6, { maxWidth: usableWidth - 6 });
-      doc.text(disclaimer2, margin + 3, y + 12, { maxWidth: usableWidth - 6 });
-      doc.text(contact, pageWidth / 2, y + 18, { align: 'center' });
+      doc.text(disclaimer1, margin + 3, footerY + 4, { maxWidth: usableWidth - 6 }); // Adjusted position
+      doc.text(disclaimer2, margin + 3, footerY + 8, { maxWidth: usableWidth - 6 }); // Adjusted position
+      doc.text(contact, pageWidth / 2, footerY + 12, { align: 'center' }); // Adjusted position
 
       // Professional border around the entire page
       doc.setDrawColor(0, 51, 102);
