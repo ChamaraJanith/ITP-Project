@@ -57,7 +57,7 @@ const FinancialDashboard = () => {
     initializeDashboard();
   }, []);
 
-  // **UPDATED: Use exact same fee calculation logic as FinancialManagePayments.jsx**
+  // Use exact same fee calculation logic as FinancialManagePayments.jsx
   const calculateConsultationFee = (specialtyRaw) => {
     const s = (specialtyRaw || "").toLowerCase();
     if (s.includes("cardio")) return 6000;
@@ -74,7 +74,7 @@ const FinancialDashboard = () => {
     return 5000;
   };
 
-  // Custom Tooltip Components for Modern Look
+  // **UPDATED: Custom Tooltips using real dashboard data**
   const CustomPieTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null;
     
@@ -100,35 +100,35 @@ const FinancialDashboard = () => {
     
     return (
       <div className="modern-tooltip">
-        <div className="tooltip-header">📈 {label} Revenue</div>
+        <div className="tooltip-header">📈 {label} Performance</div>
         <div className="tooltip-body">
           <div className="tooltip-item">
             <div className="tooltip-color" style={{ backgroundColor: payload[0].fill }}></div>
             <span className="tooltip-value">${payload[0].value.toLocaleString()}</span>
           </div>
           <div className="tooltip-trend">
-            {payload[0].value > 0 ? "🔥 Active Period" : "💤 No Activity"}
+            {payload[0].value > 0 ? "🔥 Active Revenue" : "💤 No Activity"}
           </div>
         </div>
       </div>
     );
   };
 
-  const CustomLineTooltip = ({ active, payload, label }) => {
+  const CustomAreaTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null;
     
     return (
       <div className="modern-tooltip">
-        <div className="tooltip-header">📊 {label} Trend</div>
+        <div className="tooltip-header">📊 {label} Analysis</div>
         <div className="tooltip-body">
-          <div className="tooltip-item">
-            <div className="tooltip-color" style={{ backgroundColor: payload[0].stroke }}></div>
-            <span className="tooltip-label">Amount:</span>
-            <span className="tooltip-value">${payload[0].value.toLocaleString()}</span>
-          </div>
-          <div className="tooltip-growth">
-            Growth pattern analysis
-          </div>
+          {payload.map((entry, index) => (
+            <div key={index} className="tooltip-item">
+              <div className="tooltip-color" style={{ backgroundColor: entry.color }}></div>
+              <span className="tooltip-label">{entry.name}:</span>
+              <span className="tooltip-value">${entry.value.toLocaleString()}</span>
+            </div>
+          ))}
+          <div className="tooltip-growth">Real-time financial data</div>
         </div>
       </div>
     );
@@ -140,7 +140,7 @@ const FinancialDashboard = () => {
     const rate = payload[0].value;
     const getPerformanceText = (rate) => {
       if (rate >= 90) return "🎯 Excellent Performance";
-      if (rate >= 80) return "✅ Good Performance";
+      if (rate >= 80) return "✅ Good Performance"; 
       if (rate >= 70) return "⚠️ Average Performance";
       return "🚨 Needs Improvement";
     };
@@ -168,9 +168,7 @@ const FinancialDashboard = () => {
     return `$${value.toLocaleString()}`;
   };
 
-  const formatPercentage = (value) => `${value}%`;
-
-  // **UPDATED: Enhanced fetch function with exact same logic as FinancialManagePayments.jsx**
+  // Enhanced fetch function with exact same logic as FinancialManagePayments.jsx
   const fetchPayments = async () => {
     try {
       const response = await fetch(API_URL);
@@ -180,12 +178,12 @@ const FinancialDashboard = () => {
       }
       
       const text = await response.text();
-
+      
       try {
         const data = JSON.parse(text);
         console.log("Fetched appointments:", data);
         
-        // **UPDATED: Use exact same data parsing logic**
+        // Use exact same data parsing logic
         let appointmentsData = [];
         if (Array.isArray(data)) {
           appointmentsData = data;
@@ -202,7 +200,7 @@ const FinancialDashboard = () => {
           apt && apt.status === 'accepted'
         );
         
-        // **UPDATED: Use exact same transformation logic**
+        // Use exact same transformation logic
         const paymentsData = acceptedAppointments.map((apt, index) => {
           const consultationFee = calculateConsultationFee(apt.doctorSpecialty);
           
@@ -219,7 +217,6 @@ const FinancialDashboard = () => {
           );
 
           return {
-            // Keep payment structure for compatibility
             _id: apt._id || `temp-${index}`,
             invoiceNumber: `INV-${apt._id?.slice(-6) || Math.random().toString(36).substr(2, 6)}`,
             patientName: apt.name || 'Unknown Patient',
@@ -229,16 +226,12 @@ const FinancialDashboard = () => {
             amountPaid: consultationFee, // Accepted = Fully Paid
             paymentMethod: apt.paymentMethod || ['Credit Card', 'Cash', 'Insurance', 'Bank Transfer'][index % 4],
             date: apt.acceptedAt || apt.updatedAt || new Date().toISOString(),
-            
-            // Additional appointment data
             appointmentDate: apt.appointmentDate,
             appointmentTime: apt.appointmentTime,
             specialty: apt.doctorSpecialty,
             patientEmail: apt.email,
             patientPhone: apt.phone,
             age: age,
-            
-            // Payment tracking fields
             transactionId: apt.transactionId || `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`,
             paymentDate: apt.paymentDate || apt.acceptedAt || new Date().toISOString(),
             paymentStatus: "paid",
@@ -260,7 +253,7 @@ const FinancialDashboard = () => {
     }
   };
 
-  // **UPDATED: Enhanced statistics calculation with more detailed breakdowns**
+  // Enhanced statistics calculation with more detailed breakdowns
   const calculateRealTimeStats = (paymentsData) => {
     if (!paymentsData || paymentsData.length === 0) {
       return {
@@ -351,7 +344,7 @@ const FinancialDashboard = () => {
       hospitalBreakdown[hospital].count += 1;
     });
 
-    // **ADDED: Enhanced analytics**
+    // Enhanced analytics
     const specialtyBreakdown = {};
     paymentsData.forEach(payment => {
       const specialty = payment.specialty || payment.hospitalName || 'General Medicine';
@@ -386,7 +379,7 @@ const FinancialDashboard = () => {
     };
   };
 
-  // **UPDATED: Enhanced recent activities with more detailed information**
+  // Enhanced recent activities with more detailed information
   const generateRecentActivities = (paymentsData) => {
     if (!paymentsData || paymentsData.length === 0) {
       return ["📊 No recent activities to display", "🔄 Refresh data to see updates"];
@@ -453,7 +446,6 @@ const FinancialDashboard = () => {
       console.error("❌ Error loading financial dashboard:", error);
       setError(`Failed to load financial dashboard: ${error.message}`);
       
-      // Set empty data to prevent crashes
       setDashboardData({
         stats: calculateRealTimeStats([]),
         recentActivities: ["❌ Error loading data", "🔄 Please refresh to try again"]
@@ -576,7 +568,7 @@ const FinancialDashboard = () => {
     );
   }
 
-  // Enhanced Chart Data with real values from appointments
+  // **UPDATED: Charts using ONLY real-time data from fd-stats-grid**
   const pieData = dashboardData?.stats
     ? [
         { 
@@ -592,19 +584,22 @@ const FinancialDashboard = () => {
       ].filter(item => item.value > 0)
     : [];
 
-  const barData = dashboardData?.stats
+  // **UPDATED: Stats Grid Data Chart - Shows the 6 stat card values**
+  const statsGridData = dashboardData?.stats
     ? [
-        { name: "Today", revenue: dashboardData.stats.todayRevenue || 0, target: 5000 },
-        { name: "This Week", revenue: dashboardData.stats.weekRevenue || 0, target: 25000 },
-        { name: "This Month", revenue: dashboardData.stats.monthRevenue || 0, target: dashboardData.stats.monthlyTarget || 125000 },
-      ]
+        { name: "Today's Revenue", value: dashboardData.stats.todayRevenue || 0, color: "#10B981" },
+        { name: "Pending Payments", value: dashboardData.stats.pendingPayments || 0, color: "#F59E0B" },
+        { name: "Month Revenue", value: dashboardData.stats.monthRevenue || 0, color: "#8B5CF6" },
+        { name: "Unique Patients", value: dashboardData.stats.uniquePatients || 0, color: "#06B6D4" },
+        { name: "Average Payment", value: Math.round(dashboardData.stats.averagePayment || 0), color: "#EC4899" },
+      ].filter(item => item.value > 0)
     : [];
 
-  const lineData = dashboardData?.stats
+  const timeBasedRevenueData = dashboardData?.stats
     ? [
-        { period: "Today", amount: dashboardData.stats.todayRevenue || 0, forecast: (dashboardData.stats.todayRevenue || 0) * 1.1 },
-        { period: "This Week", amount: dashboardData.stats.weekRevenue || 0, forecast: (dashboardData.stats.weekRevenue || 0) * 1.05 },
-        { period: "This Month", amount: dashboardData.stats.monthRevenue || 0, forecast: (dashboardData.stats.monthRevenue || 0) * 1.02 },
+        { period: "Today", amount: dashboardData.stats.todayRevenue || 0, target: 5000 },
+        { period: "This Week", amount: dashboardData.stats.weekRevenue || 0, target: 25000 },
+        { period: "This Month", amount: dashboardData.stats.monthRevenue || 0, target: dashboardData.stats.monthlyTarget || 125000 },
       ]
     : [];
 
@@ -618,20 +613,11 @@ const FinancialDashboard = () => {
     },
   ];
 
-  // Additional Chart: Payment Methods Breakdown
-  const paymentMethodsData = dashboardData?.stats?.paymentMethods 
-    ? Object.entries(dashboardData.stats.paymentMethods).map(([method, amount]) => ({
-        name: method,
-        value: amount,
-        percentage: ((amount / (dashboardData.stats.totalAmountPaid || 1)) * 100).toFixed(1)
-      }))
-    : [];
-
-  // **ADDED: Specialty Revenue Breakdown Chart**
+  // **NEW: Top Medical Specialties Chart (Real-time data)**
   const specialtyRevenueData = dashboardData?.stats?.specialtyBreakdown
     ? Object.entries(dashboardData.stats.specialtyBreakdown)
         .sort((a, b) => b[1].revenue - a[1].revenue)
-        .slice(0, 6) // Top 6 specialties
+        .slice(0, 5) // Top 5 specialties
         .map(([specialty, data]) => ({
           name: specialty.length > 15 ? specialty.substring(0, 15) + '...' : specialty,
           fullName: specialty,
@@ -660,7 +646,7 @@ const FinancialDashboard = () => {
 
         {dashboardData && (
           <>
-            {/* **UPDATED: Enhanced Stats Grid with additional metrics** */}
+            {/* Stats Grid with Real Data from Appointments */}
             <div className="fd-stats-grid">
               <div className="fd-stat-card fd-today-revenue" onClick={() => scrollToFinancialChart("fd-todays-revenue-chart")}>
                 <div className="fd-stat-info">
@@ -697,7 +683,6 @@ const FinancialDashboard = () => {
                 </div>
               </div>
 
-              {/* **ADDED: New additional stat cards** */}
               <div className="fd-stat-card fd-unique-patients">
                 <div className="fd-stat-info">
                   <h3>{dashboardData.stats?.uniquePatients || 0}</h3>
@@ -715,213 +700,121 @@ const FinancialDashboard = () => {
               </div>
             </div>
 
-            {/* Enhanced Charts Section - Modern Design */}
+            {/* **UPDATED: Charts Section - UNIFORM SIZING** */}
             <div className="fd-charts-section">
-              {/* Enhanced Pie Chart with Modern Design */}
+              {/* Chart 1: Revenue vs Pending (from stats grid) */}
               <div id="fd-todays-revenue-chart" className="fd-revenue-pie-chart modern-chart">
                 <h2>💰 Revenue Distribution</h2>
                 {pieData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={400}>
-                    <PieChart>
-                      <defs>
-                        <linearGradient id="pieGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#10B981" />
-                          <stop offset="100%" stopColor="#059669" />
-                        </linearGradient>
-                        <linearGradient id="pieGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#F59E0B" />
-                          <stop offset="100%" stopColor="#D97706" />
-                        </linearGradient>
-                      </defs>
-                      <Pie 
-                        data={pieData} 
-                        cx="50%" 
-                        cy="50%" 
-                        labelLine={false}
-                        label={({name, percentage}) => `${name}: ${percentage}%`}
-                        outerRadius={120}
-                        innerRadius={40}
-                        dataKey="value"
-                        animationDuration={1000}
-                        animationBegin={0}
-                      >
-                        {pieData.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={index === 0 ? "url(#pieGradient1)" : "url(#pieGradient2)"}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomPieTooltip />} />
-                      <Legend 
-                        verticalAlign="bottom" 
-                        height={36}
-                        formatter={(value, entry) => `${value} (${entry.payload.percentage}%)`}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <div className="uniform-chart-container">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <defs>
+                          <linearGradient id="pieGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#10B981" />
+                            <stop offset="100%" stopColor="#059669" />
+                          </linearGradient>
+                          <linearGradient id="pieGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#F59E0B" />
+                            <stop offset="100%" stopColor="#D97706" />
+                          </linearGradient>
+                        </defs>
+                        <Pie 
+                          data={pieData} 
+                          cx="50%" 
+                          cy="50%" 
+                          labelLine={false}
+                          label={({name, percentage}) => `${name}: ${percentage}%`}
+                          outerRadius={120}
+                          innerRadius={40}
+                          dataKey="value"
+                          animationDuration={1000}
+                          animationBegin={0}
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={index === 0 ? "url(#pieGradient1)" : "url(#pieGradient2)"}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CustomPieTooltip />} />
+                        <Legend 
+                          verticalAlign="bottom" 
+                          height={36}
+                          formatter={(value, entry) => `${value} (${entry.payload.percentage}%)`}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 ) : (
                   <div className="no-data-message">No revenue data available</div>
                 )}
               </div>
 
-              {/* Enhanced Bar Chart with Targets */}
+              {/* Chart 2: Stats Grid Overview (Shows all 6 stat values) */}
+              <div id="fd-stats-overview-chart" className="fd-stats-overview-chart modern-chart">
+                <h2>📊 Dashboard Stats Overview</h2>
+                {statsGridData.length > 0 ? (
+                  <div className="uniform-chart-container">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={statsGridData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <defs>
+                          <linearGradient id="statsGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#667eea" />
+                            <stop offset="100%" stopColor="#764ba2" />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis 
+                          dataKey="name" 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 11, fill: '#666' }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis 
+                          tickFormatter={formatCurrency}
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 12, fill: '#666' }}
+                        />
+                        <Tooltip content={<CustomBarTooltip />} />
+                        <Legend />
+                        <Bar 
+                          dataKey="value" 
+                          fill="url(#statsGradient)"
+                          radius={[4, 4, 0, 0]}
+                          name="Real-Time Values"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="no-data-message">No stats data available</div>
+                )}
+              </div>
+
+              {/* Chart 3: Time-Based Revenue Performance */}
               <div id="fd-monthly-revenue-chart" className="fd-revenue-bar-chart modern-chart">
-                <h2>📊 Revenue vs Targets</h2>
-                <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={barData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <defs>
-                      <linearGradient id="barGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#667eea" />
-                        <stop offset="100%" stopColor="#764ba2" />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="name" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#666' }}
-                    />
-                    <YAxis 
-                      tickFormatter={formatCurrency}
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#666' }}
-                    />
-                    <Tooltip content={<CustomBarTooltip />} />
-                    <Legend />
-                    <Bar 
-                      dataKey="revenue" 
-                      fill="url(#barGradient)"
-                      radius={[4, 4, 0, 0]}
-                      name="Actual Revenue"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="target" 
-                      stroke="#EF4444" 
-                      strokeWidth={3}
-                      strokeDasharray="5 5"
-                      name="Target"
-                      dot={{ fill: '#EF4444', strokeWidth: 2, r: 4 }}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Enhanced Area Chart with Forecast */}
-              <div id="fd-pending-payments-chart" className="fd-revenue-line-chart modern-chart">
-                <h2>📈 Revenue Trend & Forecast</h2>
-                <ResponsiveContainer width="100%" height={400}>
-                  <AreaChart data={lineData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <defs>
-                      <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#10B981" stopOpacity={0.8} />
-                        <stop offset="100%" stopColor="#10B981" stopOpacity={0.1} />
-                      </linearGradient>
-                      <linearGradient id="forecastGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.6} />
-                        <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.1} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="period" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#666' }}
-                    />
-                    <YAxis 
-                      tickFormatter={formatCurrency}
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#666' }}
-                    />
-                    <Tooltip content={<CustomLineTooltip />} />
-                    <Legend />
-                    <Area 
-                      type="monotone" 
-                      dataKey="amount" 
-                      stroke="#10B981" 
-                      strokeWidth={3}
-                      fill="url(#areaGradient)"
-                      name="Actual Revenue"
-                      dot={{ fill: '#10B981', strokeWidth: 2, r: 5 }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="forecast" 
-                      stroke="#3B82F6" 
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      fill="url(#forecastGradient)"
-                      name="Forecasted"
-                      dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Enhanced Radial Chart with Better Styling */}
-              <div id="fd-overdue-payments-chart" className="fd-collection-radial-chart modern-chart">
-                <h2>🎯 Collection Performance</h2>
-                <ResponsiveContainer width="100%" height={400}>
-                  <RadialBarChart
-                    cx="50%"
-                    cy="50%"
-                    innerRadius="60%"
-                    outerRadius="90%"
-                    barSize={30}
-                    data={radialData}
-                    startAngle={90}
-                    endAngle={-270}
-                  >
-                    <RadialBar
-                      minAngle={15}
-                      label={{
-                        position: "insideStart",
-                        fill: "#fff",
-                        fontSize: 16,
-                        fontWeight: 'bold'
-                      }}
-                      background={{ fill: "#f3f4f6" }}
-                      clockWise
-                      dataKey="value"
-                      cornerRadius={10}
-                    />
-                    <Legend 
-                      iconSize={12} 
-                      layout="vertical" 
-                      verticalAlign="bottom" 
-                      wrapperStyle={{ fontSize: '14px', fontWeight: '500' }}
-                    />
-                    <Tooltip content={<CustomRadialTooltip />} />
-                  </RadialBarChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* **ADDED: New Specialty Revenue Chart** */}
-              {specialtyRevenueData.length > 0 && (
-                <div className="fd-specialty-revenue-chart modern-chart">
-                  <h2>🏥 Top Medical Specialties by Revenue</h2>
-                  <ResponsiveContainer width="100%" height={400}>
-                    <BarChart data={specialtyRevenueData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <h2>📈 Time-Based Revenue Performance</h2>
+                <div className="uniform-chart-container">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={timeBasedRevenueData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                       <defs>
-                        <linearGradient id="specialtyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="#8B5CF6" />
-                          <stop offset="100%" stopColor="#EC4899" />
+                        <linearGradient id="timeBarGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="#10B981" />
+                          <stop offset="100%" stopColor="#059669" />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                       <XAxis 
-                        dataKey="name" 
+                        dataKey="period" 
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fontSize: 11, fill: '#666' }}
-                        angle={-45}
-                        textAnchor="end"
-                        height={80}
+                        tick={{ fontSize: 12, fill: '#666' }}
                       />
                       <YAxis 
                         tickFormatter={formatCurrency}
@@ -929,63 +822,114 @@ const FinancialDashboard = () => {
                         tickLine={false}
                         tick={{ fontSize: 12, fill: '#666' }}
                       />
-                      <Tooltip 
-                        formatter={(value, name) => [`$${value.toLocaleString()}`, 'Revenue']}
-                        labelFormatter={(label, payload) => {
-                          const data = payload && payload[0] && payload[0].payload;
-                          return data ? `${data.fullName} (${data.count} appointments)` : label;
-                        }}
-                      />
+                      <Tooltip content={<CustomBarTooltip />} />
                       <Legend />
                       <Bar 
-                        dataKey="revenue" 
-                        fill="url(#specialtyGradient)"
+                        dataKey="amount" 
+                        fill="url(#timeBarGradient)"
                         radius={[4, 4, 0, 0]}
-                        name="Revenue by Specialty"
+                        name="Actual Revenue"
                       />
-                    </BarChart>
+                      <Line 
+                        type="monotone" 
+                        dataKey="target" 
+                        stroke="#EF4444" 
+                        strokeWidth={3}
+                        strokeDasharray="5 5"
+                        name="Target"
+                        dot={{ fill: '#EF4444', strokeWidth: 2, r: 4 }}
+                      />
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </div>
-              )}
+              </div>
 
-              {/* New Payment Methods Chart */}
-              {paymentMethodsData.length > 0 && (
-                <div className="fd-payment-methods-chart modern-chart">
-                  <h2>💳 Payment Methods Distribution</h2>
-                  <ResponsiveContainer width="100%" height={400}>
-                    <PieChart>
-                      <defs>
-                        {MODERN_FINANCIAL_COLORS.primary.map((color, index) => (
-                          <linearGradient key={index} id={`methodGradient${index}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor={color} />
-                            <stop offset="100%" stopColor={color + "CC"} />
-                          </linearGradient>
-                        ))}
-                      </defs>
-                      <Pie
-                        data={paymentMethodsData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({name, percentage}) => `${name}: ${percentage}%`}
-                        outerRadius={120}
+              {/* Chart 4: Collection Performance */}
+              <div id="fd-overdue-payments-chart" className="fd-collection-radial-chart modern-chart">
+                <h2>🎯 Collection Performance</h2>
+                <div className="uniform-chart-container">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadialBarChart
+                      cx="50%"
+                      cy="50%"
+                      innerRadius="60%"
+                      outerRadius="90%"
+                      barSize={30}
+                      data={radialData}
+                      startAngle={90}
+                      endAngle={-270}
+                    >
+                      <RadialBar
+                        minAngle={15}
+                        label={{
+                          position: "insideStart",
+                          fill: "#fff",
+                          fontSize: 16,
+                          fontWeight: 'bold'
+                        }}
+                        background={{ fill: "#f3f4f6" }}
+                        clockWise
                         dataKey="value"
-                        animationDuration={1500}
-                      >
-                        {paymentMethodsData.map((entry, index) => (
-                          <Cell 
-                            key={`method-${index}`} 
-                            fill={`url(#methodGradient${index % MODERN_FINANCIAL_COLORS.primary.length})`}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value) => [`$${value.toLocaleString()}`, 'Amount']}
-                        labelFormatter={(label) => `Payment Method: ${label}`}
+                        cornerRadius={10}
                       />
-                      <Legend verticalAlign="bottom" height={36} />
-                    </PieChart>
+                      <Legend 
+                        iconSize={12} 
+                        layout="vertical" 
+                        verticalAlign="bottom" 
+                        wrapperStyle={{ fontSize: '14px', fontWeight: '500' }}
+                      />
+                      <Tooltip content={<CustomRadialTooltip />} />
+                    </RadialBarChart>
                   </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Chart 5: Top Medical Specialties (Real-time data) */}
+              {specialtyRevenueData.length > 0 && (
+                <div id="fd-specialty-revenue-chart" className="fd-specialty-revenue-chart modern-chart">
+                  <h2>🏥 Top Medical Specialties by Revenue</h2>
+                  <div className="uniform-chart-container">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={specialtyRevenueData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <defs>
+                          <linearGradient id="specialtyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#8B5CF6" />
+                            <stop offset="100%" stopColor="#EC4899" />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis 
+                          dataKey="name" 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 11, fill: '#666' }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis 
+                          tickFormatter={formatCurrency}
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 12, fill: '#666' }}
+                        />
+                        <Tooltip 
+                          formatter={(value, name) => [`$${value.toLocaleString()}`, 'Revenue']}
+                          labelFormatter={(label, payload) => {
+                            const data = payload && payload[0] && payload[0].payload;
+                            return data ? `${data.fullName} (${data.count} appointments)` : label;
+                          }}
+                        />
+                        <Legend />
+                        <Bar 
+                          dataKey="revenue" 
+                          fill="url(#specialtyGradient)"
+                          radius={[4, 4, 0, 0]}
+                          name="Revenue by Specialty"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               )}
             </div>
@@ -1186,4 +1130,4 @@ const FinancialDashboard = () => {
   );
 };
 
-export default FinancialDashboard;
+export default FinancialDashboard; 
