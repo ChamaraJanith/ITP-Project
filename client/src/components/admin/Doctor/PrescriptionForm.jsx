@@ -1099,6 +1099,7 @@ const PrescriptionForm = ({
         patientPhone: selectedPatient.phone,
         patientGender: selectedPatient.gender,
         bloodGroup: selectedPatient.bloodGroup,
+        dateOfBirth: selectedPatient.dateOfBirth,
         patientAllergies: selectedPatient.allergies,
         doctorId: doctor.id,
         doctorName: data.doctor.name,

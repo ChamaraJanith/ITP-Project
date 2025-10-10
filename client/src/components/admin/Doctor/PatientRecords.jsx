@@ -56,6 +56,23 @@ const PatientRecords = () => {
     navigate('/admin/doctor-dashboard'); 
   };
 
+  // Function to calculate age from date of birth
+  const calculateAge = (dateOfBirth) => {
+    if (!dateOfBirth) return "N/A";
+    
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
+
   // Fetch prescriptions from API
   const fetchPrescriptions = async () => {
     setLoading(true);
@@ -466,7 +483,7 @@ const PatientRecords = () => {
                 </div>
                 <div class="info-row">
                   <div class="info-label">Age/Gender:</div>
-                  <div class="info-value">${prescription.patientAge || 'N/A'} / ${prescription.patientGender || 'N/A'}</div>
+                  <div class="info-value">${prescription.patientDateOfBirth ? calculateAge(prescription.patientDateOfBirth) : 'N/A'} / ${prescription.patientGender || 'N/A'}</div>
                 </div>
                 <div class="info-row">
                   <div class="info-label">Contact:</div>
@@ -474,7 +491,7 @@ const PatientRecords = () => {
                 </div>
                 <div class="info-row">
                   <div class="info-label">Blood Group:</div>
-                  <div class="info-value">${prescription.bloodGroup || 'N/A'}</div>
+                  <div class="info-value">${prescription.patientBloodGroup || 'N/A'}</div>
                 </div>
                 ${prescription.patientAllergies && prescription.patientAllergies.length > 0 ? `
                   <div class="info-row">
@@ -951,11 +968,19 @@ const PatientRecords = () => {
                                   </div>
                                   <div>
                                     <span className="pr-expanded-label">Blood Group:</span>
-                                    <span>{prescription.bloodGroup || 'N/A'}</span>
+                                    <span>{prescription.patientBloodGroup || 'N/A'}</span>
                                   </div>
                                   <div>
                                     <span className="pr-expanded-label">Gender:</span>
                                     <span>{prescription.patientGender || 'N/A'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="pr-expanded-label">Date of Birth:</span>
+                                    <span>{prescription.patientDateOfBirth ? new Date(prescription.patientDateOfBirth).toLocaleDateString() : 'N/A'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="pr-expanded-label">Age:</span>
+                                    <span>{prescription.patientDateOfBirth ? calculateAge(prescription.patientDateOfBirth) : 'N/A'}</span>
                                   </div>
                                 </div>
                                 
@@ -1160,7 +1185,27 @@ const PatientRecords = () => {
                     </div>
                     <div>
                       <div className="pr-info-label">Blood Group</div>
-                      <div className="pr-info-value">{selectedPatient.bloodGroup || 'N/A'}</div>
+                      <div className="pr-info-value">{selectedPatient.patientBloodGroup || 'N/A'}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="pr-info-item">
+                    <div className="pr-info-icon-wrapper">
+                      <Calendar size={18} />
+                    </div>
+                    <div>
+                      <div className="pr-info-label">Date of Birth</div>
+                      <div className="pr-info-value">{selectedPatient.patientDateOfBirth ? new Date(selectedPatient.patientDateOfBirth).toLocaleDateString() : 'N/A'}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="pr-info-item">
+                    <div className="pr-info-icon-wrapper">
+                      <User size={18} />
+                    </div>
+                    <div>
+                      <div className="pr-info-label">Age</div>
+                      <div className="pr-info-value">{selectedPatient.patientDateOfBirth ? calculateAge(selectedPatient.patientDateOfBirth) : 'N/A'}</div>
                     </div>
                   </div>
                 </div>
