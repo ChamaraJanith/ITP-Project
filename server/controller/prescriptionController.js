@@ -36,6 +36,8 @@ class PrescriptionController {
         patientPhone: body.patientPhone,
         patientGender: body.patientGender,
         bloodGroup: body.bloodGroup || "",
+        patientBloodGroup: body.bloodGroup || "",
+        patientDateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : null,
         patientAllergies: body.patientAllergies || [],
 
         doctorId: doctor.id,
@@ -123,7 +125,8 @@ class PrescriptionController {
       if (body.hasOwnProperty("patientEmail")) updateFields.patientEmail = body.patientEmail || "";
       if (body.hasOwnProperty("patientPhone")) updateFields.patientPhone = body.patientPhone || "";
       if (body.hasOwnProperty("patientGender")) updateFields.patientGender = body.patientGender || "";
-      if (body.hasOwnProperty("bloodGroup")) updateFields.bloodGroup = body.bloodGroup || "";
+      if (body.hasOwnProperty("bloodGroup")) updateFields.patientBloodGroup = body.bloodGroup || "";
+      if (body.hasOwnProperty("dateOfBirth")) updateFields.patientDateOfBirth = body.dateOfBirth ? new Date(body.dateOfBirth) : null
       if (body.hasOwnProperty("patientAllergies")) updateFields.patientAllergies = body.patientAllergies || [];
 
       if (body.hasOwnProperty("doctorId")) updateFields.doctorId = body.doctorId || "";
