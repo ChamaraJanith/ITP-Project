@@ -24,6 +24,7 @@ const PrescriptionSchema = new mongoose.Schema(
     patientPhone: { type: String },
     patientGender: { type: String },
     patientBloodGroup: { type: String },
+    patientDateOfBirth: { type: Date },
     patientAllergies: { type: [String], default: [] },
 
     // Doctor details
