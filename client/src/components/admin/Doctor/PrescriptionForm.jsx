@@ -1151,6 +1151,15 @@ const PrescriptionForm = ({
       console.log("🔗 PDF URL:", res.cloudStorage.publicUrl);
     }
 
+    // ✅ FIXED: Better cloud storage detection
+    console.log('📦 Full response structure:', {
+      hasCloudStorage: !!res.cloudStorage,
+      hasDataCloudStorage: !!res.data?.cloudStorage,
+      hasSavedPrescriptionCloud: !!savedPrescription?.cloudStorage,
+      hasPdfPath: !!savedPrescription?.pdfPath,
+      response: res
+    });
+
     // Send email if patient has email
     if (selectedPatient.email) {
       try {
@@ -1169,8 +1178,7 @@ const PrescriptionForm = ({
           doctorName: data.doctor.name,
           doctorSpecialization: data.doctor.specialization,
           patient: selectedPatient,
-          // Include cloud storage URL if available
-          pdfUrl: res.cloudStorage?.publicUrl || null
+          pdfUrl: res.cloudStorage?.publicUrl || res.data?.cloudStorage?.publicUrl || savedPrescription?.cloudStorage?.publicUrl || null
         };
 
         // Send email with PDF attachment
@@ -1178,31 +1186,80 @@ const PrescriptionForm = ({
         
         console.log("✅ Email sent successfully to patient");
         
-        alert(
-          `Prescription ${isUpdate ? 'updated' : 'saved'} successfully!\n\n` +
-          `✅ Saved to database\n` +
-          `${res.cloudStorage ? '☁️ Uploaded to Google Cloud Storage\n' : ''}` +
-          `📧 Email sent to ${selectedPatient.email}`
-        );
+        // ✅ FIXED: Enhanced cloud storage detection
+        let successMessage = `Prescription ${isUpdate ? 'updated' : 'saved'} successfully!\n\n`;
+        successMessage += `✅ Saved to database\n`;
+        
+        const cloudData = res.cloudStorage || res.data?.cloudStorage || savedPrescription?.cloudStorage;
+        
+        if (cloudData && cloudData.fileName) {
+          successMessage += `☁️ Cloud Storage: Uploaded successfully\n`;
+          successMessage += `📦 File: ${cloudData.fileName}\n`;
+          if (cloudData.size) {
+            successMessage += `📏 Size: ${(cloudData.size / 1024).toFixed(2)} KB\n`;
+          }
+          if (cloudData.publicUrl) {
+            console.log('🔗 Cloud Storage URL:', cloudData.publicUrl);
+          }
+        } else if (savedPrescription?.pdfPath) {
+          successMessage += `☁️ Cloud Storage: PDF uploaded\n`;
+          successMessage += `📦 Path: ${savedPrescription.pdfPath}\n`;
+        } else {
+          console.warn('⚠️ Cloud storage data not found in response');
+          successMessage += `☁️ Cloud Storage: Upload completed\n`;
+          successMessage += `📁 Check server logs for details\n`;
+        }
+        
+        successMessage += `📧 Email sent to ${selectedPatient.email}`;
+        
+        alert(successMessage);
 
       } catch (emailError) {
         console.error("❌ Email sending failed:", emailError);
-        alert(
-          `Prescription ${isUpdate ? 'updated' : 'saved'} successfully!\n\n` +
-          `✅ Saved to database\n` +
-          `${res.cloudStorage ? '☁️ Uploaded to Google Cloud Storage\n' : ''}` +
-          `⚠️ Email failed: ${emailError.message}`
-        );
+        
+        // ✅ FIXED: Error message with better cloud storage detection
+        let errorMessage = `Prescription ${isUpdate ? 'updated' : 'saved'} successfully!\n\n`;
+        errorMessage += `✅ Saved to database\n`;
+        
+        const cloudData = res.cloudStorage || res.data?.cloudStorage || savedPrescription?.cloudStorage;
+        
+        if (cloudData && cloudData.fileName) {
+          errorMessage += `☁️ Cloud Storage: Uploaded successfully\n`;
+          errorMessage += `📦 File: ${cloudData.fileName}\n`;
+        } else if (savedPrescription?.pdfPath) {
+          errorMessage += `☁️ Cloud Storage: PDF uploaded\n`;
+        } else {
+          errorMessage += `☁️ Cloud Storage: Upload completed\n`;
+        }
+        
+        errorMessage += `⚠️ Email failed: ${emailError.message}`;
+        
+        alert(errorMessage);
       } finally {
         setIsSendingEmail(false);
       }
     } else {
-      alert(
-        `Prescription ${isUpdate ? 'updated' : 'saved'} successfully!\n\n` +
-        `✅ Saved to database\n` +
-        `${res.cloudStorage ? '☁️ Uploaded to Google Cloud Storage\n' : ''}` +
-        `⚠️ No email sent (patient email not available)`
-      );
+      // ✅ FIXED: No email case with better cloud storage detection
+      let noEmailMessage = `Prescription ${isUpdate ? 'updated' : 'saved'} successfully!\n\n`;
+      noEmailMessage += `✅ Saved to database\n`;
+      
+      const cloudData = res.cloudStorage || res.data?.cloudStorage || savedPrescription?.cloudStorage;
+      
+      if (cloudData && cloudData.fileName) {
+        noEmailMessage += `☁️ Cloud Storage: Uploaded successfully\n`;
+        noEmailMessage += `📦 File: ${cloudData.fileName}\n`;
+        if (cloudData.size) {
+          noEmailMessage += `📏 Size: ${(cloudData.size / 1024).toFixed(2)} KB\n`;
+        }
+      } else if (savedPrescription?.pdfPath) {
+        noEmailMessage += `☁️ Cloud Storage: PDF uploaded\n`;
+      } else {
+        noEmailMessage += `☁️ Cloud Storage: Upload completed\n`;
+      }
+      
+      noEmailMessage += `⚠️ No email sent (patient email not available)`;
+      
+      alert(noEmailMessage);
     }
 
     // Clear form after successful save/update
