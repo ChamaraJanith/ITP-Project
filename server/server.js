@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import GoogleCloudStorageService from './services/googleCloudStorage.js';
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -237,6 +238,27 @@ process.on('SIGINT', () => {
   console.log('💤 SIGINT received. Shutting down gracefully...');
   process.exit(0);
 });
+
+
+
+// Test Google Cloud Storage connection on startup
+(async () => {
+  try {
+    console.log('☁️ Testing Google Cloud Storage connection...');
+    const isConnected = await GoogleCloudStorageService.testConnection();
+    if (isConnected) {
+      console.log('✅ Google Cloud Storage is ready!');
+    } else {
+      console.warn('⚠️ Google Cloud Storage connection failed. Check your configuration.');
+    }
+  } catch (error) {
+    console.error('❌ Google Cloud Storage initialization error:', error.message);
+    console.warn('⚠️ Server will continue but PDF uploads may fail.');
+  }
+})();
+
+
+
 
 // Start server
 app.listen(PORT, () => {

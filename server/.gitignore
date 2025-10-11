@@ -23,8 +23,17 @@ dist-ssr
 *.sln
 *.sw?
 
-
+# ⚠️ CRITICAL: Environment files (NEVER commit these!)
+.env
+.env.local
+.env.development
+.env.production
 
 # ⚠️ CRITICAL: Google Cloud credentials (NEVER commit these!)
 config/google-cloud-key.json
 google-cloud-key.json
+*.json
+
+# Uploads and temporary files
+uploads/
+temp/

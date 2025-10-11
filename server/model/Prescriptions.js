@@ -31,9 +31,28 @@ const PrescriptionSchema = new mongoose.Schema(
     doctorId: { type: String, required: true },
     doctorName: { type: String, required: true },
     doctorSpecialization: { type: String, default: "" },
+
+    // Google Cloud Storage fields for PDF
+    pdfUrl: { type: String }, // Signed URL for accessing the PDF
+    pdfFileName: { type: String }, // File path in Google Cloud Storage
+    pdfGsUrl: { type: String }, // gs:// URL format
+    pdfUploadedAt: { type: Date }, // When the PDF was uploaded
   },
   { timestamps: true }
 );
+
+// Add index for faster queries
+PrescriptionSchema.index({ patientId: 1, createdAt: -1 });
+PrescriptionSchema.index({ doctorId: 1, createdAt: -1 });
+
+// Virtual for prescription ID display
+PrescriptionSchema.virtual('prescriptionId').get(function() {
+  return `RX-${this._id.toString().slice(-8).toUpperCase()}`;
+});
+
+// Ensure virtuals are included in JSON
+PrescriptionSchema.set('toJSON', { virtuals: true });
+PrescriptionSchema.set('toObject', { virtuals: true });
 
 const Prescriptions = mongoose.model("Prescriptions", PrescriptionSchema);
 
