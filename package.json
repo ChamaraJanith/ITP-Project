@@ -16,6 +16,7 @@
     "nodemon": "^3.1.10"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.17.2",
     "axios": "^1.6.0",
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
