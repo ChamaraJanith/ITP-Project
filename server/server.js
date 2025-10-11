@@ -38,6 +38,9 @@ import purchaseOrderRoutes from './routes/purchaseOrders.js';
 import AppointmentRoutes from './routes/appointment.js';
 import disrouter from './routes/disposalRoutes.js';
 
+// ⭐ NEW: Import Google Cloud Storage Service
+import GoogleCloudStorageService from './services/googleCloudStorage.js';
+
 // Database imports
 const { default: connectDB } = await import("./config/mongodb.js");
 const { default: chatbotRouter } = await import("./routes/chatbot.js");
@@ -49,9 +52,9 @@ connectDB();
 
 const PORT = 7000;
 
-// Middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Middleware - ⭐ UPDATED: Increased limit for PDF uploads
+app.use(express.json({ limit: '50mb' })); // Increased from 10mb to 50mb
+app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Increased from 10mb to 50mb
 app.use(cookieParser());
 
 // CORS configuration
@@ -100,7 +103,8 @@ app.get('/health', (req, res) => {
       chatbot: '/api/chatbot',
       inventory: '/api/inventory',
       patients: '/api/patients',
-      emergency_alerts: '/api/doctor/emergency-alerts'
+      emergency_alerts: '/api/doctor/emergency-alerts',
+      prescriptions: '/api/doctor/prescriptions' // Added
     }
   });
 });
@@ -157,7 +161,6 @@ app.use('/api/appointments', router);
 app.use('/api/appointments', AppointmentRoutes);
 app.use('/api/disposalrecords', disrouter)
 
-
 console.log('🚨 Mounting emergency alerts router at /api/doctor/emergency-alerts');
 app.use('/api/doctor/emergency-alerts', emergencyAlertRouter);
 
@@ -186,7 +189,9 @@ app.use((req, res, next) => {
       'GET /api/purchase-orders',
       'POST /api/purchase-orders',
       'GET /api/doctor/emergency-alerts',
-      'POST /api/doctor/emergency-alerts'
+      'POST /api/doctor/emergency-alerts',
+      'GET /api/doctor/prescriptions',
+      'POST /api/doctor/prescriptions'
     ]
   });
 });
@@ -227,6 +232,26 @@ app.use((err, req, res, next) => {
 // Start restock scheduler
 RestockScheduler.start();
 
+// ⭐ NEW: Test Google Cloud Storage connection on startup
+(async () => {
+  try {
+    console.log('☁️ Testing Google Cloud Storage connection...');
+    const isConnected = await GoogleCloudStorageService.testConnection();
+    if (isConnected) {
+      console.log('✅ Google Cloud Storage is ready!');
+      console.log(`📦 Bucket: ${process.env.GOOGLE_CLOUD_BUCKET_NAME}`);
+    } else {
+      console.warn('⚠️ Google Cloud Storage connection failed. Check your configuration.');
+      console.warn('   Prescriptions will be saved but PDFs may not upload to cloud.');
+    }
+  } catch (error) {
+    console.error('❌ Google Cloud Storage initialization error:', error.message);
+    console.warn('⚠️ Server will continue but PDF uploads to cloud may fail.');
+    console.warn('   Check: backend/config/google-cloud-key.json exists');
+    console.warn('   Check: GOOGLE_CLOUD_PROJECT_ID and GOOGLE_CLOUD_BUCKET_NAME in .env');
+  }
+})();
+
 // Graceful shutdown handling
 process.on('SIGTERM', () => {
   console.log('💤 SIGTERM received. Shutting down gracefully...');
@@ -256,6 +281,12 @@ app.listen(PORT, () => {
   console.log(`   🏢 Create Supplier: POST http://localhost:${PORT}/api/suppliers`);
   console.log(`   📋 Get Purchase Orders: GET http://localhost:${PORT}/api/purchase-orders`);
   console.log(`   📋 Create Purchase Order: POST http://localhost:${PORT}/api/purchase-orders`);
+  console.log('=====================================');
+  console.log('📋 Prescription Endpoints:');
+  console.log(`   💊 Get Prescriptions: GET http://localhost:${PORT}/api/doctor/prescriptions`);
+  console.log(`   💊 Create Prescription: POST http://localhost:${PORT}/api/doctor/prescriptions`);
+  console.log(`   💊 Download PDF: GET http://localhost:${PORT}/api/doctor/prescriptions/:id/download`);
+  console.log('=====================================');
   console.log(`   💊 Health Check: GET http://localhost:${PORT}/health`);
   console.log('=====================================');
   console.log('✅ Server ready to accept connections!');

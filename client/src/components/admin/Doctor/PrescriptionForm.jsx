@@ -1046,159 +1046,182 @@ const PrescriptionForm = ({
   }, [ocrTextFromCanvas, activeField, setValue, trigger]);
 
   // Enhanced form submission with PDF generation and email sending
-  const onSubmit = async (data) => {
-    if (!selectedPatient) {
-      alert("Please select a patient.");
-      return;
-    }
+  // Replace the onSubmit function in your PrescriptionForm.js with this updated version
 
-    const totalMedicines = data.medicines.length;
-    if (totalMedicines > 10) {
-      alert("Cannot prescribe more than 10 medicines at once.");
-      return;
-    }
+const onSubmit = async (data) => {
+  if (!selectedPatient) {
+    alert("Please select a patient.");
+    return;
+  }
 
-    // Check for drug interactions
-    const medicineNames = data.medicines.map(m => m.name.toLowerCase());
-    const commonInteractions = [
-      ['aspirin', 'warfarin'],
-      ['paracetamol', 'alcohol'],
-    ];
+  const totalMedicines = data.medicines.length;
+  if (totalMedicines > 10) {
+    alert("Cannot prescribe more than 10 medicines at once.");
+    return;
+  }
 
-    for (const interaction of commonInteractions) {
-      if (interaction.every(drug => medicineNames.some(name => name.includes(drug)))) {
-        const confirmProceed = window.confirm(
-          `Warning: Potential drug interaction detected between ${interaction.join(' and ')}. Do you want to proceed?`
-        );
-        if (!confirmProceed) return;
-      }
-    }
+  // Check for drug interactions
+  const medicineNames = data.medicines.map(m => m.name.toLowerCase());
+  const commonInteractions = [
+    ['aspirin', 'warfarin'],
+    ['paracetamol', 'alcohol'],
+  ];
 
-    // Validate patient email for sending
-    if (!selectedPatient.email) {
-      const confirmWithoutEmail = window.confirm(
-        "This patient doesn't have an email address. The prescription will be saved but cannot be emailed. Do you want to continue?"
+  for (const interaction of commonInteractions) {
+    if (interaction.every(drug => medicineNames.some(name => name.includes(drug)))) {
+      const confirmProceed = window.confirm(
+        `Warning: Potential drug interaction detected between ${interaction.join(' and ')}. Do you want to proceed?`
       );
-      if (!confirmWithoutEmail) return;
+      if (!confirmProceed) return;
+    }
+  }
+
+  // Validate patient email for sending
+  if (!selectedPatient.email) {
+    const confirmWithoutEmail = window.confirm(
+      "This patient doesn't have an email address. The prescription will be saved but cannot be emailed. Do you want to continue?"
+    );
+    if (!confirmWithoutEmail) return;
+  }
+
+  try {
+    setIsSaving(true);
+    
+    // Get signature if available
+    const signatureData = signatureRef.current ? signatureRef.current.getSignature() : null;
+    
+    // Generate PDF buffer BEFORE saving to database
+    console.log("📄 Generating PDF buffer...");
+    const pdfBuffer = await generatePDFBuffer(
+      selectedPatient,
+      data.diagnosis,
+      data.medicines,
+      data.notes,
+      doctor,
+      data.date,
+      signatureData,
+      hospitalLogo
+    );
+    console.log("✅ PDF buffer generated successfully");
+
+    // Prepare payload with PDF buffer
+    const payload = {
+      date: data.date,
+      diagnosis: data.diagnosis,
+      medicines: data.medicines,
+      notes: data.notes,
+      patientId: selectedPatient.patientId || selectedPatient._id,
+      patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
+      patientEmail: selectedPatient.email,
+      patientPhone: selectedPatient.phone,
+      patientGender: selectedPatient.gender,
+      bloodGroup: selectedPatient.bloodGroup,
+      dateOfBirth: selectedPatient.dateOfBirth,
+      patientAllergies: selectedPatient.allergies,
+      doctorId: doctor.id,
+      doctorName: data.doctor.name,
+      doctorSpecialization: data.doctor.specialization,
+      signature: signatureData,
+      // Add PDF buffer as array for JSON serialization
+      pdfBuffer: Array.from(new Uint8Array(pdfBuffer))
+    };
+
+    let res;
+    const isUpdate = !!editingPrescription;
+    
+    console.log("💾 Saving prescription to database with PDF...");
+    
+    if (editingPrescription) {
+      const prescriptionId = editingPrescription._id || editingPrescription.id;
+      if (!prescriptionId) {
+        alert("Error: Prescription ID is missing for update.");
+        return;
+      }
+      
+      res = await updatePrescription(prescriptionId, payload);
+      console.log("✅ Prescription updated successfully in database");
+    } else {
+      res = await createPrescription(payload);
+      console.log("✅ Prescription created successfully in database");
     }
 
-    try {
-      setIsSaving(true);
-      
-      // Get signature if available
-      const signatureData = signatureRef.current ? signatureRef.current.getSignature() : null;
-      
-      const payload = {
-        date: data.date,
-        diagnosis: data.diagnosis,
-        medicines: data.medicines,
-        notes: data.notes,
-        patientId: selectedPatient.patientId || selectedPatient._id,
-        patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
-        patientEmail: selectedPatient.email,
-        patientPhone: selectedPatient.phone,
-        patientGender: selectedPatient.gender,
-        bloodGroup: selectedPatient.bloodGroup,
-        dateOfBirth: selectedPatient.dateOfBirth,
-        patientAllergies: selectedPatient.allergies,
-        doctorId: doctor.id,
-        doctorName: data.doctor.name,
-        doctorSpecialization: data.doctor.specialization,
-        signature: signatureData
-      };
+    const savedPrescription = res.data?.data || res.data;
 
-      let res;
-      const isUpdate = !!editingPrescription;
-      
-      if (editingPrescription) {
-        const prescriptionId = editingPrescription._id || editingPrescription.id;
-        if (!prescriptionId) {
-          alert("Error: Prescription ID is missing for update.");
-          return;
-        }
+    // Check if PDF was uploaded to cloud
+    if (res.cloudStorage) {
+      console.log("☁️ PDF uploaded to Google Cloud Storage:", res.cloudStorage);
+      console.log("🔗 PDF URL:", res.cloudStorage.publicUrl);
+    }
+
+    // Send email if patient has email
+    if (selectedPatient.email) {
+      try {
+        console.log("📧 Sending prescription email...");
+        setIsSendingEmail(true);
+
+        // Prepare prescription data for email
+        const emailPrescriptionData = {
+          _id: savedPrescription._id || savedPrescription.id,
+          patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
+          patientEmail: selectedPatient.email,
+          date: data.date,
+          diagnosis: data.diagnosis,
+          medicines: data.medicines,
+          notes: data.notes,
+          doctorName: data.doctor.name,
+          doctorSpecialization: data.doctor.specialization,
+          patient: selectedPatient,
+          // Include cloud storage URL if available
+          pdfUrl: res.cloudStorage?.publicUrl || null
+        };
+
+        // Send email with PDF attachment
+        await sendPrescriptionEmail(emailPrescriptionData, pdfBuffer, isUpdate);
         
-        res = await updatePrescription(prescriptionId, payload);
-        console.log("✅ Prescription updated successfully in database");
-      } else {
-        res = await createPrescription(payload);
-        console.log("✅ Prescription created successfully in database");
-      }
-
-      const savedPrescription = res.data?.data || res.data;
-
-      // Generate PDF and send email if patient has email
-      if (selectedPatient.email) {
-        try {
-          console.log("📧 Starting PDF generation and email process...");
-          setIsSendingEmail(true);
-
-          // Generate PDF buffer
-          const pdfBuffer = await generatePDFBuffer(
-            selectedPatient,
-            data.diagnosis,
-            data.medicines,
-            data.notes,
-            doctor,
-            data.date,
-            signatureData,
-            hospitalLogo
-          );
-
-          console.log("✅ PDF buffer generated successfully");
-
-          // Prepare prescription data for email
-          const emailPrescriptionData = {
-            _id: savedPrescription._id || savedPrescription.id,
-            patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
-            patientEmail: selectedPatient.email,
-            date: data.date,
-            diagnosis: data.diagnosis,
-            medicines: data.medicines,
-            notes: data.notes,
-            doctorName: data.doctor.name,
-            doctorSpecialization: data.doctor.specialization,
-            patient: selectedPatient
-          };
-
-          // Send email with PDF attachment
-          await sendPrescriptionEmail(emailPrescriptionData, pdfBuffer, isUpdate);
-          
-          console.log("✅ Email sent successfully to patient");
-          alert(
-            isUpdate 
-              ? `Prescription updated successfully and emailed to ${selectedPatient.email}!`
-              : `Prescription saved successfully and emailed to ${selectedPatient.email}!`
-          );
-
-        } catch (emailError) {
-          console.error("❌ Email sending failed:", emailError);
-          alert(
-            `Prescription ${isUpdate ? 'updated' : 'saved'} successfully, but failed to send email: ${emailError.message}`
-          );
-        } finally {
-          setIsSendingEmail(false);
-        }
-      } else {
+        console.log("✅ Email sent successfully to patient");
+        
         alert(
-          `Prescription ${isUpdate ? 'updated' : 'saved'} successfully. No email sent (patient email not available).`
+          `Prescription ${isUpdate ? 'updated' : 'saved'} successfully!\n\n` +
+          `✅ Saved to database\n` +
+          `${res.cloudStorage ? '☁️ Uploaded to Google Cloud Storage\n' : ''}` +
+          `📧 Email sent to ${selectedPatient.email}`
         );
+
+      } catch (emailError) {
+        console.error("❌ Email sending failed:", emailError);
+        alert(
+          `Prescription ${isUpdate ? 'updated' : 'saved'} successfully!\n\n` +
+          `✅ Saved to database\n` +
+          `${res.cloudStorage ? '☁️ Uploaded to Google Cloud Storage\n' : ''}` +
+          `⚠️ Email failed: ${emailError.message}`
+        );
+      } finally {
+        setIsSendingEmail(false);
       }
-
-      // Clear form after successful save/update
-      reset(defaultValues(null, doctor));
-      setSearch("");
-      setSelectedPatient(null);
-      setSignature(null);
-
-      if (onSaved) onSaved(savedPrescription);
-
-    } catch (err) {
-      console.error("❌ Prescription save/update failed:", err);
-      alert(err?.response?.data?.message || "Failed to save prescription.");
-    } finally {
-      setIsSaving(false);
+    } else {
+      alert(
+        `Prescription ${isUpdate ? 'updated' : 'saved'} successfully!\n\n` +
+        `✅ Saved to database\n` +
+        `${res.cloudStorage ? '☁️ Uploaded to Google Cloud Storage\n' : ''}` +
+        `⚠️ No email sent (patient email not available)`
+      );
     }
-  };
+
+    // Clear form after successful save/update
+    reset(defaultValues(null, doctor));
+    setSearch("");
+    setSelectedPatient(null);
+    setSignature(null);
+
+    if (onSaved) onSaved(savedPrescription);
+
+  } catch (err) {
+    console.error("❌ Prescription save/update failed:", err);
+    alert(err?.response?.data?.message || "Failed to save prescription.");
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   const addMedicine = () => {
     if (fields.length >= 10) {
