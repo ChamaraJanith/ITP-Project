@@ -261,6 +261,14 @@ const InventoryReports = () => {
       })
       .slice(0, 20);
 
+      // Preload the emoji image once (e.g. in component mount)
+const emojiImg = new Image();
+emojiImg.src = '/path/to/emoji-hospital.png'; // 24×24 hospital PNG
+
+// Header with embedded emoji image
+
+
+
     const monthlySpend = Math.floor(Math.random() * 80000) + 40000;
 
     setAnalytics({
@@ -383,7 +391,7 @@ const generateFixedProfessionalReport = async () => {
         }
       }
 
-    } catch (apiError) {
+    } catch {
       console.warn('API connection failed, using sample data');
       // Use enhanced sample data as fallback
       realInventoryData = generateRealInventoryData();
@@ -392,7 +400,7 @@ const generateFixedProfessionalReport = async () => {
     }
 
     // Calculate analytics from real data
-    realAnalytics = calculatePreciseAnalytics(realInventoryData, realSupplierData, realPurchaseOrders);
+    realAnalytics = calculatePreciseAnalytics(realInventoryData, realSupplierData);
 
     console.log('Data loaded:', {
       inventory: realInventoryData.length,
@@ -404,48 +412,71 @@ const generateFixedProfessionalReport = async () => {
     // =============================================================================
     // UTILITY FUNCTIONS FOR BETTER FORMATTING
     // =============================================================================
+// Colors
+const HX_BLUE = [29, 161, 242];   // #1da1f2
+const HX_GRAY = [102, 102, 102];  // #666
+const BORDER_GRAY = [221, 221, 221]; // #ddd
 
-    const addPageHeader = () => {
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(120);
-      doc.text('HealX Healthcare Management System - Inventory Analytics Report', margin, 12);
-      doc.text(reportId + ' | CONFIDENTIAL', pageWidth - margin, 12, { align: 'right' });
+// Simple Clean Header Style (like payroll report - 2nd image)
+const addPageHeader = () => {
+  // Skip the blue header section completely
+  currentY = 30; // Start position for content
+  
+  // Simple centered title with blue text and underline
+  doc.setFontSize(24);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(29, 161, 242); // #1da1f2 blue
+  doc.text('Heal-x Inventory Analytics Report', pageWidth / 2, currentY, { align: 'center' });
+  
+  // Subtitle
+  currentY += 12;
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(102, 102, 102); // #666 gray
+  doc.text('Professional Inventory Analytics & Strategic Intelligence Platform', pageWidth / 2, currentY, { align: 'center' });
+  
+  // Blue underline
+  currentY += 8;
+  doc.setLineWidth(2);
+  doc.setDrawColor(29, 161, 242); // #1da1f2 blue
+  doc.line(margin, currentY, pageWidth - margin, currentY);
+  
+  currentY += 15; // Space after header
+};
 
-      // Header line
-      doc.setLineWidth(0.3);
-      doc.setDrawColor(200);
-      doc.line(margin, 15, pageWidth - margin, 15);
-    };
+// Simple Footer
+const addPageFooter = () => {
+  const footerY = pageHeight - 15;
+  const pageInfo = doc.internal.getCurrentPageInfo();
+  const pageNum = pageInfo.pageNumber;
 
-    const addPageFooter = () => {
-      const footerY = pageHeight - 8;
-      const pageInfo = doc.internal.getCurrentPageInfo();
-      const pageNum = pageInfo.pageNumber;
+  // Footer line
+  doc.setLineWidth(1);
+  doc.setDrawColor(221, 221, 221); // #ddd
+  doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+  
+  // Footer text
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(136, 136, 136); // #888
+  doc.text(`Page ${pageNum}`, pageWidth / 2, footerY, { align: 'center' });
+  doc.text('© 2025 Heal-x Healthcare Management System', pageWidth / 2, footerY + 8, { align: 'center' });
+};
 
-      // Footer line
-      doc.setLineWidth(0.3);
-      doc.setDrawColor(200);
-      doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
 
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(120);
-      doc.text(`Page ${pageNum}`, margin, footerY);
-      doc.text(`Generated: ${reportDate.toLocaleDateString()}`, pageWidth / 2, footerY, { align: 'center' });
-      doc.text('HealX Healthcare Center', pageWidth - margin, footerY, { align: 'right' });
-    };
+// Page-break helper tuned for this header/footer
+const checkPageBreak = (requiredSpace) => {
+  if (currentY + requiredSpace > pageHeight - 26) {
+    addPageFooter();
+    doc.addPage();
+    addPageHeader();
+    currentY = 52; // content starts below header
+    return true;
+  }
+  return false;
+};
 
-    const checkPageBreak = (requiredSpace) => {
-      if (currentY + requiredSpace > pageHeight - 20) {
-        addPageFooter();
-        doc.addPage();
-        addPageHeader();
-        currentY = 25;
-        return true;
-      }
-      return false;
-    };
+
 
     const addSectionTitle = (title, level = 1) => {
       checkPageBreak(20);
@@ -1154,7 +1185,7 @@ const generateFixedProfessionalReport = async () => {
 // ENHANCED ANALYTICS CALCULATION WITH REAL DATA PROCESSING
 // =============================================================================
 
-function calculatePreciseAnalytics(inventoryItems, suppliers, purchaseOrders) {
+function calculatePreciseAnalytics(inventoryItems, suppliers) {
   console.log('📊 Calculating precise analytics from real data...');
 
   const totalItems = inventoryItems.length;
@@ -1249,7 +1280,7 @@ function calculatePreciseAnalytics(inventoryItems, suppliers, purchaseOrders) {
     .slice(0, 25);
 
   // Enhanced vendor performance with realistic scoring
-  const vendorPerformance = suppliers.map((supplier, index) => ({
+  const vendorPerformance = suppliers.map((supplier) => ({
     name: supplier.name,
     performance: Math.floor(Math.random() * 25) + 75, // 75-100%
     onTime: Math.floor(Math.random() * 20) + 80, // 80-100%
@@ -1668,7 +1699,7 @@ function generateRealOrderData() {
 
       switch (reportFilters.format) {
         case 'pdf':
-          generateFixedProfessionalReport  ();
+          generateFixedProfessionalReport();
           break;
         case 'csv':
           generateCSVReport();
