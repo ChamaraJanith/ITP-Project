@@ -40,6 +40,16 @@ export const createAppointment = async (req, res) => {
     ) {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
+      
+      // --- Double-booking prevention ---
+    const existing = await Appointment.findOne({
+      appointmentDate,
+      appointmentTime,
+      doctorName
+    });
+    if (existing) {
+      return res.status(409).json({ message: "This time slot is already booked for the selected doctor." });
+    }
 
     const newAppointment = new Appointment({
       name,
