@@ -13,10 +13,16 @@ prescriptionRouter.get('/', PrescriptionController.getAllPrescriptions);
 // GET - fetch prescription by ID
 prescriptionRouter.get('/:id', PrescriptionController.getPrescriptionById);
 
+// GET - fetch prescriptions by patient ID
+prescriptionRouter.get('/patient/:patientId', PrescriptionController.getPrescriptionsByPatientId);
+
+// GET - download prescription PDF
+prescriptionRouter.get('/:id/download', PrescriptionController.downloadPrescriptionPDF);
+
+// PUT - update prescription by ID
+prescriptionRouter.put('/:id', validatePrescription, validate, PrescriptionController.updatePrescription);
+
 // DELETE - delete prescription by ID
 prescriptionRouter.delete('/:id', PrescriptionController.deletePrescription);
-
-//update prescription by ID
-prescriptionRouter.put('/:id', validatePrescription, validate, PrescriptionController.updatePrescription);
 
 export default prescriptionRouter;
