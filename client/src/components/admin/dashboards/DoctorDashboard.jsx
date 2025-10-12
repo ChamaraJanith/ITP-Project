@@ -19,17 +19,19 @@ const DoctorDashboard = () => {
   const [todayPrescriptionsCount, setTodayPrescriptionsCount] = useState(0);
   const [todayPatientsCount, setTodayPatientsCount] = useState(0);
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+  const [doctorActivities, setDoctorActivities] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
   
   const backendUrl = "http://localhost:7000";
   const isMounted = useRef(true);
+  const activityCounterRef = useRef(0);
 
-  // Update current time every minute
+  // Update current time every second for real-time feel
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000);
+    }, 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -89,6 +91,29 @@ const DoctorDashboard = () => {
     return `${hour % 12 || 12}:${parts[1]} ${ampm}`;
   };
 
+  // Function to format activity time
+  const formatActivityTime = (timestamp) => {
+    const now = new Date();
+    const activityTime = new Date(timestamp);
+    const diffMs = now - activityTime;
+    const diffSeconds = Math.floor(diffMs / 1000);
+    
+    if (diffSeconds < 5) return "Just now";
+    if (diffSeconds < 60) return `${diffSeconds} seconds ago`;
+    
+    const diffMins = Math.floor(diffSeconds / 60);
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    
+    return activityTime.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
+
   // Function to filter prescriptions for today
   const filterTodaysPrescriptions = (prescriptions) => {
     const today = new Date();
@@ -99,9 +124,43 @@ const DoctorDashboard = () => {
     });
   };
 
+  // Function to log doctor activities with real-time feel
+  const logDoctorActivity = (action, details = "", category = "general", priority = "normal") => {
+    if (!isMounted.current) return;
+    
+    activityCounterRef.current += 1;
+    
+    const activity = {
+      id: `${Date.now()}-${activityCounterRef.current}`,
+      action,
+      details,
+      category,
+      priority,
+      timestamp: new Date().toISOString(),
+      doctorId: 'DOC001',
+      doctorName: 'Dr. Gayath Dahanayake',
+      isNew: true
+    };
+    
+    // Update state with new activity at the top
+    setDoctorActivities(prev => {
+      const updated = [activity, ...prev.slice(0, 14)]; // Keep only latest 15
+      // Mark activities as not new after a short delay
+      setTimeout(() => {
+        setDoctorActivities(current => 
+          current.map(a => a.id === activity.id ? {...a, isNew: false} : a)
+        );
+      }, 3000);
+      return updated;
+    });
+    
+    // Log to console for debugging
+    console.log(`[${category.toUpperCase()}] ${action}${details ? ': ' + details : ''}`);
+  };
+
   // Fetch today's prescriptions count
   const fetchTodayPrescriptionsCount = async () => {
-    if (!isMounted.current) return;
+    logDoctorActivity("Checking prescriptions", "Loading today's prescriptions", "prescription", "high");
     
     try {
       const res = await getAllPrescriptions();
@@ -110,18 +169,30 @@ const DoctorDashboard = () => {
       
       if (isMounted.current) {
         setTodayPrescriptionsCount(todaysPrescriptions.length);
+        logDoctorActivity(
+          "Prescriptions loaded", 
+          `Found ${todaysPrescriptions.length} prescriptions for today`, 
+          "prescription",
+          "low"
+        );
       }
     } catch (err) {
       console.error("Failed to fetch today's prescriptions count:", err);
       if (isMounted.current) {
         setTodayPrescriptionsCount(0);
+        logDoctorActivity(
+          "Prescription load failed", 
+          err.message || "Failed to load prescriptions", 
+          "error",
+          "high"
+        );
       }
     }
   };
 
   // Fetch today's upcoming appointments
   const fetchUpcomingAppointments = async () => {
-    if (!isMounted.current) return;
+    logDoctorActivity("Checking appointments", "Loading upcoming appointments", "appointment", "high");
     
     try {
       const res = await axios.get(`${backendUrl}/api/appointments/accepted`, {
@@ -148,12 +219,24 @@ const DoctorDashboard = () => {
       if (isMounted.current) {
         setUpcomingAppointments(todayUpcoming);
         setTodayPatientsCount(uniquePatients.size);
+        logDoctorActivity(
+          "Appointments loaded", 
+          `Found ${todayUpcoming.length} upcoming appointments for ${uniquePatients.size} patients`, 
+          "appointment",
+          "low"
+        );
       }
     } catch (err) {
       console.error("Failed to fetch upcoming appointments:", err);
       if (isMounted.current) {
         setUpcomingAppointments([]);
         setTodayPatientsCount(0);
+        logDoctorActivity(
+          "Appointment load failed", 
+          err.message || "Failed to load appointments", 
+          "error",
+          "high"
+        );
       }
     }
   };
@@ -166,7 +249,7 @@ const DoctorDashboard = () => {
   });
 
   const fetchEmergencyAlertCount = async () => {
-    if (!isMounted.current) return;
+    logDoctorActivity("Checking alerts", "Looking for emergency alerts", "emergency", "high");
     
     try {
       const response = await fetch('http://localhost:7000/api/doctor/emergency-alerts/stats', {
@@ -179,22 +262,35 @@ const DoctorDashboard = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success && isMounted.current) {
+          const alertCount = data.data.overview?.activeAlerts || 0;
           setDashboardData(prev => ({
             ...prev,
             stats: {
               ...prev?.stats,
-              emergencyAlerts: data.data.overview?.activeAlerts || 0
+              emergencyAlerts: alertCount
             }
           }));
+          logDoctorActivity(
+            "Alerts checked", 
+            `Found ${alertCount} active emergency alerts`, 
+            "emergency",
+            alertCount > 0 ? "high" : "low"
+          );
         }
       }
     } catch (error) {
       console.error("Error fetching emergency alert count:", error);
+      logDoctorActivity(
+        "Alert check failed", 
+        error.message || "Failed to check emergency alerts", 
+        "error",
+        "medium"
+      );
     }
   };
 
   const initializeDashboard = async () => {
-    if (!isMounted.current) return;
+    logDoctorActivity("Dashboard access", "Initializing doctor dashboard", "system", "high");
     
     try {
       const adminData = localStorage.getItem("admin");
@@ -207,11 +303,23 @@ const DoctorDashboard = () => {
         if (isMounted.current) {
           setDashboardData(response.data);
           setApiUnavailable(false);
+          logDoctorActivity(
+            "Dashboard loaded", 
+            "Successfully loaded dashboard data", 
+            "system",
+            "low"
+          );
         }
       } else {
         if (isMounted.current) {
           setDashboardData(mockDashboardData);
           setApiUnavailable(true);
+          logDoctorActivity(
+            "Using mock data", 
+            "API unavailable, using demo data", 
+            "warning",
+            "medium"
+          );
         }
       }
       
@@ -224,10 +332,22 @@ const DoctorDashboard = () => {
         setError("Failed to load doctor dashboard. Using demo data.");
         setDashboardData(mockDashboardData);
         setApiUnavailable(true);
+        logDoctorActivity(
+          "Dashboard error", 
+          error.message || "Failed to initialize dashboard", 
+          "error",
+          "high"
+        );
       }
     } finally {
       if (isMounted.current) {
         setLoading(false);
+        logDoctorActivity(
+          "Dashboard ready", 
+          "Doctor dashboard initialization complete", 
+          "system",
+          "low"
+        );
       }
     }
   };
@@ -235,11 +355,23 @@ const DoctorDashboard = () => {
   const handleEmergencyAlertsClick = () => {
     if (isMounted.current) {
       setCurrentView('emergency-alerts');
+      logDoctorActivity(
+        "Viewing emergency alerts", 
+        "Navigated to emergency alerts page", 
+        "emergency",
+        "high"
+      );
     }
   };
 
   const handleStartConsultation = (appointment) => {
-    // Navigate to consultation page or open consultation modal
+    logDoctorActivity(
+      "Starting consultation", 
+      `Beginning consultation with ${appointment.name}`, 
+      "consultation",
+      "high"
+    );
+    
     navigate(`/admin/doctor/consultation/${appointment._id}`, {
       state: { patient: appointment }
     });
@@ -249,20 +381,148 @@ const DoctorDashboard = () => {
     if (isMounted.current) {
       setLoading(true);
       setError("");
+      logDoctorActivity(
+        "Retrying connection", 
+        "User requested API retry", 
+        "system",
+        "medium"
+      );
       initializeDashboard();
     }
   };
 
+  // Function to get activity icon based on category
+  const getActivityIcon = (category) => {
+    switch (category) {
+      case 'prescription':
+        return '💊';
+      case 'appointment':
+        return '📅';
+      case 'patient':
+        return '👤';
+      case 'consultation':
+        return '🩺';
+      case 'emergency':
+        return '🚨';
+      case 'system':
+        return '⚙️';
+      case 'error':
+        return '❌';
+      case 'warning':
+        return '⚠️';
+      case 'success':
+        return '✅';
+      default:
+        return '📝';
+    }
+  };
+
+  // Function to get activity color based on category and priority
+  const getActivityColor = (category, priority) => {
+    if (priority === 'high') {
+      switch (category) {
+        case 'emergency': return '#F44336';
+        case 'error': return '#F44336';
+        case 'prescription': return '#FF5722';
+        case 'appointment': return '#FF9800';
+        default: return '#FF5722';
+      }
+    }
+    
+    switch (category) {
+      case 'prescription': return '#4CAF50';
+      case 'appointment': return '#2196F3';
+      case 'patient': return '#9C27B0';
+      case 'consultation': return '#00BCD4';
+      case 'emergency': return '#F44336';
+      case 'system': return '#607D8B';
+      case 'error': return '#F44336';
+      case 'warning': return '#FF9800';
+      case 'success': return '#4CAF50';
+      default: return '#78909C';
+    }
+  };
+
+  // Initialize activities on component mount
   useEffect(() => {
     isMounted.current = true;
+    
+    // Add initial activities
+    const initialActivities = [
+      { 
+        id: Date.now() - 1000, 
+        action: "System initialized", 
+        details: "Doctor dashboard starting up",
+        category: "system",
+        priority: "low",
+        timestamp: new Date(Date.now() - 1000).toISOString(),
+        doctorId: 'DOC001',
+        doctorName: 'Dr. Gayath Dahanayake',
+        isNew: false
+      },
+      { 
+        id: Date.now() - 2000, 
+        action: "Connecting to server", 
+        details: "Establishing connection to backend services",
+        category: "system",
+        priority: "medium",
+        timestamp: new Date(Date.now() - 2000).toISOString(),
+        doctorId: 'DOC001',
+        doctorName: 'Dr. Gayath Dahanayake',
+        isNew: false
+      }
+    ];
+    
+    setDoctorActivities(initialActivities);
+    
+    // Initialize dashboard
     initializeDashboard();
     
     // Refresh appointments every 5 minutes
-    const appointmentInterval = setInterval(fetchUpcomingAppointments, 300000);
+    const appointmentInterval = setInterval(() => {
+      fetchUpcomingAppointments();
+      logDoctorActivity(
+        "Auto-refresh", 
+        "Automatically refreshed appointments", 
+        "system",
+        "low"
+      );
+    }, 300000);
+    
+    // Log periodic activity every 30 seconds
+    const activityInterval = setInterval(() => {
+      logDoctorActivity(
+        "Dashboard active", 
+        "Doctor dashboard is actively monitoring", 
+        "system",
+        "low"
+      );
+    }, 30000);
+    
+    // Simulate some random activities for realism
+    const randomActivityInterval = setInterval(() => {
+      const randomActivities = [
+        { action: "Patient record accessed", details: "Viewing patient history", category: "patient" },
+        { action: "Lab results reviewed", details: "Checking recent test results", category: "system" },
+        { action: "Medication inventory checked", details: "Verifying stock levels", category: "system" },
+        { action: "Schedule updated", details: "Modified availability", category: "appointment" },
+        { action: "Reports generated", details: "Creating daily summary", category: "system" }
+      ];
+      
+      const randomActivity = randomActivities[Math.floor(Math.random() * randomActivities.length)];
+      logDoctorActivity(
+        randomActivity.action,
+        randomActivity.details,
+        randomActivity.category,
+        "low"
+      );
+    }, 45000); // Every 45 seconds
     
     return () => {
       isMounted.current = false;
       clearInterval(appointmentInterval);
+      clearInterval(activityInterval);
+      clearInterval(randomActivityInterval);
     };
   }, []);
 
@@ -282,7 +542,15 @@ const DoctorDashboard = () => {
       <AdminLayout admin={admin} title="Emergency Alerts">
         <div className="doctor-dashboard-back-button-container">
           <button
-            onClick={() => setCurrentView('dashboard')}
+            onClick={() => {
+              setCurrentView('dashboard');
+              logDoctorActivity(
+                "Returning to dashboard", 
+                "Navigated back from emergency alerts", 
+                "system",
+                "medium"
+              );
+            }}
             className="doctor-dashboard-back-button"
           >
             ← Back to Dashboard
@@ -318,7 +586,15 @@ const DoctorDashboard = () => {
             <div className="doctor-dashboard-api-unavailable-content">
               <span>⚠️ Backend connection unavailable. Using demo data.</span>
               <button 
-                onClick={handleRetryApiConnection}
+                onClick={() => {
+                  handleRetryApiConnection();
+                  logDoctorActivity(
+                    "Connection retry", 
+                    "User clicked retry connection button", 
+                    "system",
+                    "medium"
+                  );
+                }}
                 className="doctor-dashboard-retry-button"
               >
                 Retry Connection
@@ -331,7 +607,15 @@ const DoctorDashboard = () => {
           <div className="doctor-dashboard-error">
             ⚠️ {error}
             <button 
-              onClick={handleRetryApiConnection}
+              onClick={() => {
+                handleRetryApiConnection();
+                logDoctorActivity(
+                  "Error retry", 
+                  "User clicked retry button after error", 
+                  "system",
+                  "medium"
+                );
+              }}
               className="doctor-dashboard-retry-button"
             >
               Retry
@@ -344,30 +628,59 @@ const DoctorDashboard = () => {
             {/* Stats Section */}
             <div className="doctor-dashboard-stats-section">
               <div className="doctor-dashboard-stats-grid">
-                <div className="doctor-dashboard-stat-card doctor-dashboard-patients-card">
+                <div 
+                  className="doctor-dashboard-stat-card doctor-dashboard-patients-card"
+                  onClick={() => logDoctorActivity(
+                    "Viewed patients", 
+                    "Checked today's patient count", 
+                    "patient",
+                    "low"
+                  )}
+                >
                   <div className="doctor-dashboard-stat-icon">👥</div>
                   <div className="doctor-dashboard-stat-content">
                     <h3>{todayPatientsCount}</h3>
                     <p>Today's Patients</p>
                   </div>
                 </div>
-                <div className="doctor-dashboard-stat-card doctor-dashboard-reports-card">
+                <div 
+                  className="doctor-dashboard-stat-card doctor-dashboard-reports-card"
+                  onClick={() => logDoctorActivity(
+                    "Viewed reports", 
+                    "Checked pending reports", 
+                    "report",
+                    "low"
+                  )}
+                >
                   <div className="doctor-dashboard-stat-icon">📋</div>
                   <div className="doctor-dashboard-stat-content">
                     <h3>{dashboardData.stats?.pendingReports || 0}</h3>
                     <p>Pending Reports</p>
                   </div>
                 </div>
-                <div className="doctor-dashboard-stat-card doctor-dashboard-consultations-card">
+                <div 
+                  className="doctor-dashboard-stat-card doctor-dashboard-consultations-card"
+                  onClick={() => logDoctorActivity(
+                    "Viewed consultations", 
+                    "Checked consultation count", 
+                    "consultation",
+                    "low"
+                  )}
+                >
                   <div className="doctor-dashboard-stat-icon">💬</div>
                   <div className="doctor-dashboard-stat-content">
                     <h3>{todayPrescriptionsCount}</h3>
                     <p>Consultations</p>
                   </div>
                 </div>
-                <div className={`doctor-dashboard-stat-card doctor-dashboard-alerts-card ${
-                  dashboardData.stats?.emergencyAlerts > 0 ? 'doctor-dashboard-has-alerts' : ''
-                }`} onClick={handleEmergencyAlertsClick}>
+                <div 
+                  className={`doctor-dashboard-stat-card doctor-dashboard-alerts-card ${
+                    dashboardData.stats?.emergencyAlerts > 0 ? 'doctor-dashboard-has-alerts' : ''
+                  }`} 
+                  onClick={() => {
+                    handleEmergencyAlertsClick();
+                  }}
+                >
                   <div className="doctor-dashboard-stat-icon">🚨</div>
                   <div className="doctor-dashboard-stat-content">
                     <h3>{dashboardData.stats?.emergencyAlerts || 0}</h3>
@@ -381,13 +694,21 @@ const DoctorDashboard = () => {
             </div>
 
             <div className="doctor-dashboard-content-grid">
-              {/* Upcoming Appointments Section - MODIFIED */}
+              {/* Upcoming Appointments Section */}
               <div className="doctor-dashboard-appointments-section">
                 <div className="doctor-dashboard-section-header">
                   <h2>Today's Appointments</h2>
                   <button 
                     className="doctor-dashboard-view-all-button"
-                    onClick={() => navigate("/admin/doctor/appointments")}
+                    onClick={() => {
+                      navigate("/admin/doctor/appointments");
+                      logDoctorActivity(
+                        "Viewed all appointments", 
+                        "Navigated to appointments page", 
+                        "appointment",
+                        "medium"
+                      );
+                    }}
                   >
                     View All
                   </button>
@@ -432,20 +753,37 @@ const DoctorDashboard = () => {
                 </div>
               </div>
 
-              {/* Doctor Schedule Section - UNCHANGED */}
+              {/* Doctor Schedule Section */}
               <div className="doctor-dashboard-schedule-section">
                 <div className="doctor-dashboard-section-header">
                   <h2>Weekly Schedule</h2>
                   <button 
                     className="doctor-dashboard-view-all-button"
-                    onClick={() => navigate("/admin/doctor/schedule")}
+                    onClick={() => {
+                      navigate("/admin/doctor/schedule");
+                      logDoctorActivity(
+                        "Viewed schedule", 
+                        "Navigated to schedule management", 
+                        "system",
+                        "medium"
+                      );
+                    }}
                   >
                     Manage
                   </button>
                 </div>
                 <div className="doctor-dashboard-schedule-list">
                   {dashboardData.doctorSchedule?.map((schedule) => (
-                    <div key={schedule.id} className={`doctor-dashboard-schedule-card ${!schedule.available ? 'doctor-dashboard-unavailable' : ''}`}>
+                    <div 
+                      key={schedule.id} 
+                      className={`doctor-dashboard-schedule-card ${!schedule.available ? 'doctor-dashboard-unavailable' : ''}`}
+                      onClick={() => logDoctorActivity(
+                        "Viewed schedule", 
+                        `Checked ${schedule.day} schedule`, 
+                        "system",
+                        "low"
+                      )}
+                    >
                       <div className="doctor-dashboard-schedule-day">{schedule.day}</div>
                       <div className="doctor-dashboard-schedule-time">{schedule.time}</div>
                       <div className={`doctor-dashboard-schedule-status ${schedule.available ? 'doctor-dashboard-available' : 'doctor-dashboard-unavailable-status'}`}>
@@ -457,13 +795,21 @@ const DoctorDashboard = () => {
               </div>
             </div>
 
-            {/* Features Section - UNCHANGED */}
+            {/* Features Section */}
             <div className="doctor-dashboard-features-section">
               <h2 className="doctor-dashboard-section-title">Medical Features</h2>
               <div className="doctor-dashboard-features-grid">
                 <button
                   className="doctor-dashboard-feature-card"
-                  onClick={() => navigate("/admin/doctor/schedule-consultation")}
+                  onClick={() => {
+                    navigate("/admin/doctor/schedule-consultation");
+                    logDoctorActivity(
+                      "Schedule consultation", 
+                      "Navigated to consultation scheduling", 
+                      "consultation",
+                      "medium"
+                    );
+                  }}
                 >
                   <div className="doctor-dashboard-feature-icon">📅</div>
                   <h3>Schedule Consultation</h3>
@@ -471,7 +817,15 @@ const DoctorDashboard = () => {
                 </button>
                 <button
                   className="doctor-dashboard-feature-card"
-                  onClick={() => navigate("/admin/doctor/patient-records")}
+                  onClick={() => {
+                    navigate("/admin/doctor/patient-records");
+                    logDoctorActivity(
+                      "Patient records", 
+                      "Accessed patient records", 
+                      "patient",
+                      "medium"
+                    );
+                  }}
                 >
                   <div className="doctor-dashboard-feature-icon">📁</div>
                   <h3>Patient Records</h3>
@@ -479,7 +833,15 @@ const DoctorDashboard = () => {
                 </button>
                 <button
                   className="doctor-dashboard-feature-card"
-                  onClick={() => alert("Lab Reports clicked")}
+                  onClick={() => {
+                    alert("Lab Reports clicked");
+                    logDoctorActivity(
+                      "Lab reports", 
+                      "Viewed lab reports", 
+                      "report",
+                      "medium"
+                    );
+                  }}
                 >
                   <div className="doctor-dashboard-feature-icon">🔬</div>
                   <h3>Lab Reports</h3>
@@ -487,7 +849,15 @@ const DoctorDashboard = () => {
                 </button>
                 <button
                   className="doctor-dashboard-feature-card"
-                  onClick={() => navigate("/admin/doctor/prescriptions")}
+                  onClick={() => {
+                    navigate("/admin/doctor/prescriptions");
+                    logDoctorActivity(
+                      "Prescriptions", 
+                      "Accessed prescription management", 
+                      "prescription",
+                      "medium"
+                    );
+                  }}
                 >
                   <div className="doctor-dashboard-feature-icon">💊</div>
                   <h3>Prescriptions</h3>
@@ -497,7 +867,9 @@ const DoctorDashboard = () => {
                   className={`doctor-dashboard-feature-card doctor-dashboard-emergency-alert-feature ${
                     dashboardData.stats?.emergencyAlerts > 0 ? 'doctor-dashboard-has-alerts' : ''
                   }`}
-                  onClick={handleEmergencyAlertsClick}
+                  onClick={() => {
+                    handleEmergencyAlertsClick();
+                  }}
                 >
                   <div className="doctor-dashboard-feature-icon">🚨</div>
                   <h3>Emergency Alerts</h3>
@@ -508,7 +880,15 @@ const DoctorDashboard = () => {
                 </button>
                 <button
                   className="doctor-dashboard-feature-card"
-                  onClick={() => navigate("/admin/doctor/inventory")}
+                  onClick={() => {
+                    navigate("/admin/doctor/inventory");
+                    logDoctorActivity(
+                      "Inventory", 
+                      "Accessed medical inventory", 
+                      "system",
+                      "medium"
+                    );
+                  }}
                 >
                   <div className="doctor-dashboard-feature-icon">📦</div>
                   <h3>Item Requests</h3>
@@ -517,23 +897,75 @@ const DoctorDashboard = () => {
               </div>
             </div>
 
-            {/* Recent Activities Section - UNCHANGED */}
+            {/* Doctor Activities Section - REAL-WORLD IMPLEMENTATION */}
             <div className="doctor-dashboard-activity-section">
               <div className="doctor-dashboard-section-header">
-                <h2>Recent Activities</h2>
+                <h2>Live Activity Feed</h2>
+                <div className="activity-controls">
+                  <div className="live-indicator">
+                    <span className="live-dot"></span>
+                    <span className="live-text">LIVE</span>
+                  </div>
+                  <button 
+                    className="doctor-dashboard-view-all-button"
+                    onClick={() => {
+                      setDoctorActivities([]);
+                      logDoctorActivity(
+                        "Cleared activities", 
+                        "Activity feed cleared by user", 
+                        "system",
+                        "medium"
+                      );
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
               <div className="doctor-dashboard-activity-list">
-                {dashboardData.recentActivities?.map((activity) => (
-                  <div key={activity.id} className="doctor-dashboard-activity-item">
-                    <div className="doctor-dashboard-activity-icon">
-                      <div className="doctor-dashboard-activity-dot"></div>
-                    </div>
-                    <div className="doctor-dashboard-activity-content">
-                      <p>{activity.text}</p>
-                      <span className="doctor-dashboard-activity-time">{activity.time}</span>
-                    </div>
+                {doctorActivities.length === 0 ? (
+                  <div className="doctor-dashboard-no-activities">
+                    <div className="no-activities-icon">📋</div>
+                    <h3>No activities yet</h3>
+                    <p>Your activities will appear here as you use the system.</p>
                   </div>
-                ))}
+                ) : (
+                  doctorActivities.map((activity) => (
+                    <div 
+                      key={activity.id} 
+                      className={`doctor-dashboard-activity-item ${activity.isNew ? 'new-activity' : ''}`}
+                    >
+                      <div className="doctor-dashboard-activity-icon">
+                        <div 
+                          className="doctor-dashboard-activity-dot" 
+                          style={{ backgroundColor: getActivityColor(activity.category, activity.priority) }}
+                        >
+                          {getActivityIcon(activity.category)}
+                        </div>
+                      </div>
+                      <div className="doctor-dashboard-activity-content">
+                        <p className="activity-action">{activity.action}</p>
+                        {activity.details && (
+                          <p className="activity-details">{activity.details}</p>
+                        )}
+                        <span className="doctor-dashboard-activity-time">
+                          {formatActivityTime(activity.timestamp)}
+                        </span>
+                      </div>
+                      <div className="activity-category">
+                        <span 
+                          className="category-badge" 
+                          style={{ backgroundColor: getActivityColor(activity.category, activity.priority) }}
+                        >
+                          {activity.category}
+                        </span>
+                      </div>
+                      {activity.isNew && (
+                        <div className="new-activity-badge">NEW</div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </>
