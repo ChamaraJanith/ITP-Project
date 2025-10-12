@@ -963,3 +963,444 @@
 .doctor-dashboard-feature-card {
   animation: doctor-dashboard-fadeIn 0.6s ease forwards;
 }
+
+
+/* Advanced Patient Visits Chart Section */
+.doctor-dashboard-visits-section {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin-bottom: 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.visits-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(236, 239, 241, 0.7);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.visits-chart-title h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #263238;
+  margin: 0;
+}
+
+.visits-chart-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.visits-time-range-selector {
+  display: flex;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.visits-range-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  color: #546e7a;
+  font-weight: 500;
+  font-size: 0.9rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.visits-range-btn.active {
+  background: #2196F3;
+  color: white;
+  box-shadow: 0 2px 5px rgba(33, 150, 243, 0.3);
+}
+
+.visits-range-btn:hover:not(.active) {
+  background: rgba(33, 150, 243, 0.1);
+}
+
+.chart-type-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chart-type-btn {
+  padding: 0.5rem;
+  border: 1px solid #e0e0e0;
+  background: white;
+  color: #546e7a;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-type-btn:hover {
+  background: #f5f5f5;
+  border-color: #2196F3;
+  color: #2196F3;
+}
+
+.chart-type-btn.active {
+  background: #2196F3;
+  border-color: #2196F3;
+  color: white;
+}
+
+.export-btn {
+  padding: 0.5rem;
+  border: 1px solid #e0e0e0;
+  background: white;
+  color: #546e7a;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.export-btn:hover {
+  background: #f5f5f5;
+  border-color: #4CAF50;
+  color: #4CAF50;
+}
+
+/* Metrics Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.metric-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid;
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.metric-card.primary {
+  border-left-color: #2196F3;
+}
+
+.metric-card.success {
+  border-left-color: #4CAF50;
+}
+
+.metric-card.info {
+  border-left-color: #00BCD4;
+}
+
+.metric-card.warning {
+  border-left-color: #FF9800;
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.metric-icon {
+  color: #546e7a;
+}
+
+.metric-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #546e7a;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #263238;
+  margin-bottom: 0.5rem;
+}
+
+.metric-change {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.metric-change.positive {
+  color: #4CAF50;
+}
+
+.metric-change.negative {
+  color: #F44336;
+}
+
+/* Main Chart Section */
+.main-chart-section {
+  padding: 0 1.5rem 1.5rem;
+}
+
+.chart-container {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  height: 400px;
+  min-height: 400px;
+  position: relative;
+}
+
+.chart-no-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #546e7a;
+  font-size: 1.1rem;
+}
+
+/* Secondary Charts Grid */
+.secondary-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  padding: 0 1.5rem 1.5rem;
+}
+
+.chart-card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.chart-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.chart-card-header h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #263238;
+  margin: 0;
+}
+
+.chart-action-icon {
+  color: #546e7a;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.chart-action-icon:hover {
+  color: #2196F3;
+}
+
+.chart-content {
+  padding: 1rem;
+}
+
+.demographics-list, .visit-types-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.demographic-item, .visit-type-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.demographic-color, .visit-type-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.demographic-label, .visit-type-label {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #546e7a;
+}
+
+.demographic-value, .visit-type-value {
+  font-weight: 600;
+  color: #263238;
+}
+
+/* Advanced Chart Tooltip */
+.advanced-chart-tooltip {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e0e0e0;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tooltip-label {
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: #263238;
+}
+
+.tooltip-value {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+/* Responsive Design for Advanced Analytics */
+@media (max-width: 1200px) {
+  .secondary-charts-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .visits-chart-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .visits-chart-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .secondary-charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-container {
+    height: 300px;
+    min-height: 300px;
+  }
+}
+
+/* Animations */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.metric-card,
+.chart-card {
+  animation: slideInUp 0.6s ease forwards;
+}
+
+.metric-card:nth-child(1) { animation-delay: 0.1s; }
+.metric-card:nth-child(2) { animation-delay: 0.2s; }
+.metric-card:nth-child(3) { animation-delay: 0.3s; }
+.metric-card:nth-child(4) { animation-delay: 0.4s; }
+
+.chart-card:nth-child(1) { animation-delay: 0.5s; }
+.chart-card:nth-child(2) { animation-delay: 0.6s; }
+
+/* Advanced Chart Tooltip */
+.advanced-chart-tooltip {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e0e0e0;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tooltip-label {
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: #263238;
+}
+
+.tooltip-value {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+/* Responsive Design for Advanced Analytics */
+@media (max-width: 1200px) {
+  .secondary-charts-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .visits-chart-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .visits-chart-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .secondary-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Animations */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.metric-card,
+.chart-card {
+  animation: slideInUp 0.6s ease forwards;
+}
+
+.metric-card:nth-child(1) { animation-delay: 0.1s; }
+.metric-card:nth-child(2) { animation-delay: 0.2s; }
+.metric-card:nth-child(3) { animation-delay: 0.3s; }
+.metric-card:nth-child(4) { animation-delay: 0.4s; }
+
+.chart-card:nth-child(1) { animation-delay: 0.5s; }
+.chart-card:nth-child(2) { animation-delay: 0.6s; }
