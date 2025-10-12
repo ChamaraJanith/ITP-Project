@@ -316,9 +316,11 @@
   background: rgba(25, 118, 210, 0.1);
   color: #0d47a1;
 }
-
+/* Modified Appointments Section Styles */
 .doctor-dashboard-appointments-list {
   padding: 1.25rem;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .doctor-dashboard-appointment-card {
@@ -331,6 +333,7 @@
   backdrop-filter: blur(5px);
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
 }
 
 .doctor-dashboard-appointment-card:hover {
@@ -367,9 +370,32 @@
 }
 
 .doctor-dashboard-appointment-details p {
-  margin: 0;
+  margin: 0 0 0.5rem 0;
   color: #546e7a;
   font-size: 0.9rem;
+}
+
+.doctor-dashboard-patient-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.doctor-dashboard-patient-contact span {
+  font-size: 0.85rem;
+  color: #546e7a;
+}
+
+.doctor-dashboard-symptoms {
+  font-style: italic;
+  color: #78909c;
+}
+
+.doctor-dashboard-appointment-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .doctor-dashboard-appointment-action {
@@ -388,6 +414,52 @@
   background: linear-gradient(90deg, #1976D2, #0d47a1);
   transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(33, 150, 243, 0.4);
+}
+
+.doctor-dashboard-urgency-indicator {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.doctor-dashboard-urgency-indicator.normal {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.doctor-dashboard-urgency-indicator.urgent {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.doctor-dashboard-urgency-indicator.emergency {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.doctor-dashboard-no-appointments {
+  text-align: center;
+  padding: 2rem;
+  color: #546e7a;
+}
+
+.no-appointments-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.doctor-dashboard-no-appointments h3 {
+  margin: 0 0 0.5rem 0;
+  color: #263238;
+  font-size: 1.2rem;
+}
+
+.doctor-dashboard-no-appointments p {
+  margin: 0;
+  font-size: 0.95rem;
 }
 
 /* Schedule Section */
