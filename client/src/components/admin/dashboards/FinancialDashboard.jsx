@@ -507,21 +507,31 @@ const FinancialDashboard = () => {
       case "profit_or_loss":
         navigate("/admin/financial/profit-loss");
         break;
+
       case "payroll_processing":
         navigate("/admin/financial/payrolls");
         break;
+
       case "expense_tracking":
         navigate("/admin/financial/expenses");
         break;
+
       case "explore_trends":
         navigate("/admin/financial/trends");
         break;
+
       case "utility_management":
         navigate("/admin/financial/utities");
-        break; 
+        break;
+
+      case "utility_analytics":
+        navigate("/admin/financial/utilities/analytics");
+        break;
+
       case "budget_plan":
         navigate("/admin/financial/budget-planning");
         break;
+
       case "payroll_analytics":
         navigate("/admin/financial/payrolls/total-view", {
           state: {
@@ -1000,7 +1010,15 @@ const FinancialDashboard = () => {
                   onClick={() => handleFinancialFeatureClick("utility_management")}
                 >
                   MANAGE UTILITIES
-                </button>
+                </button> 
+                
+                
+                <button
+                  className="fd-feature-button"
+                  onClick={() => handleFinancialFeatureClick("utility_analytics")}
+                >
+                  UTILITY ANALYTICS
+                </button>  
 
                 <button
                   className="fd-feature-button"

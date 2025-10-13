@@ -48,6 +48,7 @@ import SendEmail from './components/admin/Financial_Manager/SendEmail';
 import FinancialUtilities from './components/admin/Financial_Manager/FinancialUtilities';
 import FinancialBudgetPlanning from './components/admin/Financial_Manager/FinancialBudgetPlanning';
 import PaymentForm from './components/appointments/PaymentForm';
+import TotalUtilityView from './components/admin/Financial_Manager/TotalUtilityView';
 
 
 
@@ -490,8 +491,13 @@ function App() {
           />
 
         <Route 
-              path="admin/financial/budget-planning" 
+              path="/admin/financial/budget-planning" 
               element={<FinancialBudgetPlanning />} 
+          />
+
+        <Route
+              path="/admin/financial/utilities/analytics"
+              element={<TotalUtilityView />}
           />
 
         <Route
