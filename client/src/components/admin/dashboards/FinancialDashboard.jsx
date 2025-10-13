@@ -104,7 +104,7 @@ const FinancialDashboard = () => {
         <div className="tooltip-body">
           <div className="tooltip-item">
             <div className="tooltip-color" style={{ backgroundColor: payload[0].fill }}></div>
-            <span className="tooltip-value">${payload[0].value.toLocaleString()}</span>
+            <span className="tooltip-value">{label === "Unique Patients" ? payload[0].value : `$${payload[0].value.toLocaleString()}`}</span>
           </div>
           <div className="tooltip-trend">
             {payload[0].value > 0 ? "🔥 Active Revenue" : "💤 No Activity"}
@@ -355,8 +355,15 @@ const FinancialDashboard = () => {
       specialtyBreakdown[specialty].revenue += (payment.amountPaid || 0);
     });
 
-    const uniquePatients = new Set(paymentsData.map(p => p.patientName)).size;
-    const uniqueDoctors = new Set(paymentsData.map(p => p.doctorName)).size;
+    // FIXED: Ensure unique patients calculation is correct and never returns undefined
+    const uniquePatients = paymentsData && paymentsData.length > 0 
+      ? new Set(paymentsData.map(p => p.patientName || p.patientEmail || `patient-${p._id}`)).size 
+      : 0;
+    
+    const uniqueDoctors = paymentsData && paymentsData.length > 0 
+      ? new Set(paymentsData.map(p => p.doctorName || `doctor-${p._id}`)).size 
+      : 0;
+    
     const averagePayment = totalAmountPaid > 0 ? totalAmountPaid / totalPayments : 0;
 
     return {
@@ -373,7 +380,7 @@ const FinancialDashboard = () => {
       paymentMethods,
       hospitalBreakdown,
       specialtyBreakdown,
-      uniquePatients,
+      uniquePatients: uniquePatients, // Ensure this is always a number
       uniqueDoctors,
       averagePayment
     };
@@ -483,7 +490,7 @@ const FinancialDashboard = () => {
       case "manage_payments":
         navigate("/admin/financial/payments");
         break;
-      case "Real time analytics":
+      case "Real_time_analytics_payments":
         navigate("/admin/financial/payments/total-view", {
           state: {
             payments: payments,
@@ -492,6 +499,11 @@ const FinancialDashboard = () => {
           }
         });
         break;
+
+      case "Real_time_analytics_Inventory":
+        navigate("/admin/financial/payments/inventory-view");
+        break;
+
       case "profit_or_loss":
         navigate("/admin/financial/profit-loss");
         break;
@@ -528,9 +540,6 @@ const FinancialDashboard = () => {
     switch (task) {
       case "send_emails":
         navigate("/admin/financial/send-email");
-        break;
-      case "send_notifications":
-        navigate("/admin/notifications");
         break;
       case "generate_reports":
         navigate("/admin/reports");
@@ -584,15 +593,14 @@ const FinancialDashboard = () => {
       ].filter(item => item.value > 0)
     : [];
 
-  // **UPDATED: Stats Grid Data Chart - Shows the 6 stat card values**
+  // **FIXED: Stats Grid Data Chart - Shows the 6 stat card values WITHOUT filtering out zero values for Unique Patients**
   const statsGridData = dashboardData?.stats
     ? [
-        { name: "Today's Revenue", value: dashboardData.stats.todayRevenue || 0, color: "#10B981" },
-        { name: "Pending Payments", value: dashboardData.stats.pendingPayments || 0, color: "#F59E0B" },
-        { name: "Month Revenue", value: dashboardData.stats.monthRevenue || 0, color: "#8B5CF6" },
-        { name: "Unique Patients", value: dashboardData.stats.uniquePatients || 0, color: "#06B6D4" },
-        { name: "Average Payment", value: Math.round(dashboardData.stats.averagePayment || 0), color: "#EC4899" },
-      ].filter(item => item.value > 0)
+        { name: "Today's Revenue", value: dashboardData.stats.todayRevenue || 0, color: "#10B981", isCount: false },
+        { name: "Month Revenue", value: dashboardData.stats.monthRevenue || 0, color: "#8B5CF6", isCount: false },
+        { name: "Unique Patients", value: dashboardData.stats.uniquePatients || 0, color: "#06B6D4", isCount: true }, // Always include, even if 0
+        { name: "Average Payment", value: Math.round(dashboardData.stats.averagePayment || 0), color: "#EC4899", isCount: false },
+      ].filter(item => item.name === "Unique Patients" || item.value > 0) // Special handling for Unique Patients
     : [];
 
   const timeBasedRevenueData = dashboardData?.stats
@@ -693,7 +701,7 @@ const FinancialDashboard = () => {
 
               <div className="fd-stat-card fd-average-payment">
                 <div className="fd-stat-info">
-                  <h3>${dashboardData.stats?.averagePayment?.toLocaleString() || 0}</h3>
+                  <h3>${Math.round(dashboardData.stats?.averagePayment || 0)?.toLocaleString()}</h3>
                   <p>Average Payment</p>
                   <small>Per successful appointment</small>
                 </div>
@@ -776,7 +784,14 @@ const FinancialDashboard = () => {
                           height={80}
                         />
                         <YAxis 
-                          tickFormatter={formatCurrency}
+                          tickFormatter={(value) => {
+                            // Check if this is count data (Unique Patients)
+                            const item = statsGridData.find(d => d.value === value);
+                            if (item && item.isCount) {
+                              return value.toString();
+                            }
+                            return formatCurrency(value);
+                          }}
                           axisLine={false}
                           tickLine={false}
                           tick={{ fontSize: 12, fill: '#666' }}
@@ -954,9 +969,16 @@ const FinancialDashboard = () => {
 
                 <button
                   className="fd-feature-button"
-                  onClick={() => handleFinancialFeatureClick("Real time analytics")}
+                  onClick={() => handleFinancialFeatureClick("Real_time_analytics_payments")}
                 >
                   PAYMENT ANALYTICS
+                </button>
+
+                <button
+                  className="fd-feature-button"
+                  onClick={() => handleFinancialFeatureClick("Real_time_analytics_Inventory")}
+                >
+                  INVENTORY ANALYTICS
                 </button>
 
                 <button
@@ -973,7 +995,7 @@ const FinancialDashboard = () => {
                   PAYROLL ANALYTICS
                 </button>
 
-                 <button
+                <button
                   className="fd-feature-button"
                   onClick={() => handleFinancialFeatureClick("utility_management")}
                 >
@@ -1019,13 +1041,6 @@ const FinancialDashboard = () => {
                   onClick={() => handleOperationalTaskClick("send_emails")}
                 >
                   📧 SEND EMAILS
-                </button>
-
-                <button
-                  className="fd-operational-button"
-                  onClick={() => handleOperationalTaskClick("send_notifications")}
-                >
-                  🔔 SEND NOTIFICATIONS
                 </button>
 
                 <button
@@ -1130,4 +1145,4 @@ const FinancialDashboard = () => {
   );
 };
 
-export default FinancialDashboard; 
+export default FinancialDashboard;
