@@ -32,6 +32,7 @@ import financemailrouter from './routes/emails.js';
 import utilitiesrouter from './routes/FinancialUtilitiesRoutes.js';
 import disposalPdfRoute from './routes/disposalPdfRoute.js';
 import router from './routes/appointment.js';
+import patientRoutes from "./routes/patientRoutes.js";
 
 // Import procurement routes
 import supplierRoutes from './routes/suppliers.js';
@@ -157,6 +158,7 @@ app.use('/api/financial-utilities', utilitiesrouter);
 app.use('/api/appointments', router);
 app.use('/api/appointments', AppointmentRoutes);
 app.use('/api/disposalrecords', disrouter)
+app.use("/api/users", patientRoutes);
 
 
 console.log('🚨 Mounting emergency alerts router at /api/doctor/emergency-alerts');

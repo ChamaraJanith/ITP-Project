@@ -1,114 +1,94 @@
-import Prescriptions from "../model/Prescriptions.js";
-import Patient from "../model/Patient.js";
+import mongoose from 'mongoose';
+import Patient from '../model/User.js';
 
-class PrescriptionController {
-  // Create new prescription
-  static async createPrescription(req, res) {
-    try {
-      const { patientId, date, diagnosis, medicines, notes } = req.body;
-      const doctor = req.user || {
-        id: "TEMP_DOCTOR_ID",
-        name: "Dr. Gayath",
-        specialization: "General",
-      };
-
-      // Fetch patient details from Patient model
-      const patient = await Patient.findById(patientId).select("-password");
-      if (!patient) {
-        return res.status(404).json({ success: false, message: "Patient not found" });
-      }
-
-      const newPrescription = new Prescriptions({
-        date: date ? new Date(date) : Date.now(),
-        diagnosis,
-        medicines,
-        notes: notes || "",
-
-        // ✅ Patient details from DB
-        patientId: patient._id,
-        patientName: patient.name,
-        patientEmail: patient.email,
-        patientPhone: patient.phone,
-        patientGender: patient.gender,
-        patientBloodGroup: patient.bloodGroup || "",
-        patientAllergies: patient.allergies || [],
-
-        // ✅ Doctor details
-        doctorId: doctor.id,
-        doctorName: doctor.name,
-        doctorSpecialization: doctor.specialization || "",
-      });
-
-      await newPrescription.save();
-
-      return res.status(201).json({
-        success: true,
-        message: "Prescription created successfully",
-        data: newPrescription,
-      });
-    } catch (error) {
-      console.error("Error creating prescription:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Error creating prescription",
-        error: error.message,
-      });
-    }
-  }
-
-  // Update prescription
-  static async updatePrescription(req, res) {
+class PatientController {
+  // Get patient profile
+  static async getProfile(req, res) {
     try {
       const { id } = req.params;
-      const { patientId, date, diagnosis, medicines, notes } = req.body;
+      console.log('Fetching profile for ID:', id, 'Type:', typeof id);
+      
+      // Validate ObjectId format
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        console.log('Invalid ObjectId format:', id);
+        return res.status(400).json({ success: false, message: 'Invalid patient ID format' });
+      }
+      
+      const patient = await Patient.findById(id).select('-password');
+      if (!patient) return res.status(404).json({ success: false, message: 'Patient not found' });
+      res.status(200).json({ success: true, data: patient });
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      res.status(500).json({ success: false, message: 'Error fetching profile', error: error.message });
+    }
+  }
+// ... other imports and methods in patientController.js
 
-      // Fetch patient details if patientId is provided
-      let patientDetails = {};
-      if (patientId) {
-        const patient = await Patient.findById(patientId).select("-password");
-        if (!patient) {
-          return res.status(404).json({ success: false, message: "Patient not found" });
-        }
-        patientDetails = {
-          patientId: patient._id,
-          patientName: patient.name,
-          patientEmail: patient.email,
-          patientPhone: patient.phone,
-          patientGender: patient.gender,
-          patientBloodGroup: patient.bloodGroup || "",
-          patientAllergies: patient.allergies || [],
-        };
+// Get current logged-in user profile (no ID needed from URL)
+static async getCurrentProfile(req, res) {
+  try {
+    // The user's ID comes from the middleware, which decoded the token
+    const userId = req.user.id;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated properly.' });
+    }
+    
+    // Find the patient by the ID from the token
+    const patient = await Patient.findById(userId).select('-password');
+    
+    if (!patient) {
+      return res.status(404).json({ success: false, message: 'Patient not found.' });
+    }
+    
+    res.status(200).json({ success: true, data: patient });
+  } catch (error) {
+    console.error('Error fetching current profile:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+}
+
+// ... export default PatientController;
+  // Update patient profile
+  static async updateProfile(req, res) {
+    try {
+      // DEBUGGING LOG: Check the ID received by the server
+      console.log('Received request to update profile for ID:', req.params.id, 'Type:', typeof req.params.id);
+
+      const { id } = req.params;
+      const { name, email, phone, gender, dateOfBirth } = req.body;
+      
+      // Validate ObjectId format
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        console.log('Invalid ObjectId format:', id);
+        return res.status(400).json({ success: false, message: 'Invalid patient ID format' });
       }
 
-      const updatedPrescription = await Prescriptions.findByIdAndUpdate(
-        id,
-        {
-          date,
-          diagnosis,
-          medicines,
-          notes,
-          ...patientDetails, // Merge patient details if updated
-        },
-        { new: true, runValidators: true }
-      );
-
-      if (!updatedPrescription) {
-        return res.status(404).json({ success: false, message: "Prescription not found" });
+      const patient = await Patient.findById(id);
+      if (!patient) {
+        // If you see this error, the console.log above will tell you what ID was not found.
+        console.log('Patient not found for ID:', id);
+        return res.status(404).json({ success: false, message: 'Patient not found' });
       }
 
-      return res.status(200).json({
+      patient.name = name || patient.name;
+      patient.email = email || patient.email;
+      patient.phone = phone || patient.phone;
+      patient.gender = gender || patient.gender;
+      patient.dateOfBirth = dateOfBirth || patient.dateOfBirth;
+
+      await patient.save();
+
+      res.status(200).json({
         success: true,
-        message: "Prescription updated successfully",
-        data: updatedPrescription,
+        message: 'Profile updated successfully',
+        data: patient,
       });
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: "Error updating prescription",
-        error: error.message,
-      });
+      console.error('Error updating profile:', error);
+      res.status(500).json({ success: false, message: 'Error updating profile', error: error.message });
     }
   }
 }
 
-export default PrescriptionController;
+export default PatientController;
