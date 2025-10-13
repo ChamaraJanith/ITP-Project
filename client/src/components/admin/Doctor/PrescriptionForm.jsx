@@ -438,7 +438,7 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
       const margin = 8; // Reduced from 12 to 8
       const usableWidth = pageWidth - margin * 2; // 194mm (increased from 186mm)
       const signatureSectionHeight = 50; // Reduced from 65 to 50
-      const footerHeight = 15; // Reduced from 25 to 15
+      const footerHeight = 20; // Increased from 15 to 20 to accommodate contact info
       let y = 5; // Reduced from 8 to 5
       let currentPage = 1;
       let prescriptionId = `RX-${Date.now().toString(36).toUpperCase()}`;
@@ -480,18 +480,18 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
           y += 18; // Reduced from 22 to 18
         } else {
           // Full header for first page
-          // Logo and Practice Information
+          // Logo and Practice Information - INCREASED LOGO SIZE
           try {
             if (hospitalLogo) {
               // For imported images, we need to convert to data URL first
               const img = new Image();
               img.src = hospitalLogo;
               
-              // Calculate appropriate logo size (20mm width, reduced from 25mm)
-              const logoWidth = 20;
+              // INCREASED: Calculate larger logo size (35mm width, increased from 20mm)
+              const logoWidth = 35;
               const logoHeight = (img.height / img.width) * logoWidth;
               
-              // Add logo to PDF
+              // Add logo to PDF with increased size
               doc.addImage(hospitalLogo, 'PNG', margin, y + 2, logoWidth, logoHeight);
             }
           } catch (e) {
@@ -499,27 +499,27 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
             
             // Fallback: Add text-based logo if image fails
             doc.setFont("helvetica", "bold");
-            doc.setFontSize(16); // Reduced from 18 to 16
+            doc.setFontSize(18); // Increased from 16 to 18
             doc.setTextColor(0, 51, 102);
-            doc.text("HEAL X", margin, y + 8); // Adjusted position
-            doc.setFontSize(9); // Reduced from 10 to 9
-            doc.text("Healthcare Center", margin, y + 13); // Adjusted position
+            doc.text("HEAL X", margin, y + 10); // Adjusted position for larger text
+            doc.setFontSize(10); // Increased from 9 to 10
+            doc.text("Healthcare Center", margin, y + 16); // Adjusted position
           }
 
-          // Practice Name and Information
-          const logoWidth = 20; // Same as above
+          // Practice Name and Information - ADJUSTED FOR LARGER LOGO
+          const logoWidth = 35; // Same as above
           doc.setFont("helvetica", "bold");
-          doc.setFontSize(12); // Reduced from 14 to 12
+          doc.setFontSize(14); // Increased from 12 to 14
           doc.setTextColor(0, 51, 102);
-          doc.text("HealX Healthcare Center", margin + logoWidth + 6, y + 6); // Adjusted position
+          doc.text("HealX Healthcare Center", margin + logoWidth + 8, y + 8); // Adjusted position
           
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(7); // Reduced from 8 to 7
+          doc.setFontSize(8); // Increased from 7 to 8
           doc.setTextColor(60, 60, 60);
-          doc.text("123 Healthcare Avenue, Medical District, MD 12345", margin + logoWidth + 6, y + 10); // Adjusted position
-          doc.text("Tel: (555) 123-4567 | Email: info@healxmedical.com", margin + logoWidth + 6, y + 14); // Adjusted position
+          doc.text("123 Healthcare Avenue, Medical District, MD 12345", margin + logoWidth + 8, y + 13); // Adjusted position
+          doc.text("Tel: (555) 123-4567 | Email: info@healxmedical.com", margin + logoWidth + 8, y + 18); // Adjusted position
           
-          y += 20; // Reduced from 25 to 20
+          y += 25; // Increased from 20 to 25 to accommodate larger logo
 
           // Prescription Header with Rx Symbol
           doc.setDrawColor(0, 51, 102);
@@ -822,6 +822,12 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
         y += notesHeight;
       }
 
+      // FIXED: Ensure proper spacing before signature section
+      const maxYPosition = getMaxYPosition();
+      if (y < maxYPosition - 10) {
+        y = maxYPosition - 10; // Add some padding before signature
+      }
+
       // PHYSICIAN SIGNATURE & AUTHORIZATION - Always at the bottom
       const signatureY = pageHeight - signatureSectionHeight - footerHeight;
       
@@ -889,16 +895,28 @@ const generatePDFBuffer = (selectedPatient, diagnosis, medicines, additionalNote
       doc.rect(margin, footerY, usableWidth, footerHeight - 3); // Reduced height
       
       doc.setFont("helvetica", "italic");
-      doc.setFontSize(6); // Reduced from 7 to 6
+      doc.setFontSize(7); // Increased from 6 to 7 for better readability
       doc.setTextColor(60, 60, 60);
       
       const disclaimer1 = "This prescription is valid only when signed by a licensed physician. Medications should be taken exactly as prescribed.";
       const disclaimer2 = "For medical emergencies, call 911 or visit the nearest emergency room. Keep all medications out of reach of children.";
-      const contact = "Heal X Medical Center | (555) 123-4567 | www.healxmedical.com";
       
+      // FIXED: Split the contact information to ensure it displays properly
       doc.text(disclaimer1, margin + 3, footerY + 4, { maxWidth: usableWidth - 6 }); // Adjusted position
       doc.text(disclaimer2, margin + 3, footerY + 8, { maxWidth: usableWidth - 6 }); // Adjusted position
-      doc.text(contact, pageWidth / 2, footerY + 12, { align: 'center' }); // Adjusted position
+      
+      // FIXED: Center the contact information
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(0, 51, 102);
+      
+      // Calculate text width to center it properly
+      const contactText = "Heal X Medical Center | (555) 123-4567 | www.healxmedical.com";
+      const textWidth = doc.getTextWidth(contactText);
+      const centerX = pageWidth / 2;
+      
+      // Center the contact information
+      doc.text(contactText, centerX, footerY + 12, { align: 'center' });
 
       // Professional border around the entire page
       doc.setDrawColor(0, 51, 102);
