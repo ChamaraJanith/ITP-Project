@@ -1,4 +1,4 @@
-// DoctorDashboard.jsx
+// DoctorDashboard.jsx - COMPLETE UPDATED CODE
 
 import React, { useState, useEffect, useRef } from "react";
 import AdminLayout from "../AdminLayout";
@@ -99,20 +99,16 @@ const DoctorDashboard = () => {
     if (!dateString) return false;
     
     let date;
-    // Handle different date formats
     if (typeof dateString === 'string') {
-      // If it's already in YYYY-MM-DD format
       if (dateString.includes('-') && dateString.length === 10) {
         date = new Date(dateString + 'T00:00:00');
       } else {
-        // Try parsing as is
         date = new Date(dateString);
       }
     } else {
       date = new Date(dateString);
     }
     
-    // Check if date is valid
     if (isNaN(date.getTime())) return false;
     
     const today = new Date();
@@ -177,17 +173,702 @@ const DoctorDashboard = () => {
     });
   };
 
+  // Calculate age from date of birth
+  const calculateAge = (dateOfBirth) => {
+    if (!dateOfBirth) return "N/A";
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  // Generate Comprehensive Patient Records Report PDF
+  const generatePatientRecordsReport = () => {
+    logDoctorActivity(
+      "Generating report",
+      "Creating comprehensive patient records report",
+      "system",
+      "high"
+    );
+
+    const printWindow = window.open('', '_blank');
+    const currentDate = new Date();
+    const formattedDate = currentDate.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    const formattedTime = currentDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    // Calculate statistics
+    const uniquePatients = new Set(prescriptions.map(p => p.patientId)).size;
+    const totalPrescriptions = prescriptions.length;
+    const totalMedicines = prescriptions.reduce((sum, p) => sum + (p.medicines?.length || 0), 0);
+    
+    // Calculate date ranges
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sixtyDaysAgo = new Date(today);
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const ninetyDaysAgo = new Date(today);
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+    // Filter by periods
+    const last30Days = prescriptions.filter(p => new Date(p.date) >= thirtyDaysAgo);
+    const last60Days = prescriptions.filter(p => new Date(p.date) >= sixtyDaysAgo && new Date(p.date) < thirtyDaysAgo);
+    const last90Days = prescriptions.filter(p => new Date(p.date) >= ninetyDaysAgo && new Date(p.date) < sixtyDaysAgo);
+
+    // Age distribution
+    const ageGroups = { '0-18': 0, '19-35': 0, '36-50': 0, '51-65': 0, '65+': 0 };
+    prescriptions.forEach(p => {
+      if (p.patientDateOfBirth) {
+        const age = calculateAge(p.patientDateOfBirth);
+        if (age <= 18) ageGroups['0-18']++;
+        else if (age <= 35) ageGroups['19-35']++;
+        else if (age <= 50) ageGroups['36-50']++;
+        else if (age <= 65) ageGroups['51-65']++;
+        else ageGroups['65+']++;
+      }
+    });
+
+    // Gender distribution
+    const genderCount = { Male: 0, Female: 0, Other: 0 };
+    prescriptions.forEach(p => {
+      const gender = p.patientGender || 'Other';
+      genderCount[gender] = (genderCount[gender] || 0) + 1;
+    });
+
+    // Most common diagnoses
+    const diagnosisCount = {};
+    prescriptions.forEach(p => {
+      if (p.diagnosis) {
+        diagnosisCount[p.diagnosis] = (diagnosisCount[p.diagnosis] || 0) + 1;
+      }
+    });
+    const topDiagnoses = Object.entries(diagnosisCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+
+    // Most prescribed medicines
+    const medicineCount = {};
+    prescriptions.forEach(p => {
+      if (p.medicines) {
+        p.medicines.forEach(med => {
+          medicineCount[med.name] = (medicineCount[med.name] || 0) + 1;
+        });
+      }
+    });
+    const topMedicines = Object.entries(medicineCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>HealX Patient Records Report</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+          
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Inter', sans-serif;
+            background: #fff;
+            color: #1a1a1a;
+            line-height: 1.5;
+            font-size: 11px;
+          }
+          
+          .report-container {
+            width: 210mm;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+          }
+          
+          .header {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          
+          .hospital-logo {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #2563eb;
+            font-size: 24px;
+          }
+          
+          .hospital-info {
+            flex: 1;
+            text-align: center;
+            margin: 0 20px;
+          }
+          
+          .hospital-name {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            letter-spacing: -0.5px;
+          }
+          
+          .hospital-tagline {
+            font-size: 14px;
+            opacity: 0.9;
+          }
+          
+          .report-meta {
+            text-align: right;
+            font-size: 10px;
+          }
+          
+          .report-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e40af;
+            margin: 30px 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          
+          .report-subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 30px;
+            font-size: 12px;
+          }
+          
+          .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+          }
+          
+          .stat-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+          }
+          
+          .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2563eb;
+            margin-bottom: 5px;
+          }
+          
+          .stat-label {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          
+          .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+          }
+          
+          .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #2563eb;
+            display: flex;
+            align-items: center;
+          }
+          
+          .section-icon {
+            margin-right: 8px;
+          }
+          
+          .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 10px;
+          }
+          
+          .data-table th {
+            background: #f1f5f9;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+          }
+          
+          .data-table td {
+            padding: 8px 10px;
+            border: 1px solid #e2e8f0;
+          }
+          
+          .data-table tr:nth-child(even) {
+            background: #f8fafc;
+          }
+          
+          .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+          }
+          
+          .info-item {
+            display: flex;
+            padding: 8px;
+            background: #f8fafc;
+            border-radius: 4px;
+          }
+          
+          .info-label {
+            font-weight: 600;
+            color: #475569;
+            min-width: 120px;
+          }
+          
+          .info-value {
+            color: #1e293b;
+          }
+          
+          .chart-container {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+          }
+          
+          .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            height: 150px;
+            gap: 10px;
+            margin-top: 10px;
+          }
+          
+          .bar-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+          }
+          
+          .bar {
+            width: 100%;
+            background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            transition: all 0.3s ease;
+          }
+          
+          .bar-value {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: 600;
+            font-size: 10px;
+            color: #1e293b;
+          }
+          
+          .bar-label {
+            margin-top: 5px;
+            font-size: 9px;
+            color: #64748b;
+            text-align: center;
+          }
+          
+          .period-comparison {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+          }
+          
+          .period-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+          }
+          
+          .period-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 10px;
+          }
+          
+          .period-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2563eb;
+          }
+          
+          .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: #64748b;
+          }
+          
+          .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            padding: 0 40px;
+          }
+          
+          .signature-box {
+            text-align: center;
+            width: 40%;
+          }
+          
+          .signature-line {
+            width: 100%;
+            border-bottom: 1px solid #1e293b;
+            margin: 30px 0 10px;
+            height: 40px;
+          }
+          
+          .signature-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #475569;
+          }
+          
+          .signature-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-top: 5px;
+          }
+          
+          .official-seal {
+            text-align: center;
+            margin: 30px 0;
+            padding: 15px;
+            border: 3px solid #2563eb;
+            border-radius: 8px;
+            background: #eff6ff;
+          }
+          
+          .seal-text {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2563eb;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+          }
+          
+          @media print {
+            body {
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+            }
+            .report-container {
+              padding: 0;
+            }
+            .section {
+              page-break-inside: avoid;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="report-container">
+          <!-- Header -->
+          <div class="header">
+            <div class="hospital-logo">HX</div>
+            <div class="hospital-info">
+              <div class="hospital-name">HealX Healthcare Center</div>
+              <div class="hospital-tagline">Advanced Patient Care & Medical Records System</div>
+            </div>
+            <div class="report-meta">
+              <div><strong>Generated On:</strong></div>
+              <div>${formattedDate}</div>
+              <div>${formattedTime}</div>
+              <div style="margin-top: 5px;"><strong>Total Records:</strong> ${totalPrescriptions}</div>
+            </div>
+          </div>
+
+          <!-- Title -->
+          <div class="report-title">📋 Patient Records Medical Report</div>
+          <div class="report-subtitle">Comprehensive Analysis of Patient Prescriptions & Treatment History</div>
+
+          <!-- Key Statistics -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value">${totalPrescriptions}</div>
+              <div class="stat-label">Total Prescriptions</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${uniquePatients}</div>
+              <div class="stat-label">Unique Patients</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${totalMedicines}</div>
+              <div class="stat-label">Total Medicines</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${new Set(prescriptions.map(p => p.doctorName)).size}</div>
+              <div class="stat-label">Active Doctors</div>
+            </div>
+          </div>
+
+          <!-- Period Comparison -->
+          <div class="section">
+            <div class="section-title">
+              <span class="section-icon">📊</span> Prescription Trend Analysis
+            </div>
+            <div class="period-comparison">
+              <div class="period-card">
+                <div class="period-title">Last 30 Days</div>
+                <div class="period-value">${last30Days.length}</div>
+              </div>
+              <div class="period-card">
+                <div class="period-title">31-60 Days Ago</div>
+                <div class="period-value">${last60Days.length}</div>
+              </div>
+              <div class="period-card">
+                <div class="period-title">61-90 Days Ago</div>
+                <div class="period-value">${last90Days.length}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Age Distribution Chart -->
+          <div class="section">
+            <div class="section-title">
+              <span class="section-icon">👥</span> Patient Age Distribution
+            </div>
+            <div class="chart-container">
+              <div class="bar-chart">
+                ${Object.entries(ageGroups).map(([age, count]) => {
+                  const maxCount = Math.max(...Object.values(ageGroups));
+                  const height = maxCount > 0 ? (count / maxCount * 100) : 0;
+                  return `
+                    <div class="bar-item">
+                      <div class="bar" style="height: ${height}%">
+                        <div class="bar-value">${count}</div>
+                      </div>
+                      <div class="bar-label">${age} years</div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+            <div class="info-grid">
+              ${Object.entries(ageGroups).map(([age, count]) => `
+                <div class="info-item">
+                  <div class="info-label">${age} years:</div>
+                  <div class="info-value">${count} patients (${totalPrescriptions > 0 ? ((count/totalPrescriptions)*100).toFixed(1) : 0}%)</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Gender Distribution -->
+          <div class="section">
+            <div class="section-title">
+              <span class="section-icon">⚧</span> Gender Distribution
+            </div>
+            <div class="info-grid">
+              ${Object.entries(genderCount).map(([gender, count]) => `
+                <div class="info-item">
+                  <div class="info-label">${gender}:</div>
+                  <div class="info-value">${count} patients (${totalPrescriptions > 0 ? ((count/totalPrescriptions)*100).toFixed(1) : 0}%)</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Top Diagnoses -->
+          <div class="section">
+            <div class="section-title">
+              <span class="section-icon">🔍</span> Top 10 Most Common Diagnoses
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th width="5%">Rank</th>
+                  <th width="65%">Diagnosis</th>
+                  <th width="15%">Frequency</th>
+                  <th width="15%">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${topDiagnoses.map(([diagnosis, count], index) => `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td>${diagnosis}</td>
+                    <td>${count}</td>
+                    <td>${((count/totalPrescriptions)*100).toFixed(1)}%</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Top Medicines -->
+          <div class="section">
+            <div class="section-title">
+              <span class="section-icon">💊</span> Top 10 Most Prescribed Medicines
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th width="5%">Rank</th>
+                  <th width="65%">Medicine Name</th>
+                  <th width="15%">Times Prescribed</th>
+                  <th width="15%">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${topMedicines.map(([medicine, count], index) => `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td>${medicine}</td>
+                    <td>${count}</td>
+                    <td>${totalMedicines > 0 ? ((count/totalMedicines)*100).toFixed(1) : 0}%</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Recent Prescriptions Summary -->
+          <div class="section">
+            <div class="section-title">
+              <span class="section-icon">📝</span> Recent Prescription Records (Last 20)
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th width="10%">Date</th>
+                  <th width="20%">Patient Name</th>
+                  <th width="15%">Patient ID</th>
+                  <th width="30%">Diagnosis</th>
+                  <th width="15%">Doctor</th>
+                  <th width="10%">Medicines</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${prescriptions.slice(0, 20).map(prescription => `
+                  <tr>
+                    <td>${new Date(prescription.date).toLocaleDateString()}</td>
+                    <td>${prescription.patientName}</td>
+                    <td>${prescription.patientId}</td>
+                    <td>${prescription.diagnosis || 'N/A'}</td>
+                    <td>${prescription.doctorName}</td>
+                    <td>${prescription.medicines?.length || 0}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Official Seal -->
+          <div class="official-seal">
+            <div class="seal-text">🏥 HEAL-X OFFICIAL SEAL</div>
+            <div style="font-size: 10px; margin-top: 5px; color: #64748b;">Healthcare Management System</div>
+          </div>
+
+          <!-- Signature Section -->
+          <div class="signature-section">
+            <div class="signature-box">
+              <div class="signature-label">Authorized By</div>
+              <div class="signature-line"></div>
+              <div class="signature-name">Dr. Gayath Dahanayake</div>
+              <div style="font-size: 10px; color: #64748b; margin-top: 3px;">Emergency Medicine Specialist</div>
+            </div>
+            <div class="signature-box">
+              <div class="signature-label">Report Approved On</div>
+              <div class="signature-line"></div>
+              <div class="signature-name">Date: ${formattedDate}</div>
+              <div style="font-size: 10px; color: #64748b; margin-top: 3px;">Official Medical Report</div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="footer">
+            <div>
+              <strong>HealX Healthcare Center</strong><br>
+              Advanced Patient Care & Medical Records System<br>
+              Contact: info@healx.com | Phone: (555) 123-4567
+            </div>
+            <div style="text-align: right;">
+              <strong>Report ID:</strong> RPT-${Date.now()}<br>
+              <strong>Generated:</strong> ${formattedDate} ${formattedTime}<br>
+              <strong>Page:</strong> 1 of 1
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    setTimeout(() => {
+      printWindow.print();
+      logDoctorActivity(
+        "Report generated",
+        "Patient records report created successfully",
+        "system",
+        "medium"
+      );
+    }, 500);
+  };
+
   // Advanced data processing functions using real prescription data
   const processPatientVisitsData = (prescriptions, range) => {
     const now = new Date();
     const data = [];
     const comparison = [];
     
-    // Debug: Log prescriptions to see what we're working with
     console.log('Processing prescriptions for range:', range, 'Total prescriptions:', prescriptions.length);
     
     if (range === 'day') {
-      // Today's hourly data (8 AM to 8 PM)
       const todayPrescriptions = prescriptions.filter(p => {
         if (!p.date) return false;
         return isToday(p.date);
@@ -215,7 +896,6 @@ const DoctorDashboard = () => {
         });
       }
       
-      // Yesterday's hourly data for comparison
       const yesterday = new Date(now);
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = yesterday.toISOString().split('T')[0];
@@ -245,7 +925,6 @@ const DoctorDashboard = () => {
         });
       }
     } else if (range === 'week') {
-      // Current week data
       for (let i = 6; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
@@ -265,7 +944,6 @@ const DoctorDashboard = () => {
         });
       }
       
-      // Previous week for comparison
       for (let i = 13; i >= 7; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
@@ -285,7 +963,6 @@ const DoctorDashboard = () => {
         });
       }
     } else if (range === 'month') {
-      // Last 30 days grouped by week
       const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
       weeks.forEach((week, index) => {
         const startDate = new Date(now);
@@ -306,7 +983,6 @@ const DoctorDashboard = () => {
         });
       });
       
-      // Previous month for comparison
       const prevWeeks = ['Prev W1', 'Prev W2', 'Prev W3', 'Prev W4'];
       prevWeeks.forEach((week, index) => {
         const startDate = new Date(now);
@@ -327,7 +1003,6 @@ const DoctorDashboard = () => {
         });
       });
     } else if (range === 'year') {
-      // Last 12 months
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const currentMonth = now.getMonth();
       
@@ -348,7 +1023,6 @@ const DoctorDashboard = () => {
         });
       }
       
-      // Previous year for comparison
       for (let i = 11; i >= 0; i--) {
         const monthIndex = (currentMonth - i + 12) % 12;
         const year = monthIndex > currentMonth ? now.getFullYear() - 2 : now.getFullYear() - 1;
@@ -367,11 +1041,9 @@ const DoctorDashboard = () => {
       }
     }
     
-    // Debug: Log processed data
     console.log('Processed chart data:', data);
     console.log('Comparison data:', comparison);
     
-    // Process patient demographics from real data
     const demographics = [
       { name: '0-18', value: 0, color: '#FF6B6B' },
       { name: '19-35', value: 0, color: '#4ECDC4' },
@@ -380,7 +1052,6 @@ const DoctorDashboard = () => {
       { name: '65+', value: 0, color: '#FFEAA7' }
     ];
     
-    // Calculate age from prescription data
     prescriptions.forEach(p => {
       if (p.patientDateOfBirth) {
         const birthDate = new Date(p.patientDateOfBirth);
@@ -400,7 +1071,6 @@ const DoctorDashboard = () => {
       }
     });
     
-    // Process visit types from real data
     const visitTypesData = [
       { type: 'New Patient', count: 0, color: '#6C5CE7' },
       { type: 'Follow-up', count: 0, color: '#00B894' },
@@ -409,7 +1079,6 @@ const DoctorDashboard = () => {
       { type: 'Check-up', count: 0, color: '#FDCB6E' }
     ];
     
-    // Categorize visits based on diagnosis and other factors
     prescriptions.forEach(p => {
       if (p.diagnosis) {
         const diagnosis = p.diagnosis.toLowerCase();
@@ -429,31 +1098,26 @@ const DoctorDashboard = () => {
       }
     });
     
-    // Calculate advanced statistics
     const totalVisits = data.reduce((sum, item) => sum + item.visits, 0);
     const averageVisits = data.length > 0 ? Math.round(totalVisits / data.length) : 0;
     const peakVisits = data.length > 0 ? Math.max(...data.map(item => item.visits)) : 0;
     
-    // Calculate trend and growth
     const recentVisits = data.slice(-3).reduce((sum, item) => sum + item.visits, 0);
     const previousVisits = data.length > 6 ? data.slice(-6, -3).reduce((sum, item) => sum + item.visits, 0) : 0;
     const trend = recentVisits > previousVisits ? 'up' : recentVisits < previousVisits ? 'down' : 'stable';
     const growthRate = previousVisits > 0 ? ((recentVisits - previousVisits) / previousVisits * 100).toFixed(1) : 0;
     
-    // Calculate comparison with previous period
     const currentTotal = data.reduce((sum, item) => sum + item.visits, 0);
     const previousTotal = comparison.reduce((sum, item) => sum + item.visits, 0);
     const comparisonPercent = previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal * 100).toFixed(1) : 0;
     
-    // Calculate efficiency metrics based on real data
-    const avgConsultationTime = 30; // Average consultation time in minutes
+    const avgConsultationTime = 30;
     const totalConsultationTime = totalVisits * avgConsultationTime;
     const workingHoursPerDay = 8;
     const workingDays = range === 'day' ? 1 : range === 'week' ? 7 : range === 'month' ? 30 : 365;
     const totalAvailableTime = workingDays * workingHoursPerDay * 60;
     const efficiencyScore = Math.min(100, Math.max(0, (totalConsultationTime / totalAvailableTime) * 100));
     
-    // Calculate satisfaction based on follow-up rate
     const followUpRate = visitTypesData[1].count > 0 ? (visitTypesData[1].count / totalVisits * 100) : 0;
     const satisfactionScore = Math.min(100, Math.max(0, 70 + followUpRate));
     
@@ -516,10 +1180,8 @@ const DoctorDashboard = () => {
       if (isMounted.current) {
         setPrescriptions(allPrescriptions);
         
-        // Process patient visits data
         processPatientVisitsData(allPrescriptions, visitTimeRange);
         
-        // Filter today's prescriptions
         const todaysPrescriptions = filterTodaysPrescriptions(allPrescriptions);
         setTodayPrescriptionsCount(todaysPrescriptions.length);
         
@@ -946,7 +1608,6 @@ const DoctorDashboard = () => {
   };
 
   const renderChart = () => {
-    // Ensure we have data to display
     if (!visitChartData || visitChartData.length === 0) {
       return (
         <div className="chart-no-data">
@@ -1216,6 +1877,15 @@ const DoctorDashboard = () => {
                   >
                     <Download size={16} />
                     Export
+                  </button>
+
+                  {/* NEW: Patient Records Report Button */}
+                  <button
+                    className="download-report-btn"
+                    onClick={generatePatientRecordsReport}
+                  >
+                    <FileText size={16} />
+                    Download Report
                   </button>
                 </div>
               </div>
