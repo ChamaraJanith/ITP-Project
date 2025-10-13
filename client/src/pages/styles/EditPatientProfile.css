@@ -1,0 +1,210 @@
+/* EditPatientProfile.css - Fully Static Design */
+
+.profile-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  padding: 20px;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.profile-card {
+  background-color: #fff;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  width: 100%;
+  max-width: 600px;
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 100%;
+  background: linear-gradient(to bottom, #6a11cb, #2575fc);
+  border-top-left-radius: 15px;
+  border-bottom-left-radius: 15px;
+}
+
+h2 {
+  font-size: 2em;
+  color: #333;
+  margin-bottom: 30px;
+  margin-left: 20px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* Form layout */
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-left: 20px;
+}
+
+/* Remove any hover/focus effects on info-item */
+.profile-info div.info-item {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  transition: none !important;
+}
+
+.profile-info div.info-item:hover,
+.profile-info div.info-item:focus,
+.profile-info div.info-item:focus-within {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.profile-info div.info-item label {
+  flex: 0 0 120px;
+  font-size: 1em;
+  color: #555;
+  font-weight: 500;
+  text-align: right;
+  padding-right: 15px;
+}
+
+.profile-info div.info-item input[type="text"],
+.profile-info div.info-item input[type="email"],
+.profile-info div.info-item input[type="tel"],
+.profile-info div.info-item input[type="date"],
+.profile-info div.info-item select {
+  flex: 1;
+  padding: 10px 15px;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  font-size: 1em;
+  color: #333;
+  background-color: #fcfdfe;
+  outline: none;
+  transition: none;
+}
+
+/* Disabled role input */
+.profile-info .info-item input[name="role"][disabled] {
+  background-color: #e9ecef;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Error messages */
+.profile-info .info-item .error {
+  color: #dc3545;
+  font-size: 0.85em;
+  margin-top: 5px;
+  display: block;
+  margin-left: 120px;
+  padding-left: 15px;
+}
+
+/* Buttons */
+.edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 30px;
+  padding-right: 20px;
+}
+
+.edit-buttons button {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 600;
+  background-color: #007bff;
+  color: white;
+  transition: none;
+}
+
+.edit-buttons button[type="button"] {
+  background-color: #6c757d;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .profile-card {
+    padding: 30px;
+    margin: 0 15px;
+  }
+
+  h2 {
+    font-size: 1.8em;
+  }
+
+  .profile-info {
+    padding-left: 10px;
+    gap: 15px;
+  }
+
+  .profile-info div.info-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .profile-info div.info-item label {
+    text-align: left;
+    flex: none;
+    width: 100%;
+    margin-bottom: 5px;
+    padding-right: 0;
+  }
+
+  .profile-info div.info-item input,
+  .profile-info div.info-item select {
+    width: 100%;
+    flex: none;
+  }
+
+  .profile-info div.info-item .error {
+    margin-left: 0;
+    padding-left: 0;
+    text-align: left;
+  }
+
+  .edit-buttons {
+    justify-content: center;
+    flex-direction: column;
+    padding-right: 0;
+  }
+
+  .edit-buttons button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-container {
+    padding: 10px;
+  }
+
+  .profile-card {
+    padding: 25px;
+  }
+
+  h2 {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+  }
+
+  .edit-buttons button {
+    padding: 10px 15px;
+    font-size: 0.9em;
+  }
+}

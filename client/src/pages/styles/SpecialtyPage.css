@@ -1,0 +1,116 @@
+.specialty-page {
+  padding: 2rem;
+  background: #eef2f7;
+  min-height: 100vh;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.specialty-page h1 {
+  color: #1e293b;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.specialty-page h1 span {
+  color: #007bff;
+}
+
+.doctors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.doctor-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.2rem;
+  position: relative;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.doctor-card:hover {
+  transform: translateY(-4px);
+}
+
+.verified-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: #e6ffed;
+  color: #00b341;
+  border: 1px solid #00b341;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  padding: 3px 6px;
+}
+
+.doctor-image {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 0.8rem;
+}
+
+.doctor-info h3 {
+  margin: 0.4rem 0;
+  color: #1e293b;
+  font-size: 1.2rem;
+}
+
+.specialization {
+  color: #007bff;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.doctor-info p {
+  font-size: 0.9rem;
+  color: #475569;
+  margin: 2px 0;
+}
+
+.available-hours {
+  margin-top: 0.5rem;
+  text-align: left;
+  font-size: 0.85rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.available-hours ul {
+  list-style-type: none;
+  padding-left: 0.5rem;
+}
+
+.book-btn {
+  margin-top: 1rem;
+  background-color: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.book-btn:hover {
+  background-color: #128a3c;
+}
+
+.clear-btn {
+  margin-top: 2rem;
+  background: transparent;
+  border: none;
+  color: red;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+

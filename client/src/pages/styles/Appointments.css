@@ -1,0 +1,100 @@
+/* === General Layout === */
+.appointment-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 3rem 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* === Appointment Card === */
+.appointment-card {
+  background: #ffffff;
+  padding: 2rem 2.5rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 1000px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.appointment-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.appointment-card h2 {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+}
+
+/* === Table Styling === */
+.appointments-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.appointments-table thead {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.appointments-table th,
+.appointments-table td {
+  padding: 0.9rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.appointments-table th {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.appointments-table tbody tr:hover {
+  background-color: #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+/* === No Appointments Message === */
+.appointment-card p {
+  text-align: center;
+  color: #475569;
+  font-size: 1rem;
+  padding: 2rem 0;
+}
+
+/* === Responsive Design === */
+@media (max-width: 768px) {
+  .appointment-card {
+    padding: 1.5rem;
+  }
+
+  .appointments-table th,
+  .appointments-table td {
+    padding: 0.7rem;
+    font-size: 0.85rem;
+  }
+
+  .appointment-card h2 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 500px) {
+  .appointments-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .appointment-card {
+    border-radius: 1rem;
+  }
+}

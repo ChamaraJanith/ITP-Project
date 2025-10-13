@@ -220,6 +220,8 @@ function AdvancedSearchBar({ isMobile = false }) {
   );
 }
 
+
+
 function MedicalNavbar() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);

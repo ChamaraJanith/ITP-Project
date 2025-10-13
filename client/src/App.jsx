@@ -59,6 +59,12 @@ import PatientList from './components/admin/Reciptionist/PatientList';
 import PatientDetails from './components/admin/Reciptionist/PatientDetails';
 import ResetPassword from './components/ResetPassword';
 
+import Appointments from './pages/Appointments';
+
+
+
+import EditPatientProfile from "./pages/EditPatientProfile";
+
 // ✅ NEW: Procurement & Suppliers Component
 import SupplierManagement from './components/admin/Admin/SupplierManagement';
 import BookAppointment from './components/appointments/BookAppointment';
@@ -66,7 +72,7 @@ import DoctorInventoryPage from './components/admin/Doctor/DoctorInventoryPage';
 import ConfirmationPage from './components/appointments/ConfirmationPage';
 import PatientProfile from '../src/pages/PatientProfile';
 import ManageAppointments from './components/appointments/ManageAppointments';
-
+import SpecialtyPage from './pages/SpecialtyPage';
 // ---- NEW: Force scroll top on route change ----
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -103,13 +109,6 @@ const DoctorsPage = () => (
   <div style={{padding: '2rem'}}>
     <h2>👨‍⚕️ Find Doctors</h2>
     <p>Browse our network of qualified healthcare professionals.</p>
-  </div>
-);
-
-const SpecialtyPage = () => (
-  <div style={{padding: '2rem'}}>
-    <h2>🩺 Medical Specialty</h2>
-    <p>Specialized medical services and treatments.</p>
   </div>
 );
 
@@ -228,6 +227,13 @@ function App() {
             <Route path="/login" element={<Login/>}/>
             <Route path="/forgot-password" element={<ForgotPassword />}/>
 
+<Route path="/patient-profile/:id" element={<PatientProfile />} />
+
+<Route path="/edit-patient/:id" element={<EditPatientProfile />} />
+<Route path="/appointments" element={<Appointments />} />
+
+
+        
             {/* ✅ Healthcare Service Routes */}
             <Route path="/hospitals" element={<HospitalsPage />} />
             <Route path="/emergency" element={<EmergencyPage />} />

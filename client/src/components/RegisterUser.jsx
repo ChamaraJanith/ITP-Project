@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../pages/styles/RegisterUser.css';
-import MedicalNavbar from './NavBar';
 
 const RegisterUser = () => {
   const [formData, setFormData] = useState({
@@ -35,17 +34,17 @@ const RegisterUser = () => {
         // Only allow alphabetical characters and spaces
         filteredValue = value.replace(/[^A-Za-z\s]/g, '');
         break;
-        
+       
       case 'phone':
         // Only allow numerical characters and limit to 10 digits
         filteredValue = value.replace(/[^0-9]/g, '').slice(0, 10);
         break;
-        
+       
       case 'email':
         // Keep email as is (no filtering, just validation on submit)
         filteredValue = value;
         break;
-        
+       
       case 'password':
       case 'confirmPassword':
       case 'dateOfBirth':
@@ -54,7 +53,7 @@ const RegisterUser = () => {
         // No filtering for these fields
         filteredValue = value;
         break;
-        
+       
       default:
         filteredValue = value;
     }
@@ -207,31 +206,31 @@ const RegisterUser = () => {
       if (response.data.success) {
         setMessage('✅ Registration successful! Welcome to HealX.');
 
+        // CRITICAL FIX: Use the complete user data from the response
+        const userData = response.data.user || response.data.data;
+        
+        // Make sure we have the ID from the response
+        if (!userData._id && !userData.id) {
+          console.error('❌ No user ID in response:', userData);
+          setMessage('❌ Registration succeeded but user data is incomplete. Please try logging in.');
+          setLoading(false);
+          return;
+        }
+
         // Persist token
         if (response.data.token) {
           localStorage.setItem('token', response.data.token);
+          
+          // CRITICAL FIX: Set the authorization header for future requests
+          axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
         }
 
-        // Persist complete user data
-        const userData = {
-          name: formData.name.trim(),
-          email: formData.email.trim().toLowerCase(),
-          phone: formData.phone.trim(),
-          dateOfBirth: formData.dateOfBirth,
-          gender: formData.gender,
-          role: formData.role,
-          ...response.data.user
-        };
+        // Persist complete user data from the server
         localStorage.setItem('user', JSON.stringify(userData));
 
         // Redirect to profile after a brief delay
         setTimeout(() => {
-          navigate('/PatientProfile', {
-            state: {
-              message: 'Registration successful! Welcome to HealX.',
-              userData
-            }
-          });
+          navigate('/PatientProfile');
         }, 1500);
       }
     } catch (error) {
