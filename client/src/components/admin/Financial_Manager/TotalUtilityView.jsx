@@ -549,6 +549,10 @@ const TotalUtilityView = () => {
     navigate('/admin/financial/utilities');
   };
 
+  const handleNavigateToDashboard = () => {
+    navigate('/admin/financial');
+  };
+
   const handleRetry = () => {
     fetchAllUtilities();
   };
@@ -591,13 +595,24 @@ const TotalUtilityView = () => {
       <header className="tuv-header">
         <div className="tuv-header__content">
           <div className="tuv-header__title-section">
-            <button 
-              className="tuv-header__back-btn"
-              onClick={handleNavigateBack}
-              aria-label="Back to utilities"
-            >
-              <i className="fas fa-arrow-left" aria-hidden="true"></i>
-            </button>
+            <div className="tuv-header__navigation">
+              <button 
+                className="tuv-header__back-btn tuv-header__back-btn--dashboard"
+                onClick={handleNavigateToDashboard}
+                aria-label="Back to financial dashboard"
+              >
+                <i className="fas fa-tachometer-alt" aria-hidden="true"></i>
+                Dashboard
+              </button>
+              <button 
+                className="tuv-header__back-btn tuv-header__back-btn--utilities"
+                onClick={handleNavigateBack}
+                aria-label="Back to utilities"
+              >
+                <i className="fas fa-arrow-left" aria-hidden="true"></i>
+                Utilities
+              </button>
+            </div>
             <div>
               <h1 className="tuv-header__title">
                 <i className="fas fa-chart-line tuv-header__icon" aria-hidden="true"></i>
