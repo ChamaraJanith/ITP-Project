@@ -10,6 +10,10 @@ const ManageAppointments = () => {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [actionLoading, setActionLoading] = useState({});
+  const [doctorFilter, setDoctorFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  
 
   const navigate = useNavigate();
   const backendUrl = 'http://localhost:7000';
@@ -79,32 +83,44 @@ const ManageAppointments = () => {
   };
 
   const filteredAppointments = appointments.filter(appointment => {
-    const matchesFilter = filter === 'all' || appointment.status === filter;
-    if (!searchTerm || searchTerm.trim() === '') {
-      return matchesFilter;
-    }
-    const searchLower = searchTerm.toLowerCase().trim();
-    const containsSearchTerm = (value) => {
-      if (!value) return false;
-      return String(value).toLowerCase().includes(searchLower);
-    };
-    const matchesSearch =
-      containsSearchTerm(appointment.name) ||
-      containsSearchTerm(appointment.patientName) ||
-      containsSearchTerm(appointment.patient?.name) ||
-      containsSearchTerm(appointment.email) ||
-      containsSearchTerm(appointment.patientEmail) ||
-      containsSearchTerm(appointment.patient?.email) ||
-      containsSearchTerm(appointment.phone) ||
-      containsSearchTerm(appointment.phoneNumber) ||
-      containsSearchTerm(appointment.patientPhone) ||
-      containsSearchTerm(appointment.patient?.phone) ||
-      containsSearchTerm(appointment.patient?.phoneNumber) ||
-      containsSearchTerm(appointment.emergencyContactName) ||
-      containsSearchTerm(appointment.doctorSpecialty) ||
-      containsSearchTerm(appointment.appointmentType);
-    return matchesFilter && matchesSearch;
-  });
+  const matchesFilter = filter === 'all' || appointment.status === filter;
+
+  // Doctor filter
+  const matchesDoctor = !doctorFilter ||
+    (appointment.doctorName && appointment.doctorName.toLowerCase().includes(doctorFilter.toLowerCase()));
+
+  // Date filter
+  const matchesDate = !dateFilter ||
+    (appointment.appointmentDate && appointment.appointmentDate.startsWith(dateFilter));
+
+  // Department filter
+  const matchesDepartment = !departmentFilter ||
+    (appointment.doctorSpecialty && appointment.doctorSpecialty.toLowerCase().includes(departmentFilter.toLowerCase()));
+
+  // Existing search logic
+  const searchLower = searchTerm.toLowerCase().trim();
+  const containsSearchTerm = (value) => {
+    if (!value) return false;
+    return String(value).toLowerCase().includes(searchLower);
+  };
+  const matchesSearch =
+    containsSearchTerm(appointment.name) ||
+    containsSearchTerm(appointment.patientName) ||
+    containsSearchTerm(appointment.patient?.name) ||
+    containsSearchTerm(appointment.email) ||
+    containsSearchTerm(appointment.patientEmail) ||
+    containsSearchTerm(appointment.patient?.email) ||
+    containsSearchTerm(appointment.phone) ||
+    containsSearchTerm(appointment.phoneNumber) ||
+    containsSearchTerm(appointment.patientPhone) ||
+    containsSearchTerm(appointment.patient?.phone) ||
+    containsSearchTerm(appointment.patient?.phoneNumber) ||
+    containsSearchTerm(appointment.emergencyContactName) ||
+    containsSearchTerm(appointment.doctorSpecialty) ||
+    containsSearchTerm(appointment.appointmentType);
+
+  return matchesFilter && matchesDoctor && matchesDate && matchesDepartment && matchesSearch;
+});
 
   const getStatusBadge = (status) => {
     const statusClass = {
@@ -408,6 +424,38 @@ const ManageAppointments = () => {
             <option value="accepted">Accepted</option>
             <option value="rejected">Rejected</option>
           </select>
+        </div>
+
+        <div className="ma-unique-filter-container" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <label htmlFor="doctor-filter">Doctor:</label>
+          <input
+            type="text"
+            id="doctor-filter"
+            value={doctorFilter}
+            onChange={e => setDoctorFilter(e.target.value)}
+            placeholder="Doctor name"
+            className="ma-unique-filter-input"
+            style={{ minWidth: '120px' }}
+          />
+          <label htmlFor="date-filter">Date:</label>
+          <input
+            type="date"
+            id="date-filter"
+            value={dateFilter}
+            onChange={e => setDateFilter(e.target.value)}
+            className="ma-unique-filter-input"
+            style={{ minWidth: '120px' }}
+          />
+          <label htmlFor="department-filter">Department:</label>
+          <input
+            type="text"
+            id="department-filter"
+            value={departmentFilter}
+            onChange={e => setDepartmentFilter(e.target.value)}
+            placeholder="Department/Specialty"
+            className="ma-unique-filter-input"
+            style={{ minWidth: '120px' }}
+          />
         </div>
 
         <button onClick={fetchAppointments} className="ma-unique-refresh-btn">
