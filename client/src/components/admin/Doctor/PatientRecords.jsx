@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
+import { jsPDF } from "jspdf";
 import './PatientRecords.css';
 import {
   Search,
@@ -51,12 +52,10 @@ const PatientRecords = () => {
 
   const navigate = useNavigate();
 
-  // Function to navigate back to Doctor Dashboard
   const navigateToDashboard = () => {
     navigate('/admin/doctor-dashboard'); 
   };
 
-  // Function to calculate age from date of birth
   const calculateAge = (dateOfBirth) => {
     if (!dateOfBirth) return "N/A";
     
@@ -73,7 +72,456 @@ const PatientRecords = () => {
     return age;
   };
 
-  // Fetch prescriptions from API
+  // UPDATED: Professional PDF Generation matching PrescriptionForm format
+  const generatePDFBuffer = (prescription) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new jsPDF({ unit: "mm", format: "a4" });
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 8;
+        const usableWidth = pageWidth - margin * 2;
+        const signatureSectionHeight = 50;
+        const footerHeight = 20;
+        let y = 5;
+        let currentPage = 1;
+        let prescriptionId = prescription._id || `RX-${Date.now().toString(36).toUpperCase()}`;
+        let patientName = prescription.patientName || "Patient";
+        let formattedDate = new Date(prescription.date || new Date().toISOString().slice(0, 10)).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+
+        const addPageHeader = (pageNum, isContinuation = false) => {
+          doc.setFillColor(255, 255, 255);
+          doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+          doc.setFillColor(0, 51, 102);
+          doc.rect(0, 0, pageWidth, 2, 'F');
+
+          if (isContinuation) {
+            doc.setFillColor(240, 248, 255);
+            doc.rect(margin, y, usableWidth, 12, 'F');
+            
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(0, 51, 102);
+            doc.text("PRESCRIPTION (Continued)", margin + 3, y + 6);
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(60, 60, 60);
+            doc.text(`Prescription #: ${prescriptionId}`, margin + 3, y + 10);
+            doc.text(`Patient: ${patientName}`, margin + 70, y + 10);
+            doc.text(`Date: ${formattedDate}`, pageWidth - margin - 5, y + 10, { align: 'right' });
+            doc.text(`Page ${pageNum}`, pageWidth - margin - 5, y + 14, { align: 'right' });
+            
+            y += 18;
+          } else {
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(18);
+            doc.setTextColor(0, 51, 102);
+            doc.text("HEAL X", margin, y + 10);
+            doc.setFontSize(10);
+            doc.text("Healthcare Center", margin, y + 16);
+
+            const logoWidth = 35;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.setTextColor(0, 51, 102);
+            doc.text("HealX Healthcare Center", margin + logoWidth + 8, y + 8);
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(60, 60, 60);
+            doc.text("123 Healthcare Avenue, Medical District, MD 12345", margin + logoWidth + 8, y + 13);
+            doc.text("Tel: (555) 123-4567 | Email: info@healxmedical.com", margin + logoWidth + 8, y + 18);
+            
+            y += 25;
+
+            doc.setDrawColor(0, 51, 102);
+            doc.setLineWidth(0.5);
+            doc.line(margin, y, pageWidth - margin, y);
+            
+            doc.setFillColor(0, 51, 102);
+            doc.circle(margin + 6, y + 5, 4, 'FD');
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9);
+            doc.setTextColor(255, 255, 255);
+            doc.text("Rx", margin + 6, y + 7, { align: 'center' });
+            
+            doc.setTextColor(0, 51, 102);
+            doc.setFontSize(14);
+            doc.text("PRESCRIPTION", margin + 14, y + 7);
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(60, 60, 60);
+            doc.text(`Prescription #: ${prescriptionId}`, pageWidth - margin - 5, y + 5, { align: 'right' });
+            doc.text(`Date: ${formattedDate}`, pageWidth - margin - 5, y + 10, { align: 'right' });
+            doc.text(`Page ${pageNum}`, pageWidth - margin - 5, y + 15, { align: 'right' });
+            
+            y += 20;
+          }
+
+          return y;
+        };
+
+        y = addPageHeader(currentPage, false);
+
+        // Patient Information Section
+        doc.setDrawColor(0, 51, 102);
+        doc.setLineWidth(0.3);
+        doc.rect(margin, y, usableWidth, 22);
+        
+        doc.setFillColor(240, 248, 255);
+        doc.rect(margin, y, usableWidth, 5, 'F');
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(0, 51, 102);
+        doc.text("PATIENT INFORMATION", margin + 3, y + 3.5);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(0, 0, 0);
+        
+        const patientId = prescription.patientId || "N/A";
+        const dob = prescription.patientDateOfBirth ? new Date(prescription.patientDateOfBirth).toLocaleDateString() : "N/A";
+        const age = prescription.patientDateOfBirth ? calculateAge(prescription.patientDateOfBirth) : "N/A";
+        
+        doc.text(`Name: ${patientName}`, margin + 3, y + 9);
+        doc.text(`ID: ${patientId}`, margin + 3, y + 13);
+        doc.text(`DOB: ${dob} (${age} years)`, margin + 3, y + 17);
+        doc.text(`Gender: ${prescription.patientGender || "N/A"}`, margin + 3, y + 21);
+        
+        doc.text(`Phone: ${prescription.patientPhone || "N/A"}`, margin + 90, y + 9);
+        doc.text(`Email: ${prescription.patientEmail || "N/A"}`, margin + 90, y + 13);
+        doc.text(`Blood Type: ${prescription.patientBloodGroup || "N/A"}`, margin + 90, y + 17);
+        
+        if (prescription.patientAllergies && prescription.patientAllergies.length > 0) {
+          doc.setTextColor(200, 0, 0);
+          doc.setFont("helvetica", "bold");
+          const allergiesText = `ALLERGIES: ${prescription.patientAllergies.join(", ")}`;
+          const splitText = doc.splitTextToSize(allergiesText, usableWidth - 95);
+          doc.text(splitText, margin + 90, y + 21);
+          doc.setTextColor(0, 0, 0);
+          doc.setFont("helvetica", "normal");
+        }
+        
+        y += 25;
+
+        // Prescribing Physician Information
+        doc.setDrawColor(0, 51, 102);
+        doc.rect(margin, y, usableWidth, 15);
+        
+        doc.setFillColor(240, 248, 255);
+        doc.rect(margin, y, usableWidth, 5, 'F');
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(0, 51, 102);
+        doc.text("PRESCRIBING PHYSICIAN", margin + 3, y + 3.5);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Name: ${prescription.doctorName || "N/A"}`, margin + 3, y + 9);
+        doc.text(`Specialization: ${prescription.doctorSpecialization || "N/A"}`, margin + 3, y + 13);
+        
+        doc.text(`License: MD-12345 | DEA: AB1234567`, margin + 90, y + 9);
+        doc.text(`Phone: (555) 987-6543`, margin + 90, y + 13);
+        
+        y += 18;
+
+        // Diagnosis Section
+        doc.setDrawColor(0, 51, 102);
+        doc.rect(margin, y, usableWidth, 18);
+        
+        doc.setFillColor(240, 248, 255);
+        doc.rect(margin, y, usableWidth, 5, 'F');
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(0, 51, 102);
+        doc.text("DIAGNOSIS", margin + 3, y + 3.5);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(0, 0, 0);
+        
+        const diagLines = doc.splitTextToSize(prescription.diagnosis || "N/A", usableWidth - 6);
+        let diagY = y + 9;
+        diagLines.forEach(line => {
+          doc.text(line, margin + 3, diagY);
+          diagY += 3.5;
+        });
+        
+        const actualDiagHeight = 5 + diagLines.length * 3.5 + 5;
+        y += actualDiagHeight;
+
+        // Medications Section
+        doc.setDrawColor(0, 51, 102);
+        doc.rect(margin, y, usableWidth, 8);
+        
+        doc.setFillColor(240, 248, 255);
+        doc.rect(margin, y, usableWidth, 5, 'F');
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(0, 51, 102);
+        doc.text("MEDICATION ORDERS", margin + 3, y + 3.5);
+        
+        y += 7;
+
+        // Table Headers
+        doc.setFontSize(7);
+        const colWidths = [5, 55, 28, 28, 18, 60];
+        const headers = ["#", "Medication", "Dosage", "Frequency", "Duration", "Instructions"];
+        const headerHeight = 5;
+        
+        doc.setFillColor(0, 51, 102);
+        doc.rect(margin, y, usableWidth, headerHeight, "F");
+        
+        doc.setDrawColor(0, 51, 102);
+        doc.setLineWidth(0.2);
+        let x = margin;
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        for (let i = 0; i < headers.length; i++) {
+          doc.rect(x, y, colWidths[i], headerHeight);
+          doc.text(headers[i], x + 1, y + 3.5);
+          x += colWidths[i];
+        }
+        y += headerHeight;
+
+        // Table Rows
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0, 0, 0);
+        const rowPadding = 1;
+        
+        const getMaxYPosition = () => {
+          return pageHeight - signatureSectionHeight - footerHeight - 5;
+        };
+        
+        const checkAndAddNewPage = (requiredHeight) => {
+          const maxYPosition = getMaxYPosition();
+          if (y + requiredHeight > maxYPosition) {
+            doc.addPage();
+            currentPage++;
+            y = addPageHeader(currentPage, true);
+            
+            doc.setFillColor(240, 248, 255);
+            doc.rect(margin, y, usableWidth, 8, 'FD');
+            
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9);
+            doc.setTextColor(0, 51, 102);
+            doc.text("MEDICATION ORDERS (Continued)", margin + 3, y + 3.5);
+            
+            y += 7;
+            
+            doc.setFillColor(0, 51, 102);
+            doc.rect(margin, y, usableWidth, headerHeight, "F");
+            x = margin;
+            doc.setFontSize(7);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(255, 255, 255);
+            for (let i = 0; i < headers.length; i++) {
+              doc.rect(x, y, colWidths[i], headerHeight);
+              doc.text(headers[i], x + 1, y + 3.5);
+              x += colWidths[i];
+            }
+            y += headerHeight;
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(0, 0, 0);
+            return true;
+          }
+          return false;
+        };
+        
+        const medicines = prescription.medicines || [];
+        medicines.forEach((med, idx) => {
+          const rowTexts = [
+            [(idx + 1).toString()],
+            doc.splitTextToSize(med.name || "", colWidths[1] - rowPadding),
+            doc.splitTextToSize(med.dosage || "", colWidths[2] - rowPadding),
+            doc.splitTextToSize(med.frequency || "", colWidths[3] - rowPadding),
+            doc.splitTextToSize(med.duration || "", colWidths[4] - rowPadding),
+            doc.splitTextToSize(med.notes || "Take as directed", colWidths[5] - rowPadding),
+          ];
+
+          const maxLines = Math.max(...rowTexts.map(c => c.length));
+          const lineHeight = 3;
+          const rowHeight = Math.max(5, maxLines * lineHeight + 2);
+
+          checkAndAddNewPage(rowHeight);
+
+          x = margin;
+          if (idx % 2 === 0) {
+            doc.setFillColor(248, 248, 248);
+            doc.rect(x, y, usableWidth, rowHeight, "F");
+          }
+          
+          for (let c = 0; c < rowTexts.length; c++) {
+            doc.rect(x, y, colWidths[c], rowHeight);
+            x += colWidths[c];
+          }
+
+          x = margin;
+          for (let c = 0; c < rowTexts.length; c++) {
+            const lines = rowTexts[c];
+            for (let li = 0; li < lines.length; li++) {
+              const textY = y + 2 + li * lineHeight;
+              doc.text(String(lines[li] || ""), x + 1, textY);
+            }
+            x += colWidths[c];
+          }
+
+          y += rowHeight;
+        });
+
+        y += 5;
+
+        // Additional Instructions
+        if (prescription.notes) {
+          const noteLines = doc.splitTextToSize(prescription.notes, usableWidth - 6);
+          const notesHeight = 5 + noteLines.length * 3.5 + 3;
+          
+          checkAndAddNewPage(notesHeight);
+          
+          doc.setDrawColor(0, 51, 102);
+          doc.rect(margin, y, usableWidth, notesHeight);
+          
+          doc.setFillColor(240, 248, 255);
+          doc.rect(margin, y, usableWidth, 5, 'F');
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(9);
+          doc.setTextColor(0, 51, 102);
+          doc.text("ADDITIONAL INSTRUCTIONS", margin + 3, y + 3.5);
+          
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          doc.setTextColor(0, 0, 0);
+          
+          let noteY = y + 9;
+          noteLines.forEach(line => {
+            doc.text(line, margin + 3, noteY);
+            noteY += 3.5;
+          });
+          
+          y += notesHeight;
+        }
+
+        const maxYPosition = getMaxYPosition();
+        if (y < maxYPosition - 10) {
+          y = maxYPosition - 10;
+        }
+
+        // PHYSICIAN SIGNATURE & AUTHORIZATION
+        const signatureY = pageHeight - signatureSectionHeight - footerHeight;
+        
+        if (y > signatureY) {
+          doc.addPage();
+          currentPage++;
+          y = addPageHeader(currentPage, true);
+        }
+        
+        y = signatureY;
+        
+        doc.setDrawColor(0, 51, 102);
+        doc.rect(margin, y, usableWidth, signatureSectionHeight);
+        
+        doc.setFillColor(240, 248, 255);
+        doc.rect(margin, y, usableWidth, 5, 'F');
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(0, 51, 102);
+        doc.text("PHYSICIAN SIGNATURE & AUTHORIZATION", margin + 3, y + 3.5);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(0, 0, 0);
+        
+        doc.setDrawColor(0, 51, 102);
+        doc.setLineWidth(0.5);
+        doc.line(margin + 3, y + 20, margin + 45, y + 20);
+        
+        doc.text(` ${prescription.doctorName || "N/A"}`, margin + 3, y + 25);
+        doc.text(`${prescription.doctorSpecialization || "N/A"}`, margin + 3, y + 29);
+        doc.text(`License: MD-12345`, margin + 3, y + 33);
+        doc.text(`DEA: AB1234567`, margin + 3, y + 37);
+        doc.text(`NPI: 1234567890`, margin + 3, y + 41);
+        doc.text(`Phone: (555) 987-6543`, margin + 3, y + 45);
+        
+        const signatureDate = new Date().toLocaleDateString();
+        doc.text(`Date: ${signatureDate}`, margin + 55, y + 20);
+        doc.text("Refills: 0", margin + 55, y + 25);
+        doc.text("Substitution: Permitted", margin + 55, y + 29);
+        doc.text("DAW: ☐ Generic  ☐ Brand  ☐ Either", margin + 55, y + 33);
+        doc.text("Pharmacy: Any", margin + 55, y + 37);
+        doc.text("Valid until: 90 days from issue", margin + 55, y + 41);
+        doc.text("Controlled Substance: No", margin + 55, y + 45);
+
+        // Professional Footer
+        const footerY = pageHeight - footerHeight;
+        
+        doc.setDrawColor(0, 51, 102);
+        doc.rect(margin, footerY, usableWidth, footerHeight - 3);
+        
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(7);
+        doc.setTextColor(60, 60, 60);
+        
+        const disclaimer1 = "This prescription is valid only when signed by a licensed physician. Medications should be taken exactly as prescribed.";
+        const disclaimer2 = "For medical emergencies, call 911 or visit the nearest emergency room. Keep all medications out of reach of children.";
+        
+        doc.text(disclaimer1, margin + 3, footerY + 4, { maxWidth: usableWidth - 6 });
+        doc.text(disclaimer2, margin + 3, footerY + 8, { maxWidth: usableWidth - 6 });
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+        doc.setTextColor(0, 51, 102);
+        
+        const contactText = "Heal X Medical Center | (555) 123-4567 | www.healxmedical.com";
+        const centerX = pageWidth / 2;
+        
+        doc.text(contactText, centerX, footerY + 12, { align: 'center' });
+
+        doc.setDrawColor(0, 51, 102);
+        doc.setLineWidth(0.5);
+        doc.rect(3, 3, pageWidth - 6, pageHeight - 6);
+
+        const pdfBuffer = doc.output('arraybuffer');
+        resolve(pdfBuffer);
+
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+
+  const generatePDF = async (prescription) => {
+    try {
+      const pdfBuffer = await generatePDFBuffer(prescription);
+      
+      const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      const safeFirst = (prescription.patientName || "Patient").split(' ')[0].replace(/\s+/g, "_");
+      const safeLast = (prescription.patientName || "Patient").split(' ')[1] || "";
+      const fileDate = new Date().toISOString().slice(0,10).replace(/-/g,"");
+      link.download = `Prescription_${safeFirst}_${safeLast}_${fileDate}.pdf`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    }
+  };
+
   const fetchPrescriptions = async () => {
     setLoading(true);
     try {
@@ -116,14 +564,13 @@ const PatientRecords = () => {
       return matchesSearch && matchesDate && matchesDoctor && matchesDiagnosis && matchesStatus;
     });
 
-    // Apply tab filtering
     if (activeTab !== 'all') {
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Set to beginning of today
+      today.setHours(0, 0, 0, 0);
       
       filtered = filtered.filter(p => {
         const prescriptionDate = new Date(p.date);
-        prescriptionDate.setHours(0, 0, 0, 0); // Set to beginning of the day
+        prescriptionDate.setHours(0, 0, 0, 0);
         
         if (activeTab === 'today') {
           return prescriptionDate.getTime() === today.getTime();
@@ -182,428 +629,6 @@ const PatientRecords = () => {
     setShowModal(true);
   };
 
-  const generatePDF = (prescription) => {
-    const printWindow = window.open('', '_blank');
-    const currentDate = new Date();
-    const formattedDate = currentDate.toLocaleDateString();
-    const formattedTime = currentDate.toLocaleTimeString();
-    
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>HealX Prescription</title>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600;700&display=swap');
-          
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-          
-          body {
-            font-family: 'Source Sans Pro', sans-serif;
-            background: #fff;
-            color: #333;
-            line-height: 1.5;
-            font-size: 13px;
-          }
-          
-          .prescription-container {
-            width: 210mm;
-            min-height: 297mm;
-            margin: 0 auto;
-            background: #fff;
-            position: relative;
-            border: 1px solid #e0e0e0;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-          }
-          
-          .header {
-            background: linear-gradient(135deg, #1a5276 0%, #2980b9 100%);
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          }
-          
-          .hospital-logo {
-            width: 60px;
-            height: 60px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #2980b9;
-            font-size: 18px;
-            font-family: 'Playfair Display', serif;
-          }
-          
-          .hospital-info {
-            text-align: center;
-            flex: 1;
-          }
-          
-          .hospital-name {
-            font-family: 'Playfair Display', serif;
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 5px;
-            letter-spacing: 1px;
-          }
-          
-          .hospital-tagline {
-            font-size: 14px;
-            font-weight: 400;
-            opacity: 0.9;
-          }
-          
-          .prescription-title {
-            text-align: center;
-            font-family: 'Playfair Display', serif;
-            font-size: 28px;
-            font-weight: 700;
-            color: #1a5276;
-            margin: 20px 0;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            position: relative;
-          }
-          
-          .prescription-title:after {
-            content: "";
-            display: block;
-            width: 80px;
-            height: 3px;
-            background: #e74c3c;
-            margin: 8px auto;
-          }
-          
-          .rx-symbol {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            font-size: 60px;
-            font-weight: bold;
-            color: rgba(231, 76, 60, 0.1);
-            transform: rotate(-15deg);
-            font-family: 'Playfair Display', serif;
-          }
-          
-          .content {
-            padding: 0 25px;
-          }
-          
-          .section {
-            margin-bottom: 20px;
-          }
-          
-          .section-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: #1a5276;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            border-bottom: 1px solid #e0e0e0;
-            padding-bottom: 5px;
-            display: flex;
-            align-items: center;
-          }
-          
-          .section-title:before {
-            content: "";
-            display: inline-block;
-            width: 5px;
-            height: 16px;
-            background: #e74c3c;
-            margin-right: 8px;
-          }
-          
-          .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-          }
-          
-          .info-row {
-            display: flex;
-            margin-bottom: 8px;
-          }
-          
-          .info-label {
-            font-weight: 600;
-            width: 120px;
-            color: #555;
-          }
-          
-          .info-value {
-            flex: 1;
-          }
-          
-          .diagnosis-box {
-            background: #f8f9fa;
-            border-left: 4px solid #3498db;
-            padding: 12px 15px;
-            margin: 10px 0;
-            border-radius: 4px;
-            font-style: italic;
-          }
-          
-          .medicines-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-            font-size: 12px;
-          }
-          
-          .medicines-table th {
-            background: #f1f2f6;
-            padding: 10px;
-            text-align: left;
-            font-weight: 600;
-            color: #1a5276;
-            border: 1px solid #e0e0e0;
-          }
-          
-          .medicines-table td {
-            padding: 10px;
-            border: 1px solid #e0e0e0;
-          }
-          
-          .notes-box {
-            background: #fef9e7;
-            border-left: 4px solid #f39c12;
-            padding: 12px 15px;
-            margin: 10px 0;
-            border-radius: 4px;
-            font-style: italic;
-          }
-          
-          .signature-section {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 40px;
-            padding: 0 25px 25px;
-          }
-          
-          .signature-box {
-            text-align: center;
-            width: 45%;
-          }
-          
-          .signature-line {
-            width: 100%;
-            border-bottom: 1px solid #333;
-            margin: 30px 0 5px;
-            height: 40px;
-          }
-          
-          .signature-label {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #555;
-          }
-          
-          .doctor-name {
-            font-size: 16px;
-            font-weight: 700;
-            color: #1a5276;
-          }
-          
-          .doctor-title {
-            font-size: 14px;
-            color: #555;
-          }
-          
-          .footer {
-            background: #f8f9fa;
-            border-top: 1px solid #e0e0e0;
-            padding: 15px 25px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            color: #777;
-          }
-          
-          .warning {
-            background: #fadbd8;
-            border: 1px dashed #e74c3c;
-            padding: 10px;
-            margin: 15px 25px;
-            border-radius: 4px;
-            text-align: center;
-            font-size: 12px;
-            color: #7d3c21;
-          }
-          
-          .prescription-id {
-            position: absolute;
-            top: 15px;
-            right: 25px;
-            font-size: 11px;
-            color: white;
-            background: rgba(0,0,0,0.2);
-            padding: 3px 8px;
-            border-radius: 10px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="prescription-container">
-          <div class="prescription-id">Rx ID: ${prescription._id || 'PRE' + Date.now()}</div>
-          <div class="rx-symbol">Rx</div>
-          
-          <div class="header">
-            <div class="hospital-logo">HX</div>
-            <div class="hospital-info">
-              <div class="hospital-name">HealX Healthcare Center</div>
-              <div class="hospital-tagline">Advanced Healthcare for Everyone</div>
-            </div>
-          </div>
-          
-          <div class="prescription-title">Medical Prescription</div>
-          
-          <div class="content">
-            <div class="section">
-              <div class="section-title">Patient Information</div>
-              <div class="info-grid">
-                <div class="info-row">
-                  <div class="info-label">Name:</div>
-                  <div class="info-value">${prescription.patientName}</div>
-                </div>
-                <div class="info-row">
-                  <div class="info-label">Patient ID:</div>
-                  <div class="info-value">${prescription.patientId}</div>
-                </div>
-                <div class="info-row">
-                  <div class="info-label">Age/Gender:</div>
-                  <div class="info-value">${prescription.patientDateOfBirth ? calculateAge(prescription.patientDateOfBirth) : 'N/A'} / ${prescription.patientGender || 'N/A'}</div>
-                </div>
-                <div class="info-row">
-                  <div class="info-label">Contact:</div>
-                  <div class="info-value">${prescription.patientPhone || prescription.patientEmail || 'N/A'}</div>
-                </div>
-                <div class="info-row">
-                  <div class="info-label">Blood Group:</div>
-                  <div class="info-value">${prescription.patientBloodGroup || 'N/A'}</div>
-                </div>
-                ${prescription.patientAllergies && prescription.patientAllergies.length > 0 ? `
-                  <div class="info-row">
-                    <div class="info-label">Allergies:</div>
-                    <div class="info-value">${prescription.patientAllergies.join(', ')}</div>
-                  </div>
-                ` : ''}
-              </div>
-            </div>
-            
-            <div class="section">
-              <div class="section-title">Doctor Information</div>
-              <div class="info-grid">
-                <div class="info-row">
-                  <div class="info-label">Name:</div>
-                  <div class="info-value"> ${prescription.doctorName}</div>
-                </div>
-                <div class="info-row">
-                  <div class="info-label">Specialization:</div>
-                  <div class="info-value">${prescription.doctorSpecialization || 'General Medicine'}</div>
-                </div>
-                <div class="info-row">
-                  <div class="info-label">Registration:</div>
-                  <div class="info-value">REG${Math.floor(Math.random() * 10000) + 10000}</div>
-                </div>
-                <div class="info-row">
-                  <div class="info-label">Consultation Date:</div>
-                  <div class="info-value">${new Date(prescription.date).toLocaleDateString()}</div>
-                </div>
-              </div>
-            </div>
-            
-            <div class="section">
-              <div class="section-title">Diagnosis</div>
-              <div class="diagnosis-box">
-                ${prescription.diagnosis}
-              </div>
-            </div>
-            
-            ${prescription.medicines && prescription.medicines.length > 0 ? `
-              <div class="section">
-                <div class="section-title">Prescribed Medicines</div>
-                <table class="medicines-table">
-                  <thead>
-                    <tr>
-                      <th width="5%">S.No.</th>
-                      <th width="25%">Medicine Name</th>
-                      <th width="15%">Dosage</th>
-                      <th width="15%">Frequency</th>
-                      <th width="15%">Duration</th>
-                      <th width="25%">Instructions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${prescription.medicines.map((med, index) => `
-                      <tr>
-                        <td>${index + 1}</td>
-                        <td>${med.name}</td>
-                        <td>${med.dosage}</td>
-                        <td>${med.frequency}</td>
-                        <td>${med.duration}</td>
-                        <td>${med.notes || 'As directed'}</td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-              </div>
-            ` : ''}
-            
-            ${prescription.notes ? `
-              <div class="section">
-                <div class="section-title">Additional Instructions</div>
-                <div class="notes-box">
-                  ${prescription.notes}
-                </div>
-              </div>
-            ` : ''}
-          </div>
-          
-          <div class="warning">
-            This prescription is valid only with the signature of the attending physician and hospital seal. Please follow the dosage instructions carefully.
-          </div>
-          
-          <div class="signature-section">
-            <div class="signature-box">
-              <div class="signature-label">Doctor's Signature</div>
-              <div class="signature-line"></div>
-              <div class="doctor-name"> ${prescription.doctorName}</div>
-              <div class="doctor-title">${prescription.doctorSpecialization || 'General Medicine'}</div>
-            </div>
-            <div class="signature-box">
-              <div class="signature-label">Hospital Seal</div>
-              <div class="signature-line"></div>
-              <div class="doctor-name">HealX Hospital</div>
-              <div class="doctor-title">Authorized Signatory</div>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <div>123 Medical Center Drive, Health City | Phone: (555) 123-4567</div>
-            <div>Generated on ${formattedDate} at ${formattedTime} | HealX Hospital © ${currentDate.getFullYear()}</div>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-    
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.print();
-  };
-
   const clearFilters = () => {
     setSearchTerm('');
     setDateFilter('');
@@ -640,7 +665,6 @@ const PatientRecords = () => {
 
   return (
     <div className="pr-container">
-      {/* Header */}
       <div className="pr-header-section">
         <div>
           <h1 className="pr-page-title">
@@ -658,7 +682,6 @@ const PatientRecords = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="pr-stats-section">
         <div className="pr-stat-card pr-stat-card--blue">
           <div className="pr-stat-card-content">
@@ -710,7 +733,6 @@ const PatientRecords = () => {
         </div>
       </div>
 
-      {/* Search and Filters */}
       <div className="pr-search-filter-section">
         <div className="pr-search-container">
           <Search className="pr-search-icon" size={20} />
@@ -797,7 +819,6 @@ const PatientRecords = () => {
         )}
       </div>
 
-      {/* Tabs */}
       <div className="pr-tabs-section">
         <div className="pr-tabs">
           {[
@@ -818,7 +839,6 @@ const PatientRecords = () => {
         </div>
       </div>
 
-      {/* Table */}
       <div className="pr-table-section">
         <div className="pr-table-header">
           <h2>Patient Prescription Records</h2>
@@ -862,7 +882,6 @@ const PatientRecords = () => {
             <table className="pr-table">
               <thead className="pr-table-head">
                 <tr>
-                  <th className="pr-th pr-th-expand"></th>
                   <th className="pr-th pr-th-expand"></th>
                   <th className="pr-th">Date</th>
                   <th className="pr-th">Patient</th>
@@ -940,7 +959,7 @@ const PatientRecords = () => {
                           </button>
                           <button
                             className="pr-action-btn pr-pdf-btn"
-                            title="Print Prescription"
+                            title="Download PDF"
                             onClick={(e) => {
                               e.stopPropagation();
                               generatePDF(prescription);
@@ -1046,7 +1065,6 @@ const PatientRecords = () => {
           )}
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="pr-pagination">
             <div className="pr-pagination-info">
@@ -1103,7 +1121,6 @@ const PatientRecords = () => {
         )}
       </div>
 
-      {/* Modal */}
       {showModal && selectedPatient && (
         <div className="pr-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="pr-modal-container" onClick={(e) => e.stopPropagation()}>
@@ -1121,7 +1138,6 @@ const PatientRecords = () => {
             </div>
             
             <div className="pr-modal-content">
-              {/* Patient Info Section */}
               <div className="pr-modal-section">
                 <div className="pr-section-header">
                   <UserRound className="pr-section-icon" size={20} />
@@ -1227,7 +1243,6 @@ const PatientRecords = () => {
                 )}
               </div>
 
-              {/* Doctor Info Section */}
               <div className="pr-modal-section">
                 <div className="pr-section-header">
                   <UserCheck className="pr-section-icon" size={20} />
@@ -1269,7 +1284,6 @@ const PatientRecords = () => {
                 </div>
               </div>
 
-              {/* Prescription Details Section */}
               <div className="pr-modal-section">
                 <div className="pr-section-header">
                   <Clipboard className="pr-section-icon" size={20} />
@@ -1350,7 +1364,7 @@ const PatientRecords = () => {
                 className="pr-modal-pdf-btn"
                 onClick={() => generatePDF(selectedPatient)}
               >
-                <Download size={16} /> Print Prescription
+                <Download size={16} /> Download PDF
               </button>
             </div>
           </div>
