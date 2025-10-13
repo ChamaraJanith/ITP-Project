@@ -17,7 +17,7 @@ const MedicineAutocomplete = ({
   // Validation pattern for medicine names (letters, spaces, hyphens, apostrophes only)
   const validateMedicineName = (inputValue) => {
     // Remove any characters that don't match the pattern
-    return inputValue.replace(/[^a-zA-Z\s\-'.]/g, '');
+    return inputValue.replace(/[^a-zA-Z\s\-']/g, '');
   };
 
   useEffect(() => {
@@ -123,7 +123,7 @@ const MedicineAutocomplete = ({
       
       {/* Add validation hint */}
       <div className="pf-validation-hint">
-        Only letters, spaces, hyphens, and apostrophes are allowed
+        Only letters, spaces, and hyphens are allowed
       </div>
     </div>
   );

@@ -21,7 +21,7 @@ const medicineDatabase = [
   { name: "Metformin", dosage: "500mg", frequency: "twice daily", duration: "30 days" },
   { name: "Atorvastatin", dosage: "10mg", frequency: "once daily", duration: "30 days" },
   { name: "Lisinopril", dosage: "10mg", frequency: "once daily", duration: "30 days" },
-  { name: "Salbutamol", dosage: "100mcg", frequency: "as needed", duration: "30 days" },
+  { name: "Salbutamol", dosage: "100mg", frequency: "as needed", duration: "30 days" },
   { name: "Cetirizine", dosage: "10mg", frequency: "once daily", duration: "7 days" },
   { name: "Metronidazole", dosage: "400mg", frequency: "3 times daily", duration: "7 days" },
 ];
@@ -31,7 +31,8 @@ const namePattern = /^[a-zA-Z\s\-'.]+$/;
 const phonePattern = /^[\+]?[1-9][\d]{0,15}$/;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const dosagePattern = /^[0-9]+(\.[0-9]+)?\s*(mg|g|ml|l|tablet|tablets|capsule|capsules|drop|drops|tsp|tbsp|unit|units)?$/i;
-const frequencyPattern = /^[0-9]+\s*(time|times|daily|weekly|monthly|hourly|per day|per week|per month|once|twice|thrice|morning|evening|night|afternoon).*$/i;
+// FIXED: Updated frequency pattern to allow more flexible formats
+const frequencyPattern = /^([0-9]+\s*(time|times|daily|weekly|monthly|hourly|per day|per week|per month|once|twice|thrice|morning|evening|night|afternoon|as needed)|(once|twice|thrice|morning|evening|night|afternoon|as needed)\s+(daily|weekly|monthly|hourly|per day|per week|per month)?|as needed).*$/i;
 const durationPattern = /^[0-9]+\s*(day|days|week|weeks|month|months|year|years)$/i;
 
 // Medicine validation schema
@@ -63,10 +64,11 @@ const MedicineSchema = yup.object({
     .required("Frequency is required")
     .min(1, "Frequency is required")
     .max(100, "Frequency cannot exceed 100 characters")
-    .matches(frequencyPattern, "Invalid frequency format. Use format like: 3 times daily, twice daily, once per day, etc.")
+    .matches(frequencyPattern, "Invalid frequency format. Use format like: 3 times daily, twice daily, once per day, as needed, etc.")
     .test('has-number-or-text', 'Frequency must specify how often to take', (value) => {
       if (!value) return true;
-      const validKeywords = ['once', 'twice', 'thrice', 'daily', 'weekly', 'monthly', 'morning', 'evening', 'night'];
+      // FIXED: Added 'as needed' to valid keywords
+      const validKeywords = ['once', 'twice', 'thrice', 'daily', 'weekly', 'monthly', 'morning', 'evening', 'night', 'as needed'];
       return /\d/.test(value) || validKeywords.some(keyword => value.toLowerCase().includes(keyword));
     }),
   
@@ -197,6 +199,7 @@ const validateDosageInput = (value) => {
 };
 
 const validateFrequencyInput = (value) => {
+  // FIXED: More permissive input validation for frequency
   return value.replace(/[^a-zA-Z0-9\s\/\-\.\(\)]/g, '');
 };
 
@@ -1545,7 +1548,8 @@ const PrescriptionForm = ({
               <div className="pf-medicine-field">
                 <label className="pf-field-label">Frequency</label>
                 <input 
-                  placeholder="Frequency (e.g., 3 times daily)" 
+                  // FIXED: Updated placeholder to include more examples
+                  placeholder="Frequency (e.g., 3 times daily, twice daily, once per day, as needed)" 
                   value={watchedMedicines?.[i]?.frequency || ""}
                   onChange={(e) => {
                     const validatedValue = validateFrequencyInput(e.target.value);
@@ -1781,7 +1785,8 @@ const PrescriptionForm = ({
         <ul className="pf-guidelines-list">
           <li><strong>Medicine Names:</strong> Only letters, spaces, hyphens, apostrophes allowed. No numbers.</li>
           <li><strong>Dosage:</strong> Must include a number and unit (e.g., "10mg", "2 tablets", "5ml")</li>
-          <li><strong>Frequency:</strong> Use formats like "3 times daily", "twice daily", "once per day"</li>
+          {/* FIXED: Updated frequency guideline */}
+          <li><strong>Frequency:</strong> Use formats like "3 times daily", "twice daily", "once per day", "as needed"</li>
           <li><strong>Duration:</strong> Use formats like "7 days", "2 weeks", "1 month" (maximum 5 years)</li>
           <li><strong>Patient Search:</strong> Only letters, spaces, hyphens, apostrophes allowed</li>
           <li><strong>Date:</strong> Cannot be in future or more than 30 days in past</li>
