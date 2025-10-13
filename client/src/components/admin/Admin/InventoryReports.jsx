@@ -524,23 +524,27 @@ const checkPageBreak = (requiredSpace) => {
     // =============================================================================
 
     // Company header with gradient effect
-    doc.setFillColor(0, 51, 102);
+    doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, pageWidth, 35, 'F');
 
     // Logo circle
-    doc.setFillColor(255, 255, 255);
-    doc.circle(margin + 12, 20, 10, 'F');
-    doc.setFontSize(12);
+    doc.setFillColor(240, 248, 255);
+    doc.circle(margin + -5, 20, 10, 'F');
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 51, 102);
-    doc.text('HX', margin + 12, 22, { align: 'center' });
+    doc.text('Healx Stamp', margin + -5, 22, { align: 'center' });
 
     // Company name and tagline
-    doc.setFontSize(16);
-    doc.setTextColor(255, 255, 255);
-    doc.text('HealX Healthcare Management System', margin + 30, 18);
-    doc.setFontSize(10);
-    doc.text('Professional Inventory Analytics & Strategic Intelligence Platform', margin + 30, 28);
+    doc.setFontSize(19);
+    doc.setTextColor(29, 161, 242);
+    doc.text('Heal-X Healthcare Management System', margin + 30, 18);
+    doc.setFontSize(14);
+    doc.text('Professional Inventory Analytics & Strategic Intelligence Platform', margin + 15, 28);
+
+    doc.setLineWidth(2);                    // Set line thickness
+    doc.setDrawColor(29, 161, 242);         // Set blue color (same as HX_BLUE)
+    doc.line(margin + -20, 33, margin + 30 + 180, 33);  // Draw horizontal line
 
     // Main title section
     currentY = 60;
