@@ -1535,3 +1535,86 @@
     height: 14px;
   }
 }
+
+
+/* Back button container */
+.doctor-dashboard-back-button-container {
+  margin-bottom: 20px;
+  padding: 0 10px;
+}
+
+/* Back button styling */
+.doctor-dashboard-back-button {
+  display: flex;
+  align-items: center;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.doctor-dashboard-back-button:hover {
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+  color: #212529;
+  transform: translateX(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.doctor-dashboard-back-button:active {
+  transform: translateX(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Emergency alerts specific styling */
+.doctor-dashboard-back-button.emergency {
+  background-color: #fff5f5;
+  border-color: #fed7d7;
+  color: #c53030;
+}
+
+.doctor-dashboard-back-button.emergency:hover {
+  background-color: #fed7d7;
+  border-color: #fc8181;
+  color: #9b2c2c;
+}
+
+/* Icon styling */
+.doctor-dashboard-back-button::before {
+  content: "←";
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+/* Prominent back button for Emergency Alerts */
+.doctor-dashboard-back-button.emergency-prominent {
+  background-color: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2d3748;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  display: inline-flex;
+  align-items: center;
+}
+
+.doctor-dashboard-back-button.emergency-prominent:hover {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.doctor-dashboard-back-button.emergency-prominent::before {
+  content: "←";
+  margin-right: 10px;
+  font-size: 18px;
+}
