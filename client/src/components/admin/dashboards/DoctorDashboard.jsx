@@ -186,7 +186,7 @@ const DoctorDashboard = () => {
     return age;
   };
 
-  // Generate Comprehensive Patient Records Report PDF
+  // Generate Comprehensive Patient Records Report PDF - UPDATED with FinancialPayroll design
   const generatePatientRecordsReport = () => {
     logDoctorActivity(
       "Generating report",
@@ -275,95 +275,120 @@ const DoctorDashboard = () => {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>HealX Patient Records Report</title>
+        <title>Heal-x Patient Records Report</title>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-          
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+          body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            font-size: 12px; 
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid #1da1f2; 
+            padding-bottom: 20px; 
+          }
+          .header h1 { 
+            color: #1da1f2; 
+            margin: 0; 
+            font-size: 24px; 
+          }
+          .header p { 
+            margin: 10px 0 0 0; 
+            color: #666; 
+          }
+          .info { 
+            margin-bottom: 20px; 
+            text-align: right; 
+            font-size: 11px; 
+            color: #555; 
+          }
+          table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 20px; 
+            font-size: 10px; 
+          }
+          th, td { 
+            border: 1px solid #ddd; 
+            padding: 8px; 
+            text-align: left; 
+          }
+          th { 
+            background-color: #1da1f2; 
+            color: white; 
+            font-weight: bold; 
+            text-align: center; 
+          }
+          .currency { 
+            text-align: right; 
+          }
+          .totals-row { 
+            background-color: #f0f8ff; 
+            font-weight: bold; 
           }
           
-          body {
-            font-family: 'Inter', sans-serif;
-            background: #fff;
-            color: #1a1a1a;
-            line-height: 1.5;
-            font-size: 11px;
+          /* Signature Section Styles */
+          .signature-section { 
+            margin-top: 60px; 
+            margin-bottom: 30px; 
+            width: 100%; 
+            page-break-inside: avoid; 
+          }
+          .signature-container { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end; 
+            margin-top: 40px; 
+          }
+          .signature-block { 
+            width: 45%; 
+            text-align: center; 
+          }
+          .signature-line { 
+            border-bottom: 2px dotted #333; 
+            width: 200px; 
+            height: 50px; 
+            margin: 0 auto 10px auto; 
+            position: relative;
+          }
+          .signature-text { 
+            font-size: 11px; 
+            font-weight: bold; 
+            color: #333; 
+            margin-top: 5px; 
+          }
+          .signature-title { 
+            font-size: 10px; 
+            color: #666; 
+            margin-top: 2px; 
+          }
+          .company-stamp { 
+            text-align: center; 
+            margin-top: 30px; 
+            padding: 15px; 
+            border: 2px solid #1da1f2; 
+            display: inline-block; 
+            font-size: 10px; 
+            color: #1da1f2; 
+            font-weight: bold; 
+          }
+          .report-footer { 
+            margin-top: 40px; 
+            text-align: center; 
+            font-size: 9px; 
+            color: #888; 
+            border-top: 1px solid #ddd; 
+            padding-top: 15px; 
           }
           
-          .report-container {
-            width: 210mm;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
+          @media print { 
+            body { margin: 10px; } 
+            .no-print { display: none; }
+            .signature-section { page-break-inside: avoid; }
           }
           
-          .header {
-            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          }
-          
-          .hospital-logo {
-            width: 60px;
-            height: 60px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: #2563eb;
-            font-size: 24px;
-          }
-          
-          .hospital-info {
-            flex: 1;
-            text-align: center;
-            margin: 0 20px;
-          }
-          
-          .hospital-name {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 5px;
-            letter-spacing: -0.5px;
-          }
-          
-          .hospital-tagline {
-            font-size: 14px;
-            opacity: 0.9;
-          }
-          
-          .report-meta {
-            text-align: right;
-            font-size: 10px;
-          }
-          
-          .report-title {
-            text-align: center;
-            font-size: 24px;
-            font-weight: 700;
-            color: #1e40af;
-            margin: 30px 0 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-          }
-          
-          .report-subtitle {
-            text-align: center;
-            color: #64748b;
-            margin-bottom: 30px;
-            font-size: 12px;
-          }
-          
+          /* Additional styles for patient records report */
           .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -412,31 +437,6 @@ const DoctorDashboard = () => {
           
           .section-icon {
             margin-right: 8px;
-          }
-          
-          .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-            font-size: 10px;
-          }
-          
-          .data-table th {
-            background: #f1f5f9;
-            padding: 10px;
-            text-align: left;
-            font-weight: 600;
-            color: #1e293b;
-            border: 1px solid #e2e8f0;
-          }
-          
-          .data-table td {
-            padding: 8px 10px;
-            border: 1px solid #e2e8f0;
-          }
-          
-          .data-table tr:nth-child(even) {
-            background: #f8fafc;
           }
           
           .info-grid {
@@ -539,308 +539,230 @@ const DoctorDashboard = () => {
             font-weight: 700;
             color: #2563eb;
           }
-          
-          .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            font-size: 9px;
-            color: #64748b;
-          }
-          
-          .signature-section {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 40px;
-            padding: 0 40px;
-          }
-          
-          .signature-box {
-            text-align: center;
-            width: 40%;
-          }
-          
-          .signature-line {
-            width: 100%;
-            border-bottom: 1px solid #1e293b;
-            margin: 30px 0 10px;
-            height: 40px;
-          }
-          
-          .signature-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: #475569;
-          }
-          
-          .signature-name {
-            font-size: 13px;
-            font-weight: 700;
-            color: #1e293b;
-            margin-top: 5px;
-          }
-          
-          .official-seal {
-            text-align: center;
-            margin: 30px 0;
-            padding: 15px;
-            border: 3px solid #2563eb;
-            border-radius: 8px;
-            background: #eff6ff;
-          }
-          
-          .seal-text {
-            font-size: 14px;
-            font-weight: 700;
-            color: #2563eb;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-          }
-          
-          @media print {
-            body {
-              print-color-adjust: exact;
-              -webkit-print-color-adjust: exact;
-            }
-            .report-container {
-              padding: 0;
-            }
-            .section {
-              page-break-inside: avoid;
-            }
-          }
         </style>
       </head>
       <body>
-        <div class="report-container">
-          <!-- Header -->
-          <div class="header">
-            <div class="hospital-logo">HX</div>
-            <div class="hospital-info">
-              <div class="hospital-name">HealX Healthcare Center</div>
-              <div class="hospital-tagline">Advanced Patient Care & Medical Records System</div>
+        <div class="header">
+          <h1>🏥 Heal-x Patient Records Report</h1>
+          <p>Comprehensive Analysis of Patient Prescriptions & Treatment History</p>
+        </div>
+        
+        <div class="info">
+          <strong>Generated on:</strong> ${formattedDate} ${formattedTime}<br>
+          <strong>Total Records:</strong> ${totalPrescriptions}<br>
+          <strong>Report Period:</strong> Last 90 Days
+        </div>
+
+        <!-- Key Statistics -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">${totalPrescriptions}</div>
+            <div class="stat-label">Total Prescriptions</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${uniquePatients}</div>
+            <div class="stat-label">Unique Patients</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${totalMedicines}</div>
+            <div class="stat-label">Total Medicines</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${new Set(prescriptions.map(p => p.doctorName)).size}</div>
+            <div class="stat-label">Active Doctors</div>
+          </div>
+        </div>
+
+        <!-- Period Comparison -->
+        <div class="section">
+          <div class="section-title">
+            <span class="section-icon">📊</span> Prescription Trend Analysis
+          </div>
+          <div class="period-comparison">
+            <div class="period-card">
+              <div class="period-title">Last 30 Days</div>
+              <div class="period-value">${last30Days.length}</div>
             </div>
-            <div class="report-meta">
-              <div><strong>Generated On:</strong></div>
-              <div>${formattedDate}</div>
-              <div>${formattedTime}</div>
-              <div style="margin-top: 5px;"><strong>Total Records:</strong> ${totalPrescriptions}</div>
+            <div class="period-card">
+              <div class="period-title">31-60 Days Ago</div>
+              <div class="period-value">${last60Days.length}</div>
+            </div>
+            <div class="period-card">
+              <div class="period-title">61-90 Days Ago</div>
+              <div class="period-value">${last90Days.length}</div>
             </div>
           </div>
+        </div>
 
-          <!-- Title -->
-          <div class="report-title">📋 Patient Records Medical Report</div>
-          <div class="report-subtitle">Comprehensive Analysis of Patient Prescriptions & Treatment History</div>
-
-          <!-- Key Statistics -->
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-value">${totalPrescriptions}</div>
-              <div class="stat-label">Total Prescriptions</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">${uniquePatients}</div>
-              <div class="stat-label">Unique Patients</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">${totalMedicines}</div>
-              <div class="stat-label">Total Medicines</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">${new Set(prescriptions.map(p => p.doctorName)).size}</div>
-              <div class="stat-label">Active Doctors</div>
-            </div>
+        <!-- Age Distribution Chart -->
+        <div class="section">
+          <div class="section-title">
+            <span class="section-icon">👥</span> Patient Age Distribution
           </div>
-
-          <!-- Period Comparison -->
-          <div class="section">
-            <div class="section-title">
-              <span class="section-icon">📊</span> Prescription Trend Analysis
-            </div>
-            <div class="period-comparison">
-              <div class="period-card">
-                <div class="period-title">Last 30 Days</div>
-                <div class="period-value">${last30Days.length}</div>
-              </div>
-              <div class="period-card">
-                <div class="period-title">31-60 Days Ago</div>
-                <div class="period-value">${last60Days.length}</div>
-              </div>
-              <div class="period-card">
-                <div class="period-title">61-90 Days Ago</div>
-                <div class="period-value">${last90Days.length}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Age Distribution Chart -->
-          <div class="section">
-            <div class="section-title">
-              <span class="section-icon">👥</span> Patient Age Distribution
-            </div>
-            <div class="chart-container">
-              <div class="bar-chart">
-                ${Object.entries(ageGroups).map(([age, count]) => {
-                  const maxCount = Math.max(...Object.values(ageGroups));
-                  const height = maxCount > 0 ? (count / maxCount * 100) : 0;
-                  return `
-                    <div class="bar-item">
-                      <div class="bar" style="height: ${height}%">
-                        <div class="bar-value">${count}</div>
-                      </div>
-                      <div class="bar-label">${age} years</div>
+          <div class="chart-container">
+            <div class="bar-chart">
+              ${Object.entries(ageGroups).map(([age, count]) => {
+                const maxCount = Math.max(...Object.values(ageGroups));
+                const height = maxCount > 0 ? (count / maxCount * 100) : 0;
+                return `
+                  <div class="bar-item">
+                    <div class="bar" style="height: ${height}%">
+                      <div class="bar-value">${count}</div>
                     </div>
-                  `;
-                }).join('')}
+                    <div class="bar-label">${age} years</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+          <div class="info-grid">
+            ${Object.entries(ageGroups).map(([age, count]) => `
+              <div class="info-item">
+                <div class="info-label">${age} years:</div>
+                <div class="info-value">${count} patients (${totalPrescriptions > 0 ? ((count/totalPrescriptions)*100).toFixed(1) : 0}%)</div>
               </div>
-            </div>
-            <div class="info-grid">
-              ${Object.entries(ageGroups).map(([age, count]) => `
-                <div class="info-item">
-                  <div class="info-label">${age} years:</div>
-                  <div class="info-value">${count} patients (${totalPrescriptions > 0 ? ((count/totalPrescriptions)*100).toFixed(1) : 0}%)</div>
-                </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Gender Distribution -->
+        <div class="section">
+          <div class="section-title">
+            <span class="section-icon">⚧</span> Gender Distribution
+          </div>
+          <div class="info-grid">
+            ${Object.entries(genderCount).map(([gender, count]) => `
+              <div class="info-item">
+                <div class="info-label">${gender}:</div>
+                <div class="info-value">${count} patients (${totalPrescriptions > 0 ? ((count/totalPrescriptions)*100).toFixed(1) : 0}%)</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Top Diagnoses -->
+        <div class="section">
+          <div class="section-title">
+            <span class="section-icon">🔍</span> Top 10 Most Common Diagnoses
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th width="5%">Rank</th>
+                <th width="65%">Diagnosis</th>
+                <th width="15%">Frequency</th>
+                <th width="15%">Percentage</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${topDiagnoses.map(([diagnosis, count], index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${diagnosis}</td>
+                  <td>${count}</td>
+                  <td>${((count/totalPrescriptions)*100).toFixed(1)}%</td>
+                </tr>
               `).join('')}
-            </div>
-          </div>
+            </tbody>
+          </table>
+        </div>
 
-          <!-- Gender Distribution -->
-          <div class="section">
-            <div class="section-title">
-              <span class="section-icon">⚧</span> Gender Distribution
-            </div>
-            <div class="info-grid">
-              ${Object.entries(genderCount).map(([gender, count]) => `
-                <div class="info-item">
-                  <div class="info-label">${gender}:</div>
-                  <div class="info-value">${count} patients (${totalPrescriptions > 0 ? ((count/totalPrescriptions)*100).toFixed(1) : 0}%)</div>
-                </div>
+        <!-- Top Medicines -->
+        <div class="section">
+          <div class="section-title">
+            <span class="section-icon">💊</span> Top 10 Most Prescribed Medicines
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th width="5%">Rank</th>
+                <th width="65%">Medicine Name</th>
+                <th width="15%">Times Prescribed</th>
+                <th width="15%">Percentage</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${topMedicines.map(([medicine, count], index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${medicine}</td>
+                  <td>${count}</td>
+                  <td>${totalMedicines > 0 ? ((count/totalMedicines)*100).toFixed(1) : 0}%</td>
+                </tr>
               `).join('')}
-            </div>
-          </div>
+            </tbody>
+          </table>
+        </div>
 
-          <!-- Top Diagnoses -->
-          <div class="section">
-            <div class="section-title">
-              <span class="section-icon">🔍</span> Top 10 Most Common Diagnoses
-            </div>
-            <table class="data-table">
-              <thead>
+        <!-- Recent Prescriptions Summary -->
+        <div class="section">
+          <div class="section-title">
+            <span class="section-icon">📝</span> Recent Prescription Records (Last 20)
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th width="10%">Date</th>
+                <th width="20%">Patient Name</th>
+                <th width="15%">Patient ID</th>
+                <th width="30%">Diagnosis</th>
+                <th width="15%">Doctor</th>
+                <th width="10%">Medicines</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${prescriptions.slice(0, 20).map(prescription => `
                 <tr>
-                  <th width="5%">Rank</th>
-                  <th width="65%">Diagnosis</th>
-                  <th width="15%">Frequency</th>
-                  <th width="15%">Percentage</th>
+                  <td>${new Date(prescription.date).toLocaleDateString()}</td>
+                  <td>${prescription.patientName}</td>
+                  <td>${prescription.patientId}</td>
+                  <td>${prescription.diagnosis || 'N/A'}</td>
+                  <td>${prescription.doctorName}</td>
+                  <td>${prescription.medicines?.length || 0}</td>
                 </tr>
-              </thead>
-              <tbody>
-                ${topDiagnoses.map(([diagnosis, count], index) => `
-                  <tr>
-                    <td>${index + 1}</td>
-                    <td>${diagnosis}</td>
-                    <td>${count}</td>
-                    <td>${((count/totalPrescriptions)*100).toFixed(1)}%</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
 
-          <!-- Top Medicines -->
-          <div class="section">
-            <div class="section-title">
-              <span class="section-icon">💊</span> Top 10 Most Prescribed Medicines
-            </div>
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th width="5%">Rank</th>
-                  <th width="65%">Medicine Name</th>
-                  <th width="15%">Times Prescribed</th>
-                  <th width="15%">Percentage</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${topMedicines.map(([medicine, count], index) => `
-                  <tr>
-                    <td>${index + 1}</td>
-                    <td>${medicine}</td>
-                    <td>${count}</td>
-                    <td>${totalMedicines > 0 ? ((count/totalMedicines)*100).toFixed(1) : 0}%</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Recent Prescriptions Summary -->
-          <div class="section">
-            <div class="section-title">
-              <span class="section-icon">📝</span> Recent Prescription Records (Last 20)
-            </div>
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th width="10%">Date</th>
-                  <th width="20%">Patient Name</th>
-                  <th width="15%">Patient ID</th>
-                  <th width="30%">Diagnosis</th>
-                  <th width="15%">Doctor</th>
-                  <th width="10%">Medicines</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${prescriptions.slice(0, 20).map(prescription => `
-                  <tr>
-                    <td>${new Date(prescription.date).toLocaleDateString()}</td>
-                    <td>${prescription.patientName}</td>
-                    <td>${prescription.patientId}</td>
-                    <td>${prescription.diagnosis || 'N/A'}</td>
-                    <td>${prescription.doctorName}</td>
-                    <td>${prescription.medicines?.length || 0}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Official Seal -->
-          <div class="official-seal">
-            <div class="seal-text">🏥 HEAL-X OFFICIAL SEAL</div>
-            <div style="font-size: 10px; margin-top: 5px; color: #64748b;">Healthcare Management System</div>
-          </div>
-
-          <!-- Signature Section -->
-          <div class="signature-section">
-            <div class="signature-box">
-              <div class="signature-label">Authorized By</div>
+        <!-- NEW: Professional Signature Section -->
+        <div class="signature-section">
+          <div class="signature-container">
+            <div class="signature-block">
               <div class="signature-line"></div>
-              <div class="signature-name">Dr. Gayath Dahanayake</div>
-              <div style="font-size: 10px; color: #64748b; margin-top: 3px;">Emergency Medicine Specialist</div>
+              <div class="signature-text">Medical Director</div>
+              <div class="signature-title">Heal-x Healthcare Management</div>
             </div>
-            <div class="signature-box">
-              <div class="signature-label">Report Approved On</div>
+            
+            <div class="signature-block">
               <div class="signature-line"></div>
-              <div class="signature-name">Date: ${formattedDate}</div>
-              <div style="font-size: 10px; color: #64748b; margin-top: 3px;">Official Medical Report</div>
+              <div class="signature-text">Date: _______________</div>
+              <div class="signature-title">Report Approved On</div>
             </div>
           </div>
+          
+          <div style="text-align: center; margin-top: 30px;">
+            <div class="company-stamp">
+              🏥 HEAL-X OFFICIAL SEAL<br>
+              HEALTHCARE MANAGEMENT SYSTEM
+            </div>
+          </div>
+        </div>
 
-          <!-- Footer -->
-          <div class="footer">
-            <div>
-              <strong>HealX Healthcare Center</strong><br>
-              Advanced Patient Care & Medical Records System<br>
-              Contact: info@healx.com | Phone: (555) 123-4567
-            </div>
-            <div style="text-align: right;">
-              <strong>Report ID:</strong> RPT-${Date.now()}<br>
-              <strong>Generated:</strong> ${formattedDate} ${formattedTime}<br>
-              <strong>Page:</strong> 1 of 1
-            </div>
-          </div>
+        <!-- NEW: Report Footer -->
+        <div class="report-footer">
+          <p><strong>This is a system-generated report from Heal-x Healthcare Management System</strong></p>
+          <p>Report generated on ${formattedDate} ${formattedTime} | All medical records are confidential</p>
+          <p>For queries regarding this report, contact the Medical Department at Heal-x Healthcare</p>
+        </div>
+
+        <div class="no-print" style="margin-top: 30px; text-align: center;">
+          <button onclick="window.print()" style="background: #1da1f2; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 14px; cursor: pointer;">
+            🖨️ Print PDF Report
+          </button>
+          <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 14px; cursor: pointer; margin-left: 10px;">
+            ❌ Close
+          </button>
         </div>
       </body>
       </html>
@@ -1582,7 +1504,7 @@ const DoctorDashboard = () => {
             }}
             className="doctor-dashboard-back-button"
           >
-            ← Back to Dashboard
+             Back to Dashboard
           </button>
         </div>
         <EmergencyAlertsPage doctor={doctor} />
