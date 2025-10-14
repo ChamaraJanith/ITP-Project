@@ -153,6 +153,12 @@ const processAnalyticsData = (utilities, timeRange = 'current_year') => {
     .sort((a, b) => b.total - a.total)
     .slice(0, 10);
 
+  // Monthly trends
+  const monthlyTrends = generateMonthlyTrends(filteredUtilities);
+  
+  // Year-over-year comparison
+  const yearOverYearComparison = generateYearOverYearComparison(utilities, timeRange);
+
   return {
     totalExpenses,
     totalRecords,
@@ -168,6 +174,8 @@ const processAnalyticsData = (utilities, timeRange = 'current_year') => {
       total: data.total
     })),
     topVendors,
+    monthlyTrends,
+    yearOverYearComparison,
     filteredData: filteredUtilities
   };
 };
@@ -231,6 +239,64 @@ const generateMonthlyTrends = (utilities) => {
   return Object.values(monthlyData).sort((a, b) => a.sortDate - b.sortDate);
 };
 
+// Generate year-over-year comparison
+const generateYearOverYearComparison = (utilities, timeRange) => {
+  const now = new Date();
+  let currentYearStart, currentYearEnd, prevYearStart, prevYearEnd;
+
+  if (timeRange === 'current_year') {
+    currentYearStart = new Date(now.getFullYear(), 0, 1);
+    currentYearEnd = new Date(now.getFullYear(), 11, 31);
+    prevYearStart = new Date(now.getFullYear() - 1, 0, 1);
+    prevYearEnd = new Date(now.getFullYear() - 1, 11, 31);
+  } else if (timeRange === 'current_quarter') {
+    const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
+    currentYearStart = new Date(now.getFullYear(), quarterMonth, 1);
+    currentYearEnd = new Date(now.getFullYear(), quarterMonth + 3, 0);
+    prevYearStart = new Date(now.getFullYear() - 1, quarterMonth, 1);
+    prevYearEnd = new Date(now.getFullYear() - 1, quarterMonth + 3, 0);
+  } else {
+    // For other time ranges, we'll use the last 12 months vs previous 12 months
+    currentYearStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    currentYearEnd = new Date();
+    prevYearStart = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+    prevYearEnd = new Date(now.getFullYear() - 1, now.getMonth() + 1, 0);
+  }
+
+  const currentYearData = utilities.filter(utility => {
+    const date = new Date(utility.billing_period_start);
+    return date >= currentYearStart && date <= currentYearEnd;
+  });
+
+  const prevYearData = utilities.filter(utility => {
+    const date = new Date(utility.billing_period_start);
+    return date >= prevYearStart && date <= prevYearEnd;
+  });
+
+  const currentTotal = currentYearData.reduce((sum, utility) => sum + parseFloat(utility.amount), 0);
+  const prevTotal = prevYearData.reduce((sum, utility) => sum + parseFloat(utility.amount), 0);
+  
+  const changeAmount = currentTotal - prevTotal;
+  const changePercentage = prevTotal > 0 ? (changeAmount / prevTotal) * 100 : 0;
+
+  return {
+    currentPeriod: {
+      start: currentYearStart,
+      end: currentYearEnd,
+      total: currentTotal,
+      count: currentYearData.length
+    },
+    previousPeriod: {
+      start: prevYearStart,
+      end: prevYearEnd,
+      total: prevTotal,
+      count: prevYearData.length
+    },
+    changeAmount,
+    changePercentage
+  };
+};
+
 // Sub-components
 const MetricCard = ({ 
   title, 
@@ -240,7 +306,8 @@ const MetricCard = ({
   trend, 
   trendValue, 
   color = 'primary',
-  loading = false 
+  loading = false,
+  comparison = null
 }) => (
   <div className={`tuv-metric-card tuv-metric-card--${color}`}>
     <div className="tuv-metric-card__header">
@@ -265,16 +332,25 @@ const MetricCard = ({
           <h3 className="tuv-metric-card__value">{value}</h3>
           <p className="tuv-metric-card__title">{title}</p>
           {subtitle && <small className="tuv-metric-card__subtitle">{subtitle}</small>}
+          {comparison && (
+            <div className="tuv-metric-card__comparison">
+              <span>vs previous period:</span>
+              <span className={comparison.changePercentage >= 0 ? 'tuv-metric-card__comparison--up' : 'tuv-metric-card__comparison--down'}>
+                {formatCurrency(comparison.changeAmount)} ({formatPercentage(comparison.changePercentage)})
+              </span>
+            </div>
+          )}
         </>
       )}
     </div>
   </div>
 );
 
-const ChartCard = ({ title, children, loading = false, className = '' }) => (
+const ChartCard = ({ title, children, loading = false, className = '', actions = null }) => (
   <div className={`tuv-chart-card ${className}`}>
     <div className="tuv-chart-card__header">
       <h3 className="tuv-chart-card__title">{title}</h3>
+      {actions && <div className="tuv-chart-card__actions">{actions}</div>}
     </div>
     <div className="tuv-chart-card__content">
       {loading ? (
@@ -336,6 +412,86 @@ const ErrorAlert = ({ message, onRetry }) => (
   </div>
 );
 
+const DataTable = ({ data, columns, loading = false }) => {
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+  
+  const handleSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedData = useMemo(() => {
+    if (!sortConfig.key) return data;
+    
+    return [...data].sort((a, b) => {
+      if (a[sortConfig.key] < b[sortConfig.key]) {
+        return sortConfig.direction === 'ascending' ? -1 : 1;
+      }
+      if (a[sortConfig.key] > b[sortConfig.key]) {
+        return sortConfig.direction === 'ascending' ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [data, sortConfig]);
+
+  const getSortIndicator = (key) => {
+    if (sortConfig.key !== key) return null;
+    return sortConfig.direction === 'ascending' ? '↑' : '↓';
+  };
+
+  if (loading) {
+    return (
+      <div className="tuv-data-table__loading">
+        <LoadingSpinner message="Loading data..." />
+      </div>
+    );
+  }
+
+  return (
+    <div className="tuv-data-table">
+      <div className="tuv-data-table__container">
+        <table className="tuv-data-table__table">
+          <thead>
+            <tr>
+              {columns.map((column) => (
+                <th 
+                  key={column.key} 
+                  onClick={() => column.sortable && handleSort(column.key)}
+                  className={column.sortable ? 'tuv-data-table__sortable' : ''}
+                >
+                  {column.label} {getSortIndicator(column.key)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedData.length > 0 ? (
+              sortedData.map((row, index) => (
+                <tr key={index}>
+                  {columns.map((column) => (
+                    <td key={column.key}>
+                      {column.render ? column.render(row[column.key], row) : row[column.key]}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={columns.length} className="tuv-data-table__no-data">
+                  No data available
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 // Main Component
 const TotalUtilityView = () => {
   const navigate = useNavigate();
@@ -343,6 +499,9 @@ const TotalUtilityView = () => {
   
   // State management
   const [timeRange, setTimeRange] = useState('current_year');
+  const [chartType, setChartType] = useState('line');
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [comparisonView, setComparisonView] = useState(false);
   
   // Process analytics data
   const analyticsData = useMemo(() => {
@@ -351,9 +510,9 @@ const TotalUtilityView = () => {
 
   // Generate monthly trends
   const monthlyTrends = useMemo(() => {
-    if (!allUtilities.length) return [];
-    return generateMonthlyTrends(allUtilities);
-  }, [allUtilities]);
+    if (!analyticsData?.monthlyTrends) return [];
+    return analyticsData.monthlyTrends;
+  }, [analyticsData]);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -383,7 +542,19 @@ const TotalUtilityView = () => {
         borderColor: '#1da1f2',
         borderWidth: 1,
         cornerRadius: 8,
-        padding: 12
+        padding: 12,
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.y !== null) {
+              label += formatCurrency(context.parsed.y);
+            }
+            return label;
+          }
+        }
       }
     }
   };
@@ -427,6 +598,51 @@ const TotalUtilityView = () => {
       }]
     };
   }, [monthlyTrends]);
+
+  const comparisonTrendData = useMemo(() => {
+    if (!monthlyTrends.length || !analyticsData?.yearOverYearComparison) return null;
+    
+    // Generate previous year data for comparison
+    const prevYearData = allUtilities.filter(utility => {
+      const date = new Date(utility.billing_period_start);
+      const prevYear = new Date().getFullYear() - 1;
+      return date.getFullYear() === prevYear;
+    });
+    
+    const prevYearMonthly = generateMonthlyTrends(prevYearData);
+    
+    return {
+      labels: monthlyTrends.map(trend => trend.month),
+      datasets: [
+        {
+          label: 'Current Period',
+          data: monthlyTrends.map(trend => trend.total),
+          fill: true,
+          borderColor: '#1da1f2',
+          backgroundColor: 'rgba(29, 161, 242, 0.1)',
+          tension: 0.4,
+          pointBackgroundColor: '#1da1f2',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+        },
+        {
+          label: 'Previous Period',
+          data: prevYearMonthly.map(trend => trend.total),
+          fill: true,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          tension: 0.4,
+          pointBackgroundColor: '#10b981',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+        }
+      ]
+    };
+  }, [monthlyTrends, allUtilities, analyticsData]);
 
   const paymentStatusData = useMemo(() => {
     if (!analyticsData?.paymentStatusBreakdown) return null;
@@ -495,12 +711,34 @@ const TotalUtilityView = () => {
     // Average insight
     insights.push(`Average utility expense is ${formatCurrency(analyticsData.averageExpense)} per transaction`);
     
+    // Year-over-year comparison
+    if (analyticsData.yearOverYearComparison) {
+      const { changePercentage } = analyticsData.yearOverYearComparison;
+      if (changePercentage > 0) {
+        insights.push(`Expenses increased by ${formatPercentage(changePercentage)} compared to previous period`);
+      } else if (changePercentage < 0) {
+        insights.push(`Expenses decreased by ${formatPercentage(Math.abs(changePercentage))} compared to previous period`);
+      }
+    }
+    
     return insights;
   }, [analyticsData]);
 
   // Event handlers
   const handleTimeRangeChange = (e) => {
     setTimeRange(e.target.value);
+  };
+
+  const handleChartTypeChange = (type) => {
+    setChartType(type);
+  };
+
+  const handleCategoryFilter = (category) => {
+    setSelectedCategory(category === selectedCategory ? null : category);
+  };
+
+  const handleToggleComparison = () => {
+    setComparisonView(!comparisonView);
   };
 
   const handleExportReport = () => {
@@ -519,6 +757,12 @@ const TotalUtilityView = () => {
       ['Total Expenses:', formatCurrency(analyticsData.totalExpenses)],
       ['Total Records:', analyticsData.totalRecords],
       ['Average Expense:', formatCurrency(analyticsData.averageExpense)],
+      [''],
+      ['Year-over-Year Comparison'],
+      ['Current Period:', formatCurrency(analyticsData.yearOverYearComparison?.currentPeriod.total || 0)],
+      ['Previous Period:', formatCurrency(analyticsData.yearOverYearComparison?.previousPeriod.total || 0)],
+      ['Change:', formatCurrency(analyticsData.yearOverYearComparison?.changeAmount || 0)],
+      ['Change %:', formatPercentage(analyticsData.yearOverYearComparison?.changePercentage || 0)],
       [''],
       ['Category Breakdown'],
       ['Category', 'Total Amount', 'Count'],
@@ -556,6 +800,34 @@ const TotalUtilityView = () => {
   const handleRetry = () => {
     fetchAllUtilities();
   };
+
+  // Table columns for transaction data
+  const transactionColumns = [
+    { key: 'vendor_name', label: 'Vendor', sortable: true },
+    { key: 'category', label: 'Category', sortable: true },
+    { 
+      key: 'amount', 
+      label: 'Amount', 
+      sortable: true,
+      render: (value) => formatCurrency(value)
+    },
+    { 
+      key: 'billing_period_start', 
+      label: 'Billing Period', 
+      sortable: true,
+      render: (value) => new Date(value).toLocaleDateString()
+    },
+    { 
+      key: 'payment_status', 
+      label: 'Status', 
+      sortable: true,
+      render: (value) => (
+        <span className={`tuv-status-badge tuv-status-badge--${value.toLowerCase()}`}>
+          {value}
+        </span>
+      )
+    }
+  ];
 
   if (loading && !allUtilities.length) {
     return (
@@ -639,7 +911,15 @@ const TotalUtilityView = () => {
             </select>
             
             <button 
-              className="tuv-button tuv-button--secondary"
+              className={`tuv-button ${comparisonView ? 'tuv-button--active' : 'tuv-button--secondary'}`}
+              onClick={handleToggleComparison}
+            >
+              <i className="fas fa-exchange-alt" aria-hidden="true"></i>
+              {comparisonView ? 'Hide Comparison' : 'Show Comparison'}
+            </button>
+            
+            <button 
+              className="tuv-button tuv-button--primary"
               onClick={handleExportReport}
             >
               <i className="fas fa-download" aria-hidden="true"></i>
@@ -659,6 +939,7 @@ const TotalUtilityView = () => {
             icon="fa-dollar-sign"
             color="primary"
             loading={loading}
+            comparison={analyticsData.yearOverYearComparison}
           />
           <MetricCard
             title="Average Expense"
@@ -692,14 +973,30 @@ const TotalUtilityView = () => {
         <div className="tuv-charts__grid">
           {/* Monthly Trend Chart */}
           <ChartCard 
-            title="Monthly Expense Trends" 
+            title={comparisonView ? "Monthly Expense Trends (Comparison)" : "Monthly Expense Trends"} 
             className="tuv-chart-card--large"
             loading={loading}
+            actions={
+              <div className="tuv-chart-card__actions-group">
+                <button 
+                  className={`tuv-chart-type-btn ${chartType === 'line' ? 'tuv-chart-type-btn--active' : ''}`}
+                  onClick={() => handleChartTypeChange('line')}
+                >
+                  <i className="fas fa-chart-line"></i>
+                </button>
+                <button 
+                  className={`tuv-chart-type-btn ${chartType === 'bar' ? 'tuv-chart-type-btn--active' : ''}`}
+                  onClick={() => handleChartTypeChange('bar')}
+                >
+                  <i className="fas fa-chart-bar"></i>
+                </button>
+              </div>
+            }
           >
-            {monthlyTrendData && (
+            {comparisonView && comparisonTrendData ? (
               <div className="tuv-chart-container">
                 <Line 
-                  data={monthlyTrendData} 
+                  data={comparisonTrendData} 
                   options={{
                     ...commonChartOptions,
                     scales: {
@@ -715,7 +1012,45 @@ const TotalUtilityView = () => {
                   }} 
                 />
               </div>
-            )}
+            ) : monthlyTrendData ? (
+              <div className="tuv-chart-container">
+                {chartType === 'line' ? (
+                  <Line 
+                    data={monthlyTrendData} 
+                    options={{
+                      ...commonChartOptions,
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          ticks: {
+                            callback: function(value) {
+                              return formatCurrency(value);
+                            }
+                          }
+                        }
+                      }
+                    }} 
+                  />
+                ) : (
+                  <Bar 
+                    data={monthlyTrendData} 
+                    options={{
+                      ...commonChartOptions,
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          ticks: {
+                            callback: function(value) {
+                              return formatCurrency(value);
+                            }
+                          }
+                        }
+                      }
+                    }} 
+                  />
+                )}
+              </div>
+            ) : null}
           </ChartCard>
 
           {/* Category Breakdown */}
@@ -738,6 +1073,23 @@ const TotalUtilityView = () => {
                             return `${context.label}: ${value} (${percentage}%)`;
                           }
                         }
+                      },
+                      legend: {
+                        ...commonChartOptions.plugins.legend,
+                        position: 'right',
+                        labels: {
+                          ...commonChartOptions.plugins.legend.labels,
+                          font: {
+                            size: 11
+                          }
+                        }
+                      }
+                    },
+                    onClick: (event, elements) => {
+                      if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const category = analyticsData.categoryBreakdown[index].category;
+                        handleCategoryFilter(category);
                       }
                     }
                   }}
@@ -752,7 +1104,22 @@ const TotalUtilityView = () => {
               <div className="tuv-chart-container">
                 <Pie 
                   data={paymentStatusData}
-                  options={commonChartOptions}
+                  options={{
+                    ...commonChartOptions,
+                    plugins: {
+                      ...commonChartOptions.plugins,
+                      legend: {
+                        ...commonChartOptions.plugins.legend,
+                        position: 'right',
+                        labels: {
+                          ...commonChartOptions.plugins.legend.labels,
+                          font: {
+                            size: 11
+                          }
+                        }
+                      }
+                    }
+                  }}
                 />
               </div>
             )}
@@ -766,8 +1133,9 @@ const TotalUtilityView = () => {
                   data={vendorComparisonData}
                   options={{
                     ...commonChartOptions,
+                    indexAxis: 'y',
                     scales: {
-                      y: {
+                      x: {
                         beginAtZero: true,
                         ticks: {
                           callback: function(value) {
@@ -778,13 +1146,8 @@ const TotalUtilityView = () => {
                     },
                     plugins: {
                       ...commonChartOptions.plugins,
-                      tooltip: {
-                        ...commonChartOptions.plugins.tooltip,
-                        callbacks: {
-                          label: function(context) {
-                            return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
-                          }
-                        }
+                      legend: {
+                        display: false
                       }
                     }
                   }}
@@ -792,6 +1155,36 @@ const TotalUtilityView = () => {
               </div>
             )}
           </ChartCard>
+        </div>
+      </section>
+
+      {/* Data Table Section */}
+      <section className="tuv-data-section">
+        <div className="tuv-data-section__header">
+          <h2 className="tuv-data-section__title">
+            Transaction Details
+            {selectedCategory && (
+              <span className="tuv-data-section__filter">
+                Filtered by: {selectedCategory}
+                <button 
+                  className="tuv-data-section__filter-clear"
+                  onClick={() => setSelectedCategory(null)}
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              </span>
+            )}
+          </h2>
+        </div>
+        <div className="tuv-data-section__content">
+          <DataTable 
+            data={selectedCategory 
+              ? analyticsData.filteredData.filter(item => item.category === selectedCategory)
+              : analyticsData.filteredData
+            }
+            columns={transactionColumns}
+            loading={loading}
+          />
         </div>
       </section>
 
@@ -811,7 +1204,8 @@ const TotalUtilityView = () => {
               'Monitor payment statuses to improve cash flow',
               'Review high-expense categories for optimization',
               'Consider vendor consolidation for better rates',
-              'Set up automated payment tracking systems'
+              'Set up automated payment tracking systems',
+              'Analyze seasonal trends to forecast future expenses'
             ]}
             icon="fa-chart-line"
             color="warning"
