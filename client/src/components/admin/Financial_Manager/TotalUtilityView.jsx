@@ -790,7 +790,7 @@ const TotalUtilityView = () => {
   };
 
   const handleNavigateBack = () => {
-    navigate('/admin/financial/utilities');
+    navigate('/admin/financial/utities');
   };
 
   const handleNavigateToDashboard = () => {
