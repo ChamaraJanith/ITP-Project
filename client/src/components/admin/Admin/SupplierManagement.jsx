@@ -437,35 +437,47 @@ const SupplierManagement = () => {
     }
   };
 
-  const handleOrderSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateOrderForm()) return;
-    setIsSubmitting(true);
-    try {
-      const totalAmount = orderForm.items.reduce((sum, item) =>
-        sum + (item.quantity * item.unitPrice), 0
-      );
-      const orderData = {
-        ...orderForm,
-        totalAmount,
-        items: orderForm.items.map(item => ({
-          ...item,
-          totalPrice: item.quantity * item.unitPrice
-        }))
-      };
-      await axios.post('/api/purchase-orders', orderData);
-      resetForms();
-      setShowModal(false);
-      fetchData();
-      alert('Purchase order created successfully!');
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Failed to create order. Please try again.';
-      setErrors({ submit: errorMessage });
-      alert(errorMessage);
-    } finally {
-      setIsSubmitting(false);
+const handleOrderSubmit = async e => {
+  e.preventDefault();
+  if (!validateOrderForm()) return;
+  setIsSubmitting(true);
+
+  try {
+    const totalAmount = orderForm.items.reduce(
+      (sum, item) => sum + item.quantity * item.unitPrice,
+      0
+    );
+    const orderData = {
+      ...orderForm,
+      totalAmount,
+      items: orderForm.items.map(item => ({
+        ...item,
+        totalPrice: item.quantity * item.unitPrice,
+      })),
+    };
+
+    let response;
+    if (editingItem && editingItem._id) {
+      // This is an update
+      response = await axios.put(`/api/purchase-orders/${editingItem._id}`, orderData);
+    } else {
+      // This is a new order
+      response = await axios.post("/api/purchase-orders", orderData);
     }
-  };
+
+    resetForms();
+    setShowModal(false);
+    fetchData();
+    alert(editingItem ? "Purchase order updated successfully!" : "Purchase order created successfully!");
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || "Failed to save order. Please try again.";
+    setErrors({ submit: errorMessage });
+    alert(errorMessage);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   const resetForms = () => {
     setSupplierForm({
