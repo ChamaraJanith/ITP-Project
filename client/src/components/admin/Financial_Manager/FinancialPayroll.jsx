@@ -1382,7 +1382,6 @@ const FinancialPayroll = () => {
         </button>
       </div>
 
-      {/* Rest of the JSX remains the same... */}
       {/* Controls */}
       <div className="fp-controls">
         <div className="fp-controls-left">
@@ -1677,7 +1676,7 @@ const FinancialPayroll = () => {
         </div>
       )}
 
-      {/* Summary Stats */}
+      {/* Summary Stats with CORRECTED TOTAL PAYROLL EXPENSE CARD */}
       {payrolls.length > 0 && (
         <div className="fp-stats-container">
           <div className="fp-stat-card">
@@ -1699,6 +1698,38 @@ const FinancialPayroll = () => {
           <div className="fp-stat-card">
             <h4>🏛️ Total EPF Employee</h4>
             <p>LKR {payrolls.reduce((sum, p) => sum + (p.epf || 0), 0).toLocaleString()}</p>
+          </div>
+          {/* ✅ CORRECTED: TOTAL PAYROLL EXPENSE CARD with proper formula */}
+          <div className="fp-stat-card" style={{
+            background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%)',
+            color: 'white',
+            border: '2px solid #ff5252'
+          }}>
+            <h4 style={{ color: 'white' }}>🏢 Total Company Payroll Expense</h4>
+            <p style={{ 
+              color: 'white', 
+              fontSize: '18px', 
+              fontWeight: 'bold',
+              textShadow: '1px 1px 2px rgba(0,0,0,0.3)' 
+            }}>
+              LKR {payrolls.reduce((sum, p) => {
+                const grossSalary = p.grossSalary || 0;
+                const bonuses = p.bonuses || 0;
+                const epfEmployer = Math.round(grossSalary * 0.12); // 12% EPF employer contribution
+                const etfEmployer = Math.round(grossSalary * 0.03); // 3% ETF employer contribution
+                
+                // ✅ CORRECTED: Total company expense = Base Salaries + Bonuses + EPF Employer + ETF Employer
+                return sum + grossSalary + bonuses + epfEmployer + etfEmployer;
+              }, 0).toLocaleString()}
+            </p>
+            <small style={{ 
+              color: 'rgba(255,255,255,0.9)', 
+              fontSize: '10px',
+              display: 'block',
+              marginTop: '5px'
+            }}>
+              Includes: Base Salaries + Bonuses + EPF (12%) + ETF (3%)
+            </small>
           </div>
         </div>
       )}
