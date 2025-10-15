@@ -336,6 +336,21 @@ const FinancialPayroll = () => {
     });
   };
 
+  const handleRefresh = async () => {
+  setLoading(true);
+  setError('');
+  setSuccess('🔄 Refreshing payroll data...');
+  
+  try {
+    await fetchPayrollsWithFix();
+    setSuccess('✅ Data refreshed successfully!');
+    setTimeout(() => setSuccess(''), 2000);
+  } catch (error) {
+    setError('❌ Failed to refresh data: ' + error.message);
+    setSuccess('');
+  }
+};
+
   // 🚨 CRITICAL FIX: Calculate preview values with CORRECT EPF/ETF logic
   const calculatePreview = () => {
     const grossSalary = parseFloat(formData.grossSalary) || 0; // Base salary only
@@ -1394,6 +1409,15 @@ const FinancialPayroll = () => {
             disabled={loading}
           >
             {showForm ? '❌ Cancel' : '➕ Add New Payroll'}
+          </button>
+
+          <button 
+            onClick={handleRefresh}
+            className="fp-refresh-btn"
+            disabled={loading}
+            title="Refresh payroll data"
+          >
+              {loading ? '🔄' : '🔄'} Refresh
           </button>
         </div>
         
