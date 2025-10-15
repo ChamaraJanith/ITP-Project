@@ -1250,7 +1250,7 @@ const FinancialPayroll = () => {
     ]);
 
     const csvContent = [
-      `"Heal-x Financial Payroll Report (FIXED)"`,
+      `"Heal-x Financial Payroll Report "`,
       `"Generated on: ${new Date().toLocaleString()}"`,
       `"Total Records: ${payrolls.length}"`,
       `"Important: EPF/ETF calculated on base salary only (excludes bonuses)"`,
@@ -1287,7 +1287,7 @@ const FinancialPayroll = () => {
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Heal-x Payroll Table (FIXED)</title>
+        <title>Heal-x Payroll Table </title>
         <style>
           body { font-family: Arial, sans-serif; margin: 15px; }
           table { width: 100%; border-collapse: collapse; font-size: 10px; }
@@ -1298,7 +1298,7 @@ const FinancialPayroll = () => {
         </style>
       </head>
       <body>
-        <h2>🏥 Heal-x Payroll Records (FIXED)</h2>
+        <h2>🏥 Heal-x Payroll Records</h2>
         <p>Generated: ${new Date().toLocaleString()}</p>
         <div class="note">
           <strong>✅ FIXED:</strong> Net salary calculations have been corrected. EPF and ETF contributions are calculated on base salary only. Bonuses are excluded from EPF/ETF calculations as per Sri Lankan regulations.
@@ -1351,8 +1351,8 @@ const FinancialPayroll = () => {
       {/* Header */}
       <div className="fp-header">
         <div className="fp-header-left">
-          <h1>🏥 Heal-x Financial Payroll Management (FIXED)</h1>
-          <p>Manage employee payrolls with automated EPF & ETF calculations (Base Salary Only) - Auto-fixes incorrect calculations</p>
+          <h1>🏥 Heal-x Financial Payroll Management</h1>
+          <p>Manage employee payrolls with automated EPF & ETF calculations </p>
         </div>
       </div>
 

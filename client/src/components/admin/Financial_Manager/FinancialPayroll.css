@@ -936,19 +936,6 @@
   font-weight: 500;
 }
 
-/* ✅ NEW: Focus ring enhancement for validation states */
-.fp-form-group input.fp-error:focus {
-  ring: 2px;
-  ring-color: #e53e3e;
-  ring-opacity: 0.5;
-}
-
-.fp-form-group input:valid:focus:not(.fp-error) {
-  ring: 2px;
-  ring-color: #38a169;
-  ring-opacity: 0.5;
-}
-
 /* Refresh Button Styling */
 .fp-refresh-btn {
   background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);

@@ -39,6 +39,17 @@ const TotalPayrollView = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // ✅ SAFE NUMBER FORMATTING HELPER
+  const safeFormat = (value, defaultValue = 0) => {
+    const num = Number(value);
+    return isNaN(num) || num === null || num === undefined ? defaultValue : num;
+  };
+
+  const formatCurrency = (value) => {
+    const num = safeFormat(value, 0);
+    return num.toLocaleString();
+  };
+
   useEffect(() => {
     initializeAnalytics();
   }, []);
@@ -49,7 +60,7 @@ const TotalPayrollView = () => {
     }
   }, [payrolls, filterMonth, filterYear, selectedEmployee]);
 
-  // Fetch real payroll data
+  // ✅ CORRECTED: Fetch payroll data with proper error handling
   const fetchPayrolls = async () => {
     try {
       const params = new URLSearchParams();
@@ -57,18 +68,28 @@ const TotalPayrollView = () => {
       if (filterYear) params.append('payrollYear', filterYear);
       params.append('limit', '1000'); // Get all records for analytics
 
+      console.log('🔍 Fetching payrolls with params:', params.toString());
+
       const response = await fetch(`${API_URL}?${params}`);
       const text = await response.text();
       
       try {
         const data = JSON.parse(text);
-        return data.success ? data.data || [] : [];
+        console.log('✅ Raw payroll data received:', data);
+        
+        if (data.success && data.data) {
+          console.log('📊 Sample payroll record:', data.data[0]);
+          return data.data;
+        } else {
+          console.warn('⚠️ No payroll data or unsuccessful response:', data);
+          return [];
+        }
       } catch {
-        console.error("Raw response:", text);
-        throw new Error("Invalid JSON response");
+        console.error("❌ Invalid JSON response:", text);
+        throw new Error("Invalid JSON response from server");
       }
     } catch (error) {
-      console.error("Error fetching payrolls:", error);
+      console.error("❌ Error fetching payrolls:", error);
       throw error;
     }
   };
@@ -81,47 +102,123 @@ const TotalPayrollView = () => {
       }
 
       const payrollData = await fetchPayrolls();
+      console.log('📈 Setting payroll data for analytics:', payrollData.length, 'records');
       setPayrolls(payrollData);
       
     } catch (error) {
       console.error("❌ Error loading payroll analytics:", error);
-      setError("Failed to load payroll analytics");
+      setError("Failed to load payroll analytics: " + error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculate comprehensive analytics
+  // ✅ FIXED: Calculate analytics using ACTUAL DATABASE VALUES
   const calculateAnalytics = () => {
     if (!payrolls || payrolls.length === 0) {
-      setAnalytics(null);
+      console.log('⚠️ No payroll data available for analytics');
+      setAnalytics({
+        summary: {
+          totalEmployees: 0,
+          totalPayrolls: 0,
+          totalGrossSalary: 0,
+          totalNetSalary: 0,
+          totalDeductions: 0,
+          totalBonuses: 0,
+          avgGrossSalary: 0,
+          avgNetSalary: 0,
+          totalEmployeeEPF: 0,
+          totalEmployerEPF: 0,
+          totalEmployerETF: 0,
+          totalEmployerContributions: 0,
+          totalCompanyPayrollExpense: 0
+        },
+        statusBreakdown: {},
+        monthlyTrends: [],
+        salaryRanges: {
+          "0-50K": 0,
+          "50K-100K": 0,
+          "100K-150K": 0,
+          "150K-200K": 0,
+          "200K+": 0
+        },
+        topEmployees: [],
+        costBreakdown: {
+          grossSalary: 0,
+          bonuses: 0,
+          deductions: 0,
+          employeeEPF: 0,
+          employerEPF: 0,
+          employerETF: 0
+        }
+      });
       return;
     }
+
+    console.log('📊 Starting analytics calculation with', payrolls.length, 'payroll records');
 
     let filteredPayrolls = [...payrolls];
 
     // Apply filters
     if (filterMonth) {
       filteredPayrolls = filteredPayrolls.filter(p => p.payrollMonth === filterMonth);
+      console.log('🔍 Filtered by month:', filterMonth, '→', filteredPayrolls.length, 'records');
     }
     if (filterYear) {
-      filteredPayrolls = filteredPayrolls.filter(p => p.payrollYear.toString() === filterYear);
+      filteredPayrolls = filteredPayrolls.filter(p => p.payrollYear?.toString() === filterYear);
+      console.log('🔍 Filtered by year:', filterYear, '→', filteredPayrolls.length, 'records');
     }
     if (selectedEmployee) {
       filteredPayrolls = filteredPayrolls.filter(p => p.employeeId === selectedEmployee);
+      console.log('🔍 Filtered by employee:', selectedEmployee, '→', filteredPayrolls.length, 'records');
     }
 
-    // Basic statistics
+    // ✅ BASIC CALCULATIONS using ACTUAL database values
     const totalEmployees = new Set(filteredPayrolls.map(p => p.employeeId)).size;
     const totalPayrolls = filteredPayrolls.length;
-    const totalGrossSalary = filteredPayrolls.reduce((sum, p) => sum + (p.grossSalary || 0), 0);
-    const totalNetSalary = filteredPayrolls.reduce((sum, p) => sum + (p.netSalary || 0), 0);
-    const totalDeductions = filteredPayrolls.reduce((sum, p) => sum + (p.deductions || 0), 0);
-    const totalBonuses = filteredPayrolls.reduce((sum, p) => sum + (p.bonuses || 0), 0);
-    const totalEPF = filteredPayrolls.reduce((sum, p) => sum + (p.epf || 0), 0);
-    const totalETF = filteredPayrolls.reduce((sum, p) => sum + (p.etf || 0), 0);
+    
+    const totalGrossSalary = filteredPayrolls.reduce((sum, p) => sum + safeFormat(p.grossSalary), 0);
+    const totalNetSalary = filteredPayrolls.reduce((sum, p) => sum + safeFormat(p.netSalary), 0);
+    const totalDeductions = filteredPayrolls.reduce((sum, p) => sum + safeFormat(p.deductions), 0);
+    const totalBonuses = filteredPayrolls.reduce((sum, p) => sum + safeFormat(p.bonuses), 0);
 
-    // Average calculations
+    // ✅ CORRECT EPF/ETF CALCULATIONS using database values AND recalculated values
+    // Employee EPF (8%) - Use database value if available, otherwise calculate
+    const totalEmployeeEPF = filteredPayrolls.reduce((sum, p) => {
+      // Try to use database EPF value first, fallback to calculation
+      const dbEPF = safeFormat(p.epf);
+      const calculatedEPF = Math.round(safeFormat(p.grossSalary) * 0.08);
+      return sum + (dbEPF > 0 ? dbEPF : calculatedEPF);
+    }, 0);
+
+    // Employer EPF (12%) - Always calculate as this might not be stored in DB
+    const totalEmployerEPF = filteredPayrolls.reduce((sum, p) => {
+      const basicSalary = safeFormat(p.grossSalary);
+      return sum + Math.round(basicSalary * 0.12);
+    }, 0);
+
+    // Employer ETF (3%) - Always calculate as this might not be stored in DB
+    const totalEmployerETF = filteredPayrolls.reduce((sum, p) => {
+      const basicSalary = safeFormat(p.grossSalary);
+      return sum + Math.round(basicSalary * 0.03);
+    }, 0);
+
+    // Total employer contributions (company expense)
+    const totalEmployerContributions = totalEmployerEPF + totalEmployerETF;
+
+    // ✅ CORRECT: Total company payroll expense
+    const totalCompanyPayrollExpense = totalGrossSalary + totalBonuses + totalEmployerEPF + totalEmployerETF;
+
+    console.log('💰 Calculated totals:', {
+      totalGrossSalary: totalGrossSalary.toLocaleString(),
+      totalNetSalary: totalNetSalary.toLocaleString(),
+      totalEmployeeEPF: totalEmployeeEPF.toLocaleString(),
+      totalEmployerEPF: totalEmployerEPF.toLocaleString(),
+      totalEmployerETF: totalEmployerETF.toLocaleString(),
+      totalCompanyExpense: totalCompanyPayrollExpense.toLocaleString()
+    });
+
+    // ✅ SAFE Average calculations
     const avgGrossSalary = totalEmployees > 0 ? totalGrossSalary / totalEmployees : 0;
     const avgNetSalary = totalEmployees > 0 ? totalNetSalary / totalEmployees : 0;
 
@@ -132,25 +229,40 @@ const TotalPayrollView = () => {
       statusBreakdown[status] = (statusBreakdown[status] || 0) + 1;
     });
 
-    // Monthly trends
+    // Monthly trends with EPF/ETF breakdown
     const monthlyTrends = {};
     filteredPayrolls.forEach(p => {
-      const key = `${p.payrollMonth} ${p.payrollYear}`;
+      const key = `${p.payrollMonth || 'Unknown'} ${p.payrollYear || 'Unknown'}`;
       if (!monthlyTrends[key]) {
         monthlyTrends[key] = {
-          month: p.payrollMonth,
-          year: p.payrollYear,
+          month: p.payrollMonth || 'Unknown',
+          year: p.payrollYear || 'Unknown',
           totalGross: 0,
           totalNet: 0,
           employeeCount: new Set(),
           totalBonuses: 0,
-          totalDeductions: 0
+          totalDeductions: 0,
+          totalEmployeeEPF: 0,
+          totalEmployerEPF: 0,
+          totalEmployerETF: 0,
+          totalCompanyExpense: 0
         };
       }
-      monthlyTrends[key].totalGross += (p.grossSalary || 0);
-      monthlyTrends[key].totalNet += (p.netSalary || 0);
-      monthlyTrends[key].totalBonuses += (p.bonuses || 0);
-      monthlyTrends[key].totalDeductions += (p.deductions || 0);
+      
+      const basicSalary = safeFormat(p.grossSalary);
+      const bonuses = safeFormat(p.bonuses);
+      const dbEPF = safeFormat(p.epf);
+      const calculatedEPF = Math.round(basicSalary * 0.08);
+      const employeeEPF = dbEPF > 0 ? dbEPF : calculatedEPF;
+      
+      monthlyTrends[key].totalGross += basicSalary;
+      monthlyTrends[key].totalNet += safeFormat(p.netSalary);
+      monthlyTrends[key].totalBonuses += bonuses;
+      monthlyTrends[key].totalDeductions += safeFormat(p.deductions);
+      monthlyTrends[key].totalEmployeeEPF += employeeEPF;
+      monthlyTrends[key].totalEmployerEPF += Math.round(basicSalary * 0.12);
+      monthlyTrends[key].totalEmployerETF += Math.round(basicSalary * 0.03);
+      monthlyTrends[key].totalCompanyExpense += basicSalary + bonuses + Math.round(basicSalary * 0.12) + Math.round(basicSalary * 0.03);
       monthlyTrends[key].employeeCount.add(p.employeeId);
     });
 
@@ -160,7 +272,7 @@ const TotalPayrollView = () => {
       employeeCount: trend.employeeCount.size
     }));
 
-    // Salary distribution
+    // ✅ SAFE Salary distribution
     const salaryRanges = {
       "0-50K": 0,
       "50K-100K": 0,
@@ -170,7 +282,7 @@ const TotalPayrollView = () => {
     };
 
     filteredPayrolls.forEach(p => {
-      const salary = p.grossSalary || 0;
+      const salary = safeFormat(p.grossSalary);
       if (salary < 50000) salaryRanges["0-50K"]++;
       else if (salary < 100000) salaryRanges["50K-100K"]++;
       else if (salary < 150000) salaryRanges["100K-150K"]++;
@@ -178,12 +290,16 @@ const TotalPayrollView = () => {
       else salaryRanges["200K+"]++;
     });
 
-    // ✅ FIXED: Top employees by salary - Better calculation
+    // ✅ SAFE Top employees calculation with correct EPF/ETF breakdown
     const employeeSalaries = {};
     
     filteredPayrolls.forEach(p => {
       const empId = p.employeeId;
       const empName = p.employeeName || 'Unknown';
+      const basicSalary = safeFormat(p.grossSalary);
+      const dbEPF = safeFormat(p.epf);
+      const calculatedEPF = Math.round(basicSalary * 0.08);
+      const employeeEPF = dbEPF > 0 ? dbEPF : calculatedEPF;
       
       if (!employeeSalaries[empId]) {
         employeeSalaries[empId] = {
@@ -192,12 +308,18 @@ const TotalPayrollView = () => {
           totalGross: 0,
           totalNet: 0,
           payrollCount: 0,
-          averageGross: 0
+          averageGross: 0,
+          totalEmployeeEPF: 0,
+          totalEmployerEPF: 0,
+          totalEmployerETF: 0
         };
       }
       
-      employeeSalaries[empId].totalGross += parseFloat(p.grossSalary || 0);
-      employeeSalaries[empId].totalNet += parseFloat(p.netSalary || 0);
+      employeeSalaries[empId].totalGross += basicSalary;
+      employeeSalaries[empId].totalNet += safeFormat(p.netSalary);
+      employeeSalaries[empId].totalEmployeeEPF += employeeEPF;
+      employeeSalaries[empId].totalEmployerEPF += Math.round(basicSalary * 0.12);
+      employeeSalaries[empId].totalEmployerETF += Math.round(basicSalary * 0.03);
       employeeSalaries[empId].payrollCount++;
     });
 
@@ -211,11 +333,9 @@ const TotalPayrollView = () => {
       .sort((a, b) => b.totalGross - a.totalGross)
       .slice(0, 10);
 
-    console.log("🔍 Debug - Raw payrolls:", filteredPayrolls.slice(0, 3));
-    console.log("🔍 Debug - Employee salaries object:", Object.keys(employeeSalaries).length);
-    console.log("🔍 Debug - Top employees:", topEmployees);
+    console.log('🏆 Top employees calculated:', topEmployees.length);
 
-    setAnalytics({
+    const analyticsResult = {
       summary: {
         totalEmployees,
         totalPayrolls,
@@ -223,10 +343,13 @@ const TotalPayrollView = () => {
         totalNetSalary,
         totalDeductions,
         totalBonuses,
-        totalEPF,
-        totalETF,
         avgGrossSalary,
-        avgNetSalary
+        avgNetSalary,
+        totalEmployeeEPF,
+        totalEmployerEPF,
+        totalEmployerETF,
+        totalEmployerContributions,
+        totalCompanyPayrollExpense
       },
       statusBreakdown,
       monthlyTrends: monthlyTrendsArray,
@@ -236,28 +359,33 @@ const TotalPayrollView = () => {
         grossSalary: totalGrossSalary,
         bonuses: totalBonuses,
         deductions: totalDeductions,
-        epf: totalEPF,
-        etf: totalETF
+        employeeEPF: totalEmployeeEPF,
+        employerEPF: totalEmployerEPF,
+        employerETF: totalEmployerETF
       }
-    });
+    };
+
+    console.log('✅ Analytics calculation complete:', analyticsResult.summary);
+    setAnalytics(analyticsResult);
   };
 
   // Refresh data
   const refreshData = async () => {
     setLoading(true);
+    setError('');
     try {
       await initializeAnalytics();
       console.log("✅ Payroll analytics refreshed");
     } catch (error) {
-      setError("Failed to refresh data");
+      setError("Failed to refresh data: " + error.message);
     }
   };
 
-  // Get unique employees for filter
-  const uniqueEmployees = [...new Set(payrolls.map(p => ({
-    id: p.employeeId,
-    name: p.employeeName
-  })))];
+  // ✅ SAFE Get unique employees for filter
+  const uniqueEmployees = [...new Map(payrolls
+    .filter(p => p.employeeId && p.employeeName)
+    .map(p => [p.employeeId, { id: p.employeeId, name: p.employeeName }])
+  ).values()];
 
   if (loading) {
     return (
@@ -270,29 +398,52 @@ const TotalPayrollView = () => {
     );
   }
 
-  // Chart data preparation
+  // ✅ SAFE Chart data preparation with null checks
   const statusPieData = analytics?.statusBreakdown 
     ? Object.entries(analytics.statusBreakdown).map(([status, count]) => ({
         name: status,
-        value: count
+        value: safeFormat(count)
       }))
     : [];
 
   const salaryDistributionData = analytics?.salaryRanges
     ? Object.entries(analytics.salaryRanges).map(([range, count]) => ({
         range,
-        count
+        count: safeFormat(count)
       }))
     : [];
 
   const monthlyTrendData = analytics?.monthlyTrends || [];
 
+  // ✅ UPDATED: EPF/ETF breakdown chart with correct values
+  const epfEtfBreakdownData = analytics?.costBreakdown
+    ? [
+        { 
+          name: "Employee EPF (8%)", 
+          value: safeFormat(analytics.costBreakdown.employeeEPF), 
+          color: "#ffc107",
+          description: "Deducted from employee salary"
+        },
+        { 
+          name: "Employer EPF (12%)", 
+          value: safeFormat(analytics.costBreakdown.employerEPF), 
+          color: "#28a745",
+          description: "Company expense"
+        },
+        { 
+          name: "Employer ETF (3%)", 
+          value: safeFormat(analytics.costBreakdown.employerETF), 
+          color: "#17a2b8",
+          description: "Company expense"
+        }
+      ]
+    : [];
+
   const costBreakdownData = analytics?.costBreakdown
     ? [
-        { name: "Gross Salary", value: analytics.costBreakdown.grossSalary },
-        { name: "Bonuses", value: analytics.costBreakdown.bonuses },
-        { name: "EPF (8%)", value: analytics.costBreakdown.epf },
-        { name: "ETF (3%)", value: analytics.costBreakdown.etf },
+        { name: "Base Salaries", value: safeFormat(analytics.costBreakdown.grossSalary), color: "#0088FE" },
+        { name: "Bonuses", value: safeFormat(analytics.costBreakdown.bonuses), color: "#00C49F" },
+        { name: "Deductions", value: safeFormat(analytics.costBreakdown.deductions), color: "#FF8042" }
       ]
     : [];
 
@@ -302,7 +453,7 @@ const TotalPayrollView = () => {
         <div className="tpv-header">
           <div className="tpv-header-content">
             <h1>📊 Total Payroll Analytics</h1>
-            <p>Comprehensive payroll insights and employee salary analysis</p>
+            <p>Comprehensive payroll insights with accurate EPF/ETF calculations</p>
           </div>
           <div className="tpv-header-actions">
             <button 
@@ -382,43 +533,90 @@ const TotalPayrollView = () => {
           </div>
         </div>
 
+        {/* ✅ CONDITIONAL RENDERING: Only render if analytics exists */}
         {analytics && (
           <>
-            {/* Summary Stats */}
+            {/* ✅ CORRECTED Summary Stats with accurate EPF/ETF values */}
             <div className="tpv-stats-grid">
               <div className="tpv-stat-card tpv-primary">
                 <div className="tpv-stat-icon">👥</div>
                 <div className="tpv-stat-info">
-                  <h3>{analytics.summary.totalEmployees}</h3>
+                  <h3>{analytics.summary?.totalEmployees || 0}</h3>
                   <p>Total Employees</p>
-                  <small>{analytics.summary.totalPayrolls} payroll records</small>
+                  <small>{analytics.summary?.totalPayrolls || 0} payroll records</small>
                 </div>
               </div>
 
               <div className="tpv-stat-card tpv-success">
                 <div className="tpv-stat-icon">💰</div>
                 <div className="tpv-stat-info">
-                  <h3>${analytics.summary.totalGrossSalary.toLocaleString()}</h3>
+                  <h3>LKR {formatCurrency(analytics.summary?.totalGrossSalary)}</h3>
                   <p>Total Gross Salary</p>
-                  <small>Avg: ${Math.round(analytics.summary.avgGrossSalary).toLocaleString()}</small>
+                  <small>Avg: LKR {formatCurrency(analytics.summary?.avgGrossSalary)}</small>
                 </div>
               </div>
 
               <div className="tpv-stat-card tpv-info">
                 <div className="tpv-stat-icon">💵</div>
                 <div className="tpv-stat-info">
-                  <h3>${analytics.summary.totalNetSalary.toLocaleString()}</h3>
+                  <h3>LKR {formatCurrency(analytics.summary?.totalNetSalary)}</h3>
                   <p>Total Net Salary</p>
-                  <small>Avg: ${Math.round(analytics.summary.avgNetSalary).toLocaleString()}</small>
+                  <small>Avg: LKR {formatCurrency(analytics.summary?.avgNetSalary)}</small>
                 </div>
               </div>
 
-              <div className="tpv-stat-card tpv-warning">
-                <div className="tpv-stat-icon">🏛️</div>
+              {/* ✅ ACCURATE Employee EPF Card */}
+              <div className="tpv-stat-card" style={{
+                background: 'linear-gradient(135deg, #ffc107 0%, #ffb300 100%)',
+                color: 'white'
+              }}>
+                <div className="tpv-stat-icon" style={{ color: 'white' }}>👤</div>
                 <div className="tpv-stat-info">
-                  <h3>${(analytics.summary.totalEPF + analytics.summary.totalETF).toLocaleString()}</h3>
-                  <p>EPF + ETF Contributions</p>
-                  <small>EPF: ${analytics.summary.totalEPF.toLocaleString()}</small>
+                  <h3 style={{ color: 'white' }}>LKR {formatCurrency(analytics.summary?.totalEmployeeEPF)}</h3>
+                  <p style={{ color: 'white' }}>Employee EPF (8%)</p>
+                  <small style={{ color: 'rgba(255,255,255,0.9)' }}>Deducted from salaries</small>
+                </div>
+              </div>
+
+              {/* ✅ ACCURATE Employer EPF Card */}
+              <div className="tpv-stat-card" style={{
+                background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                color: 'white'
+              }}>
+                <div className="tpv-stat-icon" style={{ color: 'white' }}>🏢</div>
+                <div className="tpv-stat-info">
+                  <h3 style={{ color: 'white' }}>LKR {formatCurrency(analytics.summary?.totalEmployerEPF)}</h3>
+                  <p style={{ color: 'white' }}>Employer EPF (12%)</p>
+                  <small style={{ color: 'rgba(255,255,255,0.9)' }}>Company expense</small>
+                </div>
+              </div>
+
+              {/* ✅ ACCURATE Employer ETF Card */}
+              <div className="tpv-stat-card" style={{
+                background: 'linear-gradient(135deg, #17a2b8 0%, #138496 100%)',
+                color: 'white'
+              }}>
+                <div className="tpv-stat-icon" style={{ color: 'white' }}>🏦</div>
+                <div className="tpv-stat-info">
+                  <h3 style={{ color: 'white' }}>LKR {formatCurrency(analytics.summary?.totalEmployerETF)}</h3>
+                  <p style={{ color: 'white' }}>Employer ETF (3%)</p>
+                  <small style={{ color: 'rgba(255,255,255,0.9)' }}>Company expense</small>
+                </div>
+              </div>
+
+              {/* ✅ ACCURATE Total Company Expense Card */}
+              <div className="tpv-stat-card" style={{
+                background: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)',
+                color: 'white',
+                gridColumn: 'span 2'
+              }}>
+                <div className="tpv-stat-icon" style={{ color: 'white' }}>🏭</div>
+                <div className="tpv-stat-info">
+                  <h3 style={{ color: 'white', fontSize: '1.8rem' }}>LKR {formatCurrency(analytics.summary?.totalCompanyPayrollExpense)}</h3>
+                  <p style={{ color: 'white' }}>Total Company Payroll Expense</p>
+                  <small style={{ color: 'rgba(255,255,255,0.9)' }}>
+                    Base Salaries + Bonuses + Employer EPF (12%) + Employer ETF (3%)
+                  </small>
                 </div>
               </div>
             </div>
@@ -461,23 +659,51 @@ const TotalPayrollView = () => {
                   </ResponsiveContainer>
                 </div>
 
+                {/* ✅ CORRECTED EPF/ETF Breakdown Chart */}
                 <div className="tpv-chart-card tpv-full-width">
-                  <h3>💸 Cost Breakdown</h3>
+                  <h3>🏦 EPF/ETF Contribution Breakdown</h3>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <PieChart>
+                      <Pie
+                        data={epfEtfBreakdownData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={120}
+                        dataKey="value"
+                        label={({name, value}) => `${name}: LKR ${formatCurrency(value)}`}
+                      >
+                        {epfEtfBreakdownData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value, name, props) => [
+                          `LKR ${formatCurrency(value)}`, 
+                          `${name} - ${props.payload.description}`
+                        ]} 
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="tpv-chart-card">
+                  <h3>💸 Salary & Benefits Breakdown</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
                         data={costBreakdownData}
                         cx="50%"
                         cy="50%"
-                        outerRadius={120}
+                        outerRadius={100}
                         dataKey="value"
-                        label={({name, value}) => `${name}: $${value.toLocaleString()}`}
+                        label={({name, value}) => `${name}: LKR ${formatCurrency(value)}`}
                       >
                         {costBreakdownData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={PAYROLL_COLORS[index % PAYROLL_COLORS.length]} />
+                          <Cell key={`cell-${index}`} fill={entry.color || PAYROLL_COLORS[index % PAYROLL_COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
+                      <Tooltip formatter={(value) => [`LKR ${formatCurrency(value)}`, '']} />
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
@@ -488,18 +714,35 @@ const TotalPayrollView = () => {
             {viewType === 'trends' && (
               <div className="tpv-charts-grid">
                 <div className="tpv-chart-card tpv-full-width">
-                  <h3>📈 Monthly Salary Trends</h3>
+                  <h3>📈 Monthly Salary & Company Expense Trends</h3>
                   <ResponsiveContainer width="100%" height={400}>
                     <LineChart data={monthlyTrendData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
-                      <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                      <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
+                      <YAxis tickFormatter={(value) => `LKR ${formatCurrency(value)}`} />
+                      <Tooltip formatter={(value) => [`LKR ${formatCurrency(value)}`, '']} />
                       <Legend />
                       <Line type="monotone" dataKey="totalGross" stroke="#0088FE" strokeWidth={3} name="Gross Salary" />
                       <Line type="monotone" dataKey="totalNet" stroke="#00C49F" strokeWidth={3} name="Net Salary" />
+                      <Line type="monotone" dataKey="totalCompanyExpense" stroke="#FF8042" strokeWidth={3} name="Total Company Expense" />
                       <Line type="monotone" dataKey="totalBonuses" stroke="#FFBB28" strokeWidth={2} name="Bonuses" />
                     </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="tpv-chart-card">
+                  <h3>🏢 Monthly EPF/ETF Contributions</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={monthlyTrendData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis tickFormatter={(value) => `LKR ${formatCurrency(value)}`} />
+                      <Tooltip formatter={(value) => [`LKR ${formatCurrency(value)}`, '']} />
+                      <Legend />
+                      <Bar dataKey="totalEmployeeEPF" fill="#ffc107" name="Employee EPF (8%)" />
+                      <Bar dataKey="totalEmployerEPF" fill="#28a745" name="Employer EPF (12%)" />
+                      <Bar dataKey="totalEmployerETF" fill="#17a2b8" name="Employer ETF (3%)" />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
 
@@ -515,26 +758,11 @@ const TotalPayrollView = () => {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-
-                <div className="tpv-chart-card">
-                  <h3>📊 Monthly Cost Analysis</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={monthlyTrendData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                      <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
-                      <Area type="monotone" dataKey="totalDeductions" stackId="1" stroke="#FF8042" fill="#FF8042" name="Deductions" />
-                      <Area type="monotone" dataKey="totalBonuses" stackId="1" stroke="#FFBB28" fill="#FFBB28" name="Bonuses" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
               </div>
             )}
 
             {viewType === 'employee' && (
               <div className="tpv-employee-section">
-                {/* ✅ REPLACED CHART WITH STYLED LIST */}
                 <div className="tpv-chart-card">
                   <h3>🏆 Top 5 Employees by Gross Salary</h3>
                   {analytics.topEmployees && analytics.topEmployees.length > 0 ? (
@@ -547,28 +775,36 @@ const TotalPayrollView = () => {
                             </span>
                           </div>
                           <div className="tpv-employee-info">
-                            <h4>{emp.employeeName}</h4>
-                            <p>ID: {emp.employeeId}</p>
+                            <h4>{emp.employeeName || 'N/A'}</h4>
+                            <p>ID: {emp.employeeId || 'N/A'}</p>
                           </div>
                           <div className="tpv-employee-salary">
                             <div className="tpv-gross-salary">
-                              <strong>${emp.totalGross.toLocaleString()}</strong>
+                              <strong>LKR {formatCurrency(emp.totalGross)}</strong>
                               <span>Total Gross</span>
                             </div>
                             <div className="tpv-avg-salary">
-                              <span>${Math.round(emp.averageGross).toLocaleString()}</span>
+                              <span>LKR {formatCurrency(emp.averageGross)}</span>
                               <small>Avg per month</small>
                             </div>
-                            <div className="tpv-payroll-count">
-                              <span>{emp.payrollCount}</span>
-                              <small>Records</small>
+                            <div className="tpv-contributions">
+                              <div style={{ fontSize: '10px', color: '#ffc107' }}>
+                                Employee EPF: LKR {formatCurrency(emp.totalEmployeeEPF)}
+                              </div>
+                              <div style={{ fontSize: '10px', color: '#28a745' }}>
+                                Employer EPF: LKR {formatCurrency(emp.totalEmployerEPF)}
+                              </div>
+                              <div style={{ fontSize: '10px', color: '#17a2b8' }}>
+                                Employer ETF: LKR {formatCurrency(emp.totalEmployerETF)}
+                              </div>
                             </div>
                           </div>
                           <div className="tpv-salary-bar">
                             <div 
                               className="tpv-salary-progress"
                               style={{
-                                width: `${(emp.totalGross / Math.max(...analytics.topEmployees.map(e => e.totalGross))) * 100}%`,
+                                width: `${analytics.topEmployees.length > 0 ? 
+                                  (safeFormat(emp.totalGross) / Math.max(...analytics.topEmployees.map(e => safeFormat(e.totalGross)))) * 100 : 0}%`,
                                 backgroundColor: PAYROLL_COLORS[index % PAYROLL_COLORS.length]
                               }}
                             ></div>
@@ -596,8 +832,9 @@ const TotalPayrollView = () => {
                   )}
                 </div>
 
+                {/* ✅ CORRECTED Employee table with accurate EPF/ETF breakdown */}
                 <div className="tpv-employee-table">
-                  <h3>👥 Employee Salary Summary</h3>
+                  <h3>👥 Employee Salary & Contribution Summary</h3>
                   <div className="tpv-table-container">
                     <table className="tpv-table">
                       <thead>
@@ -607,8 +844,10 @@ const TotalPayrollView = () => {
                           <th>Employee Name</th>
                           <th>Total Gross</th>
                           <th>Total Net</th>
+                          <th>Employee EPF (8%)</th>
+                          <th>Employer EPF (12%)</th>
+                          <th>Employer ETF (3%)</th>
                           <th>Payroll Count</th>
-                          <th>Avg Gross</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -622,15 +861,23 @@ const TotalPayrollView = () => {
                               </td>
                               <td><strong>{emp.employeeId || 'N/A'}</strong></td>
                               <td>{emp.employeeName || 'N/A'}</td>
-                              <td className="tpv-currency">${(emp.totalGross || 0).toLocaleString()}</td>
-                              <td className="tpv-currency">${(emp.totalNet || 0).toLocaleString()}</td>
+                              <td className="tpv-currency">LKR {formatCurrency(emp.totalGross)}</td>
+                              <td className="tpv-currency">LKR {formatCurrency(emp.totalNet)}</td>
+                              <td className="tpv-currency" style={{ color: '#ffc107' }}>
+                                LKR {formatCurrency(emp.totalEmployeeEPF)}
+                              </td>
+                              <td className="tpv-currency" style={{ color: '#28a745' }}>
+                                LKR {formatCurrency(emp.totalEmployerEPF)}
+                              </td>
+                              <td className="tpv-currency" style={{ color: '#17a2b8' }}>
+                                LKR {formatCurrency(emp.totalEmployerETF)}
+                              </td>
                               <td className="tpv-center">{emp.payrollCount || 0}</td>
-                              <td className="tpv-currency">${Math.round(emp.averageGross || 0).toLocaleString()}</td>
                             </tr>
                           ))
                         ) : (
                           <tr>
-                            <td colSpan="7" style={{ textAlign: 'center', color: '#666', padding: '40px' }}>
+                            <td colSpan="9" style={{ textAlign: 'center', color: '#666', padding: '40px' }}>
                               <div>📋 No employee salary data available</div>
                               <small style={{ display: 'block', marginTop: '10px', color: '#999' }}>
                                 Create some payroll records to see employee statistics
@@ -660,21 +907,21 @@ const TotalPayrollView = () => {
                   onClick={() => {
                     if (analytics?.topEmployees && analytics.topEmployees.length > 0) {
                       const csvData = analytics.topEmployees.map(emp => 
-                        `${emp.employeeId || ''},${emp.employeeName || ''},${emp.totalGross || 0},${emp.totalNet || 0},${emp.payrollCount || 0}`
+                        `${emp.employeeId || ''},${emp.employeeName || ''},${safeFormat(emp.totalGross)},${safeFormat(emp.totalNet)},${safeFormat(emp.totalEmployeeEPF)},${safeFormat(emp.totalEmployerEPF)},${safeFormat(emp.totalEmployerETF)},${emp.payrollCount || 0}`
                       ).join('\n');
-                      const blob = new Blob([`Employee ID,Name,Total Gross,Total Net,Payroll Count\n${csvData}`], 
+                      const blob = new Blob([`Employee ID,Name,Total Gross,Total Net,Employee EPF (8%),Employer EPF (12%),Employer ETF (3%),Payroll Count\n${csvData}`], 
                         { type: 'text/csv' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
-                      a.download = `payroll-analytics-${new Date().toISOString().split('T')[0]}.csv`;
+                      a.download = `payroll-analytics-accurate-epf-etf-${new Date().toISOString().split('T')[0]}.csv`;
                       a.click();
                     } else {
                       alert('No data available to export');
                     }
                   }}
                 >
-                  📊 Export Analytics
+                  📊 Export Accurate EPF/ETF Analytics
                 </button>
                 <button 
                   className="tpv-action-btn tpv-info"
@@ -697,7 +944,7 @@ const TotalPayrollView = () => {
             }}>
               <div>📊 No payroll data available for analytics</div>
               <p style={{ margin: '20px 0', color: '#999', fontSize: '14px' }}>
-                Create some payroll records first to see comprehensive analytics and employee insights.
+                Create some payroll records first to see comprehensive analytics and accurate EPF/ETF insights.
               </p>
               <button 
                 className="tpv-action-btn tpv-primary"
