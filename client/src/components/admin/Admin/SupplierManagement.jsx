@@ -1157,24 +1157,45 @@ const SupplierManagement = () => {
                         <td><span className={`supplier-management-status-badge supplier-management-${order.status}`}>{order.status}</span></td>
                         <td><span className="supplier-management-rating-display">{'⭐'.repeat(order.rating || 3)} ({order.rating || 3}/5)</span></td>
                         <td>{new Date(order.orderDate || order.createdAt).toLocaleDateString()}</td>
-                        <td>
-                          <div className="supplier-management-table-actions">
-                            <button
-                              className="supplier-management-btn-view"
-                              onClick={() => {
-                                alert(`Order Details:\n\nOrder: ${order.orderNumber}\nSupplier: ${order.supplier?.name}\nRating: ${order.rating}/5 ⭐\nStatus: ${order.status}\nTotal: $${order.totalAmount}\nItems: ${order.items?.length}`);
-                              }}
-                            >
-                              View
-                            </button>
-                            <button
-                              className="supplier-management-btn-delete"
-                              onClick={() => handleDelete('purchase-order', order._id)}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
+<td>
+  <div className="supplier-management-table-actions">
+<button
+  className="supplier-management-btn-view"
+  onClick={() => {
+    alert(
+      `Order Details:\n` +
+      `Order Number: ${order.orderNumber}\n` +
+      `Supplier: ${order.supplier?.name || "Unknown"}\n` +
+      `Status: ${order.status}\n` +
+      `Expected Delivery: ${order.expectedDelivery}\n` +
+      `Total Amount: $${order.totalAmount}\n` +
+      `Items: ${order.items?.length || 0}\n` +
+      `Rating: ${order.rating}/5\n`
+    );
+  }}
+>
+  View
+</button>
+
+    <button
+      className="supplier-management-btn-edit"
+      onClick={() => {
+        setEditingItem(order);
+        setOrderForm(order);
+        setModalType('order');
+        setShowModal(true);
+        setErrors({});
+      }}>
+      Edit
+    </button>
+    <button
+      className="supplier-management-btn-delete"
+      onClick={() => handleDelete('purchase-order', order.id)}>
+      Delete
+    </button>
+  </div>
+</td>
+
                       </tr>
                     ))}
                   </tbody>
@@ -1247,409 +1268,84 @@ const SupplierManagement = () => {
       </div>
 
       {/* Modals */}
-      {showModal && (
-        <div className="supplier-management-modal-overlay">
-          <div className="supplier-management-modal">
-            <div className="supplier-management-modal-header">
-              <h2>
-                {modalType === 'supplier' 
-                  ? (editingItem ? 'Edit Supplier' : 'Add New Supplier')
-                  : 'Create Purchase Order'
-                }
-              </h2>
-              <button
-                className="supplier-management-close-btn"
-                onClick={() => {
-                  setShowModal(false);
-                  resetForms();
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            {errors.submit && (
-              <div className="supplier-management-alert supplier-management-alert-error">
-                {errors.submit}
-              </div>
-            )}
-
-            {modalType === 'supplier' ? (
-              <form onSubmit={handleSupplierSubmit} className="supplier-management-modal-form">
-                <div className="supplier-management-form-grid">
-                  <div className="supplier-management-form-group">
-                    <label>Supplier Name *</label>
-                    <input
-                      type="text"
-                      value={supplierForm.name}
-                      onChange={(e) => handleNameInput(e.target.value, 'name')}
-                      className={errors.name ? 'supplier-management-error' : ''}
-                      maxLength="100"
-                      required
-                      pattern="[a-zA-Z\s\.\-]{2,100}"
-                      title="Only letters, spaces, periods, and hyphens allowed (2-100 characters)"
-                    />
-                    <ErrorMessage error={errors.name} />
-                  </div>
-
-                  <div className="supplier-management-form-group">
-                    <label>Email *</label>
-                    <input
-                      type="email"
-                      value={supplierForm.email}
-                      onChange={(e) => handleEmailInput(e.target.value)}
-                      className={errors.email ? 'supplier-management-error' : ''}
-                      maxLength="100"
-                      required
-                      pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-                      title="Please enter a valid email address"
-                    />
-                    <ErrorMessage error={errors.email} />
-                  </div>
-
-                  <div className="supplier-management-form-group">
-                    <label>Phone *</label>
-                    <input
-                      type="tel"
-                      value={supplierForm.phone}
-                      onChange={(e) => handlePhoneInput(e.target.value)}
-                      className={errors.phone ? 'supplier-management-error' : ''}
-                      placeholder="+1234567890"
-                      maxLength="20"
-                      required
-                      pattern="[\+]?[0-9\s\-\(\)]{7,20}"
-                      title="Please enter a valid phone number (7-20 digits, may include +, spaces, hyphens, and parentheses)"
-                    />
-                    <ErrorMessage error={errors.phone} />
-                  </div>
-
-                  <div className="supplier-management-form-group">
-                    <label>Category *</label>
-                    <select
-                      value={supplierForm.category}
-                      onChange={(e) => {
-                        setSupplierForm({...supplierForm, category: e.target.value});
-                        if (e.target.value) setErrors(prev => ({ ...prev, category: '' }));
-                      }}
-                      className={errors.category ? 'supplier-management-error' : ''}
-                      required
-                    >
-                      <option value="">Select Category</option>
-                      <option value="medical_equipment">Medical Equipment</option>
-                      <option value="pharmaceuticals">Pharmaceuticals</option>
-                      <option value="consumables">Consumables</option>
-                      <option value="services">Services</option>
-                    </select>
-                    <ErrorMessage error={errors.category} />
-                  </div>
-
-                  <div className="supplier-management-form-group">
-                    <label>Status</label>
-                    <select
-                      value={supplierForm.status}
-                      onChange={(e) => setSupplierForm({...supplierForm, status: e.target.value})}
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="blacklisted">Blacklisted</option>
-                    </select>
-                  </div>
-
-                  <div className="supplier-management-form-group supplier-management-full-width">
-                    <label>Street Address</label>
-                    <input
-                      type="text"
-                      value={supplierForm.address.street}
-                      onChange={(e) => {
-                        // Allow alphanumeric, spaces, and common address characters
-                        const sanitized = e.target.value.replace(/[^a-zA-Z0-9\s\.\,\#\-\']/g, '').slice(0, 200);
-                        setSupplierForm({
-                          ...supplierForm, 
-                          address: {...supplierForm.address, street: sanitized}
-                        });
-                      }}
-                      maxLength="200"
-                      pattern="[a-zA-Z0-9\s\.\,\#\-\']{1,200}"
-                      title="Only letters, numbers, spaces, and common address characters allowed"
-                    />
-                  </div>
-
-                  <div className="supplier-management-form-group">
-                    <label>City</label>
-                    <input
-                      type="text"
-                      value={supplierForm.address.city}
-                      onChange={(e) => handleNameInput(e.target.value, 'address.city')}
-                      className={errors['address.city'] ? 'supplier-management-error' : ''}
-                      maxLength="50"
-                      pattern="[a-zA-Z\s\.\-]{2,50}"
-                      title="Only letters, spaces, periods, and hyphens allowed (2-50 characters)"
-                    />
-                    <ErrorMessage error={errors['address.city']} />
-                  </div>
-
-                  <div className="supplier-management-form-group">
-                    <label>State</label>
-                    <input
-                      type="text"
-                      value={supplierForm.address.state}
-                      onChange={(e) => handleNameInput(e.target.value, 'address.state')}
-                      className={errors['address.state'] ? 'supplier-management-error' : ''}
-                      maxLength="50"
-                      pattern="[a-zA-Z\s\.\-]{2,50}"
-                      title="Only letters, spaces, periods, and hyphens allowed (2-50 characters)"
-                    />
-                    <ErrorMessage error={errors['address.state']} />
-                  </div>
-
-                  <div className="supplier-management-form-group">
-                    <label>Zip Code</label>
-                    <input
-                      type="text"
-                      value={supplierForm.address.zipCode}
-                      onChange={(e) => handleZipCodeInput(e.target.value)}
-                      className={errors['address.zipCode'] ? 'supplier-management-error' : ''}
-                      placeholder="12345"
-                      maxLength="10"
-                      pattern="[0-9A-Za-z\s\-]{3,10}"
-                      title="Only alphanumeric characters, spaces, and hyphens allowed (3-10 characters)"
-                    />
-                    <ErrorMessage error={errors['address.zipCode']} />
-                  </div>
-
-                  <div className="supplier-management-form-group">
-                    <label>Country</label>
-                    <input
-                      type="text"
-                      value={supplierForm.address.country}
-                      onChange={(e) => handleNameInput(e.target.value, 'address.country')}
-                      className={errors['address.country'] ? 'supplier-management-error' : ''}
-                      maxLength="50"
-                      pattern="[a-zA-Z\s\.\-]{2,50}"
-                      title="Only letters, spaces, periods, and hyphens allowed (2-50 characters)"
-                    />
-                    <ErrorMessage error={errors['address.country']} />
-                  </div>
-                </div>
-
-                <div className="supplier-management-form-actions">
-                  <button type="button" onClick={() => setShowModal(false)}>
-                    Cancel
-                  </button>
-                  <button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? 'Saving...' : (editingItem ? 'Update Supplier' : 'Add Supplier')}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <form onSubmit={handleOrderSubmit} className="supplier-management-modal-form">
-                <div className="supplier-management-form-grid-order">
-                  <div className="supplier-management-form-group">
-                    <label>Supplier *</label>
-                    <select
-                      value={orderForm.supplier}
-                      onChange={(e) => {
-                        setOrderForm({...orderForm, supplier: e.target.value});
-                        if (e.target.value) setErrors(prev => ({ ...prev, supplier: '' }));
-                      }}
-                      className={errors.supplier ? 'supplier-management-error' : ''}
-                      required
-                    >
-                      <option value="">Select Supplier</option>
-                      {suppliers
-                        .filter(s => s.status === 'active')
-                        .map(supplier => (
-                          <option key={supplier._id} value={supplier._id}>
-                            {supplier.name}
-                          </option>
-                        ))
-                      }
-                    </select>
-                    <ErrorMessage error={errors.supplier} />
-                  </div>
-
-                  <div className="supplier-management-form-group">
-                    <label>Order Status *</label>
-                    <select
-                      value={orderForm.status}
-                      onChange={(e) => handleStatusInput(e.target.value)}
-                      className={errors.status ? 'supplier-management-error' : ''}
-                      required
-                    >
-                      <option value="pending">📋 Pending</option>
-                      <option value="approved">✅ Approved</option>
-                      <option value="ordered">🛒 Ordered</option>
-                      <option value="received">📦 Received</option>
-                      <option value="cancelled">❌ Cancelled</option>
-                    </select>
-                    <ErrorMessage error={errors.status} />
-                    <small className="supplier-management-field-help">Select the current status of this order</small>
-                  </div>
-
-                  <div className="supplier-management-form-group">
-                    <label>Supplier Rating *</label>
-                    <div className="supplier-management-rating-input-container">
-                      <input
-                        type="number"
-                        min="1"
-                        max="5"
-                        value={orderForm.rating}
-                        onChange={(e) => handleRatingInput(e.target.value)}
-                        className={errors.rating ? 'supplier-management-error' : ''}
-                        required
-                        pattern="[1-5]"
-                        title="Rating must be between 1 and 5"
-                      />
-                      <div className="supplier-management-rating-stars-preview">
-                        {'⭐'.repeat(orderForm.rating)} ({orderForm.rating}/5)
-                      </div>
-                    </div>
-                    <ErrorMessage error={errors.rating} />
-                    <small className="supplier-management-field-help">Rate this supplier from 1 to 5 stars</small>
-                  </div>
-
-                  <div className="supplier-management-form-group">
-                    <label>Expected Delivery Date</label>
-                    <input
-                      type="date"
-                      value={orderForm.expectedDelivery}
-                      onChange={(e) => {
-                        setOrderForm({...orderForm, expectedDelivery: e.target.value});
-                        if (isValidDate(e.target.value)) setErrors(prev => ({ ...prev, expectedDelivery: '' }));
-                      }}
-                      className={errors.expectedDelivery ? 'supplier-management-error' : ''}
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                    <ErrorMessage error={errors.expectedDelivery} />
-                  </div>
-                </div>
-
-                <div className="supplier-management-form-section">
-                  <div className="supplier-management-section-header">
-                    <h3>Order Items *</h3>
-                    <button 
-                      type="button" 
-                      onClick={addOrderItem} 
-                      className="supplier-management-add-item-btn"
-                      disabled={!areAllOrderItemsValid()}
-                      title={areAllOrderItemsValid() ? "Add another item" : "Please complete current item before adding a new one"}
-                    >
-                      + Add Item
-                    </button>
-                  </div>
-
-                  <ErrorMessage error={errors.items} />
-
-                  {orderForm.items.map((item, index) => (
-                    <div key={index} className="supplier-management-order-item">
-                      <div className="supplier-management-item-fields">
-                        <div className="supplier-management-field-container">
-                          <input
-                            type="text"
-                            placeholder="Product name *"
-                            value={item.product}
-                            onChange={(e) => handleProductInput(e.target.value, index)}
-                            className={errors[`item_${index}_product`] ? 'supplier-management-error' : ''}
-                            maxLength="15"
-                            required
-                            pattern="[a-zA-Z\s]{1,15}"
-                            title="Only letters and spaces allowed (maximum 15 characters)"
-                          />
-                          <ErrorMessage error={errors[`item_${index}_product`]} />
-                        </div>
-
-                        <div className="supplier-management-field-container">
-                          <input
-                            type="number"
-                            placeholder="Quantity *"
-                            value={item.quantity}
-                            onChange={(e) => handleQuantityInput(e.target.value, index)}
-                            className={errors[`item_${index}_quantity`] ? 'supplier-management-error' : ''}
-                            min="1"
-                            max="999999"
-                            required
-                            pattern="[0-9]+"
-                            title="Quantity must be a positive integer"
-                          />
-                          <ErrorMessage error={errors[`item_${index}_quantity`]} />
-                        </div>
-
-                        <div className="supplier-management-field-container">
-                          <input
-                            type="number"
-                            placeholder="Unit Price ($) *"
-                            value={item.unitPrice}
-                            onChange={(e) => handleUnitPriceInput(e.target.value, index)}
-                            className={errors[`item_${index}_unitPrice`] ? 'supplier-management-error' : ''}
-                            min="0.01"
-                            max="999999"
-                            step="0.01"
-                            required
-                            pattern="[0-9]+(\.[0-9]{1,2})?"
-                            title="Unit price must be a positive number with up to 2 decimal places"
-                          />
-                          <ErrorMessage error={errors[`item_${index}_unitPrice`]} />
-                        </div>
-
-                        <span className="supplier-management-item-total">
-                          ${((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)}
-                        </span>
-
-                        {orderForm.items.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeOrderItem(index)}
-                            className="supplier-management-remove-item-btn"
-                            title="Remove this item"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                  <div className="supplier-management-order-total">
-                    <strong>
-                      Total: ${orderForm.items.reduce((sum, item) =>
-                        sum + ((item.quantity || 0) * (item.unitPrice || 0)), 0
-                      ).toFixed(2)}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="supplier-management-form-group supplier-management-full-width">
-                  <label>Notes</label>
-                  <textarea
-                    value={orderForm.notes}
-                    onChange={(e) => {
-                      // Allow most characters but limit length
-                      const value = e.target.value.slice(0, 500);
-                      setOrderForm({...orderForm, notes: value});
-                      if (value.length <= 500) setErrors(prev => ({ ...prev, notes: '' }));
-                    }}
-                    className={errors.notes ? 'supplier-management-error' : ''}
-                    placeholder="Additional notes or special instructions"
-                    rows="3"
-                    maxLength="500"
-                  />
-                  <ErrorMessage error={errors.notes} />
-                  <small className="supplier-management-char-counter">{orderForm.notes.length}/500 characters</small>
-                </div>
-
-                <div className="supplier-management-form-actions">
-                  <button type="button" onClick={() => setShowModal(false)}>
-                    Cancel
-                  </button>
-                  <button type="submit" disabled={isSubmitting || !areAllOrderItemsValid()}>
-                    {isSubmitting ? 'Creating...' : 'Create Order'}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
+      {showModal && modalType === "order" && (
+  <div className="supplier-management-modal-overlay">
+    <div className="supplier-management-modal">
+      <div className="supplier-management-modal-header">
+        <h2>Edit Purchase Order</h2>
+        <button className="supplier-management-modal-close" onClick={() => setShowModal(false)}>×</button>
+      </div>
+      <form onSubmit={handleOrderSubmit} className="supplier-management-modal-form">
+        {/* Display key info as read-only */}
+        <div className="supplier-management-form-group">
+          <label>Order Number</label>
+          <input type="text" value={orderForm.orderNumber || ""} disabled />
         </div>
-      )}
+        <div className="supplier-management-form-group">
+          <label>Supplier</label>
+          <input
+            type="text"
+            value={suppliers.find(s => s.id === orderForm.supplier)?.name || "Unknown Supplier"}
+            disabled
+          />
+        </div>
+        <div className="supplier-management-form-group">
+          <label>Total Amount</label>
+          <input
+            type="text"
+            value={orderForm.totalAmount ? orderForm.totalAmount.toLocaleString() : ""}
+            disabled
+          />
+        </div>
+        {/* Status and Expected Date are editable */}
+        <div className="supplier-management-form-group">
+          <label>Order Status</label>
+          <select
+            value={orderForm.status}
+            onChange={e => handleStatusInput(e.target.value)}
+            className={errors.status ? "supplier-management-error" : ""}
+            required
+          >
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="ordered">Ordered</option>
+            <option value="received">Received</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          {errors.status && <span className="supplier-management-error-message">{errors.status}</span>}
+          <small className="supplier-management-field-help">
+            Select the current status of this order
+          </small>
+        </div>
+        <div className="supplier-management-form-group">
+          <label>Expected Delivery Date</label>
+          <input
+            type="date"
+            value={orderForm.expectedDelivery}
+            onChange={e => setOrderForm({ ...orderForm, expectedDelivery: e.target.value })}
+            className={errors.expectedDelivery ? "supplier-management-error" : ""}
+            min={new Date().toISOString().split('T')[0]}
+            required
+          />
+          {errors.expectedDelivery && (
+            <span className="supplier-management-error-message">
+              {errors.expectedDelivery}
+            </span>
+          )}
+        </div>
+        <div className="supplier-management-form-actions">
+          <button type="button" onClick={() => setShowModal(false)}>
+            Cancel
+          </button>
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Update Order"}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
