@@ -1488,7 +1488,7 @@
   font-weight: 700;
 }
 
-.supplier-management-close-btn {
+.supplier-management-modal-close {
   width: 44px;
   height: 44px;
   border-radius: var(--supplier-management-radius-full);
@@ -1506,7 +1506,7 @@
   overflow: hidden;
 }
 
-.supplier-management-close-btn::before {
+.supplier-management-modal-close::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -1519,12 +1519,12 @@
   transition: width 0.6s, height 0.6s;
 }
 
-.supplier-management-close-btn:hover::before {
+.supplier-management-modal-close:hover::before {
   width: 80px;
   height: 80px;
 }
 
-.supplier-management-close-btn:hover {
+.supplier-management-modal-close:hover {
   background: var(--supplier-management-danger);
   color: var(--supplier-management-white);
   transform: rotate(90deg) scale(1.1);
@@ -1571,6 +1571,12 @@
 
 .supplier-management-form-group.supplier-management-full-width {
   grid-column: 1 / -1;
+}
+
+.supplier-management-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--supplier-management-spacing-lg);
 }
 
 .supplier-management-form-group label {
@@ -1711,14 +1717,20 @@
   margin-bottom: 0;
 }
 
-.supplier-management-item-fields {
+.supplier-management-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--supplier-management-spacing-md);
+}
+
+.supplier-management-item-row {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr auto;
   gap: var(--supplier-management-spacing-md);
   align-items: end;
 }
 
-.supplier-management-field-container {
+.supplier-management-item-field {
   display: flex;
   flex-direction: column;
   gap: var(--supplier-management-spacing-xs);
@@ -1735,7 +1747,7 @@
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-.supplier-management-remove-item-btn {
+.supplier-management-btn-remove-item {
   width: 36px;
   height: 36px;
   border-radius: var(--supplier-management-radius-full);
@@ -1753,7 +1765,7 @@
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-.supplier-management-remove-item-btn::before {
+.supplier-management-btn-remove-item::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -1766,19 +1778,19 @@
   transition: width 0.6s, height 0.6s;
 }
 
-.supplier-management-remove-item-btn:hover::before {
+.supplier-management-btn-remove-item:hover::before {
   width: 60px;
   height: 60px;
 }
 
-.supplier-management-remove-item-btn:hover {
+.supplier-management-btn-remove-item:hover {
   background: var(--supplier-management-danger);
   color: var(--supplier-management-white);
   transform: scale(1.2) rotate(90deg);
   box-shadow: var(--supplier-management-shadow-lg);
 }
 
-.supplier-management-order-total {
+.supplier-management-total-amount {
   text-align: right;
   font-size: 1.5rem;
   font-weight: 800;
@@ -1979,7 +1991,7 @@
     grid-template-columns: 1fr;
   }
   
-  .supplier-management-item-fields {
+  .supplier-management-item-row {
     grid-template-columns: 1fr;
     gap: var(--supplier-management-spacing-sm);
   }

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import AdminLayout from "../AdminLayout";
 import {
   PieChart,
   Pie,
@@ -22,11 +21,10 @@ import {
 } from "recharts";
 import "./TotalPayrollView.css";
 
-const PAYROLL_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d"];
+const PAYROLL_COLORS = ["#667eea", "#764ba2", "#10b981", "#f59e0b", "#ef4444", "#3b82f6"];
 const API_URL = "http://localhost:7000/api/payrolls";
 
 const TotalPayrollView = () => {
-  const [admin, setAdmin] = useState(null);
   const [payrolls, setPayrolls] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +37,17 @@ const TotalPayrollView = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Safe number formatting helper
+  const safeFormat = (value, defaultValue = 0) => {
+    const num = Number(value);
+    return isNaN(num) || num === null || num === undefined ? defaultValue : num;
+  };
+
+  const formatCurrency = (value) => {
+    const num = safeFormat(value, 0);
+    return num.toLocaleString();
+  };
+
   useEffect(() => {
     initializeAnalytics();
   }, []);
@@ -49,79 +58,151 @@ const TotalPayrollView = () => {
     }
   }, [payrolls, filterMonth, filterYear, selectedEmployee]);
 
-  // Fetch real payroll data
   const fetchPayrolls = async () => {
     try {
       const params = new URLSearchParams();
       if (filterMonth) params.append('payrollMonth', filterMonth);
       if (filterYear) params.append('payrollYear', filterYear);
-      params.append('limit', '1000'); // Get all records for analytics
+      params.append('limit', '1000');
+
+      console.log('🔍 Fetching payrolls with params:', params.toString());
 
       const response = await fetch(`${API_URL}?${params}`);
       const text = await response.text();
       
       try {
         const data = JSON.parse(text);
-        return data.success ? data.data || [] : [];
+        console.log('✅ Raw payroll data received:', data);
+        
+        if (data.success && data.data) {
+          console.log('📊 Sample payroll record:', data.data[0]);
+          return data.data;
+        } else {
+          console.warn('⚠️ No payroll data or unsuccessful response:', data);
+          return [];
+        }
       } catch {
-        console.error("Raw response:", text);
-        throw new Error("Invalid JSON response");
+        console.error("❌ Invalid JSON response:", text);
+        throw new Error("Invalid JSON response from server");
       }
     } catch (error) {
-      console.error("Error fetching payrolls:", error);
+      console.error("❌ Error fetching payrolls:", error);
       throw error;
     }
   };
 
   const initializeAnalytics = async () => {
     try {
-      const adminData = localStorage.getItem("admin");
-      if (adminData) {
-        setAdmin(JSON.parse(adminData));
-      }
-
       const payrollData = await fetchPayrolls();
+      console.log('📈 Setting payroll data for analytics:', payrollData.length, 'records');
       setPayrolls(payrollData);
       
     } catch (error) {
       console.error("❌ Error loading payroll analytics:", error);
-      setError("Failed to load payroll analytics");
+      setError("Failed to load payroll analytics: " + error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculate comprehensive analytics
   const calculateAnalytics = () => {
     if (!payrolls || payrolls.length === 0) {
-      setAnalytics(null);
+      console.log('⚠️ No payroll data available for analytics');
+      setAnalytics({
+        summary: {
+          totalEmployees: 0,
+          totalPayrolls: 0,
+          totalGrossSalary: 0,
+          totalNetSalary: 0,
+          totalDeductions: 0,
+          totalBonuses: 0,
+          avgGrossSalary: 0,
+          avgNetSalary: 0,
+          totalEmployeeEPF: 0,
+          totalEmployerEPF: 0,
+          totalEmployerETF: 0,
+          totalEmployerContributions: 0,
+          totalCompanyPayrollExpense: 0
+        },
+        statusBreakdown: {},
+        monthlyTrends: [],
+        salaryRanges: {
+          "0-50K": 0,
+          "50K-100K": 0,
+          "100K-150K": 0,
+          "150K-200K": 0,
+          "200K+": 0
+        },
+        topEmployees: [],
+        costBreakdown: {
+          grossSalary: 0,
+          bonuses: 0,
+          deductions: 0,
+          employeeEPF: 0,
+          employerEPF: 0,
+          employerETF: 0
+        }
+      });
       return;
     }
+
+    console.log('📊 Starting analytics calculation with', payrolls.length, 'payroll records');
 
     let filteredPayrolls = [...payrolls];
 
     // Apply filters
     if (filterMonth) {
       filteredPayrolls = filteredPayrolls.filter(p => p.payrollMonth === filterMonth);
+      console.log('🔍 Filtered by month:', filterMonth, '→', filteredPayrolls.length, 'records');
     }
     if (filterYear) {
-      filteredPayrolls = filteredPayrolls.filter(p => p.payrollYear.toString() === filterYear);
+      filteredPayrolls = filteredPayrolls.filter(p => p.payrollYear?.toString() === filterYear);
+      console.log('🔍 Filtered by year:', filterYear, '→', filteredPayrolls.length, 'records');
     }
     if (selectedEmployee) {
       filteredPayrolls = filteredPayrolls.filter(p => p.employeeId === selectedEmployee);
+      console.log('🔍 Filtered by employee:', selectedEmployee, '→', filteredPayrolls.length, 'records');
     }
 
-    // Basic statistics
+    // Basic calculations using actual database values
     const totalEmployees = new Set(filteredPayrolls.map(p => p.employeeId)).size;
     const totalPayrolls = filteredPayrolls.length;
-    const totalGrossSalary = filteredPayrolls.reduce((sum, p) => sum + (p.grossSalary || 0), 0);
-    const totalNetSalary = filteredPayrolls.reduce((sum, p) => sum + (p.netSalary || 0), 0);
-    const totalDeductions = filteredPayrolls.reduce((sum, p) => sum + (p.deductions || 0), 0);
-    const totalBonuses = filteredPayrolls.reduce((sum, p) => sum + (p.bonuses || 0), 0);
-    const totalEPF = filteredPayrolls.reduce((sum, p) => sum + (p.epf || 0), 0);
-    const totalETF = filteredPayrolls.reduce((sum, p) => sum + (p.etf || 0), 0);
+    
+    const totalGrossSalary = filteredPayrolls.reduce((sum, p) => sum + safeFormat(p.grossSalary), 0);
+    const totalNetSalary = filteredPayrolls.reduce((sum, p) => sum + safeFormat(p.netSalary), 0);
+    const totalDeductions = filteredPayrolls.reduce((sum, p) => sum + safeFormat(p.deductions), 0);
+    const totalBonuses = filteredPayrolls.reduce((sum, p) => sum + safeFormat(p.bonuses), 0);
 
-    // Average calculations
+    // EPF/ETF calculations
+    const totalEmployeeEPF = filteredPayrolls.reduce((sum, p) => {
+      const dbEPF = safeFormat(p.epf);
+      const calculatedEPF = Math.round(safeFormat(p.grossSalary) * 0.08);
+      return sum + (dbEPF > 0 ? dbEPF : calculatedEPF);
+    }, 0);
+
+    const totalEmployerEPF = filteredPayrolls.reduce((sum, p) => {
+      const basicSalary = safeFormat(p.grossSalary);
+      return sum + Math.round(basicSalary * 0.12);
+    }, 0);
+
+    const totalEmployerETF = filteredPayrolls.reduce((sum, p) => {
+      const basicSalary = safeFormat(p.grossSalary);
+      return sum + Math.round(basicSalary * 0.03);
+    }, 0);
+
+    const totalEmployerContributions = totalEmployerEPF + totalEmployerETF;
+    const totalCompanyPayrollExpense = totalGrossSalary + totalBonuses + totalEmployerEPF + totalEmployerETF;
+
+    console.log('💰 Calculated totals:', {
+      totalGrossSalary: totalGrossSalary.toLocaleString(),
+      totalNetSalary: totalNetSalary.toLocaleString(),
+      totalEmployeeEPF: totalEmployeeEPF.toLocaleString(),
+      totalEmployerEPF: totalEmployerEPF.toLocaleString(),
+      totalEmployerETF: totalEmployerETF.toLocaleString(),
+      totalCompanyExpense: totalCompanyPayrollExpense.toLocaleString()
+    });
+
+    // Safe Average calculations
     const avgGrossSalary = totalEmployees > 0 ? totalGrossSalary / totalEmployees : 0;
     const avgNetSalary = totalEmployees > 0 ? totalNetSalary / totalEmployees : 0;
 
@@ -132,29 +213,43 @@ const TotalPayrollView = () => {
       statusBreakdown[status] = (statusBreakdown[status] || 0) + 1;
     });
 
-    // Monthly trends
+    // Monthly trends with EPF/ETF breakdown
     const monthlyTrends = {};
     filteredPayrolls.forEach(p => {
-      const key = `${p.payrollMonth} ${p.payrollYear}`;
+      const key = `${p.payrollMonth || 'Unknown'} ${p.payrollYear || 'Unknown'}`;
       if (!monthlyTrends[key]) {
         monthlyTrends[key] = {
-          month: p.payrollMonth,
-          year: p.payrollYear,
+          month: p.payrollMonth || 'Unknown',
+          year: p.payrollYear || 'Unknown',
           totalGross: 0,
           totalNet: 0,
           employeeCount: new Set(),
           totalBonuses: 0,
-          totalDeductions: 0
+          totalDeductions: 0,
+          totalEmployeeEPF: 0,
+          totalEmployerEPF: 0,
+          totalEmployerETF: 0,
+          totalCompanyExpense: 0
         };
       }
-      monthlyTrends[key].totalGross += (p.grossSalary || 0);
-      monthlyTrends[key].totalNet += (p.netSalary || 0);
-      monthlyTrends[key].totalBonuses += (p.bonuses || 0);
-      monthlyTrends[key].totalDeductions += (p.deductions || 0);
+      
+      const basicSalary = safeFormat(p.grossSalary);
+      const bonuses = safeFormat(p.bonuses);
+      const dbEPF = safeFormat(p.epf);
+      const calculatedEPF = Math.round(basicSalary * 0.08);
+      const employeeEPF = dbEPF > 0 ? dbEPF : calculatedEPF;
+      
+      monthlyTrends[key].totalGross += basicSalary;
+      monthlyTrends[key].totalNet += safeFormat(p.netSalary);
+      monthlyTrends[key].totalBonuses += bonuses;
+      monthlyTrends[key].totalDeductions += safeFormat(p.deductions);
+      monthlyTrends[key].totalEmployeeEPF += employeeEPF;
+      monthlyTrends[key].totalEmployerEPF += Math.round(basicSalary * 0.12);
+      monthlyTrends[key].totalEmployerETF += Math.round(basicSalary * 0.03);
+      monthlyTrends[key].totalCompanyExpense += basicSalary + bonuses + Math.round(basicSalary * 0.12) + Math.round(basicSalary * 0.03);
       monthlyTrends[key].employeeCount.add(p.employeeId);
     });
 
-    // Convert monthly trends to array
     const monthlyTrendsArray = Object.values(monthlyTrends).map(trend => ({
       ...trend,
       employeeCount: trend.employeeCount.size
@@ -170,7 +265,7 @@ const TotalPayrollView = () => {
     };
 
     filteredPayrolls.forEach(p => {
-      const salary = p.grossSalary || 0;
+      const salary = safeFormat(p.grossSalary);
       if (salary < 50000) salaryRanges["0-50K"]++;
       else if (salary < 100000) salaryRanges["50K-100K"]++;
       else if (salary < 150000) salaryRanges["100K-150K"]++;
@@ -178,12 +273,16 @@ const TotalPayrollView = () => {
       else salaryRanges["200K+"]++;
     });
 
-    // ✅ FIXED: Top employees by salary - Better calculation
+    // Top employees calculation
     const employeeSalaries = {};
     
     filteredPayrolls.forEach(p => {
       const empId = p.employeeId;
       const empName = p.employeeName || 'Unknown';
+      const basicSalary = safeFormat(p.grossSalary);
+      const dbEPF = safeFormat(p.epf);
+      const calculatedEPF = Math.round(basicSalary * 0.08);
+      const employeeEPF = dbEPF > 0 ? dbEPF : calculatedEPF;
       
       if (!employeeSalaries[empId]) {
         employeeSalaries[empId] = {
@@ -192,16 +291,21 @@ const TotalPayrollView = () => {
           totalGross: 0,
           totalNet: 0,
           payrollCount: 0,
-          averageGross: 0
+          averageGross: 0,
+          totalEmployeeEPF: 0,
+          totalEmployerEPF: 0,
+          totalEmployerETF: 0
         };
       }
       
-      employeeSalaries[empId].totalGross += parseFloat(p.grossSalary || 0);
-      employeeSalaries[empId].totalNet += parseFloat(p.netSalary || 0);
+      employeeSalaries[empId].totalGross += basicSalary;
+      employeeSalaries[empId].totalNet += safeFormat(p.netSalary);
+      employeeSalaries[empId].totalEmployeeEPF += employeeEPF;
+      employeeSalaries[empId].totalEmployerEPF += Math.round(basicSalary * 0.12);
+      employeeSalaries[empId].totalEmployerETF += Math.round(basicSalary * 0.03);
       employeeSalaries[empId].payrollCount++;
     });
 
-    // Calculate averages and sort
     const topEmployees = Object.values(employeeSalaries)
       .filter(emp => emp.employeeName && emp.employeeName !== 'Unknown' && emp.totalGross > 0)
       .map(emp => ({
@@ -211,11 +315,9 @@ const TotalPayrollView = () => {
       .sort((a, b) => b.totalGross - a.totalGross)
       .slice(0, 10);
 
-    console.log("🔍 Debug - Raw payrolls:", filteredPayrolls.slice(0, 3));
-    console.log("🔍 Debug - Employee salaries object:", Object.keys(employeeSalaries).length);
-    console.log("🔍 Debug - Top employees:", topEmployees);
+    console.log('🏆 Top employees calculated:', topEmployees.length);
 
-    setAnalytics({
+    const analyticsResult = {
       summary: {
         totalEmployees,
         totalPayrolls,
@@ -223,10 +325,13 @@ const TotalPayrollView = () => {
         totalNetSalary,
         totalDeductions,
         totalBonuses,
-        totalEPF,
-        totalETF,
         avgGrossSalary,
-        avgNetSalary
+        avgNetSalary,
+        totalEmployeeEPF,
+        totalEmployerEPF,
+        totalEmployerETF,
+        totalEmployerContributions,
+        totalCompanyPayrollExpense
       },
       statusBreakdown,
       monthlyTrends: monthlyTrendsArray,
@@ -236,481 +341,594 @@ const TotalPayrollView = () => {
         grossSalary: totalGrossSalary,
         bonuses: totalBonuses,
         deductions: totalDeductions,
-        epf: totalEPF,
-        etf: totalETF
+        employeeEPF: totalEmployeeEPF,
+        employerEPF: totalEmployerEPF,
+        employerETF: totalEmployerETF
       }
-    });
+    };
+
+    console.log('✅ Analytics calculation complete:', analyticsResult.summary);
+    setAnalytics(analyticsResult);
   };
 
   // Refresh data
   const refreshData = async () => {
     setLoading(true);
+    setError('');
     try {
       await initializeAnalytics();
       console.log("✅ Payroll analytics refreshed");
     } catch (error) {
-      setError("Failed to refresh data");
+      setError("Failed to refresh data: " + error.message);
     }
   };
 
   // Get unique employees for filter
-  const uniqueEmployees = [...new Set(payrolls.map(p => ({
-    id: p.employeeId,
-    name: p.employeeName
-  })))];
+  const uniqueEmployees = [...new Map(payrolls
+    .filter(p => p.employeeId && p.employeeName)
+    .map(p => [p.employeeId, { id: p.employeeId, name: p.employeeName }])
+  ).values()];
 
   if (loading) {
     return (
-      <AdminLayout admin={admin} title="Payroll Analytics">
-        <div className="tpv-loading">
-          <div>Loading comprehensive payroll analytics...</div>
-          <div className="tpv-loading-spinner"></div>
+      <div className="healx-tpv-wrapper">
+        <div className="healx-tpv-loading-container">
+          <div className="healx-tpv-loading-spinner">
+            <div className="healx-tpv-spinner-ring"></div>
+            <div className="healx-tpv-spinner-ring"></div>
+            <div className="healx-tpv-spinner-ring"></div>
+          </div>
+          <div className="healx-tpv-loading-content">
+            <h2>Loading Payroll Analytics</h2>
+            <p>Calculating comprehensive payroll insights...</p>
+          </div>
         </div>
-      </AdminLayout>
+      </div>
     );
   }
 
-  // Chart data preparation
+  // Chart data preparation with null checks
   const statusPieData = analytics?.statusBreakdown 
     ? Object.entries(analytics.statusBreakdown).map(([status, count]) => ({
         name: status,
-        value: count
+        value: safeFormat(count)
       }))
     : [];
 
   const salaryDistributionData = analytics?.salaryRanges
     ? Object.entries(analytics.salaryRanges).map(([range, count]) => ({
         range,
-        count
+        count: safeFormat(count)
       }))
     : [];
 
   const monthlyTrendData = analytics?.monthlyTrends || [];
 
+  const epfEtfBreakdownData = analytics?.costBreakdown
+    ? [
+        { 
+          name: "Employee EPF (8%)", 
+          value: safeFormat(analytics.costBreakdown.employeeEPF), 
+          color: "#f59e0b",
+          description: "Deducted from employee salary"
+        },
+        { 
+          name: "Employer EPF (12%)", 
+          value: safeFormat(analytics.costBreakdown.employerEPF), 
+          color: "#10b981",
+          description: "Company expense"
+        },
+        { 
+          name: "Employer ETF (3%)", 
+          value: safeFormat(analytics.costBreakdown.employerETF), 
+          color: "#3b82f6",
+          description: "Company expense"
+        }
+      ]
+    : [];
+
   const costBreakdownData = analytics?.costBreakdown
     ? [
-        { name: "Gross Salary", value: analytics.costBreakdown.grossSalary },
-        { name: "Bonuses", value: analytics.costBreakdown.bonuses },
-        { name: "EPF (8%)", value: analytics.costBreakdown.epf },
-        { name: "ETF (3%)", value: analytics.costBreakdown.etf },
+        { name: "Base Salaries", value: safeFormat(analytics.costBreakdown.grossSalary), color: "#667eea" },
+        { name: "Bonuses", value: safeFormat(analytics.costBreakdown.bonuses), color: "#10b981" },
+        { name: "Deductions", value: safeFormat(analytics.costBreakdown.deductions), color: "#ef4444" }
       ]
     : [];
 
   return (
-    <AdminLayout admin={admin} title="Payroll Analytics">
-      <div className="tpv-container">
-        <div className="tpv-header">
-          <div className="tpv-header-content">
-            <h1>📊 Total Payroll Analytics</h1>
-            <p>Comprehensive payroll insights and employee salary analysis</p>
+    <div className="healx-tpv-wrapper">
+      {/* Header */}
+      <div className="healx-tpv-header">
+        <div className="healx-tpv-header-container">
+          <div className="healx-tpv-header-top">
+            <div className="healx-tpv-header-brand">
+              <h1 className="healx-tpv-header-title">
+                <span className="healx-tpv-title-icon">📊</span>
+                Payroll Analytics
+              </h1>
+              <p className="healx-tpv-header-subtitle">
+                Comprehensive payroll insights with accurate EPF/ETF calculations
+              </p>
+            </div>
+            <div className="healx-tpv-header-actions">
+              <button 
+                className="healx-tpv-btn healx-tpv-btn-secondary" 
+                onClick={refreshData}
+                disabled={loading}
+              >
+                <i className="fas fa-sync-alt"></i>
+                {loading ? "Refreshing..." : "Refresh Data"}
+              </button>
+              <button 
+                className="healx-tpv-btn healx-tpv-btn-primary" 
+                onClick={() => navigate("/admin/financial/payrolls")}
+              >
+                <i className="fas fa-arrow-left"></i>
+                Back to Payrolls
+              </button>
+            </div>
           </div>
-          <div className="tpv-header-actions">
-            <button 
-              className="tpv-refresh-btn" 
-              onClick={refreshData}
-              disabled={loading}
-            >
-              {loading ? "🔄 Refreshing..." : "🔄 Refresh Data"}
-            </button>
-            <button 
-              className="tpv-back-btn" 
-              onClick={() => navigate("/admin/financial/payrolls")}
-            >
-              ← Back to Payroll Management
-            </button>
+          
+          {/* KPI Section */}
+          <div className="healx-tpv-kpi-section">
+            <div className="healx-tpv-kpi-primary healx-tpv-kpi-success">
+              <div className="healx-tpv-kpi-label">Total Company Payroll Expense</div>
+              <div className="healx-tpv-kpi-value">
+                LKR {formatCurrency(analytics?.summary?.totalCompanyPayrollExpense)}
+              </div>
+              <div className="healx-tpv-kpi-status">Company Expense</div>
+            </div>
+            
+            <div className="healx-tpv-kpi-metrics">
+              <div className="healx-tpv-kpi-item">
+                <div className="healx-tpv-kpi-item-label">Employees</div>
+                <div className="healx-tpv-kpi-item-value positive">
+                  {analytics?.summary?.totalEmployees || 0}
+                </div>
+              </div>
+              <div className="healx-tpv-kpi-item">
+                <div className="healx-tpv-kpi-item-label">Payrolls</div>
+                <div className="healx-tpv-kpi-item-value">
+                  {analytics?.summary?.totalPayrolls || 0}
+                </div>
+              </div>
+              <div className="healx-tpv-kpi-item">
+                <div className="healx-tpv-kpi-item-label">Avg Salary</div>
+                <div className="healx-tpv-kpi-item-value positive">
+                  LKR {formatCurrency(analytics?.summary?.avgGrossSalary)}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        {error && <div className="tpv-error-banner">⚠️ {error}</div>}
+      {/* Error Message */}
+      {error && (
+        <div className="healx-tpv-message healx-tpv-message-error">
+          <span className="healx-tpv-message-icon">⚠️</span>
+          <span className="healx-tpv-message-text">{error}</span>
+          <button className="healx-tpv-message-close" onClick={() => setError("")}>×</button>
+        </div>
+      )}
 
+      <div className="healx-tpv-main">
         {/* Filters */}
-        <div className="tpv-filters">
-          <select
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-            className="tpv-filter-select"
-          >
-            <option value="">📅 All Months</option>
-            {['January', 'February', 'March', 'April', 'May', 'June',
-              'July', 'August', 'September', 'October', 'November', 'December']
-              .map(month => (
-              <option key={month} value={month}>{month}</option>
-            ))}
-          </select>
-          
-          <select
-            value={filterYear}
-            onChange={(e) => setFilterYear(e.target.value)}
-            className="tpv-filter-select"
-          >
-            <option value="">📅 All Years</option>
-            {[2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030].map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
+        <div className="healx-tpv-filters-section">
+          <div className="healx-tpv-filters">
+            <select
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value)}
+              className="healx-tpv-select"
+            >
+              <option value="">All Months</option>
+              {['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December']
+                .map(month => (
+                <option key={month} value={month}>{month}</option>
+              ))}
+            </select>
+            
+            <select
+              value={filterYear}
+              onChange={(e) => setFilterYear(e.target.value)}
+              className="healx-tpv-select"
+            >
+              <option value="">All Years</option>
+              {[2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030].map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
 
-          <select
-            value={selectedEmployee}
-            onChange={(e) => setSelectedEmployee(e.target.value)}
-            className="tpv-filter-select"
-          >
-            <option value="">👤 All Employees</option>
-            {uniqueEmployees.map(emp => (
-              <option key={emp.id} value={emp.id}>{emp.name} ({emp.id})</option>
-            ))}
-          </select>
+            <select
+              value={selectedEmployee}
+              onChange={(e) => setSelectedEmployee(e.target.value)}
+              className="healx-tpv-select"
+            >
+              <option value="">All Employees</option>
+              {uniqueEmployees.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.name} ({emp.id})</option>
+              ))}
+            </select>
+          </div>
 
-          <div className="tpv-view-tabs">
+          <div className="healx-tpv-view-tabs">
             <button 
-              className={`tpv-tab ${viewType === 'overview' ? 'active' : ''}`}
+              className={`healx-tpv-btn healx-tpv-btn-ghost ${viewType === 'overview' ? 'active' : ''}`}
               onClick={() => setViewType('overview')}
             >
-              📈 Overview
+              Overview
             </button>
             <button 
-              className={`tpv-tab ${viewType === 'trends' ? 'active' : ''}`}
+              className={`healx-tpv-btn healx-tpv-btn-ghost ${viewType === 'trends' ? 'active' : ''}`}
               onClick={() => setViewType('trends')}
             >
-              📊 Trends
+              Trends
             </button>
             <button 
-              className={`tpv-tab ${viewType === 'employee' ? 'active' : ''}`}
+              className={`healx-tpv-btn healx-tpv-btn-ghost ${viewType === 'employee' ? 'active' : ''}`}
               onClick={() => setViewType('employee')}
             >
-              👥 Employees
+              Employees
             </button>
           </div>
         </div>
 
+        {/* Overview Cards */}
         {analytics && (
           <>
-            {/* Summary Stats */}
-            <div className="tpv-stats-grid">
-              <div className="tpv-stat-card tpv-primary">
-                <div className="tpv-stat-icon">👥</div>
-                <div className="tpv-stat-info">
-                  <h3>{analytics.summary.totalEmployees}</h3>
-                  <p>Total Employees</p>
-                  <small>{analytics.summary.totalPayrolls} payroll records</small>
+            <div className="healx-tpv-overview">
+              <div className="healx-tpv-overview-grid">
+                <div className="healx-tpv-overview-card healx-tpv-revenue-card">
+                  <div className="healx-tpv-card-header">
+                    <div className="healx-tpv-card-icon">💰</div>
+                    <div className="healx-tpv-card-trend healx-tpv-trend-positive">Active</div>
+                  </div>
+                  <div className="healx-tpv-card-content">
+                    <div className="healx-tpv-card-value">
+                      LKR {formatCurrency(analytics.summary?.totalGrossSalary)}
+                    </div>
+                    <div className="healx-tpv-card-label">Total Gross Salary</div>
+                    <div className="healx-tpv-card-details">
+                      <span>Average: LKR {formatCurrency(analytics.summary?.avgGrossSalary)}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="tpv-stat-card tpv-success">
-                <div className="tpv-stat-icon">💰</div>
-                <div className="tpv-stat-info">
-                  <h3>${analytics.summary.totalGrossSalary.toLocaleString()}</h3>
-                  <p>Total Gross Salary</p>
-                  <small>Avg: ${Math.round(analytics.summary.avgGrossSalary).toLocaleString()}</small>
+                <div className="healx-tpv-overview-card healx-tpv-expenses-card">
+                  <div className="healx-tpv-card-header">
+                    <div className="healx-tpv-card-icon">💵</div>
+                    <div className="healx-tpv-card-trend healx-tpv-trend-positive">Net</div>
+                  </div>
+                  <div className="healx-tpv-card-content">
+                    <div className="healx-tpv-card-value">
+                      LKR {formatCurrency(analytics.summary?.totalNetSalary)}
+                    </div>
+                    <div className="healx-tpv-card-label">Total Net Salary</div>
+                    <div className="healx-tpv-card-details">
+                      <span>Average: LKR {formatCurrency(analytics.summary?.avgNetSalary)}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="tpv-stat-card tpv-info">
-                <div className="tpv-stat-icon">💵</div>
-                <div className="tpv-stat-info">
-                  <h3>${analytics.summary.totalNetSalary.toLocaleString()}</h3>
-                  <p>Total Net Salary</p>
-                  <small>Avg: ${Math.round(analytics.summary.avgNetSalary).toLocaleString()}</small>
+                <div className="healx-tpv-overview-card healx-tpv-profit-card">
+                  <div className="healx-tpv-card-header">
+                    <div className="healx-tpv-card-icon">🏢</div>
+                    <div className="healx-tpv-card-trend healx-tpv-trend-positive">EPF</div>
+                  </div>
+                  <div className="healx-tpv-card-content">
+                    <div className="healx-tpv-card-value">
+                      LKR {formatCurrency(analytics.summary?.totalEmployerEPF)}
+                    </div>
+                    <div className="healx-tpv-card-label">Employer EPF (12%)</div>
+                    <div className="healx-tpv-card-details">
+                      <span>Company Expense</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="tpv-stat-card tpv-warning">
-                <div className="tpv-stat-icon">🏛️</div>
-                <div className="tpv-stat-info">
-                  <h3>${(analytics.summary.totalEPF + analytics.summary.totalETF).toLocaleString()}</h3>
-                  <p>EPF + ETF Contributions</p>
-                  <small>EPF: ${analytics.summary.totalEPF.toLocaleString()}</small>
+                <div className="healx-tpv-overview-card healx-tpv-loss-card">
+                  <div className="healx-tpv-card-header">
+                    <div className="healx-tpv-card-icon">🏦</div>
+                    <div className="healx-tpv-card-trend healx-tpv-trend-positive">ETF</div>
+                  </div>
+                  <div className="healx-tpv-card-content">
+                    <div className="healx-tpv-card-value">
+                      LKR {formatCurrency(analytics.summary?.totalEmployerETF)}
+                    </div>
+                    <div className="healx-tpv-card-label">Employer ETF (3%)</div>
+                    <div className="healx-tpv-card-details">
+                      <span>Company Expense</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Charts based on view type */}
-            {viewType === 'overview' && (
-              <div className="tpv-charts-grid">
-                <div className="tpv-chart-card">
-                  <h3>📊 Payroll Status Distribution</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={statusPieData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={100}
-                        dataKey="value"
-                        label={({name, value}) => `${name}: ${value}`}
-                      >
-                        {statusPieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={PAYROLL_COLORS[index % PAYROLL_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="tpv-chart-card">
-                  <h3>💰 Salary Distribution</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={salaryDistributionData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="range" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="count" fill="#0088FE" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="tpv-chart-card tpv-full-width">
-                  <h3>💸 Cost Breakdown</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={costBreakdownData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={120}
-                        dataKey="value"
-                        label={({name, value}) => `${name}: $${value.toLocaleString()}`}
-                      >
-                        {costBreakdownData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={PAYROLL_COLORS[index % PAYROLL_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-
-            {viewType === 'trends' && (
-              <div className="tpv-charts-grid">
-                <div className="tpv-chart-card tpv-full-width">
-                  <h3>📈 Monthly Salary Trends</h3>
-                  <ResponsiveContainer width="100%" height={400}>
-                    <LineChart data={monthlyTrendData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                      <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
-                      <Legend />
-                      <Line type="monotone" dataKey="totalGross" stroke="#0088FE" strokeWidth={3} name="Gross Salary" />
-                      <Line type="monotone" dataKey="totalNet" stroke="#00C49F" strokeWidth={3} name="Net Salary" />
-                      <Line type="monotone" dataKey="totalBonuses" stroke="#FFBB28" strokeWidth={2} name="Bonuses" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="tpv-chart-card">
-                  <h3>👥 Employee Count by Month</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={monthlyTrendData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="employeeCount" fill="#82ca9d" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="tpv-chart-card">
-                  <h3>📊 Monthly Cost Analysis</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={monthlyTrendData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                      <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
-                      <Area type="monotone" dataKey="totalDeductions" stackId="1" stroke="#FF8042" fill="#FF8042" name="Deductions" />
-                      <Area type="monotone" dataKey="totalBonuses" stackId="1" stroke="#FFBB28" fill="#FFBB28" name="Bonuses" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-
-            {viewType === 'employee' && (
-              <div className="tpv-employee-section">
-                {/* ✅ REPLACED CHART WITH STYLED LIST */}
-                <div className="tpv-chart-card">
-                  <h3>🏆 Top 5 Employees by Gross Salary</h3>
-                  {analytics.topEmployees && analytics.topEmployees.length > 0 ? (
-                    <div className="tpv-employee-list">
-                      {analytics.topEmployees.slice(0, 5).map((emp, index) => (
-                        <div key={emp.employeeId} className="tpv-employee-item">
-                          <div className="tpv-employee-rank">
-                            <span className={`tpv-rank-badge rank-${index + 1}`}>
-                              #{index + 1}
-                            </span>
-                          </div>
-                          <div className="tpv-employee-info">
-                            <h4>{emp.employeeName}</h4>
-                            <p>ID: {emp.employeeId}</p>
-                          </div>
-                          <div className="tpv-employee-salary">
-                            <div className="tpv-gross-salary">
-                              <strong>${emp.totalGross.toLocaleString()}</strong>
-                              <span>Total Gross</span>
-                            </div>
-                            <div className="tpv-avg-salary">
-                              <span>${Math.round(emp.averageGross).toLocaleString()}</span>
-                              <small>Avg per month</small>
-                            </div>
-                            <div className="tpv-payroll-count">
-                              <span>{emp.payrollCount}</span>
-                              <small>Records</small>
-                            </div>
-                          </div>
-                          <div className="tpv-salary-bar">
-                            <div 
-                              className="tpv-salary-progress"
-                              style={{
-                                width: `${(emp.totalGross / Math.max(...analytics.topEmployees.map(e => e.totalGross))) * 100}%`,
-                                backgroundColor: PAYROLL_COLORS[index % PAYROLL_COLORS.length]
-                              }}
-                            ></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="tpv-no-data">
-                      <div style={{ 
-                        height: '200px', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        color: '#666',
-                        fontSize: '16px',
-                        flexDirection: 'column'
-                      }}>
-                        <div>📊 No employee salary data available</div>
-                        <small style={{ marginTop: '10px', color: '#999' }}>
-                          Add some payroll records to see employee rankings
-                        </small>
+            {/* Charts */}
+            <div className="healx-tpv-charts">
+              {viewType === 'overview' && (
+                <div className="healx-tpv-charts-section">
+                  {/* First row - Pie Charts */}
+                  <div className="healx-tpv-charts-row">
+                    <div className="healx-tpv-chart-container healx-tpv-chart-large">
+                      <div className="healx-tpv-chart-header">
+                        <h3 className="healx-tpv-chart-title">
+                          <span className="healx-tpv-chart-icon">📊</span>
+                          Payroll Status Distribution
+                        </h3>
                       </div>
+                      <ResponsiveContainer width="100%" height={450}>
+                        <PieChart>
+                          <Pie
+                            data={statusPieData}
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={140}
+                            dataKey="value"
+                            label={({name, value}) => `${name}: ${value}`}
+                          >
+                            {statusPieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={PAYROLL_COLORS[index % PAYROLL_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
                     </div>
-                  )}
-                </div>
 
-                <div className="tpv-employee-table">
-                  <h3>👥 Employee Salary Summary</h3>
-                  <div className="tpv-table-container">
-                    <table className="tpv-table">
-                      <thead>
-                        <tr>
-                          <th>Rank</th>
-                          <th>Employee ID</th>
-                          <th>Employee Name</th>
-                          <th>Total Gross</th>
-                          <th>Total Net</th>
-                          <th>Payroll Count</th>
-                          <th>Avg Gross</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {analytics.topEmployees && analytics.topEmployees.length > 0 ? (
-                          analytics.topEmployees.map((emp, index) => (
-                            <tr key={emp.employeeId || index}>
-                              <td>
-                                <span className={`tpv-table-rank rank-${index + 1}`}>
-                                  #{index + 1}
-                                </span>
-                              </td>
-                              <td><strong>{emp.employeeId || 'N/A'}</strong></td>
-                              <td>{emp.employeeName || 'N/A'}</td>
-                              <td className="tpv-currency">${(emp.totalGross || 0).toLocaleString()}</td>
-                              <td className="tpv-currency">${(emp.totalNet || 0).toLocaleString()}</td>
-                              <td className="tpv-center">{emp.payrollCount || 0}</td>
-                              <td className="tpv-currency">${Math.round(emp.averageGross || 0).toLocaleString()}</td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan="7" style={{ textAlign: 'center', color: '#666', padding: '40px' }}>
-                              <div>📋 No employee salary data available</div>
-                              <small style={{ display: 'block', marginTop: '10px', color: '#999' }}>
-                                Create some payroll records to see employee statistics
-                              </small>
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                    <div className="healx-tpv-chart-container healx-tpv-chart-large">
+                      <div className="healx-tpv-chart-header">
+                        <h3 className="healx-tpv-chart-title">
+                          <span className="healx-tpv-chart-icon">💰</span>
+                          Salary Distribution
+                        </h3>
+                      </div>
+                      <ResponsiveContainer width="100%" height={450}>
+                        <BarChart data={salaryDistributionData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="range" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="count" fill="#667eea" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Second row - More Pie Charts */}
+                  <div className="healx-tpv-charts-row">
+                    <div className="healx-tpv-chart-container healx-tpv-chart-large">
+                      <div className="healx-tpv-chart-header">
+                        <h3 className="healx-tpv-chart-title">
+                          <span className="healx-tpv-chart-icon">🏦</span>
+                          EPF/ETF Breakdown
+                        </h3>
+                      </div>
+                      <ResponsiveContainer width="100%" height={450}>
+                        <PieChart>
+                          <Pie
+                            data={epfEtfBreakdownData}
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={140}
+                            dataKey="value"
+                            label={({name, value}) => `${name}: LKR ${formatCurrency(value)}`}
+                          >
+                            {epfEtfBreakdownData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            formatter={(value, name, props) => [
+                              `LKR ${formatCurrency(value)}`, 
+                              `${name} - ${props.payload.description}`
+                            ]} 
+                          />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="healx-tpv-chart-container healx-tpv-chart-large">
+                      <div className="healx-tpv-chart-header">
+                        <h3 className="healx-tpv-chart-title">
+                          <span className="healx-tpv-chart-icon">💸</span>
+                          Cost Breakdown
+                        </h3>
+                      </div>
+                      <ResponsiveContainer width="100%" height={450}>
+                        <PieChart>
+                          <Pie
+                            data={costBreakdownData}
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={140}
+                            dataKey="value"
+                            label={({name, value}) => `${name}: LKR ${formatCurrency(value)}`}
+                          >
+                            {costBreakdownData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color || PAYROLL_COLORS[index % PAYROLL_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value) => [`LKR ${formatCurrency(value)}`, '']} />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Quick Actions */}
-            <div className="tpv-quick-actions">
-              <h3>⚡ Quick Actions</h3>
-              <div className="tpv-actions-grid">
-                <button 
-                  className="tpv-action-btn tpv-primary"
-                  onClick={() => navigate("/admin/financial/payrolls")}
-                >
-                  📋 Manage Payrolls
-                </button>
-                <button 
-                  className="tpv-action-btn tpv-success"
-                  onClick={() => {
-                    if (analytics?.topEmployees && analytics.topEmployees.length > 0) {
-                      const csvData = analytics.topEmployees.map(emp => 
-                        `${emp.employeeId || ''},${emp.employeeName || ''},${emp.totalGross || 0},${emp.totalNet || 0},${emp.payrollCount || 0}`
-                      ).join('\n');
-                      const blob = new Blob([`Employee ID,Name,Total Gross,Total Net,Payroll Count\n${csvData}`], 
-                        { type: 'text/csv' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `payroll-analytics-${new Date().toISOString().split('T')[0]}.csv`;
-                      a.click();
-                    } else {
-                      alert('No data available to export');
-                    }
-                  }}
-                >
-                  📊 Export Analytics
-                </button>
-                <button 
-                  className="tpv-action-btn tpv-info"
-                  onClick={() => navigate("/admin/financial")}
-                >
-                  🏠 Financial Manager Dashboard
-                </button>
-              </div>
+              {viewType === 'trends' && (
+                <div className="healx-tpv-charts-section">
+                  {/* Full width trend chart */}
+                  <div className="healx-tpv-chart-container healx-tpv-chart-full-width">
+                    <div className="healx-tpv-chart-header">
+                      <h3 className="healx-tpv-chart-title">
+                        <span className="healx-tpv-chart-icon">📈</span>
+                        Monthly Salary Trends
+                      </h3>
+                    </div>
+                    <ResponsiveContainer width="100%" height={500}>
+                      <LineChart data={monthlyTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis tickFormatter={(value) => `LKR ${formatCurrency(value)}`} />
+                        <Tooltip formatter={(value) => [`LKR ${formatCurrency(value)}`, '']} />
+                        <Legend />
+                        <Line type="monotone" dataKey="totalGross" stroke="#667eea" strokeWidth={3} name="Gross Salary" />
+                        <Line type="monotone" dataKey="totalNet" stroke="#10b981" strokeWidth={3} name="Net Salary" />
+                        <Line type="monotone" dataKey="totalCompanyExpense" stroke="#ef4444" strokeWidth={3} name="Company Expense" />
+                        <Line type="monotone" dataKey="totalBonuses" stroke="#f59e0b" strokeWidth={2} name="Bonuses" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Second row - Bar charts */}
+                  <div className="healx-tpv-charts-row">
+                    <div className="healx-tpv-chart-container healx-tpv-chart-large">
+                      <div className="healx-tpv-chart-header">
+                        <h3 className="healx-tpv-chart-title">
+                          <span className="healx-tpv-chart-icon">🏢</span>
+                          Monthly EPF/ETF Contributions
+                        </h3>
+                      </div>
+                      <ResponsiveContainer width="100%" height={450}>
+                        <BarChart data={monthlyTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis tickFormatter={(value) => `LKR ${formatCurrency(value)}`} />
+                          <Tooltip formatter={(value) => [`LKR ${formatCurrency(value)}`, '']} />
+                          <Legend />
+                          <Bar dataKey="totalEmployeeEPF" fill="#f59e0b" name="Employee EPF (8%)" />
+                          <Bar dataKey="totalEmployerEPF" fill="#10b981" name="Employer EPF (12%)" />
+                          <Bar dataKey="totalEmployerETF" fill="#3b82f6" name="Employer ETF (3%)" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="healx-tpv-chart-container healx-tpv-chart-large">
+                      <div className="healx-tpv-chart-header">
+                        <h3 className="healx-tpv-chart-title">
+                          <span className="healx-tpv-chart-icon">👥</span>
+                          Employee Count by Month
+                        </h3>
+                      </div>
+                      <ResponsiveContainer width="100%" height={450}>
+                        <BarChart data={monthlyTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="employeeCount" fill="#764ba2" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {viewType === 'employee' && (
+                <div className="healx-tpv-insights">
+                  <div className="healx-tpv-insights-header">
+                    <h2 className="healx-tpv-insights-title">
+                      <span className="healx-tpv-insights-icon">👥</span>
+                      Employee Analysis
+                    </h2>
+                    <p className="healx-tpv-insights-subtitle">
+                      Top performers and payroll distribution insights
+                    </p>
+                  </div>
+
+                  <div className="healx-tpv-insights-grid">
+                    {analytics.topEmployees && analytics.topEmployees.length > 0 ? (
+                      analytics.topEmployees.slice(0, 6).map((emp, index) => (
+                        <div key={emp.employeeId} className="healx-tpv-insight-card healx-tpv-insight-success">
+                          <div className="healx-tpv-insight-header">
+                            <div className="healx-tpv-insight-badge">
+                              <div className="healx-tpv-insight-category">Rank #{index + 1}</div>
+                              <div className="healx-tpv-insight-priority healx-tpv-priority-high">Top Performer</div>
+                            </div>
+                            <div className="healx-tpv-insight-icon">🏆</div>
+                          </div>
+                          <div className="healx-tpv-insight-content">
+                            <h4>{emp.employeeName || 'N/A'}</h4>
+                            <p className="healx-tpv-insight-message">
+                              Employee ID: {emp.employeeId || 'N/A'}
+                            </p>
+                            <div className="healx-tpv-insight-recommendation">
+                              <strong>Total Gross:</strong> LKR {formatCurrency(emp.totalGross)}<br/>
+                              <strong>Average:</strong> LKR {formatCurrency(emp.averageGross)}<br/>
+                              <strong>Payrolls:</strong> {emp.payrollCount || 0}<br/>
+                              <strong>Employee EPF:</strong> LKR {formatCurrency(emp.totalEmployeeEPF)}<br/>
+                              <strong>Employer EPF:</strong> LKR {formatCurrency(emp.totalEmployerEPF)}<br/>
+                              <strong>Employer ETF:</strong> LKR {formatCurrency(emp.totalEmployerETF)}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="healx-tpv-insight-card healx-tpv-insight-info">
+                        <div className="healx-tpv-insight-header">
+                          <div className="healx-tpv-insight-badge">
+                            <div className="healx-tpv-insight-category">No Data</div>
+                            <div className="healx-tpv-insight-priority healx-tpv-priority-low">Info</div>
+                          </div>
+                          <div className="healx-tpv-insight-icon">📊</div>
+                        </div>
+                        <div className="healx-tpv-insight-content">
+                          <h4>No Employee Data Available</h4>
+                          <p className="healx-tpv-insight-message">
+                            Add some payroll records to see employee rankings and analysis.
+                          </p>
+                          <div className="healx-tpv-insight-recommendation">
+                            <strong>Next Steps:</strong> Create payroll records to view comprehensive employee analytics and EPF/ETF insights.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
 
         {!analytics && !loading && (
-          <div className="tpv-no-analytics">
-            <div style={{ 
-              textAlign: 'center', 
-              color: '#666', 
-              padding: '60px 20px',
-              fontSize: '18px'
-            }}>
-              <div>📊 No payroll data available for analytics</div>
-              <p style={{ margin: '20px 0', color: '#999', fontSize: '14px' }}>
-                Create some payroll records first to see comprehensive analytics and employee insights.
+          <div className="healx-tpv-insights">
+            <div className="healx-tpv-insights-header">
+              <h2 className="healx-tpv-insights-title">
+                <span className="healx-tpv-insights-icon">📊</span>
+                No Data Available
+              </h2>
+              <p className="healx-tpv-insights-subtitle">
+                Create some payroll records to see comprehensive analytics
               </p>
-              <button 
-                className="tpv-action-btn tpv-primary"
-                onClick={() => navigate("/admin/financial/payrolls")}
-                style={{ marginTop: '20px' }}
-              >
-                📋 Go to Payroll Management
-              </button>
             </div>
           </div>
         )}
       </div>
-    </AdminLayout>
+
+      {/* Footer */}
+      <div className="healx-tpv-footer">
+        <div className="healx-tpv-footer-container">
+          <div className="healx-tpv-footer-info">
+            <p>HealX Payroll Analytics</p>
+            <p>Real-time payroll insights with accurate EPF/ETF calculations</p>
+          </div>
+          <div className="healx-tpv-footer-actions">
+            <button 
+              className="healx-tpv-btn healx-tpv-btn-primary"
+              onClick={() => navigate("/admin/financial")}
+            >
+              Financial Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

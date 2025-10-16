@@ -936,15 +936,127 @@
   font-weight: 500;
 }
 
-/* ✅ NEW: Focus ring enhancement for validation states */
-.fp-form-group input.fp-error:focus {
-  ring: 2px;
-  ring-color: #e53e3e;
-  ring-opacity: 0.5;
+/* Refresh Button Styling */
+.fp-refresh-btn {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  margin-left: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(23, 162, 184, 0.2);
+  position: relative;
+  overflow: hidden;
 }
 
-.fp-form-group input:valid:focus:not(.fp-error) {
-  ring: 2px;
-  ring-color: #38a169;
-  ring-opacity: 0.5;
+.fp-refresh-btn:hover {
+  background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+}
+
+.fp-refresh-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(23, 162, 184, 0.2);
+}
+
+.fp-refresh-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.fp-refresh-btn:disabled:hover {
+  background: #6c757d;
+  transform: none;
+}
+
+/* Loading animation for refresh button */
+.fp-refresh-btn:disabled .fp-refresh-icon {
+  animation: fp-spin 1s linear infinite;
+}
+
+@keyframes fp-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments for refresh button */
+@media (max-width: 768px) {
+  .fp-refresh-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-left: 8px;
+  }
+  
+  .fp-controls-left {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fp-refresh-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+    margin-left: 5px;
+  }
+}
+
+/* Enhanced controls layout to accommodate refresh button */
+.fp-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.fp-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fp-controls-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.fp-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Additional button hover effects */
+.fp-primary-btn, .fp-export-btn {
+  transition: all 0.3s ease;
+}
+
+.fp-primary-btn:hover, .fp-export-btn:hover {
+  transform: translateY(-1px);
+}
+
+.fp-primary-btn:active, .fp-export-btn:active {
+  transform: translateY(0);
 }

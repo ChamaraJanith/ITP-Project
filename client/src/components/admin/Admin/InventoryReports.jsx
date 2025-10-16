@@ -17,7 +17,9 @@ import {
   LineElement
 } from 'chart.js';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import { applyPlugin } from 'jspdf-autotable';
+
+applyPlugin(jsPDF);
 
 // Register Chart.js components
 ChartJS.register(
