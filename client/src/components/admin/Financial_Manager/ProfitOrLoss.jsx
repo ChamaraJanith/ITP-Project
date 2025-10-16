@@ -85,7 +85,7 @@ const ProfitOrLoss = () => {
       setLoading(true);
       setError('');
       
-      console.log('🔄 Initializing Profit & Loss analysis with CORRECT APIs...');
+      console.log('🔄 Initializing Profit & Loss analysis ');
       
       const [revenueData, expenseData] = await Promise.all([
         fetchRevenueData(),
@@ -176,7 +176,7 @@ const ProfitOrLoss = () => {
   // CORRECTED: Fetch Expense Data with Correct Formula
   const fetchExpenseData = async () => {
     try {
-      console.log('💸 Fetching expense data using CORRECT APIs and calculation...');
+      console.log('💸 Fetching expense data using real time data');
       
       const [payrollData, inventoryData, utilitiesData, supplierData] = await Promise.all([
         fetchPayrollExpenses(),
@@ -185,8 +185,7 @@ const ProfitOrLoss = () => {
         fetchSupplierExpenses()
       ]);
       
-      // CORRECT EXPENSE CALCULATION AS PER YOUR REQUIREMENT
-      // Total expense = utility expenses + current inventory value + total inventory restock value + supplier expenses + payroll
+      // ✅ CORRECTED EXPENSE CALCULATION with proper payroll formula
       const expenseAnalytics = {
         payrollExpenses: calculatePayrollExpenses(payrollData),
         inventoryExpenses: calculateInventoryExpenses(inventoryData),
@@ -194,7 +193,7 @@ const ProfitOrLoss = () => {
         supplierExpenses: calculateSupplierExpenses(supplierData)
       };
 
-      // CORRECTED TOTAL CALCULATION
+      // ✅ CORRECTED TOTAL CALCULATION - now using proper payroll expense
       expenseAnalytics.totalExpenses = 
         expenseAnalytics.payrollExpenses.totalPayrollExpense +
         expenseAnalytics.inventoryExpenses.totalInventoryValue +
@@ -236,7 +235,7 @@ const ProfitOrLoss = () => {
     }
   };
 
-  // Calculate Payroll Expenses - MATCHING YOUR FINANCIALPAYROLL LOGIC
+  // ✅ CORRECTED: Calculate Payroll Expenses - FIXED to use employer contributions only
   const calculatePayrollExpenses = (payrolls = []) => {
     const safePayrolls = Array.isArray(payrolls) ? payrolls : [];
     
@@ -244,18 +243,31 @@ const ProfitOrLoss = () => {
       totalGrossSalary: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.grossSalary) || 0), 0),
       totalBonuses: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.bonuses) || 0), 0),
       totalDeductions: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.deductions) || 0), 0),
-      totalEPF: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.epf) || 0), 0),
-      totalETF: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.etf) || 0), 0),
+      // These are EMPLOYEE deductions, not company expenses
+      totalEmployeeEPF: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.epf) || 0), 0),
+      totalEmployeeETF: safePayrolls.reduce((sum, p) => sum + (parseFloat(p.etf) || 0), 0),
+      // ✅ CORRECTED: Calculate EMPLOYER contributions (12% EPF + 3% ETF)
+      totalEmployerEPF: safePayrolls.reduce((sum, p) => sum + Math.round((parseFloat(p.grossSalary) || 0) * 0.12), 0),
+      totalEmployerETF: safePayrolls.reduce((sum, p) => sum + Math.round((parseFloat(p.grossSalary) || 0) * 0.03), 0),
       totalEmployees: new Set(safePayrolls.map(p => p.employeeId).filter(id => id)).size,
       rawData: safePayrolls
     };
 
-    // CORRECTED: Total payroll = gross + bonuses + EPF + ETF (as per your requirement)
+    // ✅ CORRECTED: Total Company Payroll Expense = Base Salaries + Bonuses + EPF (12% Employer) + ETF (3% Employer)
     payrollExpenses.totalPayrollExpense = 
       payrollExpenses.totalGrossSalary + 
       payrollExpenses.totalBonuses + 
-      payrollExpenses.totalEPF + 
-      payrollExpenses.totalETF;
+      payrollExpenses.totalEmployerEPF +    // ✅ Employer EPF (12%)
+      payrollExpenses.totalEmployerETF;     // ✅ Employer ETF (3%)
+
+    console.log('✅ CORRECTED PAYROLL CALCULATION:');
+    console.log(`   Base Salaries: $${payrollExpenses.totalGrossSalary.toLocaleString()}`);
+    console.log(`   Bonuses: $${payrollExpenses.totalBonuses.toLocaleString()}`);
+    console.log(`   Employer EPF (12%): $${payrollExpenses.totalEmployerEPF.toLocaleString()}`);
+    console.log(`   Employer ETF (3%): $${payrollExpenses.totalEmployerETF.toLocaleString()}`);
+    console.log(`   TOTAL COMPANY PAYROLL EXPENSE: $${payrollExpenses.totalPayrollExpense.toLocaleString()}`);
+    console.log(`   ❌ Employee EPF (excluded): $${payrollExpenses.totalEmployeeEPF.toLocaleString()}`);
+    console.log(`   ❌ Employee ETF (excluded): $${payrollExpenses.totalEmployeeETF.toLocaleString()}`);
 
     return payrollExpenses;
   };
@@ -551,7 +563,7 @@ const ProfitOrLoss = () => {
       priority: metrics.netResult > 0 ? 'medium' : 'high'
     });
     
-    // Expense breakdown insight with CORRECTED supplier data
+    // ✅ CORRECTED: Expense breakdown insight with CORRECTED payroll calculation
     const payrollPercent = expenseData.totalExpenses > 0 ? ((expenseData.payrollExpenses.totalPayrollExpense / expenseData.totalExpenses) * 100).toFixed(1) : '0.0';
     const inventoryPercent = expenseData.totalExpenses > 0 ? ((expenseData.inventoryExpenses.totalInventoryValue / expenseData.totalExpenses) * 100).toFixed(1) : '0.0';
     const utilitiesPercent = expenseData.totalExpenses > 0 ? ((expenseData.utilitiesExpenses.totalUtilitiesExpense / expenseData.totalExpenses) * 100).toFixed(1) : '0.0';
@@ -560,12 +572,11 @@ const ProfitOrLoss = () => {
     insights.push({
       type: 'info',
       category: 'Expense Analysis',
-      title: 'Complete Expense Breakdown (Live Data - CORRECTED SUPPLIERS)',
-      message: `Payroll: $${expenseData.payrollExpenses.totalPayrollExpense.toLocaleString()} (${payrollPercent}%) | Inventory: $${expenseData.inventoryExpenses.totalInventoryValue.toLocaleString()} (${inventoryPercent}%) | Utilities: $${expenseData.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()} (${utilitiesPercent}%) | Suppliers: $${expenseData.supplierExpenses.totalSupplierExpense.toLocaleString()} (${supplierPercent}%) from ${expenseData.supplierExpenses.totalOrders || 0} purchase orders`,
-      recommendation: 'Monitor all expense categories regularly and optimize cost structure where possible.',
+      title: 'Complete Expense Breakdown ',
+      message: `Payroll : $${expenseData.payrollExpenses.totalPayrollExpense.toLocaleString()} (${payrollPercent}%) | Inventory: $${expenseData.inventoryExpenses.totalInventoryValue.toLocaleString()} (${inventoryPercent}%) | Utilities: $${expenseData.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()} (${utilitiesPercent}%) | Suppliers: $${expenseData.supplierExpenses.totalSupplierExpense.toLocaleString()} (${supplierPercent}%) from ${expenseData.supplierExpenses.totalOrders || 0} purchase orders`,
+      recommendation: '✅ Payroll now correctly calculated using employer contributions only (EPF 12% + ETF 3%). Monitor all expense categories regularly.',
       priority: 'medium'
     });
-    
     
     if (metrics.expenseRatio > 80) {
       insights.push({
@@ -600,7 +611,7 @@ const ProfitOrLoss = () => {
       ],
       
       expenseBreakdown: [
-        { name: 'Payroll', value: expenseData.payrollExpenses.totalPayrollExpense, color: COLORS.primary },
+        { name: 'Payroll ', value: expenseData.payrollExpenses.totalPayrollExpense, color: COLORS.primary },
         { name: 'Inventory', value: expenseData.inventoryExpenses.totalInventoryValue, color: COLORS.secondary },
         { name: 'Utilities', value: expenseData.utilitiesExpenses.totalUtilitiesExpense, color: '#f59e0b' },
         { name: 'Suppliers', value: expenseData.supplierExpenses.totalSupplierExpense, color: '#8b5cf6' }
@@ -622,7 +633,7 @@ const ProfitOrLoss = () => {
     }
 
     const currentDate = new Date();
-    const reportTitle = 'Profit & Loss Analysis Report';
+    const reportTitle = 'Profit & Loss Analysis Report ';
 
     const printContent = `
       <!DOCTYPE html>
@@ -677,14 +688,14 @@ const ProfitOrLoss = () => {
         <!-- Report Info -->
         <div class="info">
           <strong>Generated on:</strong> ${currentDate.toLocaleString()}<br>
-          <strong>Report Type:</strong> Comprehensive Profit & Loss Analysis<br>
+          <strong>Report Type:</strong> Comprehensive Profit & Loss Analysis <br>
           <strong>Financial Result:</strong> ${financialData.isProfit ? 'PROFIT' : 'LOSS'}<br>
           <strong>Filter Period:</strong> ${selectedPeriod === 'all' ? 'All Time' : selectedPeriod}
         </div>
         
         <!-- Executive Summary -->
         <div class="summary-section profit-section">
-          <h3 style="color: #1da1f2; margin: 0 0 15px 0;">📊 Executive Summary</h3>
+          <h3 style="color: #1da1f2; margin: 0 0 15px 0;">📊 Executive Summary </h3>
           <div class="summary-grid">
             <div class="summary-card">
               <h4>💰 Total Revenue</h4>
@@ -692,7 +703,7 @@ const ProfitOrLoss = () => {
               <div class="metric-label">From ${financialData.revenueBreakdown.totalPayments} accepted appointments</div>
             </div>
             <div class="summary-card">
-              <h4>💸 Total Expenses</h4>
+              <h4>💸 Total Expenses </h4>
               <div class="metric-value">$${financialData.totalExpenses.toLocaleString()}</div>
               <div class="metric-label">Payroll + Inventory + Utilities + Suppliers</div>
             </div>
@@ -714,6 +725,21 @@ const ProfitOrLoss = () => {
           '<div class="alert-section" style="background-color: #f8d7da; border-color: #f5c6cb;"><div class="alert-title" style="color: #721c24;">🚨 Operating at Loss</div><p>Your healthcare facility is currently operating at a loss of $' + Math.abs(financialData.netResult).toLocaleString() + '. Immediate action required to review expenses and improve revenue streams.</p></div>'
         }
 
+        <!-- ✅ PAYROLL NOTICE -->
+        <div class="alert-section" style="background-color: #d1ecf1; border-color: #bee5eb;">
+          <div class="alert-title" style="color: #0c5460;"></div>
+          <p><strong>Important:</strong> The payroll expense calculation has been corrected to include only employer contributions:</p>
+          <ul>
+            <li><strong>Company Payroll Expense:</strong> $${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense.toLocaleString()}</li>
+            <li><strong>Base Salaries:</strong> $${financialData.expenseBreakdown.payrollExpenses.totalGrossSalary.toLocaleString()}</li>
+            <li><strong>Bonuses:</strong> $${financialData.expenseBreakdown.payrollExpenses.totalBonuses.toLocaleString()}</li>
+            <li><strong>EPF Employer Contributions (12%):</strong> $${financialData.expenseBreakdown.payrollExpenses.totalEmployerEPF.toLocaleString()}</li>
+            <li><strong>ETF Employer Contributions (3%):</strong> $${financialData.expenseBreakdown.payrollExpenses.totalEmployerETF.toLocaleString()}</li>
+            <li><strong>Employee EPF/ETF deductions:</strong> Not included in company expenses (correctly excluded)</li>
+          </ul>
+          <p><em>Formula: Total Company Payroll Expense = Base Salaries + Bonuses + EPF (12% Employer) + ETF (3% Employer)</em></p>
+        </div>
+
         <!-- Financial Breakdown -->
         <h3 style="color: #1da1f2; margin-top: 30px;">📊 Financial Breakdown</h3>
         <table>
@@ -727,7 +753,7 @@ const ProfitOrLoss = () => {
             <tr>
               <td>Total Revenue</td>
               <td class="currency">$${financialData.totalRevenue.toLocaleString()}</td>
-              <td>Total Expenses</td>
+              <td>Total Expenses </td>
               <td class="currency">$${financialData.totalExpenses.toLocaleString()}</td>
             </tr>
             <tr>
@@ -757,42 +783,8 @@ const ProfitOrLoss = () => {
           </tbody>
         </table>
 
-        <!-- Key Financial Metrics -->
-        <h3 style="color: #1da1f2; margin-top: 30px;">📈 Key Financial Metrics</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Metric</th>
-              <th>Value</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Profit Margin</strong></td>
-              <td class="currency profit-amount"><strong>${financialData.profitMargin.toFixed(1)}%</strong></td>
-              <td>Net result as percentage of revenue</td>
-            </tr>
-            <tr>
-              <td><strong>Return on Investment</strong></td>
-              <td class="currency"><strong>${financialData.roi.toFixed(1)}%</strong></td>
-              <td>Net result as percentage of expenses</td>
-            </tr>
-            <tr>
-              <td><strong>Expense Ratio</strong></td>
-              <td class="currency"><strong>${financialData.expenseRatio.toFixed(1)}%</strong></td>
-              <td>Expenses as percentage of revenue</td>
-            </tr>
-            <tr>
-              <td><strong>Total Employees</strong></td>
-              <td class="currency"><strong>${financialData.expenseBreakdown.payrollExpenses.totalEmployees}</strong></td>
-              <td>Staff members on payroll</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Detailed Expense Breakdown -->
-        <h3 style="color: #1da1f2; margin-top: 30px;">🔍 Detailed Expense Breakdown</h3>
+        <!-- ✅  Detailed Expense Breakdown -->
+        <h3 style="color: #1da1f2; margin-top: 30px;">🔍 Detailed Expense Breakdown </h3>
         <table>
           <thead>
             <tr>
@@ -803,9 +795,9 @@ const ProfitOrLoss = () => {
           </thead>
           <tbody>
             <tr>
-              <td><strong>👥 Payroll</strong></td>
+              <td><strong>👥 Payroll </strong></td>
               <td class="currency"><strong>$${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense.toLocaleString()}</strong></td>
-              <td>Gross: $${financialData.expenseBreakdown.payrollExpenses.totalGrossSalary.toLocaleString()} | Bonuses: $${financialData.expenseBreakdown.payrollExpenses.totalBonuses.toLocaleString()} | EPF: $${financialData.expenseBreakdown.payrollExpenses.totalEPF.toLocaleString()} | ETF: $${financialData.expenseBreakdown.payrollExpenses.totalETF.toLocaleString()}</td>
+              <td>Base Salaries: $${financialData.expenseBreakdown.payrollExpenses.totalGrossSalary.toLocaleString()} | Bonuses: $${financialData.expenseBreakdown.payrollExpenses.totalBonuses.toLocaleString()} | EPF Employer (12%): $${financialData.expenseBreakdown.payrollExpenses.totalEmployerEPF.toLocaleString()} | ETF Employer (3%): $${financialData.expenseBreakdown.payrollExpenses.totalEmployerETF.toLocaleString()}</td>
             </tr>
             <tr>
               <td><strong>🏥 Inventory</strong></td>
@@ -825,29 +817,8 @@ const ProfitOrLoss = () => {
           </tbody>
         </table>
 
-        <!-- Revenue by Payment Method -->
-        <h3 style="color: #1da1f2; margin-top: 30px;">💳 Revenue by Payment Method</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Payment Method</th>
-              <th>Amount</th>
-              <th>Percentage</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${Object.entries(financialData.revenueBreakdown.paymentMethods).map(([method, amount]) => `
-              <tr>
-                <td>${method}</td>
-                <td class="currency">$${amount.toLocaleString()}</td>
-                <td class="currency">${((amount / financialData.totalRevenue) * 100).toFixed(1)}%</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-
-        <!-- Financial Insights -->
-        <h3 style="color: #1da1f2; margin-top: 30px;">💡 Financial Insights & Recommendations</h3>
+        <!-- ✅ Financial Insights -->
+        <h3 style="color: #1da1f2; margin-top: 30px;">💡 Financial Insights & Recommendations </h3>
         ${financialData.advisoryInsights.map(insight => `
           <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: ${insight.type === 'success' ? '#d4edda' : insight.type === 'warning' ? '#fff3cd' : insight.type === 'error' ? '#f8d7da' : '#d1ecf1'};">
             <div style="font-weight: bold; margin-bottom: 5px; color: ${insight.type === 'success' ? '#155724' : insight.type === 'warning' ? '#856404' : insight.type === 'error' ? '#721c24' : '#0c5460'};">
@@ -857,29 +828,6 @@ const ProfitOrLoss = () => {
             <div style="font-size: 10px; padding: 5px; background-color: rgba(0,0,0,0.05); border-radius: 3px;"><strong>Recommendation:</strong> ${insight.recommendation}</div>
           </div>
         `).join('')}
-
-        ${financialData.expenseBreakdown.supplierExpenses.totalOrders > 0 ? `
-          <!-- Supplier Analysis -->
-          <h3 style="color: #1da1f2; margin-top: 30px;">🏭 Supplier Analysis</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Supplier</th>
-                <th>Orders</th>
-                <th>Total Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${Object.entries(financialData.expenseBreakdown.supplierExpenses.supplierBreakdown || {}).map(([supplier, data]) => `
-                <tr>
-                  <td>${supplier}</td>
-                  <td class="currency">${data.orderCount}</td>
-                  <td class="currency">$${data.totalAmount.toLocaleString()}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        ` : ''}
 
         <!-- Professional Signature Section -->
         <div class="signature-section">
@@ -911,9 +859,9 @@ const ProfitOrLoss = () => {
 
         <!-- Report Footer -->
         <div class="report-footer">
-          <p><strong>This is a system-generated report from Heal-x Healthcare Management System</strong></p>
+          <p><strong>This is a system-generated report from Heal-x Healthcare Management System </strong></p>
           <p>Report generated on ${currentDate.toLocaleString()} • All amounts are in Sri Lankan Rupees</p>
-          <p>For queries regarding this report, contact the Financial Department at Heal-x Healthcare</p>
+          <p>✅ PAYROLL CALCULATION : Now uses employer contributions only (EPF 12% + ETF 3%)</p>
           <p>Data Sources: Appointments API • Payroll API • Inventory API • Utilities API • Suppliers API</p>
         </div>
 
@@ -942,25 +890,33 @@ const ProfitOrLoss = () => {
     
     csvContent += 'EXECUTIVE SUMMARY\n';
     csvContent += `Total Revenue,${financialData.totalRevenue}\n`;
-    csvContent += `Total Expenses,${financialData.totalExpenses}\n`;
+    csvContent += `Total Expenses ,${financialData.totalExpenses}\n`;
     csvContent += `Net ${financialData.isProfit ? 'Profit' : 'Loss'},${Math.abs(financialData.netResult)}\n`;
     csvContent += `Profit Margin,${financialData.profitMargin.toFixed(1)}%\n\n`;
     
-    csvContent += 'EXPENSE BREAKDOWN\n';
-    csvContent += `Payroll,${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense}\n`;
+    csvContent += 'EXPENSE BREAKDOWN \n';
+    csvContent += `Payroll ,${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense}\n`;
     csvContent += `Inventory,${financialData.expenseBreakdown.inventoryExpenses.totalInventoryValue}\n`;
     csvContent += `Utilities,${financialData.expenseBreakdown.utilitiesExpenses.totalUtilitiesExpense}\n`;
     csvContent += `Suppliers,${financialData.expenseBreakdown.supplierExpenses.totalSupplierExpense}\n`;
+    
+    csvContent += '\nPAYROLL BREAKDOWN \n';
+    csvContent += `Base Salaries,${financialData.expenseBreakdown.payrollExpenses.totalGrossSalary}\n`;
+    csvContent += `Bonuses,${financialData.expenseBreakdown.payrollExpenses.totalBonuses}\n`;
+    csvContent += `EPF Employer Contributions (12%),${financialData.expenseBreakdown.payrollExpenses.totalEmployerEPF}\n`;
+    csvContent += `ETF Employer Contributions (3%),${financialData.expenseBreakdown.payrollExpenses.totalEmployerETF}\n`;
+    csvContent += `Employee EPF Deductions (excluded from company expense),${financialData.expenseBreakdown.payrollExpenses.totalEmployeeEPF}\n`;
+    csvContent += `Employee ETF Deductions (excluded from company expense),${financialData.expenseBreakdown.payrollExpenses.totalEmployeeETF}\n`;
     
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Heal-x_PL_Analysis_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `Heal-x_PL_Analysis_CORRECTED_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     window.URL.revokeObjectURL(url);
     
-    setSuccess('✅ Profit & Loss data exported to CSV successfully!');
+    setSuccess(' Profit & Loss data exported to CSV successfully!');
     setTimeout(() => setSuccess(''), 3000);
   };
 
@@ -993,8 +949,8 @@ const ProfitOrLoss = () => {
             <div className="healx-pl-spinner-ring"></div>
           </div>
           <div className="healx-pl-loading-content">
-            <h2>Calculating Financial Analysis with CORRECTED Supplier Data</h2>
-            <p>Fetching data from: Appointments + Payroll + Inventory + Utilities + FIXED Suppliers API</p>
+            <h2>Calculating Financial Analysis with Payroll Calculation</h2>
+            <p>Fetching data from: Appointments + Payroll + Inventory + Utilities + Suppliers API</p>
             <button onClick={handleBackToDashboard} className="healx-pl-btn healx-pl-btn-ghost">
               ← Back to Dashboard
             </button>
@@ -1072,10 +1028,10 @@ const ProfitOrLoss = () => {
             <div className="healx-pl-header-brand">
               <h1 className="healx-pl-header-title">
                 <span className="healx-pl-title-icon">📈</span>
-                <span className="healx-pl-title-text">Profit & Loss Analysis</span>
+                <span className="healx-pl-title-text">Profit & Loss Analysis </span>
               </h1>
               <p className="healx-pl-header-subtitle">
-                Revenue: ${financialData.totalRevenue.toLocaleString()} | Expenses: ${financialData.totalExpenses.toLocaleString()} | Net: ${Math.abs(financialData.netResult).toLocaleString()} {financialData.isProfit ? 'Profit' : 'Loss'}
+                Revenue: ${financialData.totalRevenue.toLocaleString()} | Expenses : ${financialData.totalExpenses.toLocaleString()} | Net: ${Math.abs(financialData.netResult).toLocaleString()} {financialData.isProfit ? 'Profit' : 'Loss'}
               </p>
             </div>
             
@@ -1097,7 +1053,7 @@ const ProfitOrLoss = () => {
                 📄 Generate PDF Report
               </button>
               <button onClick={exportToCSV} className="healx-pl-btn healx-pl-btn-secondary">
-                📊 Export CSV
+                📊 Export CSV 
               </button>
               <button onClick={() => initializeProfitLoss()} className="healx-pl-btn healx-pl-btn-ghost" disabled={loading}>
                 🔄 Refresh
@@ -1110,7 +1066,7 @@ const ProfitOrLoss = () => {
           
           <div className="healx-pl-kpi-section">
             <div className={`healx-pl-kpi-primary ${financialData.isProfit ? 'healx-pl-kpi-profit' : 'healx-pl-kpi-loss'}`}>
-              <div className="healx-pl-kpi-label">Net Result</div>
+              <div className="healx-pl-kpi-label">Net Result </div>
               <div className="healx-pl-kpi-value">
                 {formatCurrency(Math.abs(financialData.netResult))}
               </div>
@@ -1168,7 +1124,7 @@ const ProfitOrLoss = () => {
               <div className="healx-pl-card-header">
                 <div className="healx-pl-card-icon">💸</div>
                 <div className="healx-pl-card-trend healx-pl-trend-negative">
-                  Expenses
+                  Expenses 
                 </div>
               </div>
               <div className="healx-pl-card-content">
@@ -1189,7 +1145,7 @@ const ProfitOrLoss = () => {
               </div>
               <div className="healx-pl-card-content">
                 <h3 className="healx-pl-card-value">{formatCurrency(Math.abs(financialData.netResult))}</h3>
-                <p className="healx-pl-card-label">Net {financialData.isProfit ? 'Profit' : 'Loss'}</p>
+                <p className="healx-pl-card-label">Net {financialData.isProfit ? 'Profit' : 'Loss'} </p>
                 <div className="healx-pl-card-details">
                   <span>{formatPercentage(Math.abs(financialData.profitMargin))} margin</span>
                   <span>•</span>
@@ -1198,6 +1154,28 @@ const ProfitOrLoss = () => {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* ✅ CORRECTED Notice Section */}
+        <section className="healx-pl-corrected-notice" style={{
+          backgroundColor: '#d1ecf1',
+          border: '2px solid #bee5eb',
+          borderRadius: '8px',
+          padding: '20px',
+          margin: '20px 0',
+          textAlign: 'center'
+        }}>
+          <h3 style={{ color: '#0c5460', margin: '0 0 10px 0' }}></h3>
+          <p style={{ margin: '0', color: '#0c5460' }}>
+            <strong>Total Company Payroll Expense:</strong> ${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense.toLocaleString()} 
+            = Base Salaries (${financialData.expenseBreakdown.payrollExpenses.totalGrossSalary.toLocaleString()}) 
+            + Bonuses (${financialData.expenseBreakdown.payrollExpenses.totalBonuses.toLocaleString()}) 
+            + EPF Employer 12% (${financialData.expenseBreakdown.payrollExpenses.totalEmployerEPF.toLocaleString()}) 
+            + ETF Employer 3% (${financialData.expenseBreakdown.payrollExpenses.totalEmployerETF.toLocaleString()})
+          </p>
+          <p style={{ margin: '5px 0 0 0', fontSize: '14px', fontStyle: 'italic' }}>
+            Employee EPF/ETF deductions are correctly excluded from company expenses.
+          </p>
         </section>
 
         {/* Charts Section */}
@@ -1230,7 +1208,7 @@ const ProfitOrLoss = () => {
               <div className="healx-pl-chart-header">
                 <h3 className="healx-pl-chart-title">
                   <span className="healx-pl-chart-icon">⚖️</span>
-                  Revenue vs Expenses
+                  Revenue vs Expenses 
                 </h3>
               </div>
               <div className="healx-pl-chart-content">
@@ -1310,7 +1288,7 @@ const ProfitOrLoss = () => {
               Financial Insights & Recommendations
             </h2>
             <p className="healx-pl-insights-subtitle">
-              Analysis based on correct revenue and expense calculations with fixed supplier API
+              Analysis based on profit or loss of Heal-X Healthcare Management System
             </p>
           </div>
           
@@ -1351,7 +1329,8 @@ const ProfitOrLoss = () => {
         <div className="healx-pl-footer-container">
           <div className="healx-pl-footer-info">
             <p>Last Updated: {new Date(financialData.lastUpdated).toLocaleString()}</p>
-            <p>Heal-x Healthcare Management System • SUPPLIER FIXED: Suppliers: ${financialData.expenseBreakdown.supplierExpenses.totalSupplierExpense.toLocaleString()} from {financialData.expenseBreakdown.supplierExpenses.totalOrders || 0} orders</p>
+            <p>Heal-x Healthcare Management System </p>
+            <p>Payroll: ${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense.toLocaleString()} | Suppliers: ${financialData.expenseBreakdown.supplierExpenses.totalSupplierExpense.toLocaleString()} from {financialData.expenseBreakdown.supplierExpenses.totalOrders || 0} orders</p>
           </div>
           <div className="healx-pl-footer-actions">
             <button onClick={handleBackToDashboard} className="healx-pl-btn healx-pl-btn-primary">
