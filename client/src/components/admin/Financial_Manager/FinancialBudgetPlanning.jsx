@@ -398,11 +398,11 @@ const FinancialBudgetPlanning = () => {
     }
   };
 
-  //  FINANCIAL DATA PROCESSING - EXACTLY MATCHING YOUR SURGICAL ITEM MANAGEMENT
+  //  FINANCIAL DATA PROCESSING - CORRECTED PAYROLL CALCULATION
   const processRealFinancialData = () => {
     const { appointments, payrolls, inventoryItems, restockSpending, utilities, purchaseOrders } = realFinancialData;
     
-    console.log("💰 Processing real financial data with CORRECTED inventory calculation:", {
+    console.log("💰 Processing real financial data:", {
       appointmentsCount: appointments.length,
       payrollsCount: payrolls.length,
       inventoryCount: inventoryItems.length,
@@ -419,16 +419,21 @@ const FinancialBudgetPlanning = () => {
     
     console.log(`💰 Revenue: ${acceptedAppointments.length} accepted appointments = $${totalRevenue.toFixed(2)}`);
 
-    // ✅ Calculate Total Payroll Expenses (including ETF, EPF, deductions, bonuses)
+    // ✅ CORRECTED: Calculate Total Payroll Expenses - EMPLOYER CONTRIBUTIONS ONLY
     const totalPayrollExpenses = payrolls.reduce((sum, payroll) => {
       const grossSalary = parseFloat(payroll.grossSalary) || 0;
       const bonuses = parseFloat(payroll.bonuses) || 0;
-      const epf = parseFloat(payroll.epf) || 0;
-      const etf = parseFloat(payroll.etf) || 0;
-      return sum + grossSalary + bonuses + epf + etf;
+      // ✅ CORRECTED: Calculate EMPLOYER contributions (12% EPF + 3% ETF)
+      const employerEPF = Math.round(grossSalary * 0.12);
+      const employerETF = Math.round(grossSalary * 0.03);
+      // ✅ CORRECTED: Total Company Payroll Expense = Base Salaries + Bonuses + EPF (12% Employer) + ETF (3% Employer)
+      return sum + grossSalary + bonuses + employerEPF + employerETF;
     }, 0);
 
-    console.log(`💼 Payroll Expenses: $${totalPayrollExpenses.toFixed(2)}`);
+    console.log(`✅ Payroll Expenses: $${totalPayrollExpenses.toFixed(2)}`);
+    console.log('✅ PAYROLL CALCULATION:');
+    console.log(`   Formula: Base Salaries + Bonuses + EPF (12% Employer) + ETF (3% Employer)`);
+    console.log(`   Employee EPF/ETF deductions are correctly excluded from company expenses`);
 
     //  INVENTORY CALCULATION - EXACTLY MATCHING YOUR SURGICAL ITEM MANAGEMENT
     // Calculate Current Stock Value (exactly like your code)
@@ -462,17 +467,17 @@ const FinancialBudgetPlanning = () => {
 
     console.log(`🏭 Supplier Expenses: $${totalSupplierExpenses.toFixed(2)} from ${purchaseOrders.length} purchase orders`);
 
-    // TOTAL EXPENSES CALCULATION - MATCHING YOUR SURGICAL ITEM MANAGEMENT
+    // ✅ CORRECTED: TOTAL EXPENSES CALCULATION 
     const totalExpenses = totalPayrollExpenses + totalUtilityExpenses + totalInventoryValue + totalSupplierExpenses;
 
-    console.log("💵 CORRECTED EXPENSE CALCULATION (MATCHING YOUR SURGICAL ITEM MANAGEMENT):");
-    console.log(`   💼 Payroll: $${totalPayrollExpenses.toFixed(2)}`);
+    console.log("💵 EXPENSE CALCULATION:");
+    console.log(`   💼 Payroll : $${totalPayrollExpenses.toFixed(2)}`);
     console.log(`   ⚡ Utilities: $${totalUtilityExpenses.toFixed(2)}`);
     console.log(`   📦 Current Stock: $${currentStockValue.toFixed(2)}`);
     console.log(`   🔄 Auto-Restock: $${totalAutoRestockValue.toFixed(2)}`);
     console.log(`   📊 TOTAL Inventory: $${totalInventoryValue.toFixed(2)} `);
     console.log(`   🏭 Suppliers: $${totalSupplierExpenses.toFixed(2)}`);
-    console.log(`   ✅ TOTAL Expenses: $${totalExpenses.toFixed(2)} `);
+    console.log(`   ✅ TOTAL Expenses : $${totalExpenses.toFixed(2)} `);
 
     // ✅ Calculate Net Income
     const netIncome = totalRevenue - totalExpenses;
@@ -498,13 +503,13 @@ const FinancialBudgetPlanning = () => {
 
     const finalSummary = {
       totalRevenue,
-      totalPayrollExpenses,
+      totalPayrollExpenses, // ✅ Now correctly calculated
       currentStockValue, 
       totalAutoRestockValue, 
       totalInventoryValue, 
       totalUtilityExpenses,
       totalSupplierExpenses,
-      totalExpenses,
+      totalExpenses, // ✅ Now correctly calculated
       netIncome,
       monthlyTrends,
       // Raw data for reference
@@ -515,23 +520,23 @@ const FinancialBudgetPlanning = () => {
       purchaseOrders
     };
 
-    console.log("📊 Final financial summary (CORRECTED TO MATCH YOUR SURGICAL ITEM MANAGEMENT):");
+    console.log("📊 Final financial summary :");
     console.log({
       totalRevenue: `$${totalRevenue.toFixed(2)}`,
-      totalPayrollExpenses: `$${totalPayrollExpenses.toFixed(2)}`,
+      totalPayrollExpenses: `$${totalPayrollExpenses.toFixed(2)} ← CORRECTED (Employer contributions only)`,
       currentStockValue: `$${currentStockValue.toFixed(2)}`,
       totalAutoRestockValue: `$${totalAutoRestockValue.toFixed(2)}`,
-      totalInventoryValue: `$${totalInventoryValue.toFixed(2)} ← CORRECTED (Current + Auto-Restock)`,
+      totalInventoryValue: `$${totalInventoryValue.toFixed(2)}`,
       totalUtilityExpenses: `$${totalUtilityExpenses.toFixed(2)}`,
       totalSupplierExpenses: `$${totalSupplierExpenses.toFixed(2)}`,
-      totalExpenses: `$${totalExpenses.toFixed(2)} `,
-      netIncome: `$${netIncome.toFixed(2)}`
+      totalExpenses: `$${totalExpenses.toFixed(2)} ← CORRECTED`,
+      netIncome: `$${netIncome.toFixed(2)} ← CORRECTED`
     });
 
     return finalSummary;
   };
 
-  // ✅ MANUAL PDF REPORT GENERATION - UPDATED WITH CORRECTED INVENTORY BREAKDOWN
+  // ✅ MANUAL PDF REPORT GENERATION - UPDATED WITH CORRECTED PAYROLL
   const exportToPDF = () => {
     if (!activeBudgetPlan) {
       setError("No data to export - Please select an active budget plan");
@@ -540,7 +545,7 @@ const FinancialBudgetPlanning = () => {
 
     const realFinancials = processRealFinancialData();
     const currentDate = new Date();
-    const reportTitle = 'Budget Planning Analysis Report';
+    const reportTitle = 'Budget Planning Analysis Report 📊';
 
     const printContent = `
       <!DOCTYPE html>
@@ -583,23 +588,35 @@ const FinancialBudgetPlanning = () => {
           }
           .budget-section { background-color: ${realFinancials.netIncome > 0 ? '#d4edda' : '#f8d7da'}; border: 1px solid ${realFinancials.netIncome > 0 ? '#c3e6cb' : '#f5c6cb'}; }
           .budget-amount { color: ${realFinancials.netIncome > 0 ? '#155724' : '#721c24'}; }
+          .corrected-section { background-color: #d1ecf1; border: 2px solid #bee5eb; }
         </style>
       </head>
       <body>
         <!-- Header -->
         <div class="header">
           <h1>🏥 Heal-x ${reportTitle}</h1>
-          <p>Healthcare Budget Planning & Financial Analysis System</p>
+          <p>Healthcare Budget Planning & Financial Analysis System </p>
         </div>
         
         <!-- Report Info -->
         <div class="info">
           <strong>Generated on:</strong> ${currentDate.toLocaleString()}<br>
           <strong>Budget Plan:</strong> ${activeBudgetPlan.planName}<br>
-          <strong>Report Type:</strong> Comprehensive Budget Analysis<br>
+          <strong>Report Type:</strong> Comprehensive Budget Analysis <br>
           <strong>Planning Period:</strong> ${activeBudgetPlan.startYear} - ${activeBudgetPlan.endYear}<br>
           <strong>Budget Type:</strong> ${activeBudgetPlan.budgetType.charAt(0).toUpperCase() + activeBudgetPlan.budgetType.slice(1)}<br>
           <strong>Financial Status:</strong> ${realFinancials.netIncome > 0 ? 'PROFITABLE' : 'OPERATING AT LOSS'}
+        </div>
+
+        <!-- ✅ PAYROLL NOTICE -->
+        <div class="alert-section corrected-section">
+          <div class="alert-title" style="color: #0c5460;">✅ PAYROLL CALCULATION </div>
+          <p><strong>Important:</strong> The payroll expense calculation has been corrected to include only employer contributions:</p>
+          <ul>
+            <li><strong>Company Payroll Expense:</strong> $${realFinancials.totalPayrollExpenses.toLocaleString()}</li>
+            <li><strong>Formula:</strong> Base Salaries + Bonuses + EPF Employer (12%) + ETF Employer (3%)</li>
+            <li><strong>Employee EPF/ETF deductions:</strong> Not included in company expenses (correctly excluded)</li>
+          </ul>
         </div>
         
         <!-- Executive Summary -->
@@ -612,12 +629,12 @@ const FinancialBudgetPlanning = () => {
               <div class="metric-label">From ${realFinancials.acceptedAppointments?.length || 0} accepted appointments</div>
             </div>
             <div class="summary-card">
-              <h4>💸 Total Operating Expenses</h4>
+              <h4>💸 Total Operating Expenses </h4>
               <div class="metric-value">${formatCurrency(realFinancials.totalExpenses)}</div>
-              <div class="metric-label">Corrected calculation matching Surgical Item Management</div>
+              <div class="metric-label">Calculated using real time data of the system</div>
             </div>
             <div class="summary-card">
-              <h4>${realFinancials.netIncome > 0 ? '📈' : '📉'} Net Financial Position</h4>
+              <h4>${realFinancials.netIncome > 0 ? '📈' : '📉'} Net Financial Position </h4>
               <div class="metric-value budget-amount">${formatCurrency(Math.abs(realFinancials.netIncome))}</div>
               <div class="metric-label">${realFinancials.netIncome > 0 ? 'Profitable' : 'Loss'} Operation</div>
             </div>
@@ -630,7 +647,7 @@ const FinancialBudgetPlanning = () => {
         </div>
 
         <!-- Detailed Budget Breakdown -->
-        <h3 style="color: #1da1f2; margin-top: 30px;">🔍 Corrected Budget Category Analysis </h3>
+        <h3 style="color: #1da1f2; margin-top: 30px;">🔍 Budget Category Analysis</h3>
         <table>
           <thead>
             <tr>
@@ -642,33 +659,33 @@ const FinancialBudgetPlanning = () => {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td><strong>👥 Human Resources</strong></td>
+            <tr style="background-color: #d4edda; border: 2px solid #155724;">
+              <td><strong>👥 Human Resources </strong></td>
               <td class="currency"><strong>${formatCurrency(realFinancials.totalPayrollExpenses)}</strong></td>
               <td class="currency"><strong>${((realFinancials.totalPayrollExpenses / realFinancials.totalExpenses) * 100).toFixed(1)}%</strong></td>
-              <td>Salaries, ETF, EPF, Bonuses</td>
-              <td>✅ Correct</td>
+              <td>Base Salaries + Bonuses + EPF Employer (12%) + ETF Employer (3%)</td>
+              <td style="color: #155724;"><strong>✅ CORRECTED</strong></td>
             </tr>
-            <tr style="background-color: #d4edda;">
+            <tr>
               <td><strong>📦 Current Stock Value</strong></td>
               <td class="currency"><strong>${formatCurrency(realFinancials.currentStockValue)}</strong></td>
               <td class="currency"><strong>${((realFinancials.currentStockValue / realFinancials.totalExpenses) * 100).toFixed(1)}%</strong></td>
               <td>Physical inventory valuation</td>
-              <td style="color: #155724;"><strong></strong></td>
+              <td>✅ Correct</td>
             </tr>
-            <tr style="background-color: #d4edda;">
+            <tr>
               <td><strong>🔄 Total Auto-Restock Value</strong></td>
               <td class="currency"><strong>${formatCurrency(realFinancials.totalAutoRestockValue)}</strong></td>
               <td class="currency"><strong>${((realFinancials.totalAutoRestockValue / realFinancials.totalExpenses) * 100).toFixed(1)}%</strong></td>
               <td>Auto-restocking investment</td>
-              <td style="color: #155724;"><strong></strong></td>
+              <td>✅ Correct</td>
             </tr>
-            <tr style="background-color: #e8f5e8; border: 2px solid #155724;">
+            <tr>
               <td><strong>📊 TOTAL Medical Inventory</strong></td>
               <td class="currency"><strong>${formatCurrency(realFinancials.totalInventoryValue)}</strong></td>
               <td class="currency"><strong>${((realFinancials.totalInventoryValue / realFinancials.totalExpenses) * 100).toFixed(1)}%</strong></td>
               <td>Current Stock Value + Total Auto-Restock Value</td>
-              <td style="color: #155724;"><strong>✅ TOTAL CORRECTED</strong></td>
+              <td>✅ Correct</td>
             </tr>
             <tr>
               <td><strong>⚡ Operational Utilities</strong></td>
@@ -685,11 +702,11 @@ const FinancialBudgetPlanning = () => {
               <td>✅ Correct</td>
             </tr>
             <tr class="totals-row">
-              <td><strong>📊 TOTAL EXPENSES</strong></td>
+              <td><strong>📊 TOTAL EXPENSES </strong></td>
               <td class="currency"><strong>${formatCurrency(realFinancials.totalExpenses)}</strong></td>
               <td class="currency"><strong>100.0%</strong></td>
-              <td>All categories included</td>
-              <td style="color: #155724;"><strong></strong></td>
+              <td>All categories included with real time data</td>
+              <td style="color: #155724;"><strong> </strong></td>
             </tr>
           </tbody>
         </table>
@@ -717,18 +734,16 @@ const FinancialBudgetPlanning = () => {
           <div style="text-align: center; margin-top: 30px;">
             <div class="company-stamp">
               HEAL-X OFFICIAL SEAL<br>
-              CORRECTED INVENTORY CALCULATION
+              Healthcare Budget Planning & Financial Analysis
             </div>
           </div>
         </div>
 
         <!-- Report Footer -->
         <div class="report-footer">
-          <p><strong>This is a corrected budget planning report from Heal-x Healthcare Management System</strong></p>
+          <p><strong>This is a budget planning report from Heal-x Healthcare Management System</strong></p>
           <p>Report generated on ${currentDate.toLocaleString()} • Budget Plan: ${activeBudgetPlan.planName}</p>
-          <p>Inventory Calculation: CORRECTED to match Surgical Item Management logic</p>
-          <p>Total Inventory Value = Current Stock Value (${formatCurrency(realFinancials.currentStockValue)}) + Total Auto-Restock Value (${formatCurrency(realFinancials.totalAutoRestockValue)}) = ${formatCurrency(realFinancials.totalInventoryValue)}</p>
-          <p>Total Expenses: CORRECTED to match your Surgical Item Management calculation</p>
+          <p>Total Company Payroll Expense = Base Salaries + Bonuses + EPF (12% Employer) + ETF (3% Employer)</p>
         </div>
 
         <!-- Print Controls -->
@@ -744,7 +759,7 @@ const FinancialBudgetPlanning = () => {
     printWindow.document.write(printContent);
     printWindow.document.close();
 
-    setSuccess("Corrected Budget Planning PDF report opened! Inventory calculation now matches your Surgical Item Management exactly!");
+    setSuccess("✅ Budget Planning PDF report opened - Fetching Real time data !");
     setTimeout(() => setSuccess(""), 3000);
   };
 
@@ -757,35 +772,39 @@ const FinancialBudgetPlanning = () => {
 
     const realFinancials = processRealFinancialData();
     
-    let csvContent = `Heal-x Budget Planning Analysis - CORRECTED INVENTORY MATCHING SURGICAL ITEM MANAGEMENT - ${new Date().toLocaleDateString()}\n\n`;
+    let csvContent = `Heal-x Budget Planning Analysis - ${new Date().toLocaleDateString()}\n\n`;
     
     csvContent += 'BUDGET PLAN SUMMARY\n';
     csvContent += `Plan Name,${activeBudgetPlan.planName}\n`;
     csvContent += `Planning Period,${activeBudgetPlan.startYear} - ${activeBudgetPlan.endYear}\n`;
     csvContent += `Budget Type,${activeBudgetPlan.budgetType}\n\n`;
     
-    csvContent += 'CORRECTED FINANCIAL PERFORMANCE (MATCHING SURGICAL ITEM MANAGEMENT)\n';
+    csvContent += ' FINANCIAL PERFORMANCE\n';
     csvContent += `Total Revenue,${realFinancials.totalRevenue}\n`;
-    csvContent += `Total Expenses,${realFinancials.totalExpenses}\n`;
-    csvContent += `Net Income,${realFinancials.netIncome}\n\n`;
+    csvContent += `Total Expenses ,${realFinancials.totalExpenses}\n`;
+    csvContent += `Net Income ,${realFinancials.netIncome}\n\n`;
     
-    csvContent += 'CORRECTED EXPENSE BREAKDOWN (MATCHING YOUR LOGIC)\n';
-    csvContent += `Payroll,${realFinancials.totalPayrollExpenses}\n`;
+    csvContent += ' EXPENSE BREAKDOWN\n';
+    csvContent += `Payroll ,${realFinancials.totalPayrollExpenses}\n`;
     csvContent += `Current Stock Value,${realFinancials.currentStockValue}\n`;
     csvContent += `Total Auto-Restock Value,${realFinancials.totalAutoRestockValue}\n`;
-    csvContent += `TOTAL Inventory Value (CORRECTED),${realFinancials.totalInventoryValue}\n`;
+    csvContent += `TOTAL Inventory Value,${realFinancials.totalInventoryValue}\n`;
     csvContent += `Utilities,${realFinancials.totalUtilityExpenses}\n`;
     csvContent += `Suppliers,${realFinancials.totalSupplierExpenses}\n`;
+    
+    csvContent += '\n PAYROLL BREAKDOWN\n';
+    csvContent += 'Formula: Base Salaries + Bonuses + EPF Employer (12%) + ETF Employer (3%)\n';
+    csvContent += 'Employee EPF/ETF deductions are correctly excluded from company expenses\n';
     
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Heal-x_Budget_Planning_CORRECTED_TO_MATCH_SURGICAL_ITEM_MANAGEMENT_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `Heal-x_Budget_Planning_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     window.URL.revokeObjectURL(url);
     
-    setSuccess('Budget Planning data exported to CSV successfully! Now matches your Surgical Item Management!');
+    setSuccess('✅ Budget Planning data exported to CSV successfully!');
     setTimeout(() => setSuccess(''), 3000);
   };
 
@@ -837,8 +856,8 @@ const FinancialBudgetPlanning = () => {
               otherRevenue: (baseRevenue / 4) * 0.1 * (0.8 + Math.random() * 0.4)
             },
             expenses: {
-              payroll: (realFinancials.totalPayrollExpenses / 4) * (0.95 + Math.random() * 0.1),
-              inventory: (realFinancials.totalInventoryValue / 4) * (0.9 + Math.random() * 0.2), // ✅ USING TOTAL INVENTORY VALUE
+              payroll: (realFinancials.totalPayrollExpenses / 4) * (0.95 + Math.random() * 0.1), // ✅ CORRECTED
+              inventory: (realFinancials.totalInventoryValue / 4) * (0.9 + Math.random() * 0.2),
               utilities: (realFinancials.totalUtilityExpenses / 4) * (0.8 + Math.random() * 0.4),
               suppliers: (realFinancials.totalSupplierExpenses / 4) * (0.9 + Math.random() * 0.2)
             }
@@ -850,8 +869,8 @@ const FinancialBudgetPlanning = () => {
               otherRevenue: 0
             },
             expenses: {
-              payroll: realFinancials.totalPayrollExpenses / 4,
-              inventory: realFinancials.totalInventoryValue / 4, // ✅ USING TOTAL INVENTORY VALUE
+              payroll: realFinancials.totalPayrollExpenses / 4, // ✅ CORRECTED
+              inventory: realFinancials.totalInventoryValue / 4,
               utilities: realFinancials.totalUtilityExpenses / 4,
               suppliers: realFinancials.totalSupplierExpenses / 4
             }
@@ -878,7 +897,7 @@ const FinancialBudgetPlanning = () => {
       setBudgetPlans(updatedPlans);
       localStorage.setItem('budgetPlans', JSON.stringify(updatedPlans));
       
-      setSuccess("Budget plan created successfully with corrected inventory calculation matching your Surgical Item Management!");
+      setSuccess("✅ Budget plan created successfully with real time data of Heal-X Healthcare Management System!");
       setShowCreateForm(false);
       setNewBudgetForm({
         planName: "",
@@ -939,28 +958,33 @@ const FinancialBudgetPlanning = () => {
     
     return (
       <div className="fbp-overview-container">
+        {/* CORRECTED Notice Section */}
+        <div className="fbp-corrected-notice" style={{
+        }}>
+        </div>
+
         {/* Report Generation Section */}
         <div className="fbp-report-section">
           <div className="fbp-section-header">
-            <h3>Budget Planning Reports </h3>
+            <h3>Budget Planning Reports</h3>
             <div className="fbp-report-actions">
               <button 
                 className="fbp-btn-report fbp-btn-pdf"
                 onClick={exportToPDF}
                 disabled={!activeBudgetPlan}
-                title="Generate Corrected Budget Planning PDF Report"
+                title="Generate Budget Planning PDF Report"
               >
                 <MdGetApp size={18} />
-                Generate PDF Report
+                Generate PDF Report 
               </button>
               <button 
                 className="fbp-btn-report fbp-btn-print"
                 onClick={exportToCSV}
                 disabled={!activeBudgetPlan}
-                title="Export Corrected Budget Data to CSV"
+                title="Export Budget Data to CSV"
               >
                 <MdPrint size={18} />
-                Export CSV Data
+                Export CSV Data 
               </button>
             </div>
           </div>
@@ -989,7 +1013,7 @@ const FinancialBudgetPlanning = () => {
               <h3>Total Expenses </h3>
               <div className="fbp-metric-value">{formatCurrency(realFinancials.totalExpenses)}</div>
               <div className="fbp-metric-change fbp-negative">
-                
+                Calculated using real time data of the system
               </div>
             </div>
           </div>
@@ -999,7 +1023,7 @@ const FinancialBudgetPlanning = () => {
               <MdAttachMoney size={32} />
             </div>
             <div className="fbp-metric-content">
-              <h3>Net Income</h3>
+              <h3>Net Income </h3>
               <div className="fbp-metric-value">{formatCurrency(realFinancials.netIncome)}</div>
               <div className={`fbp-metric-change ${realFinancials.netIncome > 0 ? 'fbp-positive' : 'fbp-negative'}`}>
                 {realFinancials.netIncome > 0 ? 'Profitable' : 'Loss'} operation
@@ -1012,10 +1036,10 @@ const FinancialBudgetPlanning = () => {
               <MdBarChart size={32} />
             </div>
             <div className="fbp-metric-content">
-              <h3>Total Inventory </h3>
+              <h3>Total Inventory</h3>
               <div className="fbp-metric-value">{formatCurrency(realFinancials.totalInventoryValue)}</div>
               <div className="fbp-metric-change fbp-positive">
-                ✅ Current Stock: {formatCurrency(realFinancials.currentStockValue)} + Auto-Restock: {formatCurrency(realFinancials.totalAutoRestockValue)}
+                Current Stock: {formatCurrency(realFinancials.currentStockValue)} + Auto-Restock: {formatCurrency(realFinancials.totalAutoRestockValue)}
               </div>
             </div>
           </div>
@@ -1024,21 +1048,21 @@ const FinancialBudgetPlanning = () => {
         {/* Expense Breakdown Chart */}
         <div className="fbp-charts-grid">
           <div className="fbp-chart-container">
-            <h3>Corrected Expense Breakdown </h3>
+            <h3>✅ Expense Breakdown</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
                   data={[
-                    { name: 'Payroll (incl ETF/EPF)', value: realFinancials.totalPayrollExpenses, fill: '#0088FE' },
-                    { name: 'Current Stock Value ✅', value: realFinancials.currentStockValue, fill: '#00C49F' },
-                    { name: 'Total Auto-Restock Value ✅', value: realFinancials.totalAutoRestockValue, fill: '#FFBB28' },
+                    { name: 'Payroll ', value: realFinancials.totalPayrollExpenses, fill: '#0088FE' },
+                    { name: 'Current Stock Value', value: realFinancials.currentStockValue, fill: '#00C49F' },
+                    { name: 'Total Auto-Restock Value', value: realFinancials.totalAutoRestockValue, fill: '#FFBB28' },
                     { name: 'Utilities', value: realFinancials.totalUtilityExpenses, fill: '#FF8042' },
                     { name: 'Suppliers', value: realFinancials.totalSupplierExpenses, fill: '#8884d8' }
                   ]}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({name, percent}) => `${name.split(' ')[0]}: ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -1083,7 +1107,7 @@ const FinancialBudgetPlanning = () => {
                   <Bar dataKey="budgetedRevenue" fill="#0088FE" name="Budgeted Revenue" />
                   <Bar dataKey="actualRevenue" fill="#00C49F" name="Actual Revenue" />
                   <Bar dataKey="budgetedExpenses" fill="#FF8042" name="Budgeted Expenses" />
-                  <Bar dataKey="actualExpenses" fill="#FFBB28" name="Actual Expenses" />
+                  <Bar dataKey="actualExpenses" fill="#FFBB28" name="Actual Expenses " />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -1098,20 +1122,20 @@ const FinancialBudgetPlanning = () => {
               <span className="fbp-indicator">
                 💰 Revenue: {realFinancialData.appointments?.filter(apt => apt.status === "accepted").length || 0} accepted appointments
               </span>
-              <span className="fbp-indicator">
-                💼 Payroll: {realFinancialData.payrolls?.length || 0} payroll records
+              <span className="fbp-indicator" style={{backgroundColor: '#d4edda', color: '#155724', fontWeight: 'bold'}}>
+                💼 Payroll : {realFinancialData.payrolls?.length || 0} payroll records
               </span>
               <span className="fbp-indicator">
                 📦 Inventory Items: {realFinancialData.inventoryItems?.length || 0} items
               </span>
-              <span className="fbp-indicator" style={{backgroundColor: '#d4edda', color: '#155724', fontWeight: 'bold'}}>
-                📊 Current Stock Value: {formatCurrency(realFinancials.currentStockValue)} ✅ 
+              <span className="fbp-indicator">
+                📊 Current Stock Value: {formatCurrency(realFinancials.currentStockValue)}
               </span>
-              <span className="fbp-indicator" style={{backgroundColor: '#d4edda', color: '#155724', fontWeight: 'bold'}}>
-                🔄 Total Auto-Restock Value: {formatCurrency(realFinancials.totalAutoRestockValue)} 
+              <span className="fbp-indicator">
+                🔄 Total Auto-Restock Value: {formatCurrency(realFinancials.totalAutoRestockValue)}
               </span>
-              <span className="fbp-indicator" style={{backgroundColor: '#e8f5e8', color: '#155724', fontWeight: 'bold', border: '2px solid #155724'}}>
-                📈 TOTAL Inventory Value: {formatCurrency(realFinancials.totalInventoryValue)} 
+              <span className="fbp-indicator">
+                📈 TOTAL Inventory Value: {formatCurrency(realFinancials.totalInventoryValue)}
               </span>
               <span className="fbp-indicator">
                 ⚡ Utilities: {realFinancialData.utilities?.length || 0} bills
@@ -1119,8 +1143,8 @@ const FinancialBudgetPlanning = () => {
               <span className="fbp-indicator">
                 🏭 Suppliers: {realFinancialData.purchaseOrders?.length || 0} purchase orders
               </span>
-              <span className="fbp-indicator" style={{backgroundColor: '#d4edda', color: '#155724', fontWeight: 'bold'}}>
-                ✅ Total Expenses: {formatCurrency(realFinancials.totalExpenses)} 
+              <span className="fbp-indicator" style={{backgroundColor: '#d4edda', color: '#155724', fontWeight: 'bold', border: '2px solid #155724'}}>
+                ✅ Total Expenses : {formatCurrency(realFinancials.totalExpenses)}
               </span>
             </div>
           </div>
@@ -1129,7 +1153,7 @@ const FinancialBudgetPlanning = () => {
         {/* Active Budget Plans */}
         <div className="fbp-active-budget-plans">
           <div className="fbp-section-header">
-            <h3>Budget Plans (Based on Corrected Inventory Data - Matching Surgical Item Management)</h3>
+            <h3>Budget Plans </h3>
             <button 
               className="fbp-btn-primary"
               onClick={() => setShowCreateForm(true)}
@@ -1171,7 +1195,7 @@ const FinancialBudgetPlanning = () => {
   const renderCreateBudgetForm = () => (
     <div className="fbp-create-budget-form-container">
       <div className="fbp-form-header">
-        <h3>Create Multi-Year Budget Plan</h3>
+        <h3>Create Multi-Year Budget Plan </h3>
         <button 
           className="fbp-btn-outline"
           onClick={() => setShowCreateForm(false)}
@@ -1190,7 +1214,7 @@ const FinancialBudgetPlanning = () => {
               value={newBudgetForm.planName}
               onChange={(e) => setNewBudgetForm(prev => ({ ...prev, planName: e.target.value }))}
               required
-              placeholder="e.g., Healthcare Budget 2025-2027 (Matching Surgical Item Management)"
+              placeholder="e.g., Healthcare Budget 2025-2027 "
             />
           </div>
 
@@ -1237,7 +1261,7 @@ const FinancialBudgetPlanning = () => {
           <textarea
             value={newBudgetForm.description}
             onChange={(e) => setNewBudgetForm(prev => ({ ...prev, description: e.target.value }))}
-            placeholder="Budget plan based on corrected inventory calculation matching your Surgical Item Management: Current Stock Value + Total Auto-Restock Value = Total Inventory Value..."
+            placeholder="Budget plan based real time financial data from Heal-x Healthcare Management System..."
             rows={3}
           />
         </div>
@@ -1251,15 +1275,15 @@ const FinancialBudgetPlanning = () => {
       </form>
 
       <div className="fbp-budget-template-preview">
-        <h4>Corrected Inventory Integration Preview </h4>
+        <h4>✅ Payroll Integration Preview</h4>
         <div className="fbp-template-info">
-          <p>This budget plan will be based on Heal-x Fincnial statistics</p>
+          <p>This budget plan will be based on Heal-x Healthcare Management System Financial statistics:</p>
           <ul>
             <li>✅ Revenue from {realFinancialData.appointments?.filter(apt => apt.status === "accepted").length || 0} accepted appointments</li>
-            <li>✅ Payroll expenses from {realFinancialData.payrolls?.length || 0} employee records</li>
-            <li style={{backgroundColor: '#d4edda', padding: '5px', borderRadius: '3px'}}>✅ <strong>Current Stock Value from {realFinancialData.inventoryItems?.length || 0} items ← CORRECTED</strong></li>
-            <li style={{backgroundColor: '#d4edda', padding: '5px', borderRadius: '3px'}}>✅ <strong>Total Auto-Restock Value from API ← CORRECTED</strong></li>
-            <li style={{backgroundColor: '#e8f5e8', padding: '5px', borderRadius: '3px', border: '2px solid #155724'}}>✅ <strong>TOTAL Inventory Value = Current Stock + Auto-Restock ← CORRECTED TO MATCH YOUR LOGIC</strong></li>
+            <li style={{backgroundColor: '#d4edda', padding: '5px', borderRadius: '3px', border: '2px solid #155724'}}>✅ <strong>Payroll expenses from {realFinancialData.payrolls?.length || 0} employee records (Employer contributions only)</strong></li>
+            <li>✅ Current Stock Value from {realFinancialData.inventoryItems?.length || 0} items</li>
+            <li>✅ Total Auto-Restock Value from API</li>
+            <li>✅ TOTAL Inventory Value = Current Stock + Auto-Restock</li>
             <li>✅ Utility expenses from {realFinancialData.utilities?.length || 0} utility bills</li>
             <li>✅ Supplier costs from {realFinancialData.purchaseOrders?.length || 0} purchase orders</li>
           </ul>
@@ -1335,7 +1359,7 @@ const FinancialBudgetPlanning = () => {
             <div className="fbp-metric-value">{formatCurrency(expenseTotal)}</div>
           </div>
           <div className="fbp-quarter-metric-card">
-            <h4>Actual Expenses </h4>
+            <h4>Actual Expenses</h4>
             <div className="fbp-metric-value">{formatCurrency(actualExpenseTotal)}</div>
             <div className={`fbp-variance ${actualExpenseTotal <= expenseTotal ? 'fbp-positive' : 'fbp-negative'}`}>
               {actualExpenseTotal <= expenseTotal ? '-' : '+'}{formatCurrency(Math.abs(actualExpenseTotal - expenseTotal))}
@@ -1381,7 +1405,7 @@ const FinancialBudgetPlanning = () => {
             </table>
           </div>
 
-          <h4>Expense Breakdown (Corrected to Match Your Surgical Item Management)</h4>
+          <h4>Expense Breakdown</h4>
           <div className="fbp-breakdown-table">
             <table>
               <thead>
@@ -1400,8 +1424,8 @@ const FinancialBudgetPlanning = () => {
                   const percentage = budgeted > 0 ? (variance / budgeted * 100).toFixed(1) : 0;
                   
                   return (
-                    <tr key={category}>
-                      <td>{category.charAt(0).toUpperCase() + category.slice(1)} {category === 'inventory' ? '' : ''}</td>
+                    <tr key={category} style={category === 'payroll' ? {backgroundColor: '#d4edda', border: '2px solid #155724'} : {}}>
+                      <td>{category.charAt(0).toUpperCase() + category.slice(1)} {category === 'payroll' ? '' : ''}</td>
                       <td>{formatCurrency(budgeted)}</td>
                       <td>{formatCurrency(actual)}</td>
                       <td className={variance <= 0 ? 'fbp-positive' : 'fbp-negative'}>
@@ -1448,8 +1472,8 @@ const FinancialBudgetPlanning = () => {
     return (
       <div className="fbp-loading">
         <div className="fbp-loading-spinner"></div>
-        <p>Loading corrected financial data...</p>
-        <p className="fbp-loading-detail">Fetching Current Stock Value AND Total Auto-Restock Value to match your Surgical Item Management...</p>
+        <p>Loading real time financial data...</p>
+        <p className="fbp-loading-detail">Fetching real time data for Budget planpage of Heal-X Healthcare Management System</p>
       </div>
     );
   }
@@ -1460,7 +1484,7 @@ const FinancialBudgetPlanning = () => {
       <div className="fbp-header">
         <div className="fbp-header-left">
           <h1>Real-Data Budget Planning </h1>
-          <p>Healthcare Financial Budget Planning Management </p>
+          <p>Healthcare Financial Budget Planning Management</p>
         </div>
         <div className="fbp-header-actions">
           <button 
@@ -1498,7 +1522,7 @@ const FinancialBudgetPlanning = () => {
           onClick={() => setActiveView('quarterly')}
         >
           <MdCalendarToday size={18} />
-          Quarterly Review
+          Quarterly Review 
         </button>
         <button 
           className={`fbp-tab ${activeView === 'compare' ? 'fbp-active' : ''}`}
@@ -1531,19 +1555,19 @@ const FinancialBudgetPlanning = () => {
         {!showCreateForm && activeView === 'quarterly' && renderQuarterlyReview()}
         {!showCreateForm && activeView === 'compare' && (
           <div className="fbp-comparison-view">
-            <h3>Corrected Budget Comparison (Matching Your Surgical Item Management)</h3>
-            <p>Advanced comparison with corrected inventory calculation exactly matching your Surgical Item Management logic.</p>
+            <h3>✅ Budget Comparison</h3>
+            <p>Advanced comparison with revenue and expenses of the system.</p>
             <div className="fbp-comparison-placeholder">
-              <p>📊 Corrected financial features (matching your Surgical Item Management):</p>
+              <p>📊 ✅ financial features:</p>
               <ul>
                 <li>✅ Live revenue tracking from accepted appointments</li>
-                <li>✅ Real payroll expense monitoring (ETF/EPF included)</li>
-                <li style={{backgroundColor: '#d4edda', padding: '5px', borderRadius: '3px'}}>✅ <strong>Current Stock Value: {formatCurrency(processRealFinancialData().currentStockValue)} ← CORRECTED</strong></li>
-                <li style={{backgroundColor: '#d4edda', padding: '5px', borderRadius: '3px'}}>✅ <strong>Total Auto-Restock Value: {formatCurrency(processRealFinancialData().totalAutoRestockValue)} ← CORRECTED</strong></li>
-                <li style={{backgroundColor: '#e8f5e8', padding: '5px', borderRadius: '3px', border: '2px solid #155724'}}>✅ <strong>TOTAL Inventory: {formatCurrency(processRealFinancialData().totalInventoryValue)} ← CORRECTED TO MATCH YOUR SURGICAL ITEM MANAGEMENT</strong></li>
+                <li style={{backgroundColor: '#d4edda', padding: '5px', borderRadius: '3px', border: '2px solid #155724'}}>✅ <strong>Real payroll expense monitoring: Base Salaries + Bonuses + EPF Employer (12%) + ETF Employer (3%)</strong></li>
+                <li>✅ Current Stock Value: {formatCurrency(processRealFinancialData().currentStockValue)}</li>
+                <li>✅ Total Auto-Restock Value: {formatCurrency(processRealFinancialData().totalAutoRestockValue)}</li>
+                <li>✅ TOTAL Inventory: {formatCurrency(processRealFinancialData().totalInventoryValue)}</li>
                 <li>✅ Utility expense tracking</li>
                 <li>✅ Supplier cost monitoring</li>
-                <li style={{backgroundColor: '#d4edda', padding: '5px', borderRadius: '3px'}}>✅ <strong>Total Expenses: {formatCurrency(processRealFinancialData().totalExpenses)} ← NOW MATCHES YOUR SURGICAL ITEM MANAGEMENT</strong></li>
+                <li style={{backgroundColor: '#d4edda', padding: '5px', borderRadius: '3px', border: '2px solid #155724'}}>✅ <strong> Total Expenses: {formatCurrency(processRealFinancialData().totalExpenses)}</strong></li>
               </ul>
             </div>
           </div>
@@ -1555,7 +1579,7 @@ const FinancialBudgetPlanning = () => {
         <button 
           className="fbp-fab-button"
           onClick={() => setShowCreateForm(true)}
-          title="Create New Budget Plan with Corrected Inventory Data Matching Surgical Item Management"
+          title="Create New Budget Plan "
         >
           <MdAdd size={24} />
         </button>

@@ -438,7 +438,7 @@ const addPageHeader = () => {
   doc.text('Professional Inventory Analytics & Strategic Intelligence Platform', pageWidth / 2, currentY, { align: 'center' });
   
   // Blue underline
-  currentY += 8;
+  currentY += 5;
   doc.setLineWidth(2);
   doc.setDrawColor(29, 161, 242); // #1da1f2 blue
   doc.line(margin, currentY, pageWidth - margin, currentY);

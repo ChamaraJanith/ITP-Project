@@ -1,4 +1,4 @@
-// PrescriptionPage.js
+// PrescriptionPage.js (Updated QR Scanner Modal)
 import React, { useRef, useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CanvasPad from "../Doctor/CanvasPad";
@@ -31,6 +31,16 @@ const PrescriptionPage = ({ patientFromParent }) => {
 
   const [scannedPatientId, setScannedPatientId] = useState(null);
   const [scanning, setScanning] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const [cameraPermission, setCameraPermission] = useState("prompt");
+  const [cameraReady, setCameraReady] = useState(false);
+  const [qrResult, setQrResult] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [scanSuccess, setScanSuccess] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
+  
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   // Function to calculate age from date of birth
   const calculateAge = (dateOfBirth) => {
@@ -75,6 +85,96 @@ const PrescriptionPage = ({ patientFromParent }) => {
   useEffect(() => {
     fetchPrescriptions();
   }, []);
+
+  // Clean up camera stream when component unmounts
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
+  // Stop camera function
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraReady(false);
+    setTorchOn(false);
+  };
+
+  // Start camera function
+  const startCamera = async () => {
+    try {
+      setCameraError(null);
+      setCameraReady(false);
+      
+      // Request camera access
+      const constraints = {
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      
+      // Set stream to video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        
+        // Wait for video to be ready
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play()
+            .then(() => {
+              setCameraReady(true);
+              setCameraPermission("granted");
+            })
+            .catch(err => {
+              console.error("Video play error:", err);
+              setCameraError("Failed to start video playback");
+            });
+        };
+      }
+      
+    } catch (err) {
+      console.error("Camera access error:", err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setCameraPermission("denied");
+        setCameraError("Camera permission denied. Please enable camera access in your browser settings.");
+      } else if (err.name === 'NotFoundError') {
+        setCameraError("No camera found. Please ensure your device has a camera.");
+      } else if (err.name === 'NotReadableError') {
+        setCameraError("Camera is already in use by another application.");
+      } else {
+        setCameraError(`Camera error: ${err.message}`);
+      }
+    }
+  };
+
+  // Toggle torch/flashlight function
+  const toggleTorch = async () => {
+    if (!streamRef.current) return;
+    
+    try {
+      const videoTrack = streamRef.current.getVideoTracks()[0];
+      const capabilities = videoTrack.getCapabilities();
+      
+      if (capabilities.torch) {
+        await videoTrack.applyConstraints({
+          advanced: [{ torch: !torchOn }]
+        });
+        setTorchOn(!torchOn);
+      }
+    } catch (err) {
+      console.error("Error toggling torch:", err);
+    }
+  };
 
   // OCR conversion
   const handleConvert = async () => {
@@ -328,8 +428,42 @@ const PrescriptionPage = ({ patientFromParent }) => {
       if (patientId) {
         setScannedPatientId(patientId);
         setScanning(false);
+        setQrResult(result);
+        setScanSuccess(true);
+        
+        // Auto close modal after success
+        setTimeout(() => {
+          stopCamera();
+          setShowModal(false);
+          setScanSuccess(false);
+        }, 1500);
       }
     }
+  };
+
+  // Toggle scanning function
+  const toggleScanning = async () => {
+    if (scanning) {
+      setScanning(false);
+      stopCamera();
+      setQrResult(null);
+      setShowModal(false);
+    } else {
+      setScanning(true);
+      setQrResult(null);
+      setScanSuccess(false);
+      setShowModal(true);
+      await startCamera();
+    }
+  };
+
+  // Close modal function
+  const closeModal = () => {
+    setScanning(false);
+    stopCamera();
+    setQrResult(null);
+    setShowModal(false);
+    setScanSuccess(false);
   };
 
   // Format date for display
@@ -377,7 +511,7 @@ const PrescriptionPage = ({ patientFromParent }) => {
               <div className="pp-qr-section">
                 <h2 className="pp-section-title">Scan Patient QR Code</h2>
                 <button
-                  onClick={() => setScanning((prev) => !prev)}
+                  onClick={toggleScanning}
                   className={`pp-qr-button ${scanning ? "stop" : "start"}`}
                 >
                   {scanning ? (
@@ -386,19 +520,12 @@ const PrescriptionPage = ({ patientFromParent }) => {
                       Stop Scanning
                     </>
                   ) : (
-                    "Start Scanning"
+                    <>
+                      <span className="pp-qr-icon">📷</span>
+                      Start Scanning
+                    </>
                   )}
                 </button>
-
-                {scanning && (
-                  <div className="pp-qr-reader-container">
-                    <QrReader
-                      constraints={{ facingMode: "environment" }}
-                      onResult={handleScan}
-                      className="pp-qr-reader"
-                    />
-                  </div>
-                )}
 
                 {scannedPatientId && (
                   <div className="pp-qr-result">
@@ -606,6 +733,122 @@ const PrescriptionPage = ({ patientFromParent }) => {
           )}
         </div>
       </div>
+
+      {/* Professional QR Scanner Modal */}
+      {showModal && (
+        <div className="pp-modal-overlay" onClick={closeModal}>
+          <div className="pp-modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="pp-modal-header">
+              <div className="pp-modal-title-container">
+                <h2 className="pp-modal-title">Scan Patient QR Code</h2>
+                <p className="pp-modal-subtitle">Position the QR code within the frame to scan</p>
+              </div>
+              <button className="pp-modal-close" onClick={closeModal} aria-label="Close modal">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+            
+            <div className="pp-modal-body">
+              <div className="pp-qr-reader-container">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="pp-camera-video"
+                />
+                
+                {!cameraReady && (
+                  <div className="pp-camera-loading">
+                    <div className="pp-loading-spinner">
+                      <LoadingSpinner />
+                    </div>
+                    <div className="pp-loading-text">Initializing camera...</div>
+                  </div>
+                )}
+                
+                <div className="pp-qr-overlay">
+                  <div className="pp-qr-scan-region">
+                    <div className="pp-qr-scan-line"></div>
+                    <div className="pp-qr-corner-tl"></div>
+                    <div className="pp-qr-corner-tr"></div>
+                    <div className="pp-qr-corner-bl"></div>
+                    <div className="pp-qr-corner-br"></div>
+                  </div>
+                  <div className="pp-qr-hint">Position QR code within the frame</div>
+                </div>
+                
+                {cameraReady && (
+                  <div className="pp-qr-scanner">
+                    <QrReader
+                      onResult={handleScan}
+                      constraints={{ 
+                        facingMode: "environment"
+                      }}
+                      className="pp-qr-reader-component"
+                    />
+                  </div>
+                )}
+                
+                {scanSuccess && (
+                  <div className="pp-scan-success">
+                    <div className="pp-success-icon">
+                      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <div className="pp-success-text">QR Code Scanned Successfully!</div>
+                  </div>
+                )}
+              </div>
+
+              {cameraError && (
+                <div className="pp-qr-error">
+                  <div className="pp-error-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div className="pp-error-text">{cameraError}</div>
+                  <button 
+                    onClick={() => {
+                      setCameraError(null);
+                      startCamera();
+                    }} 
+                    className="pp-retry-button"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <div className="pp-modal-footer">
+              <div className="pp-modal-controls">
+                <button 
+                  onClick={toggleTorch}
+                  className={`pp-torch-button ${torchOn ? "active" : ""}`}
+                  disabled={!cameraReady}
+                  aria-label="Toggle flashlight"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 2L15 22M6 7L18 7M12 2V22M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  {torchOn ? "Flash Off" : "Flash On"}
+                </button>
+              </div>
+              <button 
+                onClick={closeModal} 
+                className="pp-modal-button pp-cancel-button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
