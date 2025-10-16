@@ -159,12 +159,6 @@ const ExpenseTracking = () => {
     }
   };
 
-  // Keep all your other functions exactly as they are...
-  // (fetchUtilitiesExpenses, fetchSupplierExpenses, sample data functions, etc.)
-
-  // All your existing functions go here - I'm keeping them as-is to avoid repetition
-  // ... (all your existing function implementations) ...
-
   const fetchUtilitiesExpenses = async () => {
     console.log("🔄 Fetching utilities data from API...");
     setUtilitiesApiStatus("trying");
@@ -422,9 +416,7 @@ const ExpenseTracking = () => {
     }
   };
 
-  // Keep all your existing calculation functions exactly as they are...
-  // (calculateExpenseAnalytics, calculateFilteredExpenses, etc.)
-
+  // Keep all your existing calculation functions exactly as they are
   const calculateExpenseAnalytics = (payrolls = [], surgicalItems = [], utilities = [], restockSpending = {}, supplierData = {}) => {
     console.log("📊 Calculating expense analytics with CORRECTED payroll calculation...");
     
@@ -831,12 +823,529 @@ const ExpenseTracking = () => {
     return isNaN(num) ? "0" : num.toLocaleString();
   };
 
+  // NEW: Manual PDF Export Function - Following Financial Utilities Format
   const exportToPDF = () => {
     if (!expenseData) {
-      setError("No data to export");
+      alert("No expense data available to export!");
       return;
     }
-    setSuccess("PDF export functionality ready");
+
+    // Generate a filtered list of all expense records for detailed reporting
+    const expenseRecords = [];
+    
+    // Add payroll records
+    if (expenseData.payrollExpenses.rawData && expenseData.payrollExpenses.rawData.length > 0) {
+      expenseData.payrollExpenses.rawData.forEach(record => {
+        expenseRecords.push({
+          id: record.employeeId || 'N/A',
+          category: 'Payroll',
+          description: `Employee: ${record.employeeName || 'Unknown'} - Salary & Benefits`,
+          amount: (parseFloat(record.grossSalary) || 0) + (parseFloat(record.bonuses) || 0),
+          date: record.paymentDate || new Date().toISOString().split('T')[0],
+          status: 'Paid',
+          reference: record.payrollId || 'N/A'
+        });
+      });
+    }
+
+    // Add inventory records
+    if (expenseData.inventoryExpenses.rawData && expenseData.inventoryExpenses.rawData.length > 0) {
+      expenseData.inventoryExpenses.rawData.forEach(record => {
+        const itemValue = (parseFloat(record.price) || 0) * (parseInt(record.quantity) || 0);
+        if (itemValue > 0) {
+          expenseRecords.push({
+            id: record._id || 'N/A',
+            category: 'Medical Inventory',
+            description: `${record.name || 'Unknown Item'} - ${record.category || 'Uncategorized'}`,
+            amount: itemValue,
+            date: record.lastUpdated || new Date().toISOString().split('T')[0],
+            status: 'Active',
+            reference: record.supplier?.name || 'Unknown Supplier'
+          });
+        }
+      });
+    }
+
+    // Add utilities records
+    if (expenseData.utilitiesExpenses.rawData && expenseData.utilitiesExpenses.rawData.length > 0) {
+      expenseData.utilitiesExpenses.rawData.forEach(record => {
+        expenseRecords.push({
+          id: record._id || record.utilityId || 'N/A',
+          category: 'Utilities',
+          description: record.description || `${record.category || 'Unknown'} Service`,
+          amount: parseFloat(record.amount) || 0,
+          date: record.billing_period_start || new Date().toISOString().split('T')[0],
+          status: record.payment_status || 'Pending',
+          reference: record.vendor_name || 'Unknown Vendor'
+        });
+      });
+    }
+
+    // Add supplier records
+    if (expenseData.supplierExpenses.rawOrders && expenseData.supplierExpenses.rawOrders.length > 0) {
+      expenseData.supplierExpenses.rawOrders.forEach(record => {
+        expenseRecords.push({
+          id: record.id || 'N/A',
+          category: 'Suppliers',
+          description: `Purchase Order - ${record.supplier?.name || 'Unknown Supplier'}`,
+          amount: parseFloat(record.totalAmount) || 0,
+          date: record.orderDate || new Date().toISOString().split('T')[0],
+          status: record.status || 'Pending',
+          reference: record.supplier?.name || 'Unknown Supplier'
+        });
+      });
+    }
+
+    // Calculate comprehensive totals
+    const totals = {
+      totalAmount: expenseData.totalExpenses || 0,
+      totalRecords: expenseRecords.length,
+      categoryBreakdown: {
+        'Payroll': expenseData.payrollExpenses?.totalPayrollExpense || 0,
+        'Medical Inventory': expenseData.inventoryExpenses?.totalInventoryValue || 0,
+        'Utilities': expenseData.utilitiesExpenses?.totalUtilitiesExpense || 0,
+        'Suppliers': expenseData.supplierExpenses?.totalSupplierExpense || 0
+      },
+      statusCounts: {
+        'Active': 0,
+        'Paid': 0,
+        'Pending': 0,
+        'Overdue': 0
+      }
+    };
+
+    // Count status
+    expenseRecords.forEach(record => {
+      const status = record.status || 'Pending';
+      if (totals.statusCounts[status] !== undefined) {
+        totals.statusCounts[status]++;
+      }
+    });
+
+    const printContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Heal-x Expense Analytics Report</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      font-size: 12px;
+      line-height: 1.4;
+      background: white;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 3px solid #1da1f2;
+      padding-bottom: 20px;
+    }
+
+    .header h1 {
+      color: #1da1f2;
+      font-size: 28px;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .info {
+      text-align: right;
+      margin-bottom: 20px;
+      font-size: 11px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background-color: #1da1f2;
+      color: white;
+      font-weight: bold;
+      text-align: center;
+      font-size: 10px;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f8f9fa;
+    }
+
+    tr:hover {
+      background-color: #e3f2fd;
+    }
+
+    .expense-id {
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      color: #1da1f2;
+    }
+
+    .category-badge {
+      background-color: #e3f2fd;
+      color: #1976d2;
+      padding: 2px 6px;
+      border-radius: 12px;
+      font-size: 9px;
+      font-weight: bold;
+    }
+
+    .status-active { color: #2e7d32; font-weight: bold; }
+    .status-paid { color: #2e7d32; font-weight: bold; }
+    .status-pending { color: #f57f17; font-weight: bold; }
+    .status-overdue { color: #c62828; font-weight: bold; }
+
+    .currency {
+      text-align: right;
+      font-weight: bold;
+      color: #1976d2;
+    }
+
+    .date-display {
+      font-size: 9px;
+      color: #666;
+    }
+
+    .description {
+      max-width: 200px;
+      word-wrap: break-word;
+      font-size: 9px;
+    }
+
+    .totals-row {
+      background-color: #1da1f2 !important;
+      color: white !important;
+      font-weight: bold;
+    }
+
+    .totals-row td {
+      border: 1px solid #1976d2;
+      text-align: center;
+    }
+
+    .summary-section {
+      margin-top: 30px;
+      margin-bottom: 30px;
+      page-break-inside: avoid;
+    }
+
+    .summary-title {
+      color: #1da1f2;
+      font-size: 16px;
+      margin-bottom: 15px;
+      font-weight: bold;
+      border-bottom: 2px solid #e3f2fd;
+      padding-bottom: 5px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      border: 1px solid #e3f2fd;
+      padding: 15px;
+      border-radius: 8px;
+      background-color: #f8f9fa;
+    }
+
+    .summary-card h4 {
+      color: #1976d2;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+
+    .summary-card ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .summary-card li {
+      margin-bottom: 5px;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Professional Signature Section */
+    .signature-section {
+      margin-top: 60px;
+      margin-bottom: 30px;
+      width: 100%;
+      page-break-inside: avoid;
+    }
+
+    .signature-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 40px;
+    }
+
+    .signature-block {
+      width: 45%;
+      text-align: center;
+    }
+
+    .signature-line {
+      border-bottom: 2px dotted #333;
+      width: 200px;
+      height: 50px;
+      margin: 0 auto 10px auto;
+      position: relative;
+    }
+
+    .signature-text {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #333;
+      font-size: 12px;
+    }
+
+    .signature-title {
+      color: #666;
+      font-size: 10px;
+    }
+
+    .company-stamp {
+      text-align: center;
+      margin-top: 30px;
+      padding: 15px;
+      border: 2px solid #1da1f2;
+      display: inline-block;
+      font-size: 10px;
+      color: #1da1f2;
+      font-weight: bold;
+      border-radius: 5px;
+    }
+
+    .report-footer {
+      margin-top: 40px;
+      text-align: center;
+      border-top: 1px solid #ddd;
+      padding-top: 20px;
+      font-size: 10px;
+      color: #666;
+      page-break-inside: avoid;
+    }
+
+    .report-footer p {
+      margin-bottom: 8px;
+    }
+
+    .print-controls {
+      text-align: center;
+      margin-top: 30px;
+      page-break-inside: avoid;
+    }
+
+    .print-button {
+      background-color: #1da1f2;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 0 10px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .print-button:hover {
+      background-color: #1976d2;
+    }
+
+    .close-button {
+      background-color: #666;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 0 10px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .close-button:hover {
+      background-color: #555;
+    }
+
+    @media print {
+      .print-controls { display: none; }
+      .signature-section { page-break-inside: avoid; }
+      .company-stamp { page-break-inside: avoid; }
+      .report-footer { page-break-inside: avoid; }
+      @page { margin: 20mm; size: A4; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header Section -->
+  <div class="header">
+    <h1>Heal-x Expense Analytics Report</h1>
+    <p>Healthcare Expense Management System</p>
+  </div>
+
+  <!-- Report Information -->
+  <div class="info">
+    <strong>Generated on:</strong> ${new Date().toLocaleString()}<br>
+    <strong>Total Records:</strong> ${totals.totalRecords}<br>
+    <strong>Report Period:</strong> ${filterPeriod === 'all' ? 'All Periods' : filterPeriod}<br>
+    <strong>Filter Applied:</strong> ${activeFilter}<br>
+    <strong>Total Expense Amount:</strong> $${totals.totalAmount.toLocaleString('en-US')}
+  </div>
+
+  <!-- Summary Section -->
+  <div class="summary-section">
+    <h3 class="summary-title">📊 Executive Summary</h3>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <h4>💰 Financial Overview</h4>
+        <ul>
+          <li><span>Total Expenses:</span><span style="color: #1da1f2; font-weight: bold;">$${totals.totalAmount.toLocaleString('en-US')}</span></li>
+          <li><span>Total Records:</span><span>${totals.totalRecords}</span></li>
+          <li><span>Average Amount:</span><span>$${totals.totalRecords > 0 ? (totals.totalAmount / totals.totalRecords).toLocaleString('en-US') : '0'}</span></li>
+        </ul>
+      </div>
+      <div class="summary-card">
+        <h4>📋 Status Breakdown</h4>
+        <ul>
+          ${Object.entries(totals.statusCounts).map(([status, count]) => 
+            `<li><span>${status}:</span><span>${count} records</span></li>`
+          ).join('')}
+        </ul>
+      </div>
+    </div>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <h4>🏷️ Category Distribution</h4>
+        <ul>
+          ${Object.entries(totals.categoryBreakdown).map(([category, amount]) => 
+            `<li><span>${category}:</span><span>$${amount.toLocaleString('en-US')}</span></li>`
+          ).join('')}
+        </ul>
+      </div>
+      <div class="summary-card">
+        <h4>📊 Report Metadata</h4>
+        <ul>
+          <li><span>System:</span><span>Heal-x Healthcare</span></li>
+          <li><span>Module:</span><span>Expense Analytics</span></li>
+          <li><span>Currency:</span><span>USD ($)</span></li>
+          <li><span>Export Format:</span><span>PDF Report</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expense Data Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>Record ID</th>
+        <th>Category</th>
+        <th>Description</th>
+        <th>Amount</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Reference</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${expenseRecords.map(record => `
+        <tr>
+          <td class="expense-id">${record.id}</td>
+          <td><span class="category-badge">${record.category}</span></td>
+          <td class="description">${record.description}</td>
+          <td class="currency">$${(parseFloat(record.amount) || 0).toLocaleString('en-US')}</td>
+          <td class="date-display">${new Date(record.date).toLocaleDateString('en-GB')}</td>
+          <td class="status-${record.status.toLowerCase()}">${record.status}</td>
+          <td>${record.reference}</td>
+        </tr>
+      `).join('')}
+      
+      <!-- Totals Row -->
+      <tr class="totals-row">
+        <td colspan="3"><strong>TOTAL</strong></td>
+        <td class="currency"><strong>$${totals.totalAmount.toLocaleString('en-US')}</strong></td>
+        <td colspan="3"><strong>${totals.totalRecords} Records</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Professional Signature Section -->
+  <div class="signature-section">
+    <div class="signature-container">
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <div class="signature-text">Financial Manager</div>
+        <div class="signature-title">Heal-x Healthcare Management</div>
+      </div>
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <div class="signature-text">Date</div>
+        <div class="signature-title">Report Approved On</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Company Stamp -->
+  <div style="text-align: center;">
+    <div class="company-stamp">
+      HEAL-X OFFICIAL SEAL<br>
+      HEALTHCARE MANAGEMENT SYSTEM
+    </div>
+  </div>
+
+  <!-- Report Footer -->
+  <div class="report-footer">
+    <p><strong>This is a system-generated report from Heal-x Healthcare Management System</strong></p>
+    <p>Report generated on ${new Date().toLocaleString()}. All amounts are in US Dollars.</p>
+    <p>For queries regarding this report, contact the Financial Department at Heal-x Healthcare</p>
+  </div>
+
+  <!-- Print Controls -->
+  <div class="print-controls">
+    <button class="print-button" onclick="window.print()">🖨️ Print Report</button>
+    <button class="close-button" onclick="window.close()">✕ Close Window</button>
+  </div>
+</body>
+</html>`;
+
+    // Open print window
+    const printWindow = window.open('', '', 'width=1200,height=800');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
   };
 
   const generateAlerts = () => {
@@ -1151,7 +1660,6 @@ const ExpenseTracking = () => {
 
   return (
     <AdminLayout admin={admin} title="Expense Tracking">
-      {/* FIXED: Removed wrapper container and made it fullscreen */}
       <div className="healx-etv-fullscreen">
         {/* Header */}
         <div className="healx-etv-header">
@@ -1177,8 +1685,10 @@ const ExpenseTracking = () => {
                     <option value="json">JSON Export</option>
                     <option value="pdf">PDF Report</option>
                   </select>
+                  {/* Updated Export Button */}
                   <button onClick={exportToPDF} className="healx-etv-btn healx-etv-btn-secondary">
-                    📥 Export
+                    <i className="fas fa-file-pdf"></i>
+                    Export PDF Report
                   </button>
                 </div>
                 <button 
@@ -1546,9 +2056,7 @@ const ExpenseTracking = () => {
                   </div>
                 )}
 
-                {/* Keep all your existing chart sections for different filters */}
-                {/* Add similar chart sections for payroll, inventory, utilities, and suppliers... */}
-                {/* I'm omitting them here to keep the response manageable, but they remain unchanged */}
+                {/* Keep all your existing chart sections for different filters unchanged */}
               </div>
             </>
           )}
