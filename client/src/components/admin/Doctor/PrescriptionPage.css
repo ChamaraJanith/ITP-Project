@@ -1,4 +1,3 @@
-/* PrescriptionPage.css */
 /* All styles are scoped with .pp- prefix to avoid conflicts */
 
 /* Main Container */
@@ -179,17 +178,8 @@
   box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
 }
 
-.pp-qr-reader-container {
-  margin-top: 20px;
-  border: 2px dashed #3b82f6;
-  border-radius: 12px;
-  overflow: hidden;
-  position: relative;
-  height: 240px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #eff6ff;
+.pp-qr-icon {
+  font-size: 1.2rem;
 }
 
 .pp-qr-result {
@@ -219,6 +209,432 @@
   font-weight: 600;
 }
 
+/* Professional Modal Styles */
+.pp-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.pp-modal-container {
+  background: white;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.pp-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.pp-modal-title-container {
+  flex: 1;
+}
+
+.pp-modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+
+.pp-modal-subtitle {
+  font-size: 0.9rem;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.pp-modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.pp-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.pp-modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.pp-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pp-modal-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.pp-torch-button {
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pp-torch-button.active {
+  background: #fbbf24;
+  color: #78350f;
+}
+
+.pp-torch-button:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.pp-torch-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pp-modal-button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.pp-cancel-button {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.pp-cancel-button:hover {
+  background: #e2e8f0;
+}
+
+.pp-qr-reader-container {
+  width: 100%;
+  max-width: 500px;
+  height: 320px;
+  border: 2px solid #3b82f6;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  background: #000;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.pp-camera-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  z-index: 1;
+}
+
+.pp-camera-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  z-index: 30;
+  gap: 16px;
+}
+
+.pp-loading-spinner {
+  width: 48px;
+  height: 48px;
+}
+
+.pp-loading-text {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.pp-qr-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.pp-qr-scan-region {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.pp-qr-scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #00ff88, transparent);
+  animation: scan 2s linear infinite;
+  box-shadow: 0 0 10px #00ff88;
+}
+
+.pp-qr-corner-tl, .pp-qr-corner-tr, .pp-qr-corner-bl, .pp-qr-corner-br {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 3px solid #00ff88;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.pp-qr-corner-tl {
+  top: 0;
+  left: 0;
+  border-right: none;
+  border-bottom: none;
+  border-top-left-radius: 8px;
+}
+
+.pp-qr-corner-tr {
+  top: 0;
+  right: 0;
+  border-left: none;
+  border-bottom: none;
+  border-top-right-radius: 8px;
+}
+
+.pp-qr-corner-bl {
+  bottom: 0;
+  left: 0;
+  border-right: none;
+  border-top: none;
+  border-bottom-left-radius: 8px;
+}
+
+.pp-qr-corner-br {
+  bottom: 0;
+  right: 0;
+  border-left: none;
+  border-top: none;
+  border-bottom-right-radius: 8px;
+}
+
+.pp-qr-hint {
+  margin-top: 24px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 15;
+}
+
+.pp-qr-scanner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pp-qr-reader-component {
+  width: 100%;
+  height: 100%;
+}
+
+.pp-qr-reader-component video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.pp-qr-reader-component section {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0 !important;
+}
+
+.pp-qr-reader-component section > div {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.pp-qr-reader-component section > div > video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.pp-qr-reader-component section > div > div {
+  display: none !important;
+}
+
+.pp-scan-success {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  z-index: 40;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.pp-success-icon {
+  width: 80px;
+  height: 80px;
+  background: #22c55e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  animation: scaleIn 0.3s ease-out;
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+.pp-success-text {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.pp-qr-error {
+  margin-top: 16px;
+  padding: 16px;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.pp-error-icon {
+  color: #ef4444;
+}
+
+.pp-error-text {
+  font-weight: 600;
+  text-align: center;
+}
+
+.pp-retry-button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pp-retry-button:hover {
+  background: #2563eb;
+}
+
+@keyframes scan {
+  0% {
+    top: 0;
+  }
+  50% {
+    top: calc(100% - 3px);
+  }
+  100% {
+    top: 0;
+  }
+}
+
 /* Patient Info */
 .pp-patient-info {
   background: #f8fafc;
@@ -240,20 +656,81 @@
   gap: 12px;
 }
 
+.pp-patient-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 12px;
+}
+
+.pp-patient-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.pp-patient-id {
+  font-size: 0.875rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.pp-patient-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 .pp-patient-row {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .pp-patient-label {
-  min-width: 80px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .pp-patient-value {
-  color: #1e293b;
   font-weight: 500;
+  color: #1e293b;
+}
+
+.pp-allergies-list {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.pp-warning-text {
+  color: #f59e0b;
+}
+
+.pp-editing-indicator {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pp-edit-icon {
+  font-size: 1rem;
 }
 
 .pp-no-patient {
@@ -574,6 +1051,29 @@
     flex-direction: column;
     gap: 6px;
   }
+  
+  .pp-qr-reader-container {
+    height: 280px;
+  }
+  
+  .pp-patient-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pp-modal-container {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .pp-modal-footer {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .pp-modal-controls {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 480px) {
@@ -601,6 +1101,19 @@
   
   .pp-prescription-table .pp-diagnosis {
     max-width: 120px;
+  }
+  
+  .pp-modal-container {
+    width: 98%;
+  }
+  
+  .pp-qr-reader-container {
+    height: 240px;
+  }
+  
+  .pp-qr-scan-region {
+    width: 180px;
+    height: 180px;
   }
 }
 
