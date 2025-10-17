@@ -574,7 +574,7 @@ const ProfitOrLoss = () => {
       category: 'Expense Analysis',
       title: 'Complete Expense Breakdown ',
       message: `Payroll : $${expenseData.payrollExpenses.totalPayrollExpense.toLocaleString()} (${payrollPercent}%) | Inventory: $${expenseData.inventoryExpenses.totalInventoryValue.toLocaleString()} (${inventoryPercent}%) | Utilities: $${expenseData.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()} (${utilitiesPercent}%) | Suppliers: $${expenseData.supplierExpenses.totalSupplierExpense.toLocaleString()} (${supplierPercent}%) from ${expenseData.supplierExpenses.totalOrders || 0} purchase orders`,
-      recommendation: '✅ Payroll now correctly calculated using employer contributions only (EPF 12% + ETF 3%). Monitor all expense categories regularly.',
+      recommendation: '✅ Ensure payroll efficiency, optimize inventory management, and regularly review supplier contracts to control costs.',
       priority: 'medium'
     });
     
@@ -725,63 +725,73 @@ const ProfitOrLoss = () => {
           '<div class="alert-section" style="background-color: #f8d7da; border-color: #f5c6cb;"><div class="alert-title" style="color: #721c24;">🚨 Operating at Loss</div><p>Your healthcare facility is currently operating at a loss of $' + Math.abs(financialData.netResult).toLocaleString() + '. Immediate action required to review expenses and improve revenue streams.</p></div>'
         }
 
-        <!-- ✅ PAYROLL NOTICE -->
-        <div class="alert-section" style="background-color: #d1ecf1; border-color: #bee5eb;">
-          <div class="alert-title" style="color: #0c5460;"></div>
-          <p><strong>Important:</strong> The payroll expense calculation has been corrected to include only employer contributions:</p>
-          <ul>
-            <li><strong>Company Payroll Expense:</strong> $${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense.toLocaleString()}</li>
-            <li><strong>Base Salaries:</strong> $${financialData.expenseBreakdown.payrollExpenses.totalGrossSalary.toLocaleString()}</li>
-            <li><strong>Bonuses:</strong> $${financialData.expenseBreakdown.payrollExpenses.totalBonuses.toLocaleString()}</li>
-            <li><strong>EPF Employer Contributions (12%):</strong> $${financialData.expenseBreakdown.payrollExpenses.totalEmployerEPF.toLocaleString()}</li>
-            <li><strong>ETF Employer Contributions (3%):</strong> $${financialData.expenseBreakdown.payrollExpenses.totalEmployerETF.toLocaleString()}</li>
-            <li><strong>Employee EPF/ETF deductions:</strong> Not included in company expenses (correctly excluded)</li>
-          </ul>
-          <p><em>Formula: Total Company Payroll Expense = Base Salaries + Bonuses + EPF (12% Employer) + ETF (3% Employer)</em></p>
-        </div>
+       <!-- Financial Breakdown -->
+<h3 style="color: #1da1f2; margin-top: 30px;">📊 Financial Breakdown</h3>
 
-        <!-- Financial Breakdown -->
-        <h3 style="color: #1da1f2; margin-top: 30px;">📊 Financial Breakdown</h3>
-        <table>
-          <thead>
-            <tr>
-              <th colspan="2">💰 Revenue Analysis</th>
-              <th colspan="2">💸 Expense Analysis</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Total Revenue</td>
-              <td class="currency">$${financialData.totalRevenue.toLocaleString()}</td>
-              <td>Total Expenses </td>
-              <td class="currency">$${financialData.totalExpenses.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Accepted Appointments</td>
-              <td class="currency">${financialData.revenueBreakdown.totalPayments}</td>
-              <td>Payroll Expenses</td>
-              <td class="currency">$${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Outstanding Payments</td>
-              <td class="currency">$${financialData.revenueBreakdown.totalOutstanding.toLocaleString()}</td>
-              <td>Inventory Value</td>
-              <td class="currency">$${financialData.expenseBreakdown.inventoryExpenses.totalInventoryValue.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td></td>
-              <td></td>
-              <td>Utilities Expenses</td>
-              <td class="currency">$${financialData.expenseBreakdown.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td></td>
-              <td></td>
-              <td>Supplier Expenses</td>
-              <td class="currency">$${financialData.expenseBreakdown.supplierExpenses.totalSupplierExpense.toLocaleString()}</td>
-            </tr>
-          </tbody>
-        </table>
+<div style="display: flex; gap: 30px; flex-wrap: wrap;">
+  <!-- Revenue Analysis Table -->
+  <div style="flex: 1; min-width: 300px;">
+    <h4 style="color: #2c3e50; margin-bottom: 15px;">💰 Revenue Analysis</h4>
+    <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <thead>
+        <tr style="background-color: #f8f9fa;">
+          <th style="padding: 12px; border: 1px solid #dee2e6; text-align: left; font-weight: 600;">Description</th>
+          <th style="padding: 12px; border: 1px solid #dee2e6; text-align: right; font-weight: 600;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding: 10px 12px; border: 1px solid #dee2e6;">Total Revenue</td>
+          <td class="currency" style="padding: 10px 12px; border: 1px solid #dee2e6; text-align: right; font-weight: 500;">$${financialData.totalRevenue.toLocaleString()}</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+          <td style="padding: 10px 12px; border: 1px solid #dee2e6;">Accepted Appointments</td>
+          <td class="currency" style="padding: 10px 12px; border: 1px solid #dee2e6; text-align: right; font-weight: 500;">${financialData.revenueBreakdown.totalPayments}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 12px; border: 1px solid #dee2e6;">Outstanding Payments</td>
+          <td class="currency" style="padding: 10px 12px; border: 1px solid #dee2e6; text-align: right; font-weight: 500;">$${financialData.revenueBreakdown.totalOutstanding.toLocaleString()}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Expense Analysis Table -->
+  <div style="flex: 1; min-width: 300px;">
+    <h4 style="color: #2c3e50; margin-bottom: 15px;">💸 Expense Analysis</h4>
+    <table style="width: 100%; border-collapse: collapse; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <thead>
+        <tr style="background-color: #f8f9fa;">
+          <th style="padding: 12px; border: 1px solid #dee2e6; text-align: left; font-weight: 600;">Description</th>
+          <th style="padding: 12px; border: 1px solid #dee2e6; text-align: right; font-weight: 600;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding: 10px 12px; border: 1px solid #dee2e6;">Total Expenses</td>
+          <td class="currency" style="padding: 10px 12px; border: 1px solid #dee2e6; text-align: right; font-weight: 500;">$${financialData.totalExpenses.toLocaleString()}</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+          <td style="padding: 10px 12px; border: 1px solid #dee2e6;">Payroll Expenses</td>
+          <td class="currency" style="padding: 10px 12px; border: 1px solid #dee2e6; text-align: right; font-weight: 500;">$${financialData.expenseBreakdown.payrollExpenses.totalPayrollExpense.toLocaleString()}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 12px; border: 1px solid #dee2e6;">Inventory Value</td>
+          <td class="currency" style="padding: 10px 12px; border: 1px solid #dee2e6; text-align: right; font-weight: 500;">$${financialData.expenseBreakdown.inventoryExpenses.totalInventoryValue.toLocaleString()}</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+          <td style="padding: 10px 12px; border: 1px solid #dee2e6;">Utilities Expenses</td>
+          <td class="currency" style="padding: 10px 12px; border: 1px solid #dee2e6; text-align: right; font-weight: 500;">$${financialData.expenseBreakdown.utilitiesExpenses.totalUtilitiesExpense.toLocaleString()}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 12px; border: 1px solid #dee2e6;">Supplier Expenses</td>
+          <td class="currency" style="padding: 10px 12px; border: 1px solid #dee2e6; text-align: right; font-weight: 500;">$${financialData.expenseBreakdown.supplierExpenses.totalSupplierExpense.toLocaleString()}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 
         <!-- ✅  Detailed Expense Breakdown -->
         <h3 style="color: #1da1f2; margin-top: 30px;">🔍 Detailed Expense Breakdown </h3>
@@ -861,8 +871,7 @@ const ProfitOrLoss = () => {
         <div class="report-footer">
           <p><strong>This is a system-generated report from Heal-x Healthcare Management System </strong></p>
           <p>Report generated on ${currentDate.toLocaleString()} • All amounts are in Sri Lankan Rupees</p>
-          <p>✅ PAYROLL CALCULATION : Now uses employer contributions only (EPF 12% + ETF 3%)</p>
-          <p>Data Sources: Appointments API • Payroll API • Inventory API • Utilities API • Suppliers API</p>
+          <p>Calculated Using real time data of Heal-X Healthcare Management System</p>
         </div>
 
         <!-- Print Controls -->
