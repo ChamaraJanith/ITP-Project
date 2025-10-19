@@ -1168,32 +1168,82 @@ const FeaturesShowcase = () => {
     {
       icon: <FaRobot />,
       title: 'AI-Powered Diagnosis',
-      description: 'Advanced machine learning algorithms for accurate symptom analysis and disease prediction.'
+      description: 'Advanced machine learning algorithms for accurate symptom analysis and disease prediction with intelligent health recommendations.'
     },
     {
       icon: <FaShieldAlt />,
       title: 'Private & HIPAA Compliant',
-      description: 'Your health data is protected with enterprise-grade security and privacy standards.'
+      description: 'Your health data is protected with enterprise-grade security and privacy standards including field-level encryption.'
     },
     {
       icon: <FaClock />,
       title: '24/7 Private Access',
-      description: 'Access exclusive private healthcare services anytime, anywhere with our premium platform.'
+      description: 'Access exclusive private healthcare services anytime, anywhere with our premium platform and real-time availability.'
     },
     {
       icon: <FaUsers />,
       title: 'Expert Private Network',
-      description: 'Connect with certified private healthcare professionals and specialists exclusively.'
+      description: 'Connect with certified private healthcare professionals and specialists exclusively through our verified network.'
     },
     {
       icon: <FaChartLine />,
       title: 'Advanced Health Analytics',
-      description: 'Comprehensive health tracking with BMI calculation and predictive insights.'
+      description: 'Comprehensive health tracking with BMI calculation, predictive insights, and detailed financial analytics dashboard.'
     },
     {
       icon: <FaHeart />,
       title: 'Premium Preventive Care',
-      description: 'Proactive private health monitoring and early warning systems for optimal outcomes.'
+      description: 'Proactive private health monitoring and early warning systems for optimal outcomes with chronic disease management.'
+    },
+    {
+      icon: <FaQrcode />,
+      title: 'Smart QR Code System',
+      description: 'Instant patient identification and medical history access through secure QR code technology for seamless healthcare delivery.'
+    },
+    {
+      icon: <FaUserMd />,
+      title: 'Complete Clinical Management',
+      description: 'Digital prescription management with handwritten prescription scanning and comprehensive patient queue management system.'
+    },
+    {
+      icon: <FaCalendarAlt />,
+      title: 'Intelligent Appointment Scheduling',
+      description: 'Real-time doctor availability, automated appointment booking, conflict resolution, and multi-channel notifications.'
+    },
+    {
+      icon: <FaPills />,
+      title: 'Smart Inventory Control',
+      description: 'Real-time medicine tracking, automated stock alerts, expiry date monitoring, and intelligent reorder management.'
+    },
+    {
+      icon: <FaCreditCard />,
+      title: 'Integrated Financial Management',
+      description: 'Complete billing automation, invoice generation, payroll processing, and comprehensive financial reporting with analytics.'
+    },
+    {
+      icon: <FaBell />,
+      title: 'Multi-Channel Notifications',
+      description: 'SMS and email alerts for appointments, medication reminders, test results, and follow-up care with automated scheduling.'
+    },
+    {
+      icon: <FaFileAlt />,
+      title: 'Digital Medical Records',
+      description: 'Secure cloud-based patient records, medical history tracking, prescription history, and easy report sharing capabilities.'
+    },
+    {
+      icon: <FaGlobe />,
+      title: 'Mobile-First Design',
+      description: 'Fully responsive healthcare platform optimized for smartphones, tablets, and desktops with offline capabilities.'
+    },
+    {
+      icon: <FaStarOfLife />,
+      title: 'Emergency Response System',
+      description: 'Instant emergency alerts, priority scheduling, critical patient flagging, and 24/7 emergency consultation services.'
+    },
+    {
+      icon: <FaChartLine />,
+      title: 'Predictive Health Analytics',
+      description: 'AI-powered health trend analysis, risk assessment, chronic disease monitoring, and personalized health insights dashboard.'
     }
   ];
 
@@ -1217,6 +1267,7 @@ const FeaturesShowcase = () => {
     </div>
   );
 };
+
 
 // Final CTA Component
 const FinalAdvancedCTA = () => {
