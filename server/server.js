@@ -39,6 +39,7 @@ import supplierRoutes from './routes/suppliers.js';
 import purchaseOrderRoutes from './routes/purchaseOrders.js';
 import AppointmentRoutes from './routes/appointment.js';
 import disrouter from './routes/disposalRoutes.js';
+import hospitalRoutes from './routes/hospitalRoutes.js'; // ✅ FIXED: Changed from hrouter to hospitalRoutes
 
 // Database imports
 const { default: connectDB } = await import("./config/mongodb.js");
@@ -102,6 +103,7 @@ app.get('/health', (req, res) => {
       chatbot: '/api/chatbot',
       inventory: '/api/inventory',
       patients: '/api/patients',
+      hospitals: '/api/hospitals', // ✅ Added hospital endpoint
       emergency_alerts: '/api/doctor/emergency-alerts'
     }
   });
@@ -114,9 +116,15 @@ app.get("/", (req, res) => {
     version: "1.0.0",
     timestamp: new Date().toISOString(),
     port: PORT,
-    procurement: {
-      suppliers: '/api/suppliers',
-      orders: '/api/purchase-orders'
+    features: {
+      procurement: {
+        suppliers: '/api/suppliers',
+        orders: '/api/purchase-orders'
+      },
+      hospitals: {
+        nearby: '/api/hospitals/nearby',
+        details: '/api/hospitals/details/:placeId'
+      }
     }
   });
 });
@@ -146,20 +154,43 @@ app.use('/api/purchase-orders', purchaseOrderRoutes);
 console.log('👥 Mounting patient router at /api/patients');
 app.use('/api/patients', patrouter);
 
-app.use('/api/auth', authRouter)
+console.log('👨‍⚕️ Mounting admin router at /api/admin');
 app.use('/api/admin', adminRouter);
+
+console.log('🤖 Mounting chatbot router at /api/chatbot');
 app.use('/api/chatbot', chatbotRouter);
+
+console.log('💳 Mounting payment routes at /api/payments');
 app.use("/api/payments", financialPayRoutes);
+
+console.log('💊 Mounting prescription routes at /api/prescription');
 app.use("/api/prescription", consultationRouter);
+
+console.log('📋 Mounting doctor prescription routes at /api/doctor/prescriptions');
 app.use("/api/doctor/prescriptions", prescriptionRouter);
+
+console.log('💰 Mounting payroll routes at /api/payrolls');
 app.use("/api/payrolls", payrollrouter);
+
+console.log('📧 Mounting email routes at /api/emails');
 app.use("/api/emails", financemailrouter);
+
+console.log('⚡ Mounting utilities routes at /api/financial-utilities');
 app.use('/api/financial-utilities', utilitiesrouter);
+
+console.log('📅 Mounting appointment routes at /api/appointments');
 app.use('/api/appointments', router);
 app.use('/api/appointments', AppointmentRoutes);
-app.use('/api/disposalrecords', disrouter)
+
+console.log('🗑️ Mounting disposal records routes at /api/disposalrecords');
+app.use('/api/disposalrecords', disrouter);
+
+console.log('👤 Mounting user/patient routes at /api/users');
 app.use("/api/users", patientRoutes);
 
+// ✅ FIXED: Hospital routes with correct variable name
+console.log('🏥 Mounting hospital routes at /api/hospitals');
+app.use('/api/hospitals', hospitalRoutes);
 
 console.log('🚨 Mounting emergency alerts router at /api/doctor/emergency-alerts');
 app.use('/api/doctor/emergency-alerts', emergencyAlertRouter);
@@ -188,6 +219,8 @@ app.use((req, res, next) => {
       'POST /api/suppliers',
       'GET /api/purchase-orders',
       'POST /api/purchase-orders',
+      'GET /api/hospitals/nearby?latitude=6.9271&longitude=79.8612',
+      'GET /api/hospitals/details/:placeId',
       'GET /api/doctor/emergency-alerts',
       'POST /api/doctor/emergency-alerts'
     ]
@@ -241,8 +274,6 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-
-
 // Test Google Cloud Storage connection on startup
 (async () => {
   try {
@@ -258,9 +289,6 @@ process.on('SIGINT', () => {
     console.warn('⚠️ Server will continue but PDF uploads may fail.');
   }
 })();
-
-
-
 
 // Start server
 app.listen(PORT, () => {
@@ -280,6 +308,12 @@ app.listen(PORT, () => {
   console.log(`   🏢 Create Supplier: POST http://localhost:${PORT}/api/suppliers`);
   console.log(`   📋 Get Purchase Orders: GET http://localhost:${PORT}/api/purchase-orders`);
   console.log(`   📋 Create Purchase Order: POST http://localhost:${PORT}/api/purchase-orders`);
+  console.log('=====================================');
+  console.log('🏥 Hospital Finder Endpoints:');
+  console.log(`   🏥 Get Nearby Hospitals: GET http://localhost:${PORT}/api/hospitals/nearby?latitude=6.9271&longitude=79.8612`);
+  console.log(`   📋 Get Hospital Details: GET http://localhost:${PORT}/api/hospitals/details/:placeId`);
+  console.log(`   📷 Get Hospital Photo: GET http://localhost:${PORT}/api/hospitals/photo/:photoReference`);
+  console.log('=====================================');
   console.log(`   💊 Health Check: GET http://localhost:${PORT}/health`);
   console.log('=====================================');
   console.log('✅ Server ready to accept connections!');
