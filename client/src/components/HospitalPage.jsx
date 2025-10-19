@@ -30,10 +30,8 @@ const HospitalsPage = () => {
   const [error, setError] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
 
-  // Backend API URL
   const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:7000';
 
-  // Get user's current location
   const getUserLocation = () => {
     setLoading(true);
     setError(null);
@@ -76,7 +74,6 @@ const HospitalsPage = () => {
     );
   };
 
-  // Fetch nearby hospitals via backend proxy
   const fetchNearbyHospitals = async (latitude, longitude) => {
     try {
       setLoading(true);
@@ -97,12 +94,17 @@ const HospitalsPage = () => {
       console.log('API Response:', response.data);
 
       if (response.data.status === 'OK' && response.data.results) {
-        // Format hospital data
-        const hospitalsData = response.data.results.map((place) => 
-          formatHospitalData(place, latitude, longitude)
-        );
+        // Format hospital data and filter out invalid entries
+        const hospitalsData = response.data.results
+          .map((place) => formatHospitalData(place, latitude, longitude))
+          .filter(hospital => hospital !== null); // ✅ Filter out null values
         
-        setHospitals(hospitalsData);
+        // Remove duplicate hospitals
+        const uniqueHospitals = removeDuplicateHospitals(hospitalsData);
+        
+        console.log(`Found ${response.data.results.length} hospitals, ${hospitalsData.length} valid, ${uniqueHospitals.length} unique`);
+        
+        setHospitals(uniqueHospitals);
         setError(null);
       } else if (response.data.status === 'ZERO_RESULTS') {
         setHospitals([]);
@@ -118,9 +120,31 @@ const HospitalsPage = () => {
     }
   };
 
-  // Calculate distance between two coordinates (Haversine formula)
+  // ✅ FIXED: Remove duplicate hospitals with null checks
+  const removeDuplicateHospitals = (hospitals) => {
+    const seen = new Map();
+    
+    return hospitals.filter(hospital => {
+      // Skip if invalid coordinates
+      if (!hospital.latitude || !hospital.longitude) {
+        return false;
+      }
+
+      // Create a unique key based on name and approximate location
+      const locationKey = `${hospital.name.toLowerCase().trim()}_${hospital.latitude.toFixed(3)}_${hospital.longitude.toFixed(3)}`;
+      
+      if (seen.has(locationKey)) {
+        console.log(`Duplicate removed: ${hospital.name}`);
+        return false;
+      }
+      
+      seen.set(locationKey, true);
+      return true;
+    });
+  };
+
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's radius in kilometers
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = 
@@ -132,105 +156,185 @@ const HospitalsPage = () => {
     return distance.toFixed(1);
   };
 
-  // Format hospital data
+  // ✅ FIXED: Return null if coordinates are invalid
   const formatHospitalData = (place, userLat, userLng) => {
-    const lat = place.geometry?.location?.lat;
-    const lng = place.geometry?.location?.lng;
-    
-    const distance = calculateDistance(userLat, userLng, lat, lng);
-
-    // Get image URL
-    let imageUrl = 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400';
-    if (place.photos && place.photos[0]) {
-      // If it's from OpenStreetMap, photos will be null
-      // If it's from Google, it will have photo_reference
-      if (typeof place.photos[0] === 'string') {
-        imageUrl = place.photos[0];
+    try {
+      const lat = place.geometry?.location?.lat;
+      const lng = place.geometry?.location?.lng;
+      
+      // ✅ CRITICAL: Validate coordinates exist
+      if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
+        console.warn(`Invalid coordinates for hospital: ${place.name}`);
+        return null;
       }
-    }
+      
+      const distance = calculateDistance(userLat, userLng, lat, lng);
 
-    return {
-      id: place.place_id,
-      name: place.name || 'Hospital',
-      address: place.vicinity || 'Address not available',
-      phone: place.phone || place.formatted_phone_number || 'Not available',
-      rating: place.rating || 0,
-      reviews: place.user_ratings_total || 0,
-      distance: `${distance} km`,
-      type: determineHospitalType(place.types || []),
-      services: extractServices(place),
-      specialties: extractSpecialties(place.types || []),
-      beds: Math.floor(Math.random() * 400) + 50,
-      established: new Date().getFullYear() - Math.floor(Math.random() * 50),
-      features: extractFeatures(place),
-      image: imageUrl,
-      website: place.website || null,
-      isOpen: place.opening_hours?.open_now,
-      latitude: lat,
-      longitude: lng
-    };
+      // Better address extraction
+      let address = 'Address not available';
+      
+      if (place.vicinity) {
+        address = place.vicinity;
+      } else if (place.tags) {
+        address = formatOSMAddress(place.tags);
+      } else if (place.formatted_address) {
+        address = place.formatted_address;
+      }
+
+      let imageUrl = 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400';
+      if (place.photos && place.photos[0]) {
+        if (typeof place.photos[0] === 'string') {
+          imageUrl = place.photos[0];
+        }
+      }
+
+      return {
+        id: place.place_id || `hospital_${Date.now()}_${Math.random()}`,
+        name: place.name || 'Hospital',
+        address: address,
+        phone: place.phone || place.formatted_phone_number || place.tags?.phone || place.tags?.['contact:phone'] || 'Not available',
+        rating: place.rating || 0,
+        reviews: place.user_ratings_total || 0,
+        distance: `${distance} km`,
+        type: determineHospitalType(place.types || []),
+        services: extractServices(place),
+        specialties: extractSpecialties(place.types || [], place.tags),
+        beds: place.tags?.beds || Math.floor(Math.random() * 400) + 50,
+        established: place.tags?.start_date || new Date().getFullYear() - Math.floor(Math.random() * 50),
+        features: extractFeatures(place),
+        image: imageUrl,
+        website: place.website || place.tags?.website || place.tags?.['contact:website'] || null,
+        isOpen: place.opening_hours?.open_now,
+        latitude: lat,
+        longitude: lng
+      };
+    } catch (error) {
+      console.error(`Error formatting hospital data:`, error, place);
+      return null;
+    }
   };
 
-  // Determine hospital type
+  const formatOSMAddress = (tags) => {
+    const parts = [];
+    
+    if (tags['addr:housenumber']) parts.push(tags['addr:housenumber']);
+    if (tags['addr:street']) parts.push(tags['addr:street']);
+    
+    if (tags['addr:city']) {
+      parts.push(tags['addr:city']);
+    } else if (tags['addr:town']) {
+      parts.push(tags['addr:town']);
+    } else if (tags['addr:village']) {
+      parts.push(tags['addr:village']);
+    }
+    
+    if (tags['addr:postcode']) parts.push(tags['addr:postcode']);
+    
+    if (parts.length < 2) {
+      if (tags['addr:district']) parts.push(tags['addr:district']);
+      if (tags['addr:state']) parts.push(tags['addr:state']);
+    }
+    
+    if (parts.length === 0 && tags.name) {
+      return `${tags.name} area`;
+    }
+    
+    return parts.length > 0 ? parts.join(', ') : 'Address not available';
+  };
+
   const determineHospitalType = (types) => {
     if (types.includes('hospital')) return 'General Hospital';
     if (types.includes('health')) return 'Medical Center';
+    if (types.includes('clinic')) return 'Clinic';
     return 'Healthcare Facility';
   };
 
-  // Extract services
   const extractServices = (place) => {
-    const services = ['Outpatient Services'];
+    const services = [];
     
-    if (place.opening_hours?.open_now || place.types?.includes('hospital')) {
-      services.unshift('Emergency Care');
+    if (place.tags?.emergency === 'yes' || place.types?.includes('hospital')) {
+      services.push('Emergency Care');
     }
     
+    services.push('Outpatient Services');
     services.push('Diagnostic Services');
+    
+    if (place.tags?.['healthcare:speciality']) {
+      const specialities = place.tags['healthcare:speciality'].split(';');
+      services.push(...specialities.slice(0, 2));
+    }
     
     return services;
   };
 
-  // Extract specialties from place types
-  const extractSpecialties = (types) => {
+  const extractSpecialties = (types, tags) => {
+    const specialties = new Set();
+    
     const specialtyMap = {
       'doctor': 'General Medicine',
       'hospital': 'Emergency Care',
       'health': 'Primary Care',
-      'medical_center': 'Multi-specialty'
+      'medical_center': 'Multi-specialty',
+      'clinic': 'General Medicine'
     };
     
-    const specialties = types
-      .filter(type => specialtyMap[type])
-      .map(type => specialtyMap[type]);
+    types.forEach(type => {
+      if (specialtyMap[type]) {
+        specialties.add(specialtyMap[type]);
+      }
+    });
     
-    return specialties.length > 0 ? specialties : ['General Medicine', 'Emergency Care'];
+    if (tags?.['healthcare:speciality']) {
+      const osmSpecialties = tags['healthcare:speciality'].split(';');
+      osmSpecialties.forEach(spec => specialties.add(spec.trim()));
+    }
+    
+    if (specialties.size === 0) {
+      specialties.add('General Medicine');
+      specialties.add('Emergency Care');
+    }
+    
+    return Array.from(specialties);
   };
 
-  // Extract features from place data
   const extractFeatures = (place) => {
     const features = [];
     
     if (place.opening_hours?.open_now) {
       features.push('Currently Open');
     }
+    
+    if (place.tags?.opening_hours === '24/7') {
+      features.push('24/7 Open');
+    }
+    
     if (place.rating >= 4.5) {
       features.push('Highly Rated');
     }
+    
     if (place.user_ratings_total > 100) {
       features.push('Well Reviewed');
     }
+    
     if (place.tags?.wheelchair === 'yes') {
       features.push('Wheelchair Accessible');
     }
+    
     if (place.tags?.emergency === 'yes') {
-      features.push('24/7 Emergency');
+      features.push('Emergency Services');
+    }
+    
+    if (place.tags?.parking === 'yes') {
+      features.push('Parking Available');
+    }
+    
+    if (place.tags?.internet_access === 'wlan') {
+      features.push('WiFi Available');
     }
     
     return features;
   };
 
-  // Load hospitals on component mount
   useEffect(() => {
     getUserLocation();
   }, []);
@@ -292,7 +396,6 @@ const HospitalsPage = () => {
 
   return (
     <div className="hospitals-page">
-      {/* Header Section */}
       <div className="hospitals-header">
         <div className="header-content">
           <h1>
@@ -330,7 +433,6 @@ const HospitalsPage = () => {
       </div>
 
       <div className="hospitals-container">
-        {/* Error Message */}
         {error && (
           <div className="error-message">
             <p>{error}</p>
@@ -340,7 +442,6 @@ const HospitalsPage = () => {
           </div>
         )}
 
-        {/* Loading State */}
         {loading && (
           <div className="loading-container">
             <FaSpinner className="spinner" />
@@ -350,7 +451,6 @@ const HospitalsPage = () => {
 
         {!loading && !error && hospitals.length > 0 && (
           <>
-            {/* Search and Filter Section */}
             <div className="search-filter-section">
               <div className="search-bar">
                 <FaSearch className="search-icon" />
@@ -392,12 +492,10 @@ const HospitalsPage = () => {
               </div>
             </div>
 
-            {/* Results Count */}
             <div className="results-info">
               <p>Showing {filteredHospitals.length} of {hospitals.length} hospitals within 5km</p>
             </div>
 
-            {/* Hospitals Grid */}
             <div className="hospitals-grid">
               {filteredHospitals.map(hospital => (
                 <div key={hospital.id} className="hospital-card">
@@ -506,7 +604,6 @@ const HospitalsPage = () => {
           </>
         )}
 
-        {/* No Results */}
         {!loading && !error && filteredHospitals.length === 0 && hospitals.length > 0 && (
           <div className="no-results">
             <FaHospital className="no-results-icon" />
@@ -515,7 +612,6 @@ const HospitalsPage = () => {
           </div>
         )}
 
-        {/* No Hospitals Found */}
         {!loading && !error && hospitals.length === 0 && (
           <div className="no-results">
             <FaHospital className="no-results-icon" />
@@ -524,12 +620,11 @@ const HospitalsPage = () => {
           </div>
         )}
 
-        {/* Emergency Notice */}
         <div className="emergency-notice">
           <FaAmbulance className="emergency-icon" />
           <div className="emergency-content">
             <h4>Medical Emergency?</h4>
-            <p>If you're experiencing a medical emergency, call 1990 (Sri Lanka) immediately or go to the nearest emergency room.</p>
+            <p>If you're experiencing a medical emergency, call 1990 (Sri Lanka) immediately.</p>
             <button className="emergency-btn">
               <a href="tel:1990" style={{textDecoration: 'none', color: 'inherit'}}>
                 <FaPhone />
