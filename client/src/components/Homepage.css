@@ -837,6 +837,7 @@ body::before {
   padding: var(--spacing-3xl) var(--spacing-lg);
   position: relative;
   overflow: hidden;
+  text-align: center;
 }
 
 .bmi-calculator-section-container::before {
@@ -857,6 +858,7 @@ body::before {
   margin: 0 auto;
   position: relative;
   z-index: 2;
+  text-align: center;
 }
 
 .bmi-section-content-container h2 {
@@ -1476,10 +1478,11 @@ body::before {
    AI HEALTH RISK ASSESSMENT ENHANCEMENTS
    ============================================ */
 .ai-assessment-section-container {
-  background: var(--gray-100);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: var(--spacing-3xl) var(--spacing-lg);
   position: relative;
   overflow: hidden;
+  text-align: center;
 }
 
 .ai-assessment-section-container::before {
@@ -1513,7 +1516,7 @@ body::before {
 
 .assessment-section-subtitle-text {
   text-align: center;
-  color: var(--gray-600);
+  color: white;
   font-size: 1.125rem;
   margin-bottom: var(--spacing-2xl);
   animation: fadeInUp 0.8s ease-out 0.2s both;
@@ -2138,6 +2141,7 @@ body::before {
   background: white;
   padding: var(--spacing-3xl) var(--spacing-lg);
   position: relative;
+  text-align: center;
   overflow: hidden;
 }
 
@@ -2272,7 +2276,7 @@ body::before {
 }
 
 .department-card-container {
-  background: white;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   border-radius: var(--radius-xl);
   padding: var(--spacing-xl);
   box-shadow: var(--shadow-lg);
@@ -2370,6 +2374,8 @@ body::before {
 
 /* Department Metrics Enhancements */
 .dept-metrics-container {
+  text-align: center;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   display: grid;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-lg);
@@ -2555,9 +2561,9 @@ body::before {
    DOCTOR AVAILABILITY ENHANCEMENTS
    ============================================ */
 .doctor-availability-section-container {
-  background: var(--gray-100);
   padding: var(--spacing-3xl) var(--spacing-lg);
   position: relative;
+  text-align: center;
   overflow: hidden;
 }
 
@@ -3332,6 +3338,7 @@ body::before {
    ADVANCED SERVICES ENHANCEMENTS
    ============================================ */
 .advanced-services-container {
+  text-align: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: var(--spacing-3xl) var(--spacing-lg);
   color: white;
@@ -3410,11 +3417,7 @@ body::before {
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(45deg, 
-    var(--primary-color), 
-    var(--secondary-color), 
-    var(--accent-color), 
-    var(--primary-color));
+  background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%);
   background-size: 400% 400%;
   z-index: -1;
   animation: serviceBorder 6s linear infinite;
@@ -3494,6 +3497,7 @@ body::before {
 
 .advanced-service-card-container h3 {
   font-size: 1.5rem;
+  align-items: center;
   margin-bottom: var(--spacing-md);
   font-weight: 700;
   position: relative;
@@ -3503,6 +3507,7 @@ body::before {
 .advanced-service-card-container p {
   margin-bottom: var(--spacing-lg);
   opacity: 0.9;
+  text-align: center;
   line-height: 1.6;
   position: relative;
   z-index: 2;
@@ -3511,6 +3516,7 @@ body::before {
 .service-features-container {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--spacing-sm);
   margin-bottom: var(--spacing-lg);
   position: relative;
@@ -3522,6 +3528,8 @@ body::before {
   padding: var(--spacing-xs) var(--spacing-md);
   border-radius: var(--radius-full);
   font-size: 0.75rem;
+  text-align: center;
+  align-items: center;
   font-weight: 500;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -3608,6 +3616,7 @@ body::before {
    ============================================ */
 .featured-doctors-container {
   background: white;
+  text-align: center;
   padding: var(--spacing-3xl) var(--spacing-lg);
   position: relative;
   overflow: hidden;
@@ -4084,7 +4093,8 @@ body::before {
    FEATURES SHOWCASE ENHANCEMENTS
    ============================================ */
 .features-showcase-container {
-  background: var(--gray-100);
+  text-align: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: var(--spacing-3xl) var(--spacing-lg);
   position: relative;
   overflow: hidden;
@@ -4186,6 +4196,7 @@ body::before {
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   border-radius: var(--radius-xl);
   display: flex;
+  text-align: center;
   align-items: center;
   justify-content: center;
   margin: 0 auto var(--spacing-lg);
