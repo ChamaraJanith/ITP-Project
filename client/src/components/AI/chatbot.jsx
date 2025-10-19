@@ -18,7 +18,7 @@ import {
   FaStopCircle 
 } from 'react-icons/fa';
 import diseasesData from '../../data/diseasesData.js';
-
+import './chatbot.css';
 const EMOJIS = {
   robot: '🤖',
   magnifyingGlass: '🔍',
