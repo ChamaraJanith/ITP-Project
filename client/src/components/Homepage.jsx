@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FaSearch, FaTimes, FaUserMd, FaHeartbeat, FaStethoscope, FaHospital, 
@@ -18,16 +18,11 @@ import {
   FaRuler, FaApple
 } from 'react-icons/fa';
 
-// Import FaRocket from react-icons/ri as alternative
 import { RiRocketLine as FaRocket } from 'react-icons/ri';
-
-// Import additional icons if needed
 import { FaHeartPulse, FaQuestion } from 'react-icons/fa6';
 
 import AdvancedFloatingChatbot from './AI/chatbot.jsx';
-import './AI/chatbot.css';
 import './Homepage.css';
-import './bmi.css'
 
 // Emoji Constants
 const EMOJIS = {
@@ -109,7 +104,7 @@ const EMOJIS = {
   ruler: '📏'
 };
 
-// BMI Calculator Component with Validation
+// BMI Calculator Component
 const BMICalculator = () => {
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
@@ -119,7 +114,6 @@ const BMICalculator = () => {
   const [heightError, setHeightError] = useState('');
   const [weightError, setWeightError] = useState('');
 
-  // Validation functions
   const validateHeight = (value) => {
     const numValue = parseFloat(value);
     if (isNaN(numValue) || numValue <= 0) {
@@ -142,27 +136,18 @@ const BMICalculator = () => {
     return '';
   };
 
-  // Handle height input with validation
   const handleHeightChange = (e) => {
     let value = e.target.value;
-    
-    // Allow only numbers and one decimal point
     const numericValue = value.replace(/[^0-9.]/g, '');
-    
-    // Prevent multiple decimal points
     const parts = numericValue.split('.');
     if (parts.length > 2) {
       value = parts[0] + '.' + parts.slice(1).join('');
     } else {
       value = numericValue;
     }
-    
-    // Limit to 3 digits before decimal and 2 after
     const regex = /^\d{0,3}(\.\d{0,2})?$/;
     if (regex.test(value) || value === '') {
       setHeight(value);
-      
-      // Validate range
       if (value) {
         const numValue = parseFloat(value);
         if (numValue > 300) {
@@ -180,27 +165,18 @@ const BMICalculator = () => {
     }
   };
 
-  // Handle weight input with validation
   const handleWeightChange = (e) => {
     let value = e.target.value;
-    
-    // Allow only numbers and one decimal point
     const numericValue = value.replace(/[^0-9.]/g, '');
-    
-    // Prevent multiple decimal points
     const parts = numericValue.split('.');
     if (parts.length > 2) {
       value = parts[0] + '.' + parts.slice(1).join('');
     } else {
       value = numericValue;
     }
-    
-    // Limit to 3 digits before decimal and 2 after
     const regex = /^\d{0,3}(\.\d{0,2})?$/;
     if (regex.test(value) || value === '') {
       setWeight(value);
-      
-      // Validate range
       if (value) {
         const numValue = parseFloat(value);
         if (numValue > 650) {
@@ -218,18 +194,14 @@ const BMICalculator = () => {
     }
   };
 
-  // Prevent non-numeric keyboard input
   const handleKeyPress = (e) => {
-    // Allow: backspace, delete, tab, escape, enter, decimal point
     if ([8, 9, 27, 13, 46, 110, 190].indexOf(e.keyCode) !== -1 ||
-        // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
         (e.keyCode === 65 && e.ctrlKey === true) ||
         (e.keyCode === 67 && e.ctrlKey === true) ||
         (e.keyCode === 86 && e.ctrlKey === true) ||
         (e.keyCode === 88 && e.ctrlKey === true)) {
       return;
     }
-    // Ensure that it is a number and stop the keypress
     if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
       e.preventDefault();
     }
@@ -238,8 +210,6 @@ const BMICalculator = () => {
   const calculateBMI = () => {
     const heightNum = parseFloat(height);
     const weightNum = parseFloat(weight);
-    
-    // Validate inputs before calculation
     const heightValidation = validateHeight(height);
     const weightValidation = validateWeight(weight);
     
@@ -256,7 +226,6 @@ const BMICalculator = () => {
       
       setBmi(bmiValue.toFixed(1));
       
-      // Determine BMI category and recommendations
       let bmiCategory = '';
       let bmiRecommendations = [];
       
@@ -310,10 +279,10 @@ const BMICalculator = () => {
   };
 
   const getBMIColor = (bmiValue) => {
-    if (bmiValue < 18.5) return '#f59e0b'; // Orange for underweight
-    if (bmiValue >= 18.5 && bmiValue < 25) return '#10b981'; // Green for healthy
-    if (bmiValue >= 25 && bmiValue < 30) return '#f59e0b'; // Orange for overweight
-    return '#ef4444'; // Red for obese
+    if (bmiValue < 18.5) return '#f59e0b';
+    if (bmiValue >= 18.5 && bmiValue < 25) return '#10b981';
+    if (bmiValue >= 25 && bmiValue < 30) return '#f59e0b';
+    return '#ef4444';
   };
 
   const getBMIIcon = (category) => {
@@ -326,7 +295,6 @@ const BMICalculator = () => {
     }
   };
 
-  // Check if form is valid
   const isFormValid = () => {
     return height && 
            weight && 
@@ -339,14 +307,14 @@ const BMICalculator = () => {
   };
 
   return (
-    <div className="bmi-calculator">
-      <div className="bmi-header">
+    <div className="bmi-calculator-wrapper scroll-animate">
+      <div className="bmi-calculator-header scroll-animate">
         <h3>{EMOJIS.scale} BMI Calculator</h3>
         <p>Calculate your Body Mass Index and get personalized health recommendations</p>
       </div>
       
-      <div className="bmi-inputs">
-        <div className="input-group">
+      <div className="bmi-inputs-container scroll-animate">
+        <div className="height-input-group">
           <label>Height (cm)</label>
           <input
             type="text"
@@ -354,15 +322,15 @@ const BMICalculator = () => {
             onChange={handleHeightChange}
             onKeyDown={handleKeyPress}
             placeholder="Enter height (0-300 cm)"
-            className={`bmi-input ${heightError ? 'error' : ''}`}
+            className={`height-input ${heightError ? 'error' : ''}`}
             maxLength="6"
           />
-          <FaRuler className="input-icon" />
-          {heightError && <span className="error-message">{heightError}</span>}
-          <div className="input-hint">Valid range: 0 - 300 cm</div>
+          <FaRuler className="height-input-icon" />
+          {heightError && <span className="height-error-message">{heightError}</span>}
+          <div className="height-input-hint">Valid range: 0 - 300 cm</div>
         </div>
         
-        <div className="input-group">
+        <div className="weight-input-group">
           <label>Weight (kg)</label>
           <input
             type="text"
@@ -370,19 +338,19 @@ const BMICalculator = () => {
             onChange={handleWeightChange}
             onKeyDown={handleKeyPress}
             placeholder="Enter weight (0-650 kg)"
-            className={`bmi-input ${weightError ? 'error' : ''}`}
+            className={`weight-input ${weightError ? 'error' : ''}`}
             maxLength="6"
           />
-          <FaWeight className="input-icon" />
-          {weightError && <span className="error-message">{weightError}</span>}
-          <div className="input-hint">Valid range: 0 - 650 kg</div>
+          <FaWeight className="weight-input-icon" />
+          {weightError && <span className="weight-error-message">{weightError}</span>}
+          <div className="weight-input-hint">Valid range: 0 - 650 kg</div>
         </div>
       </div>
       
-      <div className="bmi-actions">
+      <div className="bmi-actions-container scroll-animate">
         <button 
           onClick={calculateBMI}
-          className="calculate-btn"
+          className="calculate-bmi-btn"
           disabled={!isFormValid()}
         >
           <FaCalculator />
@@ -390,7 +358,7 @@ const BMICalculator = () => {
         </button>
         <button 
           onClick={resetCalculator}
-          className="reset-btn"
+          className="reset-bmi-btn"
         >
           <FaRedo />
           Reset
@@ -398,41 +366,41 @@ const BMICalculator = () => {
       </div>
       
       {bmi && (
-        <div className="bmi-result">
-          <div className="bmi-score" style={{ borderColor: getBMIColor(parseFloat(bmi)) }}>
-            <div className="bmi-value" style={{ color: getBMIColor(parseFloat(bmi)) }}>
+        <div className="bmi-result-container scroll-animate">
+          <div className="bmi-score-container" data-category={category.toLowerCase().replace(' ', '-')}>
+            <div className="bmi-value-display" data-bmi-value={bmi}>
               {bmi}
             </div>
-            <div className="bmi-category">
+            <div className="bmi-category-display">
               <span className="category-icon">{getBMIIcon(category)}</span>
-              <span className="category-text" style={{ color: getBMIColor(parseFloat(bmi)) }}>
+              <span className="category-text">
                 {category}
               </span>
             </div>
           </div>
           
-          <div className="bmi-chart">
-            <div className="bmi-ranges">
-              <div className="range underweight">
+          <div className="bmi-chart-container">
+            <div className="bmi-ranges-container">
+              <div className="bmi-range-underweight">
                 <span className="range-label">Underweight</span>
                 <span className="range-value">&lt; 18.5</span>
               </div>
-              <div className="range healthy">
+              <div className="bmi-range-healthy">
                 <span className="range-label">Healthy</span>
                 <span className="range-value">18.5 - 24.9</span>
               </div>
-              <div className="range overweight">
+              <div className="bmi-range-overweight">
                 <span className="range-label">Overweight</span>
                 <span className="range-value">25.0 - 29.9</span>
               </div>
-              <div className="range obese">
+              <div className="bmi-range-obese">
                 <span className="range-label">Obese</span>
                 <span className="range-value">&gt;= 30.0</span>
               </div>
             </div>
           </div>
           
-          <div className="bmi-recommendations">
+          <div className="bmi-recommendations-container">
             <h4>Personalized Recommendations:</h4>
             <ul>
               {recommendations.map((recommendation, index) => (
@@ -441,12 +409,12 @@ const BMICalculator = () => {
             </ul>
           </div>
           
-          <div className="bmi-actions-secondary">
-            <button className="consult-doctor-btn">
+          <div className="bmi-secondary-actions-container">
+            <button className="consult-doctor-bmi-btn">
               <FaUserMd />
               Consult Private Doctor
             </button>
-            <button className="nutrition-plan-btn">
+            <button className="nutrition-plan-bmi-btn">
               <FaApple />
               Get Nutrition Plan
             </button>
@@ -457,7 +425,7 @@ const BMICalculator = () => {
   );
 };
 
-// AI Health Risk Assessment Component with Age Validation
+// AI Health Risk Assessment Component
 const AIHealthRiskAssessment = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -472,7 +440,6 @@ const AIHealthRiskAssessment = () => {
     { id: 'family_history', question: 'Family history of heart disease?', type: 'select', options: ['No', 'Yes'] }
   ];
 
-  // Age validation function
   const validateAge = (value) => {
     const numValue = parseInt(value);
     if (isNaN(numValue) || numValue < 1) {
@@ -484,14 +451,10 @@ const AIHealthRiskAssessment = () => {
     return '';
   };
 
-  // Handle age input with validation
   const handleAgeChange = (e) => {
     let value = e.target.value;
-    
-    // Allow only numbers
     const numericValue = value.replace(/[^0-9]/g, '');
     
-    // Limit to 3 digits
     if (numericValue.length <= 3) {
       const numValue = parseInt(numericValue);
       
@@ -508,18 +471,14 @@ const AIHealthRiskAssessment = () => {
     }
   };
 
-  // Prevent non-numeric keyboard input for age
   const handleAgeKeyPress = (e) => {
-    // Allow: backspace, delete, tab, escape, enter
     if ([8, 9, 27, 13].indexOf(e.keyCode) !== -1 ||
-        // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
         (e.keyCode === 65 && e.ctrlKey === true) ||
         (e.keyCode === 67 && e.ctrlKey === true) ||
         (e.keyCode === 86 && e.ctrlKey === true) ||
         (e.keyCode === 88 && e.ctrlKey === true)) {
       return;
     }
-    // Ensure that it is a number and stop the keypress
     if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
       e.preventDefault();
     }
@@ -543,7 +502,6 @@ const AIHealthRiskAssessment = () => {
 
   const handleAnswer = (value) => {
     if (questions[currentStep].id === 'age') {
-      // Age validation is handled by handleAgeChange
       return;
     }
     setAnswers(prev => ({ ...prev, [questions[currentStep].id]: value }));
@@ -571,7 +529,6 @@ const AIHealthRiskAssessment = () => {
     return { level: 'High', color: '#ef4444', message: 'High risk. Please consult with a healthcare provider.' };
   };
 
-  // Check if current step answer is valid
   const isCurrentStepValid = () => {
     const currentQuestion = questions[currentStep];
     if (currentQuestion.id === 'age') {
@@ -586,16 +543,16 @@ const AIHealthRiskAssessment = () => {
   if (riskScore !== null) {
     const risk = getRiskLevel(riskScore);
     return (
-      <div className="risk-assessment-result">
+      <div className="risk-assessment-result-container scroll-animate">
         <h3>{EMOJIS.target} Your Health Risk Assessment</h3>
-        <div className="risk-score" style={{ borderColor: risk.color }}>
-          <div className="risk-level" style={{ color: risk.color }}>
+        <div className="risk-score-display" data-risk-level={risk.level.toLowerCase()}>
+          <div className="risk-level-text">
             {risk.level} Risk
           </div>
-          <div className="risk-percentage">{riskScore}%</div>
+          <div className="risk-percentage-text">{riskScore}%</div>
         </div>
         <p>{risk.message}</p>
-        <div className="risk-recommendations">
+        <div className="risk-recommendations-container">
           <h4>Personalized Recommendations:</h4>
           <ul>
             {riskScore > 30 && <li>Schedule a comprehensive health checkup</li>}
@@ -605,7 +562,7 @@ const AIHealthRiskAssessment = () => {
           </ul>
         </div>
         <button 
-          className="book-checkup-btn"
+          className="book-checkup-risk-btn"
           onClick={() => {
             setRiskScore(null);
             setCurrentStep(0);
@@ -620,45 +577,45 @@ const AIHealthRiskAssessment = () => {
   }
 
   return (
-    <div className="ai-risk-assessment">
-      <div className="assessment-header">
+    <div className="ai-risk-assessment-container scroll-animate">
+      <div className="assessment-header-container scroll-animate">
         <h3>{EMOJIS.robot} AI Health Risk Assessment</h3>
-        <div className="progress-bar">
+        <div className="progress-bar-container">
           <div 
-            className="progress-fill" 
-            style={{ width: `${((currentStep + 1) / questions.length) * 100}%` }}
+            className="progress-fill-bar" 
+            data-progress={`${((currentStep + 1) / questions.length) * 100}%`}
           ></div>
         </div>
-        <span className="progress-text">
+        <span className="progress-text-display">
           Question {currentStep + 1} of {questions.length}
         </span>
       </div>
       
-      <div className="assessment-question">
+      <div className="assessment-question-container scroll-animate">
         <h4>{questions[currentStep].question}</h4>
         
         {questions[currentStep].type === 'number' && (
-          <div className="input-group">
+          <div className="age-input-group">
             <input
               type="text"
-              className={`assessment-input ${ageError ? 'error' : ''}`}
+              className={`age-assessment-input ${ageError ? 'error' : ''}`}
               value={answers.age || ''}
               onChange={handleAgeChange}
               onKeyDown={handleAgeKeyPress}
               placeholder="Enter your age (1-120 years)"
               maxLength="3"
             />
-            {ageError && <span className="error-message">{ageError}</span>}
-            <div className="input-hint">Valid range: 1 - 120 years</div>
+            {ageError && <span className="age-error-message">{ageError}</span>}
+            <div className="age-input-hint">Valid range: 1 - 120 years</div>
           </div>
         )}
         
         {questions[currentStep].type === 'select' && (
-          <div className="assessment-options">
+          <div className="assessment-options-container">
             {questions[currentStep].options.map((option, index) => (
               <button
                 key={index}
-                className={`assessment-option ${answers[questions[currentStep].id] === option ? 'selected' : ''}`}
+                className={`assessment-option-btn ${answers[questions[currentStep].id] === option ? 'selected' : ''}`}
                 onClick={() => handleAnswer(option)}
               >
                 {option}
@@ -679,9 +636,9 @@ const AIHealthRiskAssessment = () => {
   );
 };
 
-// Live Hospital Status Component - Private Healthcare
+// Live Hospital Status Component
 const LiveHospitalStatus = () => {
-  const [departments, setDepartments] = useState([
+  const departments = [
     {
       id: 1,
       name: 'Private Emergency',
@@ -700,71 +657,53 @@ const LiveHospitalStatus = () => {
       availableBeds: 8,
       doctorsOnDuty: 2
     }
-  ]);
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'open': return '#10b981';
-      case 'busy': return '#f59e0b';
-      case 'full': return '#ef4444';
-      default: return '#6b7280';
-    }
-  };
-
-  const getCapacityColor = (capacity) => {
-    if (capacity < 50) return '#10b981';
-    if (capacity < 80) return '#f59e0b';
-    return '#ef4444';
-  };
+  ];
 
   return (
-    <div className="live-hospital-status">
-      <div className="status-header">
+    <div className="live-hospital-status-container scroll-animate">
+      <div className="status-header-container scroll-animate">
         <h3>{EMOJIS.hospital} Private Healthcare Status</h3>
-        <div className="last-updated">
+        <div className="last-updated-container">
           <FaSyncAlt className="refresh-icon" />
           <span>Updated 2 minutes ago</span>
         </div>
       </div>
       
-      <div className="departments-grid">
+      <div className="departments-grid-container scroll-animate">
         {departments.map(dept => (
-          <div key={dept.id} className="department-card">
-            <div className="dept-header">
+          <div key={dept.id} className="department-card-container scroll-animate">
+            <div className="dept-header-container">
               <h4>{dept.name}</h4>
               <span 
-                className="status-indicator"
-                style={{ backgroundColor: getStatusColor(dept.status) }}
+                className="status-indicator-text"
+                data-status={dept.status}
               >
                 {dept.status}
               </span>
             </div>
             
-            <div className="dept-metrics">
-              <div className="metric">
+            <div className="dept-metrics-container">
+              <div className="wait-time-metric">
                 <span className="metric-label">Wait Time</span>
                 <span className="metric-value">{dept.waitTime}</span>
               </div>
               
-              <div className="metric">
+              <div className="beds-metric">
                 <span className="metric-label">Available Beds</span>
                 <span className="metric-value">{dept.availableBeds}</span>
               </div>
               
-              <div className="metric">
+              <div className="doctors-metric">
                 <span className="metric-label">Doctors On Duty</span>
                 <span className="metric-value">{dept.doctorsOnDuty}</span>
               </div>
               
-              <div className="metric">
+              <div className="capacity-metric">
                 <span className="metric-label">Capacity</span>
-                <div className="capacity-bar">
+                <div className="capacity-bar-container">
                   <div 
-                    className="capacity-fill"
-                    style={{ 
-                      width: `${dept.capacity}%`, 
-                      backgroundColor: getCapacityColor(dept.capacity) 
-                    }}
+                    className="capacity-fill-bar"
+                    data-capacity={dept.capacity}
                   ></div>
                   <span className="capacity-text">{dept.capacity}%</span>
                 </div>
@@ -782,16 +721,14 @@ const LiveHospitalStatus = () => {
   );
 };
 
-// Private Doctor Availability Component with Date Validation - Only 2 Doctors
+// Private Doctor Availability Component
 const AdvancedDoctorAvailability = () => {
-  // Get current date and calculate min/max dates
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
   const dayAfterTomorrow = new Date(today);
   dayAfterTomorrow.setDate(today.getDate() + 2);
 
-  // Format dates for input value and validation
   const todayString = today.toISOString().split('T')[0];
   const maxDateString = dayAfterTomorrow.toISOString().split('T')[0];
   
@@ -799,7 +736,6 @@ const AdvancedDoctorAvailability = () => {
   const [selectedSpecialty, setSelectedSpecialty] = useState('all');
   const [dateError, setDateError] = useState('');
 
-  // Validate date selection
   const validateDate = (dateString) => {
     const selectedDateObj = new Date(dateString);
     const todayObj = new Date(todayString);
@@ -814,7 +750,6 @@ const AdvancedDoctorAvailability = () => {
     return '';
   };
 
-  // Handle date change with validation
   const handleDateChange = (e) => {
     const dateValue = e.target.value;
     const validation = validateDate(dateValue);
@@ -828,7 +763,6 @@ const AdvancedDoctorAvailability = () => {
     setDateError('');
   };
 
-  // Format date for display
   const formatDateForDisplay = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -848,7 +782,6 @@ const AdvancedDoctorAvailability = () => {
     }
   };
 
-  // Only 2 private doctors
   const doctors = [
     {
       id: 1,
@@ -891,14 +824,14 @@ const AdvancedDoctorAvailability = () => {
   );
 
   return (
-    <div className="advanced-doctor-availability">
-      <div className="availability-header">
+    <div className="advanced-doctor-availability-container scroll-animate">
+      <div className="availability-header-container scroll-animate">
         <h3>{EMOJIS.stethoscope} Private Doctor Availability</h3>
-        <div className="private-badge">
+        <div className="private-badge-container">
           <FaShieldAlt />
-          <span>  Exclusive Private Healthcare</span>
+          <span>Exclusive Private Healthcare</span>
         </div>
-        <div className="availability-filters">
+        <div className="availability-filters-container">
           <div className="date-filter-container">
             <input
               type="date"
@@ -906,15 +839,14 @@ const AdvancedDoctorAvailability = () => {
               onChange={handleDateChange}
               min={todayString}
               max={maxDateString}
-              className={`date-filter ${dateError ? 'error' : ''}`}
+              className={`date-filter-input ${dateError ? 'error' : ''}`}
             />
-            {dateError && <span className="error-message date-error">{dateError}</span>}
-            
+            {dateError && <span className="date-error-message">{dateError}</span>}
           </div>
           <select
             value={selectedSpecialty}
             onChange={(e) => setSelectedSpecialty(e.target.value)}
-            className="specialty-filter"
+            className="specialty-filter-select"
           >
             <option value="all">All Specialties</option>
             <option value="cardiology">Cardiology</option>
@@ -923,38 +855,33 @@ const AdvancedDoctorAvailability = () => {
         </div>
       </div>
 
-      <div className="doctors-availability-grid">
+      <div className="doctors-availability-grid-container scroll-animate">
         {filteredDoctors.map(doctor => (
-          <div key={doctor.id} className="doctor-availability-card private-doctor">
-            <div className="private-indicator">
+          <div key={doctor.id} className="doctor-availability-card-container private-doctor-card scroll-animate">
+            <div className="private-indicator-container">
               <FaShieldAlt />
-              <span style={{ fontSize: "20px", fontWeight: "bold", marginLeft: "10px" }}>
-                {doctor.type}
-              </span>
+              <span>{doctor.type}</span>
             </div>
             
-            <div className="doctor-header">
-              <div className="doctor-avatar-section">
+            <div className="doctor-header-container">
+              <div className="doctor-avatar-section-container">
                 <div className="doctor-avatar">{doctor.avatar}</div>
                 <div 
                   className="doctor-status-dot"
-                  style={{ backgroundColor: doctor.status === 'available' ? '#10b981' : '#f59e0b' }}
+                  data-status={doctor.status}
                 ></div>
               </div>
-              <div className="doctor-info">
+              <div className="doctor-info-container">
                 <h4>{doctor.name}</h4>
-                <p className="doctor-specialty">{doctor.specialty}</p>
-                <div className="doctor-rating">
+                <p className="doctor-specialty-text">{doctor.specialty}</p>
+                <div className="doctor-rating-container">
                   <FaStar className="star-icon" />
                   <span>{doctor.rating} • {doctor.experience}</span>
-                </div>
-                <div className="languages">
-                  
                 </div>
               </div>
             </div>
 
-            <div className="doctor-specializations">
+            <div className="doctor-specializations-container">
               <h5>Specializations:</h5>
               <ul>
                 {doctor.specializations.map((spec, idx) => (
@@ -962,31 +889,28 @@ const AdvancedDoctorAvailability = () => {
                 ))}
               </ul>
             </div>
-            <br/>
-            <br/>
-            <div className="certifications">
+
+            <div className="certifications-container">
               <h5>Certifications:</h5>
               <ul>
                 {doctor.certifications.map((cert, idx) => (
-                  <li key={idx}>
-                    {cert}
-                  </li>
+                  <li key={idx}>{cert}</li>
                 ))}
               </ul>
             </div>
-            <br/><br/>
-            <div className="availability-info">
-              <div className="next-slot">
+
+            <div className="availability-info-container">
+              <div className="next-slot-container">
                 <span className="slot-label">Next Available:</span>
                 <span className="slot-time">{doctor.nextSlot}</span>
               </div>
-              <div className="consultation-fee">
+              <div className="consultation-fee-container">
                 <span className="fee-label">Private Consultation Fee:</span>
                 <span className="fee-amount">{doctor.consultationFee}</span>
               </div>
             </div>
 
-            <div className="booking-options">
+            <div className="booking-options-container">
               <button className="quick-book-btn">
                 <FaCalendarAlt />
                 Book Private Consultation
@@ -1051,27 +975,27 @@ const AdvancedServices = () => {
   ];
 
   return (
-    <div className="advanced-services">
-      <div className="container">
+    <div className="advanced-services-container scroll-animate">
+      <div className="services-content-container scroll-animate">
         <h2>{EMOJIS.sparkles} Private Healthcare Services</h2>
-        <p className="section-subtitle">
+        <p className="services-subtitle-text">
           Exclusive AI-powered private healthcare solutions designed for premium care
         </p>
         
-        <div className="advanced-services-grid">
+        <div className="advanced-services-grid-container">
           {services.map((service, index) => (
-            <div key={index} className="advanced-service-card" style={{ '--accent-color': service.color }}>
-              <div className="service-icon-advanced">
+            <div key={index} className="advanced-service-card-container scroll-animate" data-service-color={service.color}>
+              <div className="service-icon-advanced-container">
                 {service.icon}
               </div>
               <h3>{service.title}</h3>
               <p>{service.description}</p>
-              <div className="service-features">
+              <div className="service-features-container">
                 {service.features.map((feature, idx) => (
-                  <span key={idx} className="feature-tag">{feature}</span>
+                  <span key={idx} className="feature-tag-text">{feature}</span>
                 ))}
               </div>
-              <button className="service-btn-advanced">
+              <button className="service-btn-advanced-container">
                 Learn More
               </button>
             </div>
@@ -1082,7 +1006,7 @@ const AdvancedServices = () => {
   );
 };
 
-// Featured Doctors Component - Only 2 Private Doctors
+// Featured Doctors Component
 const FeaturedDoctors = () => {
   const doctors = [
     {
@@ -1112,57 +1036,57 @@ const FeaturedDoctors = () => {
   ];
 
   return (
-    <div className="featured-doctors">
-      <div className="container">
+    <div className="featured-doctors-container scroll-animate">
+      <div className="doctors-content-container scroll-animate">
         <h2>{EMOJIS.stethoscope} Our Private Doctors</h2>
-        <p className="section-subtitle">
+        <p className="doctors-subtitle-text">
           Meet our exclusive private healthcare professionals
         </p>
         
-        <div className="doctors-grid">
+        <div className="doctors-grid-container">
           {doctors.map(doctor => (
-            <div key={doctor.id} className="doctor-card private-doctor-card">
-              <div className="private-badge">
-                <FaShieldAlt />   
-                <span>   Private Practice</span>
+            <div key={doctor.id} className="doctor-card-container private-doctor-card scroll-animate">
+              <div className="private-badge-container">
+                <FaShieldAlt />
+                <span>Private Practice</span>
               </div>
-              <div className="doctor-avatar">
+              <div className="doctor-avatar-container">
                 {doctor.avatar}
               </div>
               <h3>{doctor.name}</h3>
-              <p className="specialty">{doctor.specialty}</p>
+              <p className="specialty-text">{doctor.specialty}</p>
               
-              <div className="doctor-stats">
-                <div className="rating">
+              <div className="doctor-stats-container">
+                <div className="rating-container">
                   <FaStar />
                   <span>{doctor.rating}</span>
                 </div>
-                <div className="experience">
+                <div className="experience-container">
                   {doctor.experience}
                 </div>
               </div>
               
-              <div className="doctor-status">
+              <div className="doctor-status-container">
                 <span className={`status-badge ${doctor.status}`}>
                   {doctor.status}
                 </span>
-                <span className="next-slot">Next: {doctor.nextSlot}</span>
+                <span className="next-slot-text">Next: {doctor.nextSlot}</span>
               </div>
               
-              <div className="patient-count">
+              <div className="patient-count-container">
                 <FaUsers />
-                <span>{doctor.patients}  Private Patients</span>
+                <span>{doctor.patients} Private Patients</span>
               </div>
               
-              <div className="achievements">
+              <div className="achievements-container">
                 {doctor.achievements.map((achievement, idx) => (
-                  <span key={idx} className="achievement-badge">
+                  <span key={idx} className="achievement-badge-text">
                     {achievement}
                   </span>
                 ))}
               </div>
               
-              <button className="book-btn private-book-btn">
+              <button className="book-btn-container private-book-btn">
                 <FaCalendarAlt />
                 Book Private Appointment
               </button>
@@ -1206,26 +1130,26 @@ const AIFaqSection = () => {
   };
 
   return (
-    <div className="ai-faq-section">
-      <div className="container">
-        <h2>  Frequently Asked Questions <FaQuestionCircle/></h2>
-        <p className="section-subtitle">
+    <div className="ai-faq-section-container scroll-animate">
+      <div className="faq-content-container scroll-animate">
+        <h2>Frequently Asked Questions <FaQuestionCircle/></h2>
+        <p className="faq-subtitle-text">
           Get answers to common questions about our private AI-powered healthcare platform
         </p>
         
-        <div className="faq-container">
-          <div className="faq-items">
+        <div className="faq-container-wrapper">
+          <div className="faq-items-container">
             {faqs.map((faq, index) => (
-              <div key={index} className="faq-question">
+              <div key={index} className="faq-question-container scroll-animate">
                 <button
-                  className="faq-toggle"
+                  className="faq-toggle-btn"
                   onClick={() => toggleQuestion(index)}
                 >
                   <span>{faq.question}</span>
                   {openQuestion === index ? <FaChevronUp /> : <FaChevronDown />}
                 </button>
                 {openQuestion === index && (
-                  <div className="faq-answer">
+                  <div className="faq-answer-container">
                     <p>{faq.answer}</p>
                   </div>
                 )}
@@ -1274,14 +1198,14 @@ const FeaturesShowcase = () => {
   ];
 
   return (
-    <div className="features-showcase">
-      <div className="container">
+    <div className="features-showcase-container scroll-animate">
+      <div className="showcase-content-container scroll-animate">
         <h2>{EMOJIS.sparkles} Why Choose Our Private Platform</h2>
         
-        <div className="showcase-grid">
+        <div className="showcase-grid-container">
           {features.map((feature, index) => (
-            <div key={index} className="showcase-item">
-              <div className="showcase-icon">
+            <div key={index} className="showcase-item-container scroll-animate">
+              <div className="showcase-icon-container">
                 {feature.icon}
               </div>
               <h4>{feature.title}</h4>
@@ -1299,34 +1223,34 @@ const FinalAdvancedCTA = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="final-advanced-cta">
-      <div className="container">
+    <div className="final-advanced-cta-container scroll-animate">
+      <div className="cta-content-container scroll-animate">
         <h2>Ready to Experience Premium Private Healthcare?</h2>
         <p>
           Join our exclusive private healthcare community with personalized AI assistance, 
           BMI health tracking, and access to top private doctors. Experience luxury healthcare today.
         </p>
         
-        <div className="final-advanced-stats">
-          <div className="advanced-stat">
+        <div className="final-advanced-stats-container">
+          <div className="advanced-stat-container">
             <strong>5K+</strong>
             <span>Private Patients</span>
           </div>
-          <div className="advanced-stat">
+          <div className="advanced-stat-container">
             <strong>95%</strong>
             <span>Accuracy Rate</span>
           </div>
-          <div className="advanced-stat">
+          <div className="advanced-stat-container">
             <strong>24/7</strong>
             <span>Premium Access</span>
           </div>
-          <div className="advanced-stat">
+          <div className="advanced-stat-container">
             <strong>2</strong>
             <span>Expert Private Doctors</span>
           </div>
         </div>
         
-        <div className="final-advanced-buttons">
+        <div className="final-advanced-buttons-container">
           <button 
             onClick={() => navigate('/book-appointment')}
             className="final-btn-advanced primary"
@@ -1353,7 +1277,33 @@ const Homepage = () => {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
   const [loading, setLoading] = useState(false);
 
-  // Fetch current user data on component mount
+  // Scroll Animation Effect - moved inside the component
+  useEffect(() => {
+    const handleScrollAnimation = () => {
+      const elements = document.querySelectorAll('.scroll-animate, .scroll-animate-left, .scroll-animate-right, .scroll-animate-scale');
+      
+      elements.forEach(element => {
+        const elementTop = element.getBoundingClientRect().top;
+        const elementVisible = 150;
+        
+        if (elementTop < window.innerHeight - elementVisible) {
+          element.classList.add('active');
+        }
+      });
+    };
+
+    // Initial check on mount
+    handleScrollAnimation();
+    
+    // Add scroll event listener
+    window.addEventListener('scroll', handleScrollAnimation);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('scroll', handleScrollAnimation);
+    };
+  }, []);
+
   useEffect(() => {
     const fetchCurrentUser = async () => {
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -1365,7 +1315,6 @@ const Homepage = () => {
           if (response.ok) {
             const currentUser = await response.json();
             setUser(currentUser);
-            // Update localStorage with fresh user data
             localStorage.setItem('user', JSON.stringify(currentUser));
           }
         } catch (error) {
@@ -1380,44 +1329,44 @@ const Homepage = () => {
   }, []);
 
   return (
-    <div className="advanced-homepage">
-      {/* Hero Section */}
-      <section className="advanced-hero-section">
-        <div className="hero-content">
-          <div className="hero-text">
-            <h1>{EMOJIS.rocket} Private Healthcare Excellence</h1>
+    <div className="advanced-homepage-container">
+      <section className="advanced-hero-section-container">
+        <div className="hero-content-container">
+          <div className="hero-text-container">
+            <h1>HEAL-X</h1>
+            <h2>{EMOJIS.rocket} Private Healthcare Excellence</h2>
             <p>Experience revolutionary AI-powered private healthcare with ARIA, featuring exclusive private consultations, BMI health tracking, auto-symptom analysis, and cutting-edge telehealth technology.</p>
             
             {user.name ? (
-              <div className="welcome-user-advanced">
+              <div className="welcome-user-advanced-container">
                 <p>Welcome back, <strong>{user.name}</strong>! {EMOJIS.target}</p>
-                {loading && <span className="loading-indicator">Syncing your data...</span>}
-                <div className="user-health-summary">
-                  <div className="health-metric">
-                    <span className="metric-value">98%</span>
-                    <span className="metric-label">Health Score</span>
+                {loading && <span className="loading-indicator-text">Syncing your data...</span>}
+                <div className="user-health-summary-container">
+                  <div className="health-metric-container">
+                    <span className="metric-value-text">98%</span>
+                    <span className="metric-label-text">Health Score</span>
                   </div>
-                  <div className="health-metric">
-                    <span className="metric-value">2</span>
-                    <span className="metric-label">Private Appointments</span>
+                  <div className="health-metric-container">
+                    <span className="metric-value-text">2</span>
+                    <span className="metric-label-text">Private Appointments</span>
                   </div>
                 </div>
                 <button 
                   onClick={() => navigate('/dashboard')}
-                  className="dashboard-btn"
+                  className="dashboard-btn-container"
                 >
                   {EMOJIS.target} View Private Health Dashboard
                 </button>
               </div>
             ) : (
-              <div className="auth-prompt-advanced">
+              <div className="auth-prompt-advanced-container">
                 <p>Join our exclusive private healthcare community</p>
-                <div className="auth-features">
+                <div className="auth-features-container">
                   <span>{EMOJIS.sparkles} Private AI Assistant</span>
                   <span>{EMOJIS.scale} BMI Health Tracking</span>
                   <span>{EMOJIS.phoneIcon} Premium Monitoring</span>
                 </div>
-                <div className="auth-buttons">
+                <div className="auth-buttons-container">
                   <button 
                     onClick={() => navigate('/register')}
                     className="auth-btn primary-advanced"
@@ -1434,7 +1383,7 @@ const Homepage = () => {
               </div>
             )}
             
-            <div className="advanced-cta-buttons">
+            <div className="advanced-cta-buttons-container">
               <button 
                 onClick={() => navigate('/ai-booking')}
                 className="cta-primary-advanced"
@@ -1450,18 +1399,18 @@ const Homepage = () => {
             </div>
           </div>
           
-          <div className="hero-ai-features">
-            <div className="ai-feature-card">
+          <div className="hero-ai-features-container">
+            <div className="ai-feature-card-container">
               <FaRobot className="ai-icon" />
               <h4>ARIA AI Assistant</h4>
               <p>Auto-symptom analysis as you type</p>
             </div>
-            <div className="ai-feature-card">
+            <div className="ai-feature-card-container">
               <FaWeight className="ai-icon" />
               <h4>BMI Health Tracker</h4>
               <p>Instant health status assessment</p>
             </div>
-            <div className="ai-feature-card">
+            <div className="ai-feature-card-container">
               <FaShieldAlt className="ai-icon" />
               <h4>Private Care</h4>
               <p>Exclusive healthcare access</p>
@@ -1470,58 +1419,43 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* BMI Calculator Section */}
-      <section className="bmi-calculator-section">
-        <div className="bmi-container">
+      <section className="bmi-calculator-section-container scroll-animate">
+        <div className="bmi-section-content-container scroll-animate">
           <h2>{EMOJIS.scale} BMI Health Assessment</h2>
-          <p className="section-subtitle">Calculate your BMI and get personalized health recommendations</p>
+          <p className="bmi-section-subtitle-text">Calculate your BMI and get personalized health recommendations</p>
           <BMICalculator />
         </div>
       </section>
 
-      {/* AI Health Risk Assessment Section */}
-      <section className="ai-assessment-section">
-        <div className="container">
+      <section className="ai-assessment-section-container scroll-animate">
+        <div className="assessment-section-content-container scroll-animate">
           <h2>{EMOJIS.robot} AI Health Risk Assessment</h2>
-          <p className="section-subtitle">Get personalized health insights with our advanced AI analysis</p>
+          <p className="assessment-section-subtitle-text">Get personalized health insights with our advanced AI analysis</p>
           <AIHealthRiskAssessment />
         </div>
       </section>
 
-      {/* Live Hospital Status Section */}
-      <section className="live-status-section">
-        <div className="container">
+      <section className="live-status-section-container scroll-animate">
+        <div className="status-section-content-container scroll-animate">
           <h2>{EMOJIS.hospital} Private Healthcare Status</h2>
-          <p className="section-subtitle">Real-time private facility capacity and availability updates</p>
+          <p className="status-section-subtitle-text">Real-time private facility capacity and availability updates</p>
           <LiveHospitalStatus />
         </div>
       </section>
 
-      {/* Doctor Availability Section */}
-      <section className="doctor-availability-section">
-        <div className="container">
+      <section className="doctor-availability-section-container scroll-animate">
+        <div className="availability-section-content-container scroll-animate">
           <h2>{EMOJIS.calendar} Private Doctor Availability</h2>
-          <p className="section-subtitle">Find and book appointments with our exclusive private specialists</p>
+          <p className="availability-section-subtitle-text">Find and book appointments with our exclusive private specialists</p>
           <AdvancedDoctorAvailability />
         </div>
       </section>
 
-      {/* Advanced Services Section */}
       <AdvancedServices />
-
-      {/* Featured Doctors Section */}
       <FeaturedDoctors />
-
-      {/* Features Showcase Section */}
       <FeaturesShowcase />
-
-      {/* FAQ Section */}
       <AIFaqSection />
-
-      {/* Final CTA Section */}
       <FinalAdvancedCTA />
-
-      {/* Chatbot Component */}
       <AdvancedFloatingChatbot />
     </div>
   );
