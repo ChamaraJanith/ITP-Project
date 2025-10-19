@@ -10,13 +10,16 @@ const SendEmail = () => {
   const [success, setSuccess] = useState("");
   const [dragActive, setDragActive] = useState(false);
   
-  // Predefined email addresses
+  
   const predefinedEmails = {
     admin: [
       "cjtmadmhealx@gmail.com"
     ],
     doctor: [
       "doctorgsdhealx@gmail.com",
+    ],
+    system: [
+      "heal.x.system@gmail.com"
     ]
   };
   
@@ -283,7 +286,8 @@ HealX Healthcare Center`
         )}
 
         <div className="se-main-content">
-          {/* Recipients Section */}
+        
+
           <div className="se-section">
             <h2>👥 Select Recipients</h2>
             
@@ -320,6 +324,25 @@ HealX Healthcare Center`
                   <small>Doctors and medical directors</small>
                   <div className="se-email-preview">
                     {predefinedEmails.doctor.map(email => (
+                      <span key={email} className="se-email-chip">{email}</span>
+                    ))}
+                  </div>
+                </div>
+              </label>
+
+              <label className="se-radio-option">
+                <input
+                  type="radio"
+                  name="recipientType"
+                  value="system"
+                  checked={emailData.recipientType === "system"}
+                  onChange={(e) => handleRecipientTypeChange(e.target.value)}
+                />
+                <div className="se-radio-content">
+                  <strong>🖥️ Heal-X System </strong>
+                  <small>System administrators and IT support</small>
+                  <div className="se-email-preview">
+                    {predefinedEmails.system.map(email => (
                       <span key={email} className="se-email-chip">{email}</span>
                     ))}
                   </div>
@@ -476,7 +499,7 @@ HealX Healthcare Center`
             </div>
           )}
 
-          {/* Send Button */}
+          {/* Send Button - FIXED: Corrected closing tag */}
           <div className="se-send-section">
             <button
               className="se-send-button"
