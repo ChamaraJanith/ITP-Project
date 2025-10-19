@@ -914,16 +914,16 @@ class EmailService {
                 <h3 style="margin: 0 0 15px 0; color: #229954; font-size: 20px;">📞 Contact Financial Team</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
                   <div>
-                    <p style="margin: 0 0 10px 0; font-weight: 600; color: #27ae60;">Financial Department</p>
-                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">📍 HealX Healthcare Center</p>
-                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">📞 Phone: (555) 123-4567</p>
-                    <p style="margin: 0; color: #2e7d5b;">📧 Email: finance@healx.com</p>
+                    <p style="margin: 0 0 10px 0; font-weight: 600; color: #27ae60;">Financial Department Of Heal-x</p>
+                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">📍 Heal-X Healthcare Management System</p>
+                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">📞 Phone: +94 70 236 2892</p>
+                    <p style="margin: 0; color: #2e7d5b;">📧 Email: finaancemmakst@gmail.com</p>
                   </div>
                   <div>
                     <p style="margin: 0 0 10px 0; font-weight: 600; color: #27ae60;">Report Support</p>
-                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">🆘 Support: (555) 123-4568</p>
+                    <p style="margin: 0 0 5px 0; color: #2e7d5b;">🆘 Support: +94 70 236 2892</p>
                     <p style="margin: 0 0 5px 0; color: #2e7d5b;">⏰ Hours: 9 AM - 6 PM</p>
-                    <p style="margin: 0; color: #2e7d5b;">💬 Chat: support.healx.com</p>
+                    <p style="margin: 0; color: #2e7d5b;">💬 Chat: heal.x.system@gmail.com</p>
                   </div>
                 </div>
               </div>
