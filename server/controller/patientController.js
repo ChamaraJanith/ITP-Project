@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Patient from '../model/User.js';
+import Patient from '../model/userModel.js';
 
 class PatientController {
   // Get patient profile

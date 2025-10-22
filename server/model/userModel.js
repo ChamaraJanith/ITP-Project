@@ -1,182 +1,152 @@
-import mongoose from 'mongoose';
+// model/userModel.js
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
 const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
+  name: { 
+    type: String, 
+    required: [true, "Name is required"],
     trim: true
   },
-  email: {
-    type: String,
-    required: true,
+  email: { 
+    type: String, 
+    required: [true, "Email is required"], 
     unique: true,
     lowercase: true,
-    trim: true
+    trim: true,
+    match: [
+      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+      "Please fill a valid email address"
+    ]
   },
-  password: {
-    type: String,
-    required: true,
-    minlength: 6
+  password: { 
+    type: String, 
+    required: [true, "Password is required"],
+    minlength: [6, "Password must be at least 6 characters long"],
+    select: false
   },
-  phone: {
-    type: String,
-    required: false
+  phone: { 
+    type: String, 
+    trim: true,
+    validate: {
+      validator: function(v) {
+        return !v || /^\d{10}$/.test(v);
+      },
+      message: "Phone number must be 10 digits"
+    }
   },
-  role: {
-    type: String,
-    // FIXED: Added 'patient' and 'Patient' to enum values
-    enum: ['user', 'admin', 'doctor', 'receptionist', 'financial', 'patient', 'Patient'],
-    default: 'user'
+  dateOfBirth: { 
+    type: Date,
+    validate: {
+      validator: function(value) {
+        return !value || value < new Date();
+      },
+      message: "Date of birth cannot be in the future"
+    }
   },
+  gender: { 
+    type: String, 
+    enum: ["male", "female", "other", ""],
+    lowercase: true,
+    default: ""
+  },
+  role: { 
+    type: String, 
+    default: "user",
+    lowercase: true,
+    enum: ["user", "doctor", "admin", "receptionist", "financial_manager"]
+  },
+  
+  // Email Verification Fields
   isEmailVerified: {
     type: Boolean,
     default: false
   },
-  
-  // Email verification fields
   verificationOtp: {
     type: String,
-    required: false
+    select: false
   },
   verificationOtpExpiry: {
     type: Date,
-    required: false
+    select: false
   },
   
-  // Password reset fields
+  // Password Reset Fields
   resetPasswordOtp: {
     type: String,
-    required: false
+    select: false
   },
   resetPasswordOtpExpiry: {
     type: Date,
-    required: false
+    select: false
   },
   
-  // Additional user info
-  dateOfBirth: {
-    type: Date,
-    required: false
-  },
-  gender: {
-    type: String,
-    enum: ['male', 'female', 'other'],
-    required: false
-  },
-  address: {
-    street: { type: String, required: false },
-    city: { type: String, required: false },
-    state: { type: String, required: false },
-    zipCode: { type: String, required: false },
-    country: { type: String, required: false, default: 'Sri Lanka' }
-  },
+  // Medical Info (Optional)
+  medicalHistory: [{ 
+    type: String 
+  }],
+  allergies: [{ 
+    type: String 
+  }],
   
-  // Medical information
-  emergencyContact: {
-    name: { type: String, required: false },
-    phone: { type: String, required: false },
-    relationship: { type: String, required: false }
-  },
-  
-  // Account status
-  isActive: {
-    type: Boolean,
-    default: true
-  },
+  // Login tracking
   lastLogin: {
-    type: Date,
-    required: false
-  },
-  
-  // Profile image
-  profileImage: {
-    type: String,
-    required: false
+    type: Date
   }
-}, {
+}, { 
   timestamps: true,
-  toJSON: {
-    transform: function(doc, ret) {
-      delete ret.password;
-      delete ret.resetPasswordOtp;
-      delete ret.resetPasswordOtpExpiry;
-      delete ret.verificationOtp;
-      delete ret.verificationOtpExpiry;
-      return ret;
-    }
-  }
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// Indexes for better performance
-userSchema.index({ email: 1 }, { unique: true });
-userSchema.index({ role: 1 });
-userSchema.index({ resetPasswordOtp: 1 });
-userSchema.index({ verificationOtp: 1 });
-
-// Virtual for full name
-userSchema.virtual('fullName').get(function() {
-  return this.name;
-});
-
-// Instance method to check if OTP is valid and not expired
-userSchema.methods.isValidOTP = function(otp, type = 'reset') {
-  const now = new Date();
-  
-  if (type === 'reset') {
-    return this.resetPasswordOtp === otp && 
-           this.resetPasswordOtpExpiry && 
-           this.resetPasswordOtpExpiry > now;
-  } else if (type === 'verification') {
-    return this.verificationOtp === otp && 
-           this.verificationOtpExpiry && 
-           this.verificationOtpExpiry > now;
-  }
-  
-  return false;
-};
-
-// Static method to find user by email
-userSchema.statics.findByEmail = function(email) {
-  return this.findOne({ email: email.toLowerCase() });
-};
-
-// Pre-save middleware to hash password if modified
-userSchema.pre('save', async function(next) {
-  // Only hash password if it's modified and not already hashed
-  if (!this.isModified('password')) return next();
-  
-  // Don't hash if password is already hashed (starts with $2a$ or $2b$)
-  if (this.password.startsWith('$2a$') || this.password.startsWith('$2b$')) {
-    return next();
-  }
+// Hash password before saving
+userSchema.pre("save", async function(next) {
+  if (!this.isModified("password")) return next();
   
   try {
-    const bcrypt = await import('bcryptjs');
-    this.password = await bcrypt.default.hash(this.password, 12);
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
     next(error);
   }
 });
 
-// Method to compare password
+// Method to check password
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {
-    const bcrypt = await import('bcryptjs');
-    return await bcrypt.default.compare(candidatePassword, this.password);
+    return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
-    return false;
+    throw new Error('Password comparison failed');
   }
 };
 
-// Fix for model overwrite error
-let userModel;
-try {
-  // Try to get existing model first
-  userModel = mongoose.model('User');
-} catch (error) {
-  // If model doesn't exist, create it
-  userModel = mongoose.model('User', userSchema);
-}
+// Method to validate OTP
+userSchema.methods.isValidOTP = function(otp, type = 'verification') {
+  const otpField = type === 'verification' ? 'verificationOtp' : 'resetPasswordOtp';
+  const expiryField = type === 'verification' ? 'verificationOtpExpiry' : 'resetPasswordOtpExpiry';
+  
+  return this[otpField] === otp && this[expiryField] > new Date();
+};
 
+// Virtual for user's age
+userSchema.virtual("age").get(function() {
+  if (!this.dateOfBirth) return null;
+  const today = new Date();
+  const birthDate = new Date(this.dateOfBirth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDifference = today.getMonth() - birthDate.getMonth();
+  
+  if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age;
+});
+
+// Create index for email
+userSchema.index({ email: 1 });
+
+// Create and export the model
+const userModel = mongoose.models.User || mongoose.model("User", userSchema);
 export default userModel;

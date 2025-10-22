@@ -1,22 +1,29 @@
+// controller/authController.js
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import userModel from '../model/userModel.js';
 import { sendEmail, generateOTPEmailTemplate } from '../config/emailConfig.js';
 
-// Generate OTP function
+// Generate OTP
 const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+  return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
 // Generate JWT token
-const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+const generateToken = (userId, email, role) => {
+  return jwt.sign(
+    { userId, email, role }, 
+    process.env.JWT_SECRET || 'your-secret-key-here', 
+    { expiresIn: '7d' }
+  );
 };
 
-// REGISTER CONTROLLER
+// ==================== REGISTER ====================
 export const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone, dateOfBirth, gender, role } = req.body;
+    
+    console.log('📝 Registration attempt:', { name, email, phone, gender, role });
     
     // Validation
     if (!name || !email || !password) {
@@ -33,8 +40,15 @@ export const register = async (req, res) => {
       });
     }
 
-    // Check if user already exists
-    const existingUser = await userModel.findOne({ email });
+    if (phone && phone.length !== 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number must be exactly 10 digits'
+      });
+    }
+
+    // Check if user exists
+    const existingUser = await userModel.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -42,45 +56,70 @@ export const register = async (req, res) => {
       });
     }
 
-    // Create new user
+    // Create user
     const user = new userModel({
-      name,
-      email,
-      password, // Will be hashed by pre-save middleware
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password,
+      phone: phone ? phone.trim() : undefined,
+      dateOfBirth: dateOfBirth || undefined,
+      gender: gender || undefined,
+      role: role || 'user'
     });
 
     await user.save();
 
+    console.log('✅ User created:', user._id);
+
     // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, user.email, user.role);
+
+    // Response
+    const userResponse = {
+      _id: user._id,
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
+      role: user.role,
+      isEmailVerified: user.isEmailVerified,
+      createdAt: user.createdAt
+    };
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: userResponse,
+      data: userResponse
     });
 
   } catch (error) {
-    console.error('❌ Error in register:', error);
+    console.error('❌ Register error:', error);
+    
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'Email already exists'
+      });
+    }
+    
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: error.message || 'Internal server error'
     });
   }
 };
 
-// LOGIN CONTROLLER
+// ==================== LOGIN ====================
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Validation
+    console.log('🔐 Login attempt for:', email);
+    
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -88,8 +127,7 @@ export const login = async (req, res) => {
       });
     }
 
-    // Find user
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ email: email.toLowerCase() }).select('+password');
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -97,7 +135,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Check password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -106,36 +143,42 @@ export const login = async (req, res) => {
       });
     }
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, user.email, user.role);
 
-    // Set cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
+
+    const userResponse = {
+      _id: user._id,
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
+      role: user.role,
+      isEmailVerified: user.isEmailVerified,
+      createdAt: user.createdAt
+    };
+
+    console.log('✅ Login successful for:', email);
 
     res.json({
       success: true,
       message: 'Login successful',
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isEmailVerified: user.isEmailVerified
-      }
+      user: userResponse
     });
 
   } catch (error) {
-    console.error('❌ Error in login:', error);
+    console.error('❌ Login error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -143,16 +186,21 @@ export const login = async (req, res) => {
   }
 };
 
-// LOGOUT CONTROLLER
+// ==================== LOGOUT ====================
 export const logout = async (req, res) => {
   try {
-    res.clearCookie('token');
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+    
     res.json({
       success: true,
       message: 'Logout successful'
     });
   } catch (error) {
-    console.error('❌ Error in logout:', error);
+    console.error('❌ Logout error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -160,7 +208,7 @@ export const logout = async (req, res) => {
   }
 };
 
-// SEND VERIFICATION OTP
+// ==================== SEND VERIFY OTP ====================
 export const sendVerifyOtp = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -180,15 +228,13 @@ export const sendVerifyOtp = async (req, res) => {
       });
     }
 
-    // Generate OTP
     const otp = generateOTP();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
     user.verificationOtp = otp;
     user.verificationOtpExpiry = otpExpiry;
     await user.save();
 
-    // Send email
     const emailTemplate = generateOTPEmailTemplate(otp, 'verification');
     const emailResult = await sendEmail(
       user.email,
@@ -209,7 +255,7 @@ export const sendVerifyOtp = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in sendVerifyOtp:', error);
+    console.error('❌ sendVerifyOtp error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -217,7 +263,7 @@ export const sendVerifyOtp = async (req, res) => {
   }
 };
 
-// VERIFY EMAIL
+// ==================== VERIFY EMAIL ====================
 export const verifyEmail = async (req, res) => {
   try {
     const { otp } = req.body;
@@ -230,7 +276,7 @@ export const verifyEmail = async (req, res) => {
       });
     }
 
-    const user = await userModel.findById(userId);
+    const user = await userModel.findById(userId).select('+verificationOtp +verificationOtpExpiry');
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -256,7 +302,7 @@ export const verifyEmail = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in verifyEmail:', error);
+    console.error('❌ verifyEmail error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -264,7 +310,7 @@ export const verifyEmail = async (req, res) => {
   }
 };
 
-// CHECK AUTHENTICATION
+// ==================== IS AUTHENTICATED ====================
 export const isAuthenticated = async (req, res) => {
   try {
     const user = await userModel.findById(req.user.userId);
@@ -278,16 +324,21 @@ export const isAuthenticated = async (req, res) => {
     res.json({
       success: true,
       user: {
+        _id: user._id,
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
+        dateOfBirth: user.dateOfBirth,
+        gender: user.gender,
         role: user.role,
-        isEmailVerified: user.isEmailVerified
+        isEmailVerified: user.isEmailVerified,
+        createdAt: user.createdAt
       }
     });
 
   } catch (error) {
-    console.error('❌ Error in isAuthenticated:', error);
+    console.error('❌ isAuthenticated error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -295,14 +346,13 @@ export const isAuthenticated = async (req, res) => {
   }
 };
 
-// SEND RESET OTP
+// ==================== SEND RESET OTP ====================
 export const sendResetOtp = async (req, res) => {
   try {
-    console.log('📧 sendResetOtp controller called with:', req.body);
+    console.log('📧 sendResetOtp called');
     
     const { email } = req.body;
     
-    // Validation
     if (!email) {
       return res.status(400).json({
         success: false,
@@ -310,8 +360,7 @@ export const sendResetOtp = async (req, res) => {
       });
     }
 
-    // Check if user exists
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ email: email.toLowerCase() });
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -319,19 +368,14 @@ export const sendResetOtp = async (req, res) => {
       });
     }
 
-    // Generate OTP and expiry time (10 minutes from now)
     const otp = generateOTP();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Save OTP to user record
     user.resetPasswordOtp = otp;
     user.resetPasswordOtpExpiry = otpExpiry;
     await user.save();
 
-    // Generate email content
     const emailTemplate = generateOTPEmailTemplate(otp, 'reset');
-    
-    // Send email
     const emailResult = await sendEmail(
       email,
       'Password Reset OTP - HealX Healthcare',
@@ -340,14 +384,14 @@ export const sendResetOtp = async (req, res) => {
     );
 
     if (!emailResult.success) {
-      console.error('❌ Failed to send reset OTP email:', emailResult.error);
+      console.error('❌ Failed to send email');
       return res.status(500).json({
         success: false,
-        message: 'Failed to send OTP email. Please try again.'
+        message: 'Failed to send OTP email'
       });
     }
 
-    console.log('✅ Reset OTP sent successfully to:', email);
+    console.log('✅ Reset OTP sent to:', email);
     
     res.json({
       success: true,
@@ -356,20 +400,21 @@ export const sendResetOtp = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in sendResetOtp:', error);
+    console.error('❌ sendResetOtp error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error. Please try again later.'
+      message: 'Internal server error'
     });
   }
 };
 
-// RESET PASSWORD
+// ==================== RESET PASSWORD ====================
 export const resetPassword = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
     
-    // Validation
+    console.log('🔄 Password reset for:', email);
+    
     if (!email || !otp || !newPassword) {
       return res.status(400).json({
         success: false,
@@ -384,22 +429,25 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    // Find user and check OTP
     const user = await userModel.findOne({ 
-      email,
-      resetPasswordOtp: otp,
-      resetPasswordOtpExpiry: { $gt: new Date() }
-    });
+      email: email.toLowerCase()
+    }).select('+resetPasswordOtp +resetPasswordOtpExpiry');
 
     if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.resetPasswordOtp !== otp || user.resetPasswordOtpExpiry < new Date()) {
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired OTP'
       });
     }
 
-    // Update password and clear OTP fields
-    user.password = newPassword; // Will be hashed by pre-save middleware
+    user.password = newPassword;
     user.resetPasswordOtp = undefined;
     user.resetPasswordOtpExpiry = undefined;
     await user.save();
@@ -412,18 +460,20 @@ export const resetPassword = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in resetPassword:', error);
+    console.error('❌ resetPassword error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error. Please try again later.'
+      message: 'Internal server error'
     });
   }
 };
 
-// RESEND RESET OTP
+// ==================== RESEND RESET OTP ====================
 export const resendResetOtp = async (req, res) => {
   try {
     const { email } = req.body;
+    
+    console.log('🔄 Resending OTP to:', email);
     
     if (!email) {
       return res.status(400).json({
@@ -432,50 +482,47 @@ export const resendResetOtp = async (req, res) => {
       });
     }
 
-    // Check if user exists
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ email: email.toLowerCase() });
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found with this email address'
+        message: 'User not found'
       });
     }
 
-    // Generate new OTP
     const otp = generateOTP();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Update user with new OTP
     user.resetPasswordOtp = otp;
     user.resetPasswordOtpExpiry = otpExpiry;
     await user.save();
 
-    // Send email
     const emailTemplate = generateOTPEmailTemplate(otp, 'reset');
     const emailResult = await sendEmail(
       email,
       'Password Reset OTP (Resent) - HealX Healthcare',
-      emailTemplate,
-      `Your new password reset OTP is: ${otp}. This OTP will expire in 10 minutes.`
+      emailTemplate
     );
 
     if (!emailResult.success) {
       return res.status(500).json({
         success: false,
-        message: 'Failed to resend OTP email. Please try again.'
+        message: 'Failed to resend OTP'
       });
     }
 
+    console.log('✅ OTP resent to:', email);
+
     res.json({
       success: true,
-      message: 'OTP resent to your email successfully!'
+      message: 'OTP resent successfully!'
     });
 
   } catch (error) {
-    console.error('❌ Error in resendResetOtp:', error);
+    console.error('❌ resendResetOtp error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error. Please try again later.'
+      message: 'Internal server error'
     });
   }
 };
