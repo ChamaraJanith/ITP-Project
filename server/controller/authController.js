@@ -1,4 +1,4 @@
-// controller/authController.js
+// backend/controller/authController.js
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import userModel from '../model/userModel.js';
@@ -56,8 +56,14 @@ export const register = async (req, res) => {
       });
     }
 
+    // Generate unique user ID
+    const userId = await userModel.generateUniqueUserId(new Date());
+    console.log('🆔 Generated User ID:', userId);
+
     // Create user
     const user = new userModel({
+      _id: userId,
+      userId: userId,
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password,
@@ -78,6 +84,7 @@ export const register = async (req, res) => {
     const userResponse = {
       _id: user._id,
       id: user._id,
+      userId: user.userId,
       name: user.name,
       email: user.email,
       phone: user.phone,
@@ -158,6 +165,7 @@ export const login = async (req, res) => {
     const userResponse = {
       _id: user._id,
       id: user._id,
+      userId: user.userId,
       name: user.name,
       email: user.email,
       phone: user.phone,
@@ -208,7 +216,7 @@ export const logout = async (req, res) => {
   }
 };
 
-// ==================== SEND VERIFY OTP ====================
+// ==================== SEND VERIFICATION OTP ====================
 export const sendVerifyOtp = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -310,7 +318,7 @@ export const verifyEmail = async (req, res) => {
   }
 };
 
-// ==================== IS AUTHENTICATED ====================
+// ==================== CHECK AUTHENTICATION ====================
 export const isAuthenticated = async (req, res) => {
   try {
     const user = await userModel.findById(req.user.userId);
@@ -326,6 +334,7 @@ export const isAuthenticated = async (req, res) => {
       user: {
         _id: user._id,
         id: user._id,
+        userId: user.userId,
         name: user.name,
         email: user.email,
         phone: user.phone,
