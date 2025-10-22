@@ -5,6 +5,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import GoogleCloudStorageService from './services/googleCloudStorage.js';
+import patientRouter from './routes/patientRoutes.js';
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -72,6 +73,20 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
   exposedHeaders: ['Set-Cookie']
 }));
+
+// server.js - CORS configuration
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5173'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+}));
+
 
 // Security headers
 app.use((req, res, next) => {
@@ -290,6 +305,10 @@ process.on('SIGINT', () => {
   }
 })();
 
+console.log('👤 Mounting user/patient routes at /api/users');
+app.use("/api/users", patientRouter);
+
+
 // Start server
 app.listen(PORT, () => {
   console.log('🚀 HealX Healthcare Server Started Successfully!');
@@ -320,3 +339,8 @@ app.listen(PORT, () => {
 });
 
 export default app;
+
+
+// In server.js
+ // Make sure this matches
+

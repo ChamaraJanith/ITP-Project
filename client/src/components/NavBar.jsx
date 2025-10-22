@@ -14,7 +14,8 @@ import {
   FaTimes,
   FaBars,
   FaSearch,
-  FaUserShield
+  FaUserShield,
+  FaSignOutAlt
 } from "react-icons/fa";
 
 // Doctor specialties and suggestions
@@ -130,7 +131,6 @@ function AdvancedSearchBar({ isMobile = false }) {
           }}
         />
         
-        {/* Search Icon */}
         <span style={{
           position: "absolute",
           left: 18,
@@ -145,7 +145,6 @@ function AdvancedSearchBar({ isMobile = false }) {
           <FaSearch />
         </span>
         
-        {/* Clear Icon */}
         {search && (
           <button
             type="button"
@@ -185,7 +184,6 @@ function AdvancedSearchBar({ isMobile = false }) {
         )}
       </form>
       
-      {/* Enhanced Suggestions Box with Glassmorphism */}
       {showSuggestions && filteredSuggestions.length > 0 && (
         <div style={{
           position: "absolute",
@@ -250,6 +248,44 @@ function MedicalNavbar() {
   const [upcomingAppointments] = useState(2);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [scrolled, setScrolled] = useState(false);
+  
+  // ✅ NEW: Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+
+  // ✅ Check authentication status on mount and storage changes
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      
+      if (token && userStr) {
+        try {
+          const userData = JSON.parse(userStr);
+          setIsAuthenticated(true);
+          setUser(userData);
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    };
+
+    checkAuth();
+
+    // Listen for auth state changes (from login/logout)
+    window.addEventListener('authStateChanged', checkAuth);
+    window.addEventListener('storage', checkAuth);
+
+    return () => {
+      window.removeEventListener('authStateChanged', checkAuth);
+      window.removeEventListener('storage', checkAuth);
+    };
+  }, []);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -264,70 +300,100 @@ function MedicalNavbar() {
     };
   }, []);
 
-  // Enhanced Nav Links with premium hover effects
+  // ✅ Logout Handler
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsAuthenticated(false);
+    setUser(null);
+    window.dispatchEvent(new Event('authStateChanged'));
+    navigate('/login');
+    setIsOpen(false);
+  };
+
+  // ✅ Enhanced Nav Links - Show different links based on auth state
   const navLinks = (
     <>
-      <Link 
-        to="/Login" 
-        style={{
-          textDecoration: "none", 
-          color: "#475569", 
-          display: "flex", 
-          alignItems: "center", 
-          gap: 8, 
-          fontSize: 15,
-          fontWeight: 600,
-          padding: "10px 18px",
+      {!isAuthenticated ? (
+        <>
+          <Link 
+            to="/login" 
+            style={{
+              textDecoration: "none", 
+              color: "#475569", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: 8, 
+              fontSize: 15,
+              fontWeight: 600,
+              padding: "10px 18px",
+              borderRadius: 12,
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              position: "relative",
+              overflow: "hidden"
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
+              e.currentTarget.style.color = "#6366f1";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(99, 102, 241, 0.15)";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "#475569";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            <FaUserMd style={{ fontSize: 18 }} /> Login
+          </Link>
+          
+          <Link 
+            to="/register" 
+            style={{
+              textDecoration: "none", 
+              color: "#475569", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: 8, 
+              fontSize: 15,
+              fontWeight: 600,
+              padding: "10px 18px",
+              borderRadius: 12,
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
+              e.currentTarget.style.color = "#6366f1";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(99, 102, 241, 0.15)";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "#475569";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            <FaStethoscope style={{ fontSize: 18 }} /> Register
+          </Link>
+        </>
+      ) : (
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 14px",
+          background: "rgba(99, 102, 241, 0.08)",
           borderRadius: 12,
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          position: "relative",
-          overflow: "hidden"
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
-          e.currentTarget.style.color = "#6366f1";
-          e.currentTarget.style.transform = "translateY(-2px)";
-          e.currentTarget.style.boxShadow = "0 4px 12px rgba(99, 102, 241, 0.15)";
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.backgroundColor = "transparent";
-          e.currentTarget.style.color = "#475569";
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "none";
-        }}
-      >
-        <FaUserMd style={{ fontSize: 18 }} /> Login
-      </Link>
-      
-      <Link 
-        to="/register" 
-        style={{
-          textDecoration: "none", 
-          color: "#475569", 
-          display: "flex", 
-          alignItems: "center", 
-          gap: 8, 
-          fontSize: 15,
+          fontSize: 14,
           fontWeight: 600,
-          padding: "10px 18px",
-          borderRadius: 12,
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
-          e.currentTarget.style.color = "#6366f1";
-          e.currentTarget.style.transform = "translateY(-2px)";
-          e.currentTarget.style.boxShadow = "0 4px 12px rgba(99, 102, 241, 0.15)";
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.backgroundColor = "transparent";
-          e.currentTarget.style.color = "#475569";
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "none";
-        }}
-      >
-        <FaStethoscope style={{ fontSize: 18 }} /> Register
-      </Link>
+          color: "#6366f1"
+        }}>
+          <FaUser style={{ fontSize: 14 }} />
+          <span>Hi, {user?.name?.split(' ')[0] || 'User'}</span>
+        </div>
+      )}
       
       <Link 
         to="/hospitals" 
@@ -392,215 +458,284 @@ function MedicalNavbar() {
     </>
   );
 
-  // Enhanced Action Items with better styling
+  // ✅ Enhanced Action Items with Authentication Check
   const actionItems = (
     <>
-      <button 
-        style={{
-          background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)", 
-          border: "none", 
-          cursor: "pointer", 
-          color: "#ffffff", 
-          fontSize: 14, 
-          fontWeight: 700,
-          padding: "12px 20px", 
-          borderRadius: 12,
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          boxShadow: "0 4px 16px rgba(99, 102, 241, 0.3)"
-        }} 
-        onClick={() => navigate("/book-appointment")}
-        onMouseEnter={e => {
-          e.target.style.transform = "translateY(-2px) scale(1.02)";
-          e.target.style.boxShadow = "0 8px 24px rgba(99, 102, 241, 0.4)";
-        }}
-        onMouseLeave={e => {
-          e.target.style.transform = "translateY(0) scale(1)";
-          e.target.style.boxShadow = "0 4px 16px rgba(99, 102, 241, 0.3)";
-        }}
-        title="Book Appointment"
-      >
-        <FaCalendarAlt />
-        <span>Book Now</span>
-      </button>
-      
-      <div style={{ position: "relative" }}>
+      {isAuthenticated ? (
+        <>
+          <button 
+            style={{
+              background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)", 
+              border: "none", 
+              cursor: "pointer", 
+              color: "#ffffff", 
+              fontSize: 14, 
+              fontWeight: 700,
+              padding: "12px 20px", 
+              borderRadius: 12,
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 4px 16px rgba(99, 102, 241, 0.3)"
+            }} 
+            onClick={() => navigate("/book-appointment")}
+            onMouseEnter={e => {
+              e.target.style.transform = "translateY(-2px) scale(1.02)";
+              e.target.style.boxShadow = "0 8px 24px rgba(99, 102, 241, 0.4)";
+            }}
+            onMouseLeave={e => {
+              e.target.style.transform = "translateY(0) scale(1)";
+              e.target.style.boxShadow = "0 4px 16px rgba(99, 102, 241, 0.3)";
+            }}
+            title="Book Appointment"
+          >
+            <FaCalendarAlt />
+            <span>Book Now</span>
+          </button>
+          
+          <div style={{ position: "relative" }}>
+            <button 
+              style={{
+                background: "rgba(241, 245, 249, 0.8)", 
+                border: "none", 
+                cursor: "pointer", 
+                color: "#64748b", 
+                fontSize: 18,
+                padding: "12px",
+                borderRadius: 12,
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 44,
+                height: 44
+              }} 
+              title="Notifications"
+              onMouseEnter={e => {
+                e.target.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
+                e.target.style.color = "#6366f1";
+                e.target.style.transform = "scale(1.08) rotate(12deg)";
+              }}
+              onMouseLeave={e => {
+                e.target.style.backgroundColor = "rgba(241, 245, 249, 0.8)";
+                e.target.style.color = "#64748b";
+                e.target.style.transform = "scale(1) rotate(0deg)";
+              }}
+            >
+              <FaBell />
+            </button>
+            {notifications > 0 && (
+              <span style={{
+                position: "absolute", 
+                top: 2, 
+                right: 2, 
+                background: "linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)",
+                color: "#fff", 
+                borderRadius: "50%", 
+                minWidth: 20, 
+                height: 20, 
+                fontSize: 11, 
+                fontWeight: 700,
+                display: "flex",
+                justifyContent: "center", 
+                alignItems: "center",
+                border: "2.5px solid #ffffff",
+                boxShadow: "0 2px 8px rgba(244, 63, 94, 0.4)",
+                animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite"
+              }}>
+                {notifications}
+              </span>
+            )}
+          </div>
+          
+          <div style={{ position: "relative" }}>
+            <button 
+              style={{
+                background: "rgba(241, 245, 249, 0.8)", 
+                border: "none", 
+                cursor: "pointer", 
+                color: "#64748b", 
+                fontSize: 18,
+                padding: "12px",
+                borderRadius: 12,
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 44,
+                height: 44
+              }} 
+              title="My Appointments" 
+              onClick={() => navigate("/appointments")}
+              onMouseEnter={e => {
+                e.target.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
+                e.target.style.color = "#6366f1";
+                e.target.style.transform = "scale(1.08)";
+              }}
+              onMouseLeave={e => {
+                e.target.style.backgroundColor = "rgba(241, 245, 249, 0.8)";
+                e.target.style.color = "#64748b";
+                e.target.style.transform = "scale(1)";
+              }}
+            >
+              <FaClock />
+            </button>
+            {upcomingAppointments > 0 && (
+              <span style={{
+                position: "absolute", 
+                top: 2, 
+                right: 2, 
+                background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+                color: "#fff", 
+                borderRadius: "50%", 
+                minWidth: 20, 
+                height: 20, 
+                fontSize: 11, 
+                fontWeight: 700,
+                display: "flex",
+                justifyContent: "center", 
+                alignItems: "center",
+                border: "2.5px solid #ffffff",
+                boxShadow: "0 2px 8px rgba(99, 102, 241, 0.4)"
+              }}>
+                {upcomingAppointments}
+              </span>
+            )}
+          </div>
+          
+          <button 
+            style={{
+              background: "rgba(241, 245, 249, 0.8)", 
+              border: "none", 
+              cursor: "pointer", 
+              color: "#64748b", 
+              fontSize: 18,
+              padding: "12px",
+              borderRadius: 12,
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 44,
+              height: 44
+            }} 
+            onClick={() => navigate("/medical-records")}
+            title="Medical Records"
+            onMouseEnter={e => {
+              e.target.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
+              e.target.style.color = "#6366f1";
+              e.target.style.transform = "scale(1.08)";
+            }}
+            onMouseLeave={e => {
+              e.target.style.backgroundColor = "rgba(241, 245, 249, 0.8)";
+              e.target.style.color = "#64748b";
+              e.target.style.transform = "scale(1)";
+            }}
+          >
+            <FaPrescriptionBottleAlt />
+          </button>
+          
+          {/* ✅ FIXED: Profile Button with Consistent Path */}
+          <button 
+            style={{
+              background: "rgba(241, 245, 249, 0.8)", 
+              border: "none", 
+              cursor: "pointer", 
+              color: "#64748b", 
+              fontSize: 18,
+              padding: "12px",
+              borderRadius: 12,
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 44,
+              height: 44
+            }} 
+            onClick={() => navigate("/PatientProfile")}
+            title="Profile"
+            onMouseEnter={e => {
+              e.target.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
+              e.target.style.color = "#6366f1";
+              e.target.style.transform = "scale(1.08)";
+            }}
+            onMouseLeave={e => {
+              e.target.style.backgroundColor = "rgba(241, 245, 249, 0.8)";
+              e.target.style.color = "#64748b";
+              e.target.style.transform = "scale(1)";
+            }}
+          >
+            <FaUser />
+          </button>
+
+          {/* ✅ Logout Button */}
+          <button 
+            style={{
+              background: "rgba(239, 68, 68, 0.1)", 
+              border: "none", 
+              cursor: "pointer", 
+              color: "#dc2626", 
+              fontSize: 18,
+              padding: "12px",
+              borderRadius: 12,
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 44,
+              height: 44
+            }} 
+            onClick={handleLogout}
+            title="Logout"
+            onMouseEnter={e => {
+              e.target.style.backgroundColor = "rgba(239, 68, 68, 0.2)";
+              e.target.style.color = "#b91c1c";
+              e.target.style.transform = "scale(1.08)";
+            }}
+            onMouseLeave={e => {
+              e.target.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
+              e.target.style.color = "#dc2626";
+              e.target.style.transform = "scale(1)";
+            }}
+          >
+            <FaSignOutAlt />
+          </button>
+        </>
+      ) : (
         <button 
           style={{
-            background: "rgba(241, 245, 249, 0.8)", 
+            background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)", 
             border: "none", 
             cursor: "pointer", 
-            color: "#64748b", 
-            fontSize: 18,
-            padding: "12px",
+            color: "#ffffff", 
+            fontSize: 14, 
+            fontWeight: 700,
+            padding: "12px 20px", 
             borderRadius: 12,
             transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            width: 44,
-            height: 44
+            gap: 8,
+            boxShadow: "0 4px 16px rgba(99, 102, 241, 0.3)"
           }} 
-          title="Notifications"
+          onClick={() => navigate("/login")}
           onMouseEnter={e => {
-            e.target.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
-            e.target.style.color = "#6366f1";
-            e.target.style.transform = "scale(1.08) rotate(12deg)";
+            e.target.style.transform = "translateY(-2px) scale(1.02)";
+            e.target.style.boxShadow = "0 8px 24px rgba(99, 102, 241, 0.4)";
           }}
           onMouseLeave={e => {
-            e.target.style.backgroundColor = "rgba(241, 245, 249, 0.8)";
-            e.target.style.color = "#64748b";
-            e.target.style.transform = "scale(1) rotate(0deg)";
+            e.target.style.transform = "translateY(0) scale(1)";
+            e.target.style.boxShadow = "0 4px 16px rgba(99, 102, 241, 0.3)";
           }}
+          title="Login"
         >
-          <FaBell />
+          <FaUserMd />
+          <span>Login</span>
         </button>
-        {notifications > 0 && (
-          <span style={{
-            position: "absolute", 
-            top: 2, 
-            right: 2, 
-            background: "linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)",
-            color: "#fff", 
-            borderRadius: "50%", 
-            minWidth: 20, 
-            height: 20, 
-            fontSize: 11, 
-            fontWeight: 700,
-            display: "flex",
-            justifyContent: "center", 
-            alignItems: "center",
-            border: "2.5px solid #ffffff",
-            boxShadow: "0 2px 8px rgba(244, 63, 94, 0.4)",
-            animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite"
-          }}>
-            {notifications}
-          </span>
-        )}
-      </div>
+      )}
       
-      <div style={{ position: "relative" }}>
-        <button 
-          style={{
-            background: "rgba(241, 245, 249, 0.8)", 
-            border: "none", 
-            cursor: "pointer", 
-            color: "#64748b", 
-            fontSize: 18,
-            padding: "12px",
-            borderRadius: 12,
-            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 44,
-            height: 44
-          }} 
-          title="My Appointments" 
-          onClick={() => navigate("/appointments")}
-          onMouseEnter={e => {
-            e.target.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
-            e.target.style.color = "#6366f1";
-            e.target.style.transform = "scale(1.08)";
-          }}
-          onMouseLeave={e => {
-            e.target.style.backgroundColor = "rgba(241, 245, 249, 0.8)";
-            e.target.style.color = "#64748b";
-            e.target.style.transform = "scale(1)";
-          }}
-        >
-          <FaClock />
-        </button>
-        {upcomingAppointments > 0 && (
-          <span style={{
-            position: "absolute", 
-            top: 2, 
-            right: 2, 
-            background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-            color: "#fff", 
-            borderRadius: "50%", 
-            minWidth: 20, 
-            height: 20, 
-            fontSize: 11, 
-            fontWeight: 700,
-            display: "flex",
-            justifyContent: "center", 
-            alignItems: "center",
-            border: "2.5px solid #ffffff",
-            boxShadow: "0 2px 8px rgba(99, 102, 241, 0.4)"
-          }}>
-            {upcomingAppointments}
-          </span>
-        )}
-      </div>
-      
-      <button 
-        style={{
-          background: "rgba(241, 245, 249, 0.8)", 
-          border: "none", 
-          cursor: "pointer", 
-          color: "#64748b", 
-          fontSize: 18,
-          padding: "12px",
-          borderRadius: 12,
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 44,
-          height: 44
-        }} 
-        onClick={() => navigate("/medical-records")}
-        title="Medical Records"
-        onMouseEnter={e => {
-          e.target.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
-          e.target.style.color = "#6366f1";
-          e.target.style.transform = "scale(1.08)";
-        }}
-        onMouseLeave={e => {
-          e.target.style.backgroundColor = "rgba(241, 245, 249, 0.8)";
-          e.target.style.color = "#64748b";
-          e.target.style.transform = "scale(1)";
-        }}
-      >
-        <FaPrescriptionBottleAlt />
-      </button>
-      
-      <button 
-        style={{
-          background: "rgba(241, 245, 249, 0.8)", 
-          border: "none", 
-          cursor: "pointer", 
-          color: "#64748b", 
-          fontSize: 18,
-          padding: "12px",
-          borderRadius: 12,
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 44,
-          height: 44
-        }} 
-        onClick={() => navigate("/PatientProfile")}
-        title="Profile"
-        onMouseEnter={e => {
-          e.target.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
-          e.target.style.color = "#6366f1";
-          e.target.style.transform = "scale(1.08)";
-        }}
-        onMouseLeave={e => {
-          e.target.style.backgroundColor = "rgba(241, 245, 249, 0.8)";
-          e.target.style.color = "#64748b";
-          e.target.style.transform = "scale(1)";
-        }}
-      >
-        <FaUser />
-      </button>
-      
-      {/* NEW: Admin Login Button with Premium Styling */}
+      {/* Admin Login Button */}
       <button 
         style={{
           background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
@@ -639,7 +774,7 @@ function MedicalNavbar() {
     </>
   );
 
-  // Enhanced Mobile Menu with Glassmorphism
+  // ✅ Enhanced Mobile Menu with Authentication
   const mobileMenu = isOpen && (
     <>
       <div 
@@ -726,6 +861,41 @@ function MedicalNavbar() {
           <FaHeartbeat style={{ color: "#6366f1" }} /> Heal X
         </Link>
         
+        {/* ✅ User Info in Mobile Menu */}
+        {isAuthenticated && user && (
+          <div style={{
+            padding: "16px",
+            background: "rgba(99, 102, 241, 0.08)",
+            borderRadius: 12,
+            display: "flex",
+            alignItems: "center",
+            gap: 12
+          }}>
+            <div style={{
+              width: 48,
+              height: 48,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 20
+            }}>
+              {user.name?.charAt(0).toUpperCase() || 'U'}
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, color: "#1e293b", fontSize: 16 }}>
+                {user.name || 'User'}
+              </div>
+              <div style={{ fontSize: 13, color: "#64748b" }}>
+                {user.email || ''}
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div style={{ 
           marginBottom: 12,
           padding: "16px",
@@ -751,39 +921,74 @@ function MedicalNavbar() {
           }}>
             Navigation
           </h3>
-          {navLinks}
-        </div>
-        
-        <hr style={{ 
-          borderColor: "rgba(226, 232, 240, 0.8)", 
-          margin: "12px 0",
-          border: "none",
-          height: "1px",
-          background: "linear-gradient(90deg, transparent, #e2e8f0, transparent)"
-        }} />
-        
-        <div style={{ 
-          display: "flex", 
-          flexDirection: "column", 
-          gap: 8 
-        }}>
-          <h3 style={{ 
-            fontSize: 12, 
-            fontWeight: 700, 
-            color: "#94a3b8", 
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            margin: "0 0 8px 12px"
-          }}>
-            Quick Actions
-          </h3>
+          
+          {!isAuthenticated ? (
+            <>
+              <Link 
+                to="/login" 
+                onClick={() => setIsOpen(false)}
+                style={{
+                  textDecoration: "none", 
+                  color: "#475569", 
+                  display: "flex", 
+                  alignItems: "center",
+                  gap: 12,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  padding: "14px 18px",
+                  borderRadius: 12,
+                  background: "rgba(241, 245, 249, 0.8)"
+                }}
+              >
+                <FaUserMd /> Login
+              </Link>
+              
+              <Link 
+                to="/register" 
+                onClick={() => setIsOpen(false)}
+                style={{
+                  textDecoration: "none", 
+                  color: "#475569", 
+                  display: "flex", 
+                  alignItems: "center",
+                  gap: 12,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  padding: "14px 18px",
+                  borderRadius: 12,
+                  background: "rgba(241, 245, 249, 0.8)"
+                }}
+              >
+                <FaStethoscope /> Register
+              </Link>
+            </>
+          ) : null}
           
           <Link 
-            to="/book-appointment" 
-            onClick={() => setIsOpen(false)} 
+            to="/hospitals" 
+            onClick={() => setIsOpen(false)}
             style={{
               textDecoration: "none", 
-              color: "#ffffff", 
+              color: "#475569", 
+              display: "flex", 
+              alignItems: "center",
+              gap: 12,
+              fontSize: 15,
+              fontWeight: 600,
+              padding: "14px 18px",
+              borderRadius: 12,
+              background: "rgba(241, 245, 249, 0.8)"
+            }}
+          >
+            <FaHospital /> Hospitals
+          </Link>
+          
+          <Link 
+            to="/emergency" 
+            onClick={() => setIsOpen(false)}
+            style={{
+              textDecoration: "none", 
+              color: "#dc2626", 
               display: "flex", 
               alignItems: "center",
               gap: 12,
@@ -791,73 +996,142 @@ function MedicalNavbar() {
               fontWeight: 700,
               padding: "14px 18px",
               borderRadius: 12,
-              background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-              boxShadow: "0 4px 16px rgba(99, 102, 241, 0.3)"
+              background: "rgba(239, 68, 68, 0.1)"
             }}
           >
-            <FaCalendarAlt /> Book Appointment
-          </Link>
-          
-          <Link 
-            to="/appointments" 
-            onClick={() => setIsOpen(false)} 
-            style={{
-              textDecoration: "none", 
-              color: "#475569", 
-              display: "flex", 
-              alignItems: "center",
-              gap: 12,
-              fontSize: 15,
-              fontWeight: 600,
-              padding: "14px 18px",
-              borderRadius: 12,
-              background: "rgba(241, 245, 249, 0.8)",
-              transition: "all 0.2s ease"
-            }}
-          >
-            <FaClock /> My Appointments
-          </Link>
-          
-          <Link 
-            to="/medical-records" 
-            onClick={() => setIsOpen(false)} 
-            style={{
-              textDecoration: "none", 
-              color: "#475569", 
-              display: "flex", 
-              alignItems: "center",
-              gap: 12,
-              fontSize: 15,
-              fontWeight: 600,
-              padding: "14px 18px",
-              borderRadius: 12,
-              background: "rgba(241, 245, 249, 0.8)",
-              transition: "all 0.2s ease"
-            }}
-          >
-            <FaPrescriptionBottleAlt /> Medical Records
-          </Link>
-          
-          <Link 
-            to="/PatientProfile" 
-            onClick={() => setIsOpen(false)} 
-            style={{
-              textDecoration: "none", 
-              color: "#475569", 
-              display: "flex", 
-              alignItems: "center",
-              gap: 12,
-              fontSize: 15,
-              fontWeight: 600,
-              padding: "14px 18px",
-              borderRadius: 12,
-              background: "rgba(241, 245, 249, 0.8)",
-              transition: "all 0.2s ease"
-            }}
-          >
-            <FaUser /> My Profile
+            <FaAmbulance /> Emergency
           </Link>
         </div>
+        
+        {isAuthenticated && (
+          <>
+            <hr style={{ 
+              borderColor: "rgba(226, 232, 240, 0.8)", 
+              margin: "12px 0",
+              border: "none",
+              height: "1px",
+              background: "linear-gradient(90deg, transparent, #e2e8f0, transparent)"
+            }} />
+            
+            <div style={{ 
+              display: "flex", 
+              flexDirection: "column", 
+              gap: 8 
+            }}>
+              <h3 style={{ 
+                fontSize: 12, 
+                fontWeight: 700, 
+                color: "#94a3b8", 
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                margin: "0 0 8px 12px"
+              }}>
+                Quick Actions
+              </h3>
+              
+              <Link 
+                to="/book-appointment" 
+                onClick={() => setIsOpen(false)} 
+                style={{
+                  textDecoration: "none", 
+                  color: "#ffffff", 
+                  display: "flex", 
+                  alignItems: "center",
+                  gap: 12,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  padding: "14px 18px",
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                  boxShadow: "0 4px 16px rgba(99, 102, 241, 0.3)"
+                }}
+              >
+                <FaCalendarAlt /> Book Appointment
+              </Link>
+              
+              <Link 
+                to="/appointments" 
+                onClick={() => setIsOpen(false)} 
+                style={{
+                  textDecoration: "none", 
+                  color: "#475569", 
+                  display: "flex", 
+                  alignItems: "center",
+                  gap: 12,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  padding: "14px 18px",
+                  borderRadius: 12,
+                  background: "rgba(241, 245, 249, 0.8)"
+                }}
+              >
+                <FaClock /> My Appointments
+              </Link>
+              
+              <Link 
+                to="/medical-records" 
+                onClick={() => setIsOpen(false)} 
+                style={{
+                  textDecoration: "none", 
+                  color: "#475569", 
+                  display: "flex", 
+                  alignItems: "center",
+                  gap: 12,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  padding: "14px 18px",
+                  borderRadius: 12,
+                  background: "rgba(241, 245, 249, 0.8)"
+                }}
+              >
+                <FaPrescriptionBottleAlt /> Medical Records
+              </Link>
+              
+              {/* ✅ FIXED: Mobile Profile Link */}
+              <Link 
+                to="/PatientProfile" 
+                onClick={() => setIsOpen(false)} 
+                style={{
+                  textDecoration: "none", 
+                  color: "#475569", 
+                  display: "flex", 
+                  alignItems: "center",
+                  gap: 12,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  padding: "14px 18px",
+                  borderRadius: 12,
+                  background: "rgba(241, 245, 249, 0.8)"
+                }}
+              >
+                <FaUser /> My Profile
+              </Link>
+              
+              {/* ✅ Logout in Mobile Menu */}
+              <button 
+                onClick={handleLogout}
+                style={{
+                  textDecoration: "none", 
+                  color: "#dc2626", 
+                  display: "flex", 
+                  alignItems: "center",
+                  gap: 12,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  padding: "14px 18px",
+                  borderRadius: 12,
+                  background: "rgba(239, 68, 68, 0.1)",
+                  border: "none",
+                  cursor: "pointer",
+                  width: "100%",
+                  textAlign: "left"
+                }}
+              >
+                <FaSignOutAlt /> Logout
+              </button>
+            </div>
+          </>
+        )}
         
         <hr style={{ 
           borderColor: "rgba(226, 232, 240, 0.8)", 
