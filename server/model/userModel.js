@@ -1,8 +1,19 @@
-// model/userModel.js
+// backend/model/userModel.js
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import generateUserId from '../utils/generateUserId.js';
 
 const userSchema = new mongoose.Schema({
+  _id: {
+    type: String,
+    required: true
+  },
+  userId: {
+    type: String,
+    unique: true,
+    required: true,
+    index: true
+  },
   name: { 
     type: String, 
     required: [true, "Name is required"],
@@ -57,7 +68,7 @@ const userSchema = new mongoose.Schema({
     enum: ["user", "doctor", "admin", "receptionist", "financial_manager"]
   },
   
-  // Email Verification Fields
+  // Email Verification
   isEmailVerified: {
     type: Boolean,
     default: false
@@ -71,7 +82,7 @@ const userSchema = new mongoose.Schema({
     select: false
   },
   
-  // Password Reset Fields
+  // Password Reset
   resetPasswordOtp: {
     type: String,
     select: false
@@ -81,23 +92,38 @@ const userSchema = new mongoose.Schema({
     select: false
   },
   
-  // Medical Info (Optional)
-  medicalHistory: [{ 
-    type: String 
-  }],
-  allergies: [{ 
-    type: String 
-  }],
+  // Medical Info
+  medicalHistory: [{ type: String }],
+  allergies: [{ type: String }],
   
   // Login tracking
-  lastLogin: {
-    type: Date
-  }
+  lastLogin: { type: Date }
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  toObject: { virtuals: true },
+  _id: false
 });
+
+// ==================== GENERATE UNIQUE USER ID ====================
+userSchema.statics.generateUniqueUserId = async function(registrationDate = new Date()) {
+  let userId;
+  let exists = true;
+  let attempts = 0;
+  const maxAttempts = 10;
+  
+  while (exists && attempts < maxAttempts) {
+    userId = generateUserId(registrationDate);
+    exists = await this.findOne({ userId });
+    attempts++;
+  }
+  
+  if (exists) {
+    throw new Error('Failed to generate unique user ID after multiple attempts');
+  }
+  
+  return userId;
+};
 
 // Hash password before saving
 userSchema.pre("save", async function(next) {
@@ -112,7 +138,7 @@ userSchema.pre("save", async function(next) {
   }
 });
 
-// Method to check password
+// Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {
     return await bcrypt.compare(candidatePassword, this.password);
@@ -121,7 +147,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   }
 };
 
-// Method to validate OTP
+// Validate OTP method
 userSchema.methods.isValidOTP = function(otp, type = 'verification') {
   const otpField = type === 'verification' ? 'verificationOtp' : 'resetPasswordOtp';
   const expiryField = type === 'verification' ? 'verificationOtpExpiry' : 'resetPasswordOtpExpiry';
@@ -135,18 +161,19 @@ userSchema.virtual("age").get(function() {
   const today = new Date();
   const birthDate = new Date(this.dateOfBirth);
   let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDifference = today.getMonth() - birthDate.getMonth();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
   
-  if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
     age--;
   }
   
   return age;
 });
 
-// Create index for email
+// Indexes
 userSchema.index({ email: 1 });
+userSchema.index({ userId: 1 });
+userSchema.index({ createdAt: -1 });
 
-// Create and export the model
 const userModel = mongoose.models.User || mongoose.model("User", userSchema);
 export default userModel;

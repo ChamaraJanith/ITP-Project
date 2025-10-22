@@ -1,5 +1,6 @@
+// src/components/NavBar.jsx
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   FaHeartbeat,
   FaUserMd,
@@ -15,10 +16,11 @@ import {
   FaBars,
   FaSearch,
   FaUserShield,
-  FaSignOutAlt
+  FaSignOutAlt,
+  FaExclamationTriangle
 } from "react-icons/fa";
 
-// Doctor specialties and suggestions
+// Search suggestions and specialty mapping
 const SPECIALTY_TO_ID = {
   cardiologist: "s1",
   dermatologist: "s2",
@@ -35,6 +37,170 @@ const SEARCH_SUGGESTIONS = [
   "Orthopedic Surgeon", "Gynecologist", "Psychiatrist", "General Physician",
   "Dentist", "Eye Specialist", "Heart Specialist", "Skin Doctor"
 ];
+
+// ==================== LOGOUT CONFIRMATION MODAL ====================
+function LogoutConfirmationModal({ isOpen, onClose, onConfirm, userName }) {
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          backdropFilter: "blur(4px)",
+          zIndex: 9998,
+          animation: "fadeIn 0.3s ease"
+        }}
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          backgroundColor: "white",
+          borderRadius: "20px",
+          padding: "2rem",
+          zIndex: 9999,
+          minWidth: "400px",
+          maxWidth: "90%",
+          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+          animation: "scaleIn 0.3s ease"
+        }}
+      >
+        {/* Icon */}
+        <div style={{
+          display: "flex",
+          justifyContent: "center",
+          marginBottom: "1.5rem"
+        }}>
+          <div style={{
+            width: "80px",
+            height: "80px",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            animation: "bounce 1s ease infinite"
+          }}>
+            <FaExclamationTriangle style={{
+              fontSize: "2.5rem",
+              color: "white"
+            }} />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h2 style={{
+          textAlign: "center",
+          fontSize: "1.75rem",
+          fontWeight: "800",
+          color: "#1e293b",
+          marginBottom: "0.75rem"
+        }}>
+          Logout Confirmation
+        </h2>
+
+        {/* Message */}
+        <p style={{
+          textAlign: "center",
+          fontSize: "1rem",
+          color: "#64748b",
+          marginBottom: "2rem",
+          lineHeight: "1.6"
+        }}>
+          {userName ? (
+            <>
+              <strong style={{ color: "#6366f1" }}>{userName}</strong>, are you sure you want to logout?
+            </>
+          ) : (
+            "Are you sure you want to logout?"
+          )}
+          <br />
+          <span style={{ fontSize: "0.9rem" }}>
+            You'll need to login again to access your account.
+          </span>
+        </p>
+
+        {/* Buttons */}
+        <div style={{
+          display: "flex",
+          gap: "1rem",
+          justifyContent: "center"
+        }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1,
+              padding: "14px 24px",
+              borderRadius: "12px",
+              border: "2px solid #e2e8f0",
+              background: "white",
+              color: "#64748b",
+              fontSize: "1rem",
+              fontWeight: "700",
+              cursor: "pointer",
+              transition: "all 0.3s ease"
+            }}
+            onMouseEnter={e => {
+              e.target.style.background = "#f1f5f9";
+              e.target.style.borderColor = "#cbd5e1";
+              e.target.style.color = "#475569";
+              e.target.style.transform = "translateY(-2px)";
+            }}
+            onMouseLeave={e => {
+              e.target.style.background = "white";
+              e.target.style.borderColor = "#e2e8f0";
+              e.target.style.color = "#64748b";
+              e.target.style.transform = "translateY(0)";
+            }}
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={onConfirm}
+            style={{
+              flex: 1,
+              padding: "14px 24px",
+              borderRadius: "12px",
+              border: "none",
+              background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+              color: "white",
+              fontSize: "1rem",
+              fontWeight: "700",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              boxShadow: "0 4px 15px rgba(239, 68, 68, 0.3)"
+            }}
+            onMouseEnter={e => {
+              e.target.style.background = "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)";
+              e.target.style.transform = "translateY(-2px)";
+              e.target.style.boxShadow = "0 6px 25px rgba(239, 68, 68, 0.4)";
+            }}
+            onMouseLeave={e => {
+              e.target.style.background = "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)";
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "0 4px 15px rgba(239, 68, 68, 0.3)";
+            }}
+          >
+            Yes, Logout
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
 
 // Enhanced Search Bar Component
 function AdvancedSearchBar({ isMobile = false }) {
@@ -243,47 +409,68 @@ function AdvancedSearchBar({ isMobile = false }) {
 
 function MedicalNavbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications] = useState(3);
   const [upcomingAppointments] = useState(2);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [scrolled, setScrolled] = useState(false);
   
-  // ✅ NEW: Authentication State
+  // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  
+  // ✅ LOGOUT CONFIRMATION STATE
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  // ✅ Check authentication status on mount and storage changes
+  // Check authentication
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      const userStr = localStorage.getItem('user');
-      
-      if (token && userStr) {
-        try {
-          const userData = JSON.parse(userStr);
-          setIsAuthenticated(true);
-          setUser(userData);
-        } catch (error) {
-          console.error('Error parsing user data:', error);
-          setIsAuthenticated(false);
-          setUser(null);
-        }
-      } else {
-        setIsAuthenticated(false);
-        setUser(null);
+    checkAuth();
+  }, [location.pathname]);
+
+  const checkAuth = () => {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    
+    if (token && userStr) {
+      try {
+        const userData = JSON.parse(userStr);
+        setIsAuthenticated(true);
+        setUser(userData);
+      } catch (error) {
+        console.error('❌ Error parsing user data:', error);
+        handleAuthError();
+      }
+    } else {
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  };
+
+  const handleAuthError = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsAuthenticated(false);
+    setUser(null);
+  };
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      checkAuth();
+    };
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'token' || e.key === 'user') {
+        checkAuth();
       }
     };
 
-    checkAuth();
-
-    // Listen for auth state changes (from login/logout)
-    window.addEventListener('authStateChanged', checkAuth);
-    window.addEventListener('storage', checkAuth);
+    window.addEventListener('authStateChanged', handleAuthChange);
+    window.addEventListener('storage', handleStorageChange);
 
     return () => {
-      window.removeEventListener('authStateChanged', checkAuth);
-      window.removeEventListener('storage', checkAuth);
+      window.removeEventListener('authStateChanged', handleAuthChange);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
@@ -300,21 +487,62 @@ function MedicalNavbar() {
     };
   }, []);
 
-  // ✅ Logout Handler
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setIsAuthenticated(false);
-    setUser(null);
-    window.dispatchEvent(new Event('authStateChanged'));
-    navigate('/login');
-    setIsOpen(false);
+  // ✅ SHOW LOGOUT CONFIRMATION
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
   };
 
-  // ✅ Enhanced Nav Links - Show different links based on auth state
+  // ✅ CANCEL LOGOUT
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
+  };
+
+  // ✅ CONFIRM LOGOUT
+  const handleLogoutConfirm = () => {
+    console.log('🚪 Logging out...');
+    
+    // Clear all auth data
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    
+    // Update state
+    setIsAuthenticated(false);
+    setUser(null);
+    
+    // Close modal and mobile menu
+    setShowLogoutModal(false);
+    setIsOpen(false);
+    
+    // Dispatch event
+    window.dispatchEvent(new Event('authStateChanged'));
+    
+    // Navigate to home
+    navigate('/');
+    
+    console.log('✅ Logged out successfully');
+  };
+
+  // Navigation Links
   const navLinks = (
     <>
-      {!isAuthenticated ? (
+      {isAuthenticated && user && (
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 14px",
+          background: "rgba(99, 102, 241, 0.08)",
+          borderRadius: 12,
+          fontSize: 14,
+          fontWeight: 600,
+          color: "#6366f1"
+        }}>
+          <FaUser style={{ fontSize: 14 }} />
+          <span>Hi, {user.name?.split(' ')[0] || 'User'}</span>
+        </div>
+      )}
+      
+      {!isAuthenticated && (
         <>
           <Link 
             to="/login" 
@@ -328,9 +556,7 @@ function MedicalNavbar() {
               fontWeight: 600,
               padding: "10px 18px",
               borderRadius: 12,
-              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-              position: "relative",
-              overflow: "hidden"
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
             }}
             onMouseEnter={e => {
               e.currentTarget.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
@@ -378,21 +604,6 @@ function MedicalNavbar() {
             <FaStethoscope style={{ fontSize: 18 }} /> Register
           </Link>
         </>
-      ) : (
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "8px 14px",
-          background: "rgba(99, 102, 241, 0.08)",
-          borderRadius: 12,
-          fontSize: 14,
-          fontWeight: 600,
-          color: "#6366f1"
-        }}>
-          <FaUser style={{ fontSize: 14 }} />
-          <span>Hi, {user?.name?.split(' ')[0] || 'User'}</span>
-        </div>
       )}
       
       <Link 
@@ -458,7 +669,7 @@ function MedicalNavbar() {
     </>
   );
 
-  // ✅ Enhanced Action Items with Authentication Check
+  // Action Items
   const actionItems = (
     <>
       {isAuthenticated ? (
@@ -636,7 +847,6 @@ function MedicalNavbar() {
             <FaPrescriptionBottleAlt />
           </button>
           
-          {/* ✅ FIXED: Profile Button with Consistent Path */}
           <button 
             style={{
               background: "rgba(241, 245, 249, 0.8)", 
@@ -669,7 +879,7 @@ function MedicalNavbar() {
             <FaUser />
           </button>
 
-          {/* ✅ Logout Button */}
+          {/* ✅ LOGOUT BUTTON WITH CONFIRMATION */}
           <button 
             style={{
               background: "rgba(239, 68, 68, 0.1)", 
@@ -686,7 +896,7 @@ function MedicalNavbar() {
               width: 44,
               height: 44
             }} 
-            onClick={handleLogout}
+            onClick={handleLogoutClick}
             title="Logout"
             onMouseEnter={e => {
               e.target.style.backgroundColor = "rgba(239, 68, 68, 0.2)";
@@ -735,7 +945,6 @@ function MedicalNavbar() {
         </button>
       )}
       
-      {/* Admin Login Button */}
       <button 
         style={{
           background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", 
@@ -751,9 +960,7 @@ function MedicalNavbar() {
           alignItems: "center",
           justifyContent: "center",
           gap: 8,
-          boxShadow: "0 4px 16px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)",
-          position: "relative",
-          overflow: "hidden"
+          boxShadow: "0 4px 16px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)"
         }} 
         onClick={() => navigate("/admin/login")}
         title="Admin Login"
@@ -771,400 +978,6 @@ function MedicalNavbar() {
         <FaUserShield style={{ fontSize: 16 }} />
         <span>Admin</span>
       </button>
-    </>
-  );
-
-  // ✅ Enhanced Mobile Menu with Authentication
-  const mobileMenu = isOpen && (
-    <>
-      <div 
-        style={{
-          position: "fixed", 
-          inset: 0, 
-          background: "rgba(15, 23, 42, 0.6)", 
-          zIndex: 1200,
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
-          animation: "fadeIn 0.3s ease-out"
-        }} 
-        onClick={() => setIsOpen(false)} 
-      />
-      <div style={{
-        position: "fixed", 
-        top: 0, 
-        right: 0, 
-        width: Math.min(360, window.innerWidth * 0.85), 
-        height: "100vh",
-        background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)", 
-        boxShadow: "-20px 0 60px rgba(15, 23, 42, 0.3)", 
-        zIndex: 1300, 
-        padding: "32px 24px",
-        transform: "translateX(0)", 
-        display: "flex", 
-        flexDirection: "column", 
-        gap: 20,
-        borderTopLeftRadius: 24,
-        borderBottomLeftRadius: 24,
-        animation: "slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-        overflowY: "auto"
-      }}>
-        <button 
-          onClick={() => setIsOpen(false)} 
-          style={{
-            alignSelf: "flex-end", 
-            background: "rgba(100, 116, 139, 0.1)", 
-            border: "none", 
-            fontSize: 20,
-            color: "#64748b",
-            padding: "10px",
-            borderRadius: 12,
-            transition: "all 0.2s ease",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 40,
-            height: 40
-          }}
-          onMouseEnter={e => {
-            e.target.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
-            e.target.style.color = "#ef4444";
-            e.target.style.transform = "rotate(90deg)";
-          }}
-          onMouseLeave={e => {
-            e.target.style.backgroundColor = "rgba(100, 116, 139, 0.1)";
-            e.target.style.color = "#64748b";
-            e.target.style.transform = "rotate(0deg)";
-          }}
-        >
-          <FaTimes />
-        </button>
-        
-        <Link 
-          to="/" 
-          onClick={() => setIsOpen(false)} 
-          style={{
-            display: "flex", 
-            alignItems: "center", 
-            fontWeight: "800", 
-            fontSize: 28, 
-            color: "#6366f1",
-            textDecoration: "none",
-            gap: 12,
-            padding: "12px 0",
-            background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text"
-          }}
-        >
-          <FaHeartbeat style={{ color: "#6366f1" }} /> Heal X
-        </Link>
-        
-        {/* ✅ User Info in Mobile Menu */}
-        {isAuthenticated && user && (
-          <div style={{
-            padding: "16px",
-            background: "rgba(99, 102, 241, 0.08)",
-            borderRadius: 12,
-            display: "flex",
-            alignItems: "center",
-            gap: 12
-          }}>
-            <div style={{
-              width: 48,
-              height: 48,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 20
-            }}>
-              {user.name?.charAt(0).toUpperCase() || 'U'}
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, color: "#1e293b", fontSize: 16 }}>
-                {user.name || 'User'}
-              </div>
-              <div style={{ fontSize: 13, color: "#64748b" }}>
-                {user.email || ''}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        <div style={{ 
-          marginBottom: 12,
-          padding: "16px",
-          background: "rgba(241, 245, 249, 0.5)",
-          borderRadius: 16
-        }}>
-          <AdvancedSearchBar isMobile={true} />
-        </div>
-        
-        <div style={{ 
-          display: "flex", 
-          flexDirection: "column", 
-          gap: 8,
-          padding: "12px 0"
-        }}>
-          <h3 style={{ 
-            fontSize: 12, 
-            fontWeight: 700, 
-            color: "#94a3b8", 
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            margin: "0 0 8px 12px"
-          }}>
-            Navigation
-          </h3>
-          
-          {!isAuthenticated ? (
-            <>
-              <Link 
-                to="/login" 
-                onClick={() => setIsOpen(false)}
-                style={{
-                  textDecoration: "none", 
-                  color: "#475569", 
-                  display: "flex", 
-                  alignItems: "center",
-                  gap: 12,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  padding: "14px 18px",
-                  borderRadius: 12,
-                  background: "rgba(241, 245, 249, 0.8)"
-                }}
-              >
-                <FaUserMd /> Login
-              </Link>
-              
-              <Link 
-                to="/register" 
-                onClick={() => setIsOpen(false)}
-                style={{
-                  textDecoration: "none", 
-                  color: "#475569", 
-                  display: "flex", 
-                  alignItems: "center",
-                  gap: 12,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  padding: "14px 18px",
-                  borderRadius: 12,
-                  background: "rgba(241, 245, 249, 0.8)"
-                }}
-              >
-                <FaStethoscope /> Register
-              </Link>
-            </>
-          ) : null}
-          
-          <Link 
-            to="/hospitals" 
-            onClick={() => setIsOpen(false)}
-            style={{
-              textDecoration: "none", 
-              color: "#475569", 
-              display: "flex", 
-              alignItems: "center",
-              gap: 12,
-              fontSize: 15,
-              fontWeight: 600,
-              padding: "14px 18px",
-              borderRadius: 12,
-              background: "rgba(241, 245, 249, 0.8)"
-            }}
-          >
-            <FaHospital /> Hospitals
-          </Link>
-          
-          <Link 
-            to="/emergency" 
-            onClick={() => setIsOpen(false)}
-            style={{
-              textDecoration: "none", 
-              color: "#dc2626", 
-              display: "flex", 
-              alignItems: "center",
-              gap: 12,
-              fontSize: 15,
-              fontWeight: 700,
-              padding: "14px 18px",
-              borderRadius: 12,
-              background: "rgba(239, 68, 68, 0.1)"
-            }}
-          >
-            <FaAmbulance /> Emergency
-          </Link>
-        </div>
-        
-        {isAuthenticated && (
-          <>
-            <hr style={{ 
-              borderColor: "rgba(226, 232, 240, 0.8)", 
-              margin: "12px 0",
-              border: "none",
-              height: "1px",
-              background: "linear-gradient(90deg, transparent, #e2e8f0, transparent)"
-            }} />
-            
-            <div style={{ 
-              display: "flex", 
-              flexDirection: "column", 
-              gap: 8 
-            }}>
-              <h3 style={{ 
-                fontSize: 12, 
-                fontWeight: 700, 
-                color: "#94a3b8", 
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                margin: "0 0 8px 12px"
-              }}>
-                Quick Actions
-              </h3>
-              
-              <Link 
-                to="/book-appointment" 
-                onClick={() => setIsOpen(false)} 
-                style={{
-                  textDecoration: "none", 
-                  color: "#ffffff", 
-                  display: "flex", 
-                  alignItems: "center",
-                  gap: 12,
-                  fontSize: 15,
-                  fontWeight: 700,
-                  padding: "14px 18px",
-                  borderRadius: 12,
-                  background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-                  boxShadow: "0 4px 16px rgba(99, 102, 241, 0.3)"
-                }}
-              >
-                <FaCalendarAlt /> Book Appointment
-              </Link>
-              
-              <Link 
-                to="/appointments" 
-                onClick={() => setIsOpen(false)} 
-                style={{
-                  textDecoration: "none", 
-                  color: "#475569", 
-                  display: "flex", 
-                  alignItems: "center",
-                  gap: 12,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  padding: "14px 18px",
-                  borderRadius: 12,
-                  background: "rgba(241, 245, 249, 0.8)"
-                }}
-              >
-                <FaClock /> My Appointments
-              </Link>
-              
-              <Link 
-                to="/medical-records" 
-                onClick={() => setIsOpen(false)} 
-                style={{
-                  textDecoration: "none", 
-                  color: "#475569", 
-                  display: "flex", 
-                  alignItems: "center",
-                  gap: 12,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  padding: "14px 18px",
-                  borderRadius: 12,
-                  background: "rgba(241, 245, 249, 0.8)"
-                }}
-              >
-                <FaPrescriptionBottleAlt /> Medical Records
-              </Link>
-              
-              {/* ✅ FIXED: Mobile Profile Link */}
-              <Link 
-                to="/PatientProfile" 
-                onClick={() => setIsOpen(false)} 
-                style={{
-                  textDecoration: "none", 
-                  color: "#475569", 
-                  display: "flex", 
-                  alignItems: "center",
-                  gap: 12,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  padding: "14px 18px",
-                  borderRadius: 12,
-                  background: "rgba(241, 245, 249, 0.8)"
-                }}
-              >
-                <FaUser /> My Profile
-              </Link>
-              
-              {/* ✅ Logout in Mobile Menu */}
-              <button 
-                onClick={handleLogout}
-                style={{
-                  textDecoration: "none", 
-                  color: "#dc2626", 
-                  display: "flex", 
-                  alignItems: "center",
-                  gap: 12,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  padding: "14px 18px",
-                  borderRadius: 12,
-                  background: "rgba(239, 68, 68, 0.1)",
-                  border: "none",
-                  cursor: "pointer",
-                  width: "100%",
-                  textAlign: "left"
-                }}
-              >
-                <FaSignOutAlt /> Logout
-              </button>
-            </div>
-          </>
-        )}
-        
-        <hr style={{ 
-          borderColor: "rgba(226, 232, 240, 0.8)", 
-          margin: "12px 0",
-          border: "none",
-          height: "1px",
-          background: "linear-gradient(90deg, transparent, #e2e8f0, transparent)"
-        }} />
-        
-        {/* Admin Login in Mobile Menu */}
-        <Link 
-          to="/admin/login" 
-          onClick={() => setIsOpen(false)} 
-          style={{
-            textDecoration: "none", 
-            color: "#ffffff", 
-            display: "flex", 
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
-            fontSize: 15,
-            fontWeight: 700,
-            padding: "14px 20px",
-            borderRadius: 12,
-            background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-            boxShadow: "0 4px 16px rgba(245, 158, 11, 0.35)",
-            border: "2px solid rgba(251, 191, 36, 0.3)",
-            marginTop: "auto"
-          }}
-        >
-          <FaUserShield style={{ fontSize: 18 }} /> Admin Login
-        </Link>
-      </div>
     </>
   );
 
@@ -1196,7 +1009,35 @@ function MedicalNavbar() {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.7; }
         }
+        
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+          }
+        }
+        
+        @keyframes bounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
       `}</style>
+      
+      {/* ✅ LOGOUT CONFIRMATION MODAL */}
+      <LogoutConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={handleLogoutCancel}
+        onConfirm={handleLogoutConfirm}
+        userName={user?.name}
+      />
       
       {!isMobile && (
         <nav
@@ -1229,7 +1070,6 @@ function MedicalNavbar() {
               width: "100%"
             }}
           >
-            {/* LEFT: Logo & Nav Links */}
             <div
               style={{
                 display: "flex",
@@ -1269,7 +1109,6 @@ function MedicalNavbar() {
               </div>
             </div>
 
-            {/* CENTER: Search Bar */}
             <div
               style={{
                 flex: 1,
@@ -1282,7 +1121,6 @@ function MedicalNavbar() {
               <AdvancedSearchBar />
             </div>
 
-            {/* RIGHT: Action Icons */}
             <div
               style={{
                 display: "flex",
@@ -1297,7 +1135,6 @@ function MedicalNavbar() {
         </nav>
       )}
 
-      {/* MOBILE NAVBAR */}
       {isMobile && (
         <>
           <nav
@@ -1353,14 +1190,6 @@ function MedicalNavbar() {
                   height: 44
                 }}
                 onClick={() => setIsOpen(true)}
-                onMouseEnter={e => {
-                  e.target.style.backgroundColor = "rgba(99, 102, 241, 0.2)";
-                  e.target.style.transform = "scale(1.05)";
-                }}
-                onMouseLeave={e => {
-                  e.target.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
-                  e.target.style.transform = "scale(1)";
-                }}
               >
                 <FaBars />
               </button>
@@ -1374,7 +1203,6 @@ function MedicalNavbar() {
           }}>
             <AdvancedSearchBar isMobile={true} />
           </div>
-          {mobileMenu}
         </>
       )}
     </>

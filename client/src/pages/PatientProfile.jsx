@@ -1,3 +1,4 @@
+// src/pages/PatientProfile.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -11,14 +12,11 @@ const MIN_PASSWORD_LENGTH = 6;
 
 // ==================== UTILITY FUNCTIONS ====================
 
-// Format date safely
 const formatDate = (dateString) => {
   if (!dateString) return 'Not provided';
-  
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Not provided';
-    
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -30,48 +28,37 @@ const formatDate = (dateString) => {
   }
 };
 
-// Format phone number
 const formatPhoneNumber = (phone) => {
   if (!phone) return 'Not provided';
-  
-  // Format as (XXX) XXX-XXXX for 10 digits
   if (phone.length === 10) {
     return `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
   }
-  
   return phone;
 };
 
-// Calculate age from date of birth
 const calculateAge = (dateOfBirth) => {
   if (!dateOfBirth) return null;
-  
   try {
     const today = new Date();
     const birthDate = new Date(dateOfBirth);
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
       age--;
     }
-    
     return age > 0 ? age : null;
   } catch (error) {
     return null;
   }
 };
 
-// Calculate account age
 const calculateAccountAge = (createdAt) => {
   if (!createdAt) return null;
-  
   try {
     const created = new Date(createdAt);
     const now = new Date();
     const diffTime = Math.abs(now - created);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
     if (diffDays < 30) {
       return `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
     } else if (diffDays < 365) {
@@ -90,19 +77,15 @@ const calculateAccountAge = (createdAt) => {
   }
 };
 
-// Calculate profile completion
 const calculateProfileCompletion = (user) => {
   const fields = ['name', 'email', 'phone', 'dateOfBirth', 'gender'];
   const filledFields = fields.filter(field => user[field]);
   return Math.round((filledFields.length / fields.length) * 100);
 };
 
-// Copy to clipboard function
 const copyToClipboard = (text) => {
   if (!text) return;
-  
   navigator.clipboard.writeText(text).then(() => {
-    // Show temporary success message
     const message = document.createElement('div');
     message.textContent = '✅ User ID copied!';
     message.style.cssText = `
@@ -130,7 +113,6 @@ const copyToClipboard = (text) => {
 
 // ==================== SUB-COMPONENTS ====================
 
-// Loading Spinner Component
 const LoadingSpinner = () => (
   <div className="profile-loading-container">
     <div className="profile-spinner"></div>
@@ -138,7 +120,6 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// Message Alert Component
 const MessageAlert = ({ message }) => {
   const getMessageType = () => {
     if (message.includes('✅')) return 'success';
@@ -153,7 +134,6 @@ const MessageAlert = ({ message }) => {
   );
 };
 
-// Profile Header Component
 const ProfileHeader = ({ user, role, onLogout }) => (
   <div className="profile-header-container">
     <div className="profile-avatar-wrapper">
@@ -182,7 +162,6 @@ const ProfileHeader = ({ user, role, onLogout }) => (
   </div>
 );
 
-// Profile Stats Component
 const ProfileStats = ({ user }) => {
   const completionPercentage = calculateProfileCompletion(user);
   
@@ -210,7 +189,127 @@ const ProfileStats = ({ user }) => {
   );
 };
 
-// Personal Information Display Component
+// ==================== PREMIUM PACKAGE ADVERTISEMENT ====================
+const PremiumPackageAdvertisement = ({ userRole }) => {
+  // Only show for regular patients (users), hide for admins/doctors
+  if (userRole !== 'user') {
+    return null;
+  }
+
+  const handleUpgradeToPremium = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    alert('🎉 Premium Package Coming Soon!\n\nUpgrade to unlock:\n✅ Personal Blood Sugar Monitor\n✅ Quick Hospital Finder\n✅ Priority Appointments\n✅ 24/7 Health Consultation\n✅ Free Ambulance Service\n\nStay tuned!');
+  };
+
+  return (
+    <div className="profile-premium-banner">
+      <div className="profile-premium-badge">
+        <span className="profile-premium-badge-text">⭐ PREMIUM</span>
+      </div>
+
+      <div className="profile-premium-content">
+        <div className="profile-premium-icon">
+          <span className="profile-premium-crown">👑</span>
+          <div className="profile-premium-glow"></div>
+        </div>
+        
+        <div className="profile-premium-text">
+          <h3 className="profile-premium-title">
+            ✨ Upgrade to Premium Healthcare
+          </h3>
+          <p className="profile-premium-description">
+            Get exclusive access to advanced health monitoring and priority care
+          </p>
+          
+          <div className="profile-premium-features">
+            <div className="profile-premium-feature">
+              <span className="profile-premium-icon-wrapper">🩸</span>
+              <div className="profile-premium-feature-content">
+                <strong>Blood Sugar Monitor</strong>
+                <small>Real-time glucose tracking at home</small>
+              </div>
+            </div>
+            
+            <div className="profile-premium-feature">
+              <span className="profile-premium-icon-wrapper">🏥</span>
+              <div className="profile-premium-feature-content">
+                <strong>Quick Hospital Finder</strong>
+                <small>Instant nearby hospital locations</small>
+              </div>
+            </div>
+            
+            <div className="profile-premium-feature">
+              <span className="profile-premium-icon-wrapper">⚡</span>
+              <div className="profile-premium-feature-content">
+                <strong>Priority Appointments</strong>
+                <small>Skip the queue, book instantly</small>
+              </div>
+            </div>
+            
+            <div className="profile-premium-feature">
+              <span className="profile-premium-icon-wrapper">👨‍⚕️</span>
+              <div className="profile-premium-feature-content">
+                <strong>24/7 Health Consultation</strong>
+                <small>Expert doctors anytime, anywhere</small>
+              </div>
+            </div>
+            
+            <div className="profile-premium-feature">
+              <span className="profile-premium-icon-wrapper">🚑</span>
+              <div className="profile-premium-feature-content">
+                <strong>Free Ambulance Service</strong>
+                <small>Emergency transport included</small>
+              </div>
+            </div>
+            
+            <div className="profile-premium-feature">
+              <span className="profile-premium-icon-wrapper">💊</span>
+              <div className="profile-premium-feature-content">
+                <strong>Prescription Discounts</strong>
+                <small>Save up to 40% on medicines</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="profile-premium-action">
+          <div className="profile-premium-pricing">
+            <div className="profile-premium-price">
+              <span className="profile-premium-currency">$</span>
+              <span className="profile-premium-amount">29</span>
+              <span className="profile-premium-period">/month</span>
+            </div>
+            <div className="profile-premium-save">
+              Save $100 with annual plan
+            </div>
+          </div>
+          
+          <button 
+            className="profile-premium-btn"
+            onClick={handleUpgradeToPremium}
+            type="button"
+          >
+            <span className="profile-premium-btn-icon">⭐</span>
+            <span>Upgrade to Premium</span>
+            <span className="profile-premium-btn-arrow">→</span>
+          </button>
+          
+          <p className="profile-premium-note">
+            🔒 Secure payment • Cancel anytime • 30-day money-back guarantee
+          </p>
+        </div>
+      </div>
+      
+      <div className="profile-premium-decoration">
+        <div className="profile-premium-particle profile-premium-particle-1">✨</div>
+        <div className="profile-premium-particle profile-premium-particle-2">⭐</div>
+        <div className="profile-premium-particle profile-premium-particle-3">💫</div>
+        <div className="profile-premium-particle profile-premium-particle-4">✨</div>
+      </div>
+    </div>
+  );
+};
+
 const PersonalInfoDisplay = ({ user }) => {
   const age = calculateAge(user.dateOfBirth);
   
@@ -258,7 +357,6 @@ const PersonalInfoDisplay = ({ user }) => {
   );
 };
 
-// Account Details Display Component
 const AccountDetailsDisplay = ({ user }) => {
   const memberSince = formatDate(user.createdAt);
   const accountAge = calculateAccountAge(user.createdAt);
@@ -316,7 +414,6 @@ const AccountDetailsDisplay = ({ user }) => {
   );
 };
 
-// Profile Actions Component
 const ProfileActions = ({ onEdit, onBePatient, role, loading }) => (
   <div className="profile-actions-container">
     <button 
@@ -339,7 +436,6 @@ const ProfileActions = ({ onEdit, onBePatient, role, loading }) => (
   </div>
 );
 
-// Form Input Component
 const FormInput = ({ 
   label, 
   icon, 
@@ -376,7 +472,6 @@ const FormInput = ({
   </div>
 );
 
-// Form Select Component
 const FormSelect = ({ label, icon, id, name, value, onChange, options }) => (
   <div className="profile-form-group">
     <label htmlFor={id} className="profile-form-label">
@@ -398,7 +493,6 @@ const FormSelect = ({ label, icon, id, name, value, onChange, options }) => (
   </div>
 );
 
-// Personal Information Form Component
 const PersonalInfoForm = ({ 
   formData, 
   onChange, 
@@ -478,7 +572,6 @@ const PersonalInfoForm = ({
   </div>
 );
 
-// Password Change Section Component
 const PasswordChangeSection = ({ 
   showSection, 
   onToggle, 
@@ -573,7 +666,6 @@ const PasswordChangeSection = ({
 // ==================== MAIN COMPONENT ====================
 
 const PatientProfile = () => {
-  // State Management
   const [user, setUser] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [formData, setFormData] = useState({
@@ -597,14 +689,10 @@ const PatientProfile = () => {
   
   const navigate = useNavigate();
 
-  // ==================== LIFECYCLE ====================
-  
   useEffect(() => {
     initializeUserData();
   }, [navigate]);
 
-  // ==================== INITIALIZATION ====================
-  
   const initializeUserData = () => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
@@ -637,8 +725,6 @@ const PatientProfile = () => {
     }
   };
 
-  // ==================== INPUT HANDLERS ====================
-  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     let filteredValue = value;
@@ -702,8 +788,6 @@ const PatientProfile = () => {
     }
   };
 
-  // ==================== VALIDATION ====================
-  
   const validateForm = () => {
     if (!formData.name.trim()) {
       setMessage('❌ Name is required');
@@ -758,8 +842,6 @@ const PatientProfile = () => {
     return true;
   };
 
-  // ==================== ACTION HANDLERS ====================
-  
   const handleEditToggle = () => {
     if (isEditMode) {
       setFormData(originalData);
@@ -908,8 +990,6 @@ const PatientProfile = () => {
     navigate('/login');
   };
 
-  // ==================== RENDER ====================
-  
   if (!user) {
     return <LoadingSpinner />;
   }
@@ -927,9 +1007,12 @@ const PatientProfile = () => {
 
         <div className="profile-content-body">
           {!isEditMode ? (
-            // Display Mode
             <div className="profile-display-mode">
               <ProfileStats user={user} />
+              
+              {/* Premium Package Advertisement - Shows only for regular patients */}
+              <PremiumPackageAdvertisement userRole={formData.role} />
+              
               <PersonalInfoDisplay user={user} />
               <AccountDetailsDisplay user={user} />
               <ProfileActions 
@@ -940,7 +1023,6 @@ const PatientProfile = () => {
               />
             </div>
           ) : (
-            // Edit Mode
             <div className="profile-edit-mode">
               <form onSubmit={handleUpdateProfile} className="profile-edit-form">
                 <PersonalInfoForm
