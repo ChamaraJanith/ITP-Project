@@ -41,7 +41,7 @@ const useFormValidation = () => {
       case 'vendor_name':
         if (!value || value.trim() === '') {
           error = 'Vendor name is required';
-        } else if (!/^[a-zA-Z\s]+$/.test(value.trim())) {
+        } else if (!/^[a-zA-Z\s]+LKR /.test(value.trim())) {
           error = 'Vendor name must contain only letters and spaces';
         } else if (value.trim().length < 2) {
           error = 'Vendor name must be at least 2 characters long';
@@ -53,7 +53,7 @@ const useFormValidation = () => {
       case 'invoice_number':
         if (value && value.trim() !== '') {
           const cleanValue = value.trim();
-          if (!/^[a-zA-Z0-9]{6}$/.test(cleanValue)) {
+          if (!/^[a-zA-Z0-9]{6}LKR /.test(cleanValue)) {
             error = 'Invoice number must be exactly 6 characters (letters and numbers only)';
           }
         }
@@ -641,7 +641,7 @@ const UtilityModal = ({
 
               <div className="fu-form__field">
                 <label className="fu-form__label" htmlFor="fu-amount">
-                  Amount ($): <span className="fu-form__required">*</span>
+                  Amount (LKR): <span className="fu-form__required">*</span>
                 </label>
                 <input 
                   id="fu-amount"
@@ -851,7 +851,7 @@ const FinancialUtilities = () => {
   const formatCurrency = useCallback((amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'LKR',
       minimumFractionDigits: 2
     }).format(amount);
   }, []);
@@ -1230,9 +1230,9 @@ const FinancialUtilities = () => {
                 <div class="summary-card">
                     <h4>💰 Financial Overview</h4>
                     <ul>
-                        <li><span>Total Expenses:</span><span style="color: #1da1f2; font-weight: bold;">${totals.totalAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span></li>
+                        <li><span>Total Expenses:</span><span style="color: #1da1f2; font-weight: bold;">${totals.totalAmount.toLocaleString('en-US', { style: 'currency', currency: 'LKR' })}</span></li>
                         <li><span>Total Records:</span><span>${totals.totalRecords}</span></li>
-                        <li><span>Average Amount:</span><span>${(totals.totalAmount / totals.totalRecords).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span></li>
+                        <li><span>Average Amount:</span><span>${(totals.totalAmount / totals.totalRecords).toLocaleString('en-US', { style: 'currency', currency: 'LKR' })}</span></li>
                     </ul>
                 </div>
                 <div class="summary-card">
@@ -1258,7 +1258,7 @@ const FinancialUtilities = () => {
                     <ul>
                         <li><span>System:</span><span>Heal-x Healthcare</span></li>
                         <li><span>Module:</span><span>Utilities Management</span></li>
-                        <li><span>Currency:</span><span>USD ($)</span></li>
+                        <li><span>Currency:</span><span>USD (LKR )</span></li>
                         <li><span>Export Format:</span><span>PDF Report</span></li>
                     </ul>
                 </div>
@@ -1287,7 +1287,7 @@ const FinancialUtilities = () => {
                             <span class="category-badge">${utility.category}</span>
                         </td>
                         <td class="description">${utility.description}</td>
-                        <td class="currency">${parseFloat(utility.amount).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</td>
+                        <td class="currency">${parseFloat(utility.amount).toLocaleString('en-US', { style: 'currency', currency: 'LKR' })}</td>
                         <td class="date-range">
                             ${new Date(utility.billing_period_start).toLocaleDateString('en-GB')} →<br>
                             ${new Date(utility.billing_period_end).toLocaleDateString('en-GB')}
@@ -1300,7 +1300,7 @@ const FinancialUtilities = () => {
                 <!-- Totals Row -->
                 <tr class="totals-row">
                     <td colspan="3"><strong>TOTAL</strong></td>
-                    <td class="currency"><strong>${totals.totalAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</strong></td>
+                    <td class="currency"><strong>${totals.totalAmount.toLocaleString('en-US', { style: 'currency', currency: 'LKR' })}</strong></td>
                     <td colspan="4"><strong>${totals.totalRecords} Records</strong></td>
                 </tr>
             </tbody>
