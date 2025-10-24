@@ -65,6 +65,14 @@ const ExpenseTracking = () => {
     }
   }, [filterPeriod, selectedMonth, selectedYear, activeFilter, dateRange]);
 
+  // Currency formatting function - CHANGED FROM USD TO LKR
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "LKR",
+    }).format(amount);
+  };
+
   // Keep all your existing API functions exactly as they are
   const fetchPayrollExpenses = async () => {
     try {
@@ -194,11 +202,13 @@ const ExpenseTracking = () => {
           const sampleUtility = utilities[0];
           console.log("📋 Sample utility structure:", {
             id: sampleUtility._id,
+            utilityId: sampleUtility.utilityId,
             category: sampleUtility.category,
             description: sampleUtility.description,
             amount: sampleUtility.amount,
             vendor: sampleUtility.vendor_name,
-            status: sampleUtility.payment_status
+            status: sampleUtility.payment_status,
+            invoice_number: sampleUtility.invoice_number
           });
           
           setUtilitiesApiStatus("connected");
@@ -313,54 +323,64 @@ const ExpenseTracking = () => {
   const getSampleUtilitiesData = () => {
     return [
       { 
-        _id: "util1", 
+        _id: "util1",
+        utilityId: "80RF3D",
         category: "Electricity", 
-        description: "Monthly electricity bill - Main building", 
+        description: "Electricity bills paid for October month", 
         amount: 2500, 
-        vendor_name: "PowerGrid Corp", 
+        vendor_name: "Ceylon Electricity Board", 
         payment_status: "Paid",
         billing_period_start: "2024-09-01",
-        billing_period_end: "2024-09-30"
+        billing_period_end: "2024-09-30",
+        invoice_number: "CE0105"
       },
       { 
-        _id: "util2", 
-        category: "Water & Sewage", 
-        description: "Water supply and sewage services", 
-        amount: 800, 
-        vendor_name: "CityWater Services", 
-        payment_status: "Paid",
-        billing_period_start: "2024-09-01",
-        billing_period_end: "2024-09-30"
-      },
-      { 
-        _id: "util3", 
+        _id: "util2",
+        utilityId: "6NNGUN", 
         category: "Internet & Communication", 
-        description: "High-speed internet and phone services", 
-        amount: 1200, 
-        vendor_name: "TeleConnect Ltd", 
+        description: "Mobile bill paid for Mobitel for October", 
+        amount: 800, 
+        vendor_name: "Mobitel", 
+        payment_status: "Paid",
+        billing_period_start: "2024-09-01",
+        billing_period_end: "2024-09-30",
+        invoice_number: "TEL267"
+      },
+      { 
+        _id: "util3",
+        utilityId: "L25URU", 
+        category: "Other", 
+        description: "Gardner came and cut the grass", 
+        amount: 200, 
+        vendor_name: "Saman Zoysa", 
+        payment_status: "Paid",
+        billing_period_start: "2024-09-01",
+        billing_period_end: "2024-09-30",
+        invoice_number: "0AP29H"
+      },
+      { 
+        _id: "util4",
+        utilityId: "5QZU33", 
+        category: "Waste Management", 
+        description: "Municipal waste tractor hired", 
+        amount: 550, 
+        vendor_name: "Saranga", 
+        payment_status: "Paid",
+        billing_period_start: "2024-08-15",
+        billing_period_end: "2024-09-15",
+        invoice_number: "MWT268"
+      },
+      { 
+        _id: "util5",
+        utilityId: "C8F8LQ", 
+        category: "Water & Sewage", 
+        description: "water pipe broken", 
+        amount: 5000, 
+        vendor_name: "Sri Lanka Water Board", 
         payment_status: "Pending",
         billing_period_start: "2024-09-01",
-        billing_period_end: "2024-09-30"
-      },
-      { 
-        _id: "util4", 
-        category: "Generator Fuel", 
-        description: "Diesel fuel for backup generator", 
-        amount: 600, 
-        vendor_name: "FuelSupply Inc", 
-        payment_status: "Overdue",
-        billing_period_start: "2024-08-15",
-        billing_period_end: "2024-09-15"
-      },
-      { 
-        _id: "util5", 
-        category: "Waste Management", 
-        description: "Medical waste disposal services", 
-        amount: 450, 
-        vendor_name: "MedWaste Solutions", 
-        payment_status: "Paid",
-        billing_period_start: "2024-09-01",
-        billing_period_end: "2024-09-30"
+        billing_period_end: "2024-09-30",
+        invoice_number: "WB1319"
       }
     ];
   };
@@ -823,7 +843,7 @@ const ExpenseTracking = () => {
     return isNaN(num) ? "0" : num.toLocaleString();
   };
 
-  // NEW: Manual PDF Export Function - Following Financial Utilities Format
+  // UPDATED PDF Export Function - Now uses invoice numbers for utilities
   const exportToPDF = () => {
     if (!expenseData) {
       alert("No expense data available to export!");
@@ -866,11 +886,11 @@ const ExpenseTracking = () => {
       });
     }
 
-    // Add utilities records
+    // UPDATED: Add utilities records - now using invoice number as ID
     if (expenseData.utilitiesExpenses.rawData && expenseData.utilitiesExpenses.rawData.length > 0) {
       expenseData.utilitiesExpenses.rawData.forEach(record => {
         expenseRecords.push({
-          id: record._id || record.utilityId || 'N/A',
+          id: record.invoice_number || record.utilityId || 'N/A', // FIXED: Use invoice_number as ID
           category: 'Utilities',
           description: record.description || `${record.category || 'Unknown'} Service`,
           amount: parseFloat(record.amount) || 0,
@@ -1222,7 +1242,7 @@ const ExpenseTracking = () => {
     <strong>Total Records:</strong> ${totals.totalRecords}<br>
     <strong>Report Period:</strong> ${filterPeriod === 'all' ? 'All Periods' : filterPeriod}<br>
     <strong>Filter Applied:</strong> ${activeFilter}<br>
-    <strong>Total Expense Amount:</strong> $${totals.totalAmount.toLocaleString('en-US')}
+    <strong>Total Expense Amount:</strong> LKR ${totals.totalAmount.toLocaleString('en-US')}
   </div>
 
   <!-- Summary Section -->
@@ -1232,9 +1252,9 @@ const ExpenseTracking = () => {
       <div class="summary-card">
         <h4>💰 Financial Overview</h4>
         <ul>
-          <li><span>Total Expenses:</span><span style="color: #1da1f2; font-weight: bold;">$${totals.totalAmount.toLocaleString('en-US')}</span></li>
+          <li><span>Total Expenses:</span><span style="color: #1da1f2; font-weight: bold;">LKR ${totals.totalAmount.toLocaleString('en-US')}</span></li>
           <li><span>Total Records:</span><span>${totals.totalRecords}</span></li>
-          <li><span>Average Amount:</span><span>$${totals.totalRecords > 0 ? (totals.totalAmount / totals.totalRecords).toLocaleString('en-US') : '0'}</span></li>
+          <li><span>Average Amount:</span><span>LKR ${totals.totalRecords > 0 ? (totals.totalAmount / totals.totalRecords).toLocaleString('en-US') : '0'}</span></li>
         </ul>
       </div>
       <div class="summary-card">
@@ -1251,7 +1271,7 @@ const ExpenseTracking = () => {
         <h4>🏷️ Category Distribution</h4>
         <ul>
           ${Object.entries(totals.categoryBreakdown).map(([category, amount]) => 
-            `<li><span>${category}:</span><span>$${amount.toLocaleString('en-US')}</span></li>`
+            `<li><span>${category}:</span><span>LKR ${amount.toLocaleString('en-US')}</span></li>`
           ).join('')}
         </ul>
       </div>
@@ -1260,7 +1280,7 @@ const ExpenseTracking = () => {
         <ul>
           <li><span>System:</span><span>Heal-x Healthcare</span></li>
           <li><span>Module:</span><span>Expense Analytics</span></li>
-          <li><span>Currency:</span><span>USD ($)</span></li>
+          <li><span>Currency:</span><span>LKR (Rs)</span></li>
           <li><span>Export Format:</span><span>PDF Report</span></li>
         </ul>
       </div>
@@ -1286,7 +1306,7 @@ const ExpenseTracking = () => {
           <td class="expense-id">${record.id}</td>
           <td><span class="category-badge">${record.category}</span></td>
           <td class="description">${record.description}</td>
-          <td class="currency">$${(parseFloat(record.amount) || 0).toLocaleString('en-US')}</td>
+          <td class="currency">LKR ${(parseFloat(record.amount) || 0).toLocaleString('en-US')}</td>
           <td class="date-display">${new Date(record.date).toLocaleDateString('en-GB')}</td>
           <td class="status-${record.status.toLowerCase()}">${record.status}</td>
           <td>${record.reference}</td>
@@ -1296,7 +1316,7 @@ const ExpenseTracking = () => {
       <!-- Totals Row -->
       <tr class="totals-row">
         <td colspan="3"><strong>TOTAL</strong></td>
-        <td class="currency"><strong>$${totals.totalAmount.toLocaleString('en-US')}</strong></td>
+        <td class="currency"><strong>LKR ${totals.totalAmount.toLocaleString('en-US')}</strong></td>
         <td colspan="3"><strong>${totals.totalRecords} Records</strong></td>
       </tr>
     </tbody>
@@ -1329,7 +1349,7 @@ const ExpenseTracking = () => {
   <!-- Report Footer -->
   <div class="report-footer">
     <p><strong>This is a system-generated report from Heal-x Healthcare Management System</strong></p>
-    <p>Report generated on ${new Date().toLocaleString()}. All amounts are in US Dollars.</p>
+    <p>Report generated on ${new Date().toLocaleString()}. All amounts are in Sri Lankan Rupees.</p>
     <p>For queries regarding this report, contact the Financial Department at Heal-x Healthcare</p>
   </div>
 
@@ -1570,7 +1590,7 @@ const ExpenseTracking = () => {
     }
   };
 
-  // Custom tooltip component
+  // Custom tooltip component - UPDATED TO USE LKR
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -1578,7 +1598,7 @@ const ExpenseTracking = () => {
           <p className="healx-etv-tooltip-label">{`${label}`}</p>
           {payload.map((entry, index) => (
             <p key={index} className="healx-etv-tooltip-item" style={{ color: entry.color }}>
-              {`${entry.name}: $${parseInt(entry.value).toLocaleString()}`}
+              {`${entry.name}: LKR ${parseInt(entry.value).toLocaleString()}`}
             </p>
           ))}
         </div>
@@ -1709,12 +1729,12 @@ const ExpenseTracking = () => {
               </div>
             </div>
             
-            {/* KPI Section */}
+            {/* KPI Section - UPDATED TO USE LKR */}
             <div className="healx-etv-kpi-section">
               <div className="healx-etv-kpi-primary healx-etv-kpi-success">
                 <div className="healx-etv-kpi-label">Total Organizational Expenses</div>
                 <div className="healx-etv-kpi-value">
-                  ${safeToLocaleString(expenseData.totalExpenses)}
+                  LKR {safeToLocaleString(expenseData.totalExpenses)}
                 </div>
                 <div className="healx-etv-kpi-status">
                   {inventoryApiStatus === "connected" && utilitiesApiStatus === "connected" && supplierApiStatus === "connected" 
@@ -1727,31 +1747,33 @@ const ExpenseTracking = () => {
                 <div className="healx-etv-kpi-item">
                   <div className="healx-etv-kpi-item-label">Payroll</div>
                   <div className="healx-etv-kpi-item-value positive">
-                    ${safeToLocaleString(expenseData.payrollExpenses?.totalPayrollExpense)}
+                    LKR {safeToLocaleString(expenseData.payrollExpenses?.totalPayrollExpense)}
                   </div>
                 </div>
                 <div className="healx-etv-kpi-item">
                   <div className="healx-etv-kpi-item-label">Inventory</div>
                   <div className="healx-etv-kpi-item-value positive">
-                    ${safeToLocaleString(expenseData.inventoryExpenses?.totalInventoryValue)}
+                    LKR {safeToLocaleString(expenseData.inventoryExpenses?.totalInventoryValue)}
                   </div>
                 </div>
                 <div className="healx-etv-kpi-item">
                   <div className="healx-etv-kpi-item-label">Utilities</div>
                   <div className="healx-etv-kpi-item-value">
-                    ${safeToLocaleString(expenseData.utilitiesExpenses?.totalUtilitiesExpense)}
+                    LKR {safeToLocaleString(expenseData.utilitiesExpenses?.totalUtilitiesExpense)}
                   </div>
                 </div>
                 <div className="healx-etv-kpi-item">
                   <div className="healx-etv-kpi-item-label">Suppliers</div>
                   <div className="healx-etv-kpi-item-value">
-                    ${safeToLocaleString(expenseData.supplierExpenses?.totalSupplierExpense)}
+                    LKR {safeToLocaleString(expenseData.supplierExpenses?.totalSupplierExpense)}
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Keep all your existing API Status, Alerts, and other sections - they will automatically use LKR through formatCurrency and display functions */}
 
         {/* API Status Warning */}
         {(inventoryApiStatus === "fallback" || utilitiesApiStatus === "fallback" || supplierApiStatus === "fallback") && (
@@ -1785,7 +1807,7 @@ const ExpenseTracking = () => {
           <div className="healx-etv-message healx-etv-message-success">
             <span className="healx-etv-message-icon">✅</span>
             <div className="healx-etv-message-content">
-              <p>Connected to all APIs with Payroll - Inventory: {expenseData.inventoryExpenses.totalItems} items | Restock Value: ${expenseData.inventoryExpenses.totalRestockValue.toLocaleString()} | Utilities: {expenseData.utilitiesExpenses.totalUtilities} services | Suppliers: {expenseData.supplierExpenses.totalSuppliers} suppliers, {expenseData.supplierExpenses.totalOrders} orders</p>
+              <p>Connected to all APIs with Payroll - Inventory: {expenseData.inventoryExpenses.totalItems} items | Restock Value: LKR {expenseData.inventoryExpenses.totalRestockValue.toLocaleString()} | Utilities: {expenseData.utilitiesExpenses.totalUtilities} services | Suppliers: {expenseData.supplierExpenses.totalSuppliers} suppliers, {expenseData.supplierExpenses.totalOrders} orders</p>
             </div>
             <button className="healx-etv-message-close" onClick={() => {
               setInventoryApiStatus("checking");
@@ -1972,7 +1994,7 @@ const ExpenseTracking = () => {
                                 <Cell key={`cell-${index}`} fill={entry.fill} />
                               ))}
                             </Pie>
-                            <Tooltip formatter={(value) => [`$${safeToLocaleString(value)}`, '']} />
+                            <Tooltip formatter={(value) => [`LKR ${safeToLocaleString(value)}`, '']} />
                             <Legend />
                           </PieChart>
                         </ResponsiveContainer>
@@ -1989,8 +2011,8 @@ const ExpenseTracking = () => {
                           <BarChart data={expenseData.expenseBreakdown} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-                            <YAxis tickFormatter={(value) => `$${value/1000}k`} />
-                            <Tooltip formatter={(value) => [`$${safeToLocaleString(value)}`, '']} />
+                            <YAxis tickFormatter={(value) => `LKR ${value/1000}k`} />
+                            <Tooltip formatter={(value) => [`LKR ${safeToLocaleString(value)}`, '']} />
                             <Bar dataKey="value" fill="#667eea" />
                           </BarChart>
                         </ResponsiveContainer>
@@ -2014,13 +2036,13 @@ const ExpenseTracking = () => {
                               cy="50%"
                               outerRadius={140}
                               dataKey="value"
-                              label={({name, value}) => `${name}: $${safeToLocaleString(value)}`}
+                              label={({name, value}) => `${name}: LKR ${safeToLocaleString(value)}`}
                             >
                               {expenseData.inventoryCategoryData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.fill} />
                               ))}
                             </Pie>
-                            <Tooltip formatter={(value) => [`$${safeToLocaleString(value)}`, '']} />
+                            <Tooltip formatter={(value) => [`LKR ${safeToLocaleString(value)}`, '']} />
                             <Legend />
                           </PieChart>
                         </ResponsiveContainer>
@@ -2041,13 +2063,13 @@ const ExpenseTracking = () => {
                               cy="50%"
                               outerRadius={140}
                               dataKey="value"
-                              label={({name, value}) => `${name}: $${safeToLocaleString(value)}`}
+                              label={({name, value}) => `${name}: LKR ${safeToLocaleString(value)}`}
                             >
                               {expenseData.supplierCategoryData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.fill} />
                               ))}
                             </Pie>
-                            <Tooltip formatter={(value) => [`$${safeToLocaleString(value)}`, '']} />
+                            <Tooltip formatter={(value) => [`LKR ${safeToLocaleString(value)}`, '']} />
                             <Legend />
                           </PieChart>
                         </ResponsiveContainer>
@@ -2061,7 +2083,7 @@ const ExpenseTracking = () => {
             </>
           )}
 
-          {/* Summary Section */}
+          {/* Summary Section - UPDATED TO USE LKR */}
           <div className="healx-etv-summary">
             <div className="healx-etv-summary-header">
               <h2 className="healx-etv-summary-title">
@@ -2076,12 +2098,12 @@ const ExpenseTracking = () => {
             <div className="healx-etv-summary-cards">
               <div className="healx-etv-summary-card healx-etv-summary-primary">
                 <h3>💰 Total Organizational Expenses</h3>
-                <div className="healx-etv-summary-value">${safeToLocaleString(expenseData.totalExpenses)}</div>
+                <div className="healx-etv-summary-value">LKR {safeToLocaleString(expenseData.totalExpenses)}</div>
                 <p className="healx-etv-summary-note">
-                  Complete financial overview including payroll (${safeToLocaleString(expenseData.payrollExpenses?.totalPayrollExpense)} - with employer contributions only), 
-                  medical inventory (${safeToLocaleString(expenseData.inventoryExpenses?.totalInventoryValue)}), 
-                  utilities (${safeToLocaleString(expenseData.utilitiesExpenses?.totalUtilitiesExpense)}), 
-                  and supplier costs (${safeToLocaleString(expenseData.supplierExpenses?.totalSupplierExpense)})
+                  Complete financial overview including payroll (LKR {safeToLocaleString(expenseData.payrollExpenses?.totalPayrollExpense)} - with employer contributions only), 
+                  medical inventory (LKR {safeToLocaleString(expenseData.inventoryExpenses?.totalInventoryValue)}), 
+                  utilities (LKR {safeToLocaleString(expenseData.utilitiesExpenses?.totalUtilitiesExpense)}), 
+                  and supplier costs (LKR {safeToLocaleString(expenseData.supplierExpenses?.totalSupplierExpense)})
                 </p>
               </div>
 

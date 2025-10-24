@@ -85,7 +85,7 @@ const FinancialDashboard = () => {
           <div className="tooltip-item">
             <div className="tooltip-color" style={{ backgroundColor: payload[0].fill }}></div>
             <span className="tooltip-label">{payload[0].name}:</span>
-            <span className="tooltip-value">${payload[0].value.toLocaleString()}</span>
+            <span className="tooltip-value">LKR {payload[0].value.toLocaleString()}</span>
           </div>
           <div className="tooltip-percentage">
             {((payload[0].value / (dashboardData?.stats?.totalAmountDue || 1)) * 100).toFixed(1)}% of total
@@ -104,7 +104,7 @@ const FinancialDashboard = () => {
         <div className="tooltip-body">
           <div className="tooltip-item">
             <div className="tooltip-color" style={{ backgroundColor: payload[0].fill }}></div>
-            <span className="tooltip-value">{label === "Unique Patients" ? payload[0].value : `$${payload[0].value.toLocaleString()}`}</span>
+            <span className="tooltip-value">{label === "Unique Patients" ? payload[0].value : `LKR ${payload[0].value.toLocaleString()}`}</span>
           </div>
           <div className="tooltip-trend">
             {payload[0].value > 0 ? "🔥 Active Revenue" : "💤 No Activity"}
@@ -125,7 +125,7 @@ const FinancialDashboard = () => {
             <div key={index} className="tooltip-item">
               <div className="tooltip-color" style={{ backgroundColor: entry.color }}></div>
               <span className="tooltip-label">{entry.name}:</span>
-              <span className="tooltip-value">${entry.value.toLocaleString()}</span>
+              <span className="tooltip-value">LKR {entry.value.toLocaleString()}</span>
             </div>
           ))}
           <div className="tooltip-growth">Real-time financial data</div>
@@ -163,9 +163,9 @@ const FinancialDashboard = () => {
 
   // Format functions for better number display
   const formatCurrency = (value) => {
-    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-    if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
-    return `$${value.toLocaleString()}`;
+    if (value >= 1000000) return `LKR ${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `LKR ${(value / 1000).toFixed(1)}K`;
+    return `LKR ${value.toLocaleString()}`;
   };
 
   // Enhanced fetch function with exact same logic as FinancialManagePayments.jsx
@@ -408,11 +408,11 @@ const FinancialDashboard = () => {
 
     recentPayments.forEach(payment => {
       if (payment.amountPaid > 0) {
-        activities.push(`💰 Payment of $${payment.amountPaid.toLocaleString()} received from ${payment.patientName || 'Unknown'} - ${payment.specialty || 'General'}`);
+        activities.push(`💰 Payment of LKR ${payment.amountPaid.toLocaleString()} received from ${payment.patientName || 'Unknown'} - ${payment.specialty || 'General'}`);
       }
       if (payment.totalAmount > payment.amountPaid) {
         const pending = payment.totalAmount - payment.amountPaid;
-        activities.push(`⚠️ Pending payment of $${pending.toLocaleString()} for Invoice #${payment.invoiceNumber}`);
+        activities.push(`⚠️ Pending payment of LKR ${pending.toLocaleString()} for Invoice #${payment.invoiceNumber}`);
       }
     });
 
@@ -668,7 +668,7 @@ const FinancialDashboard = () => {
             <div className="fd-stats-grid">
               <div className="fd-stat-card fd-today-revenue" onClick={() => scrollToFinancialChart("fd-todays-revenue-chart")}>
                 <div className="fd-stat-info">
-                  <h3>${dashboardData.stats?.todayRevenue?.toLocaleString() || 0}</h3>
+                  <h3>LKR {dashboardData.stats?.todayRevenue?.toLocaleString() || 0}</h3>
                   <p>Today's Revenue</p>
                   <small>Real-time collections</small>
                 </div>
@@ -676,7 +676,7 @@ const FinancialDashboard = () => {
 
               <div className="fd-stat-card fd-pending-payments" onClick={() => scrollToFinancialChart("fd-monthly-revenue-chart")}>
                 <div className="fd-stat-info">
-                  <h3>${dashboardData.stats?.pendingPayments?.toLocaleString() || 0}</h3>
+                  <h3>LKR {dashboardData.stats?.pendingPayments?.toLocaleString() || 0}</h3>
                   <p>Pending Payments</p>
                   <small>{dashboardData.stats?.totalPayments || 0} total invoices</small>
                 </div>
@@ -695,9 +695,9 @@ const FinancialDashboard = () => {
 
               <div className="fd-stat-card fd-monthly-target" onClick={() => scrollToFinancialChart("fd-pending-payments-chart")}>
                 <div className="fd-stat-info">
-                  <h3>${dashboardData.stats?.monthRevenue?.toLocaleString() || 0}</h3>
+                  <h3>LKR {dashboardData.stats?.monthRevenue?.toLocaleString() || 0}</h3>
                   <p>This Month's Revenue</p>
-                  <small>Target: ${dashboardData.stats?.monthlyTarget?.toLocaleString() || 0}</small>
+                  <small>Target: LKR {dashboardData.stats?.monthlyTarget?.toLocaleString() || 0}</small>
                 </div>
               </div>
 
@@ -711,7 +711,7 @@ const FinancialDashboard = () => {
 
               <div className="fd-stat-card fd-average-payment">
                 <div className="fd-stat-info">
-                  <h3>${Math.round(dashboardData.stats?.averagePayment || 0)?.toLocaleString()}</h3>
+                  <h3>LKR {Math.round(dashboardData.stats?.averagePayment || 0)?.toLocaleString()}</h3>
                   <p>Average Payment</p>
                   <small>Per successful appointment</small>
                 </div>
@@ -939,7 +939,7 @@ const FinancialDashboard = () => {
                           tick={{ fontSize: 12, fill: '#666' }}
                         />
                         <Tooltip 
-                          formatter={(value, name) => [`$${value.toLocaleString()}`, 'Revenue']}
+                          formatter={(value, name) => [`LKR ${value.toLocaleString()}`, 'Revenue']}
                           labelFormatter={(label, payload) => {
                             const data = payload && payload[0] && payload[0].payload;
                             return data ? `${data.fullName} (${data.count} appointments)` : label;
@@ -1082,8 +1082,8 @@ const FinancialDashboard = () => {
                         <p><strong>Specialty:</strong> {payment.hospitalName}</p>
                         <p><strong>Patient:</strong> {payment.patientName}</p>
                         <p><strong>Doctor:</strong> {payment.doctorName}</p>
-                        <p><strong>Amount:</strong> ${(payment.totalAmount || 0).toLocaleString()}</p>
-                        <p><strong>Paid:</strong> ${(payment.amountPaid || 0).toLocaleString()}</p>
+                        <p><strong>Amount:</strong> LKR {(payment.totalAmount || 0).toLocaleString()}</p>
+                        <p><strong>Paid:</strong> LKR {(payment.amountPaid || 0).toLocaleString()}</p>
                         <p><strong>Transaction ID:</strong> {payment.transactionId}</p>
                         <p><strong>Status:</strong> 
                           {payment.amountPaid >= payment.totalAmount ? 

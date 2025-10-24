@@ -86,7 +86,7 @@ const useUtilityAnalytics = () => {
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'LKR',
     minimumFractionDigits: 2
   }).format(amount);
 };

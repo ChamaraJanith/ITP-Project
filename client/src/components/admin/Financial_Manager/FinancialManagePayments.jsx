@@ -3,9 +3,7 @@ import { MdInventory, MdAnalytics, MdHome, MdPayment, MdCheckCircle, MdGetApp, M
 import { useNavigate } from "react-router-dom";
 import "../Financial_Manager/FinancialManagePayments.css";
 
-
 const APPOINTMENTS_API_URL = "http://localhost:7000/api/appointments";
-
 
 function PatientSuccessfulPayments() {
   const [successfulPayments, setSuccessfulPayments] = useState([]);
@@ -16,7 +14,6 @@ function PatientSuccessfulPayments() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-
 
   // calculate consultation fee by specialty
   const calculateConsultationFee = (specialtyRaw) => {
@@ -34,7 +31,6 @@ function PatientSuccessfulPayments() {
     if (s.includes("ent") || s.includes("ear") || s.includes("nose") || s.includes("throat")) return 4800;
     return 5000;
   };
-
 
   // fetch accepted appointments
   const fetchSuccessfulPayments = async () => {
@@ -84,7 +80,7 @@ function PatientSuccessfulPayments() {
       setSuccessfulPayments(enriched);
       if (enriched.length) {
         const totalRevenue = enriched.reduce((s, a) => s + a.totalAmount, 0);
-        setMessage(`Found ${enriched.length} accepted appointments totaling $${totalRevenue.toLocaleString()}`);
+        setMessage(`Found ${enriched.length} accepted appointments totaling LKR ${totalRevenue.toLocaleString()}`);
       } else {
         setMessage("No accepted appointments found.");
       }
@@ -95,11 +91,9 @@ function PatientSuccessfulPayments() {
     }
   };
 
-
   useEffect(() => {
     fetchSuccessfulPayments();
   }, []);
-
 
   const formatDate = (d) =>
     d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
@@ -110,15 +104,9 @@ function PatientSuccessfulPayments() {
     return `${display}:${m || "00"} ${pm ? "PM" : "AM"}`;
   };
 
-
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0
-    }).format(amount || 0);
+    return `LKR ${(amount || 0).toLocaleString()}`;
   };
-
 
   const filtered = successfulPayments.filter(a => {
     const js = !searchTerm
@@ -129,9 +117,7 @@ function PatientSuccessfulPayments() {
     return js && jd;
   });
 
-
   const totalRevenue = filtered.reduce((s, a) => s + a.totalAmount, 0);
-
 
   // Manual PDF Report Generation
   const exportToPDF = () => {
@@ -140,10 +126,8 @@ function PatientSuccessfulPayments() {
       return;
     }
 
-
     const currentDate = new Date();
     const reportTitle = 'Patient Successful Payments Report';
-
 
     // Calculate summary statistics
     const paymentStats = {
@@ -176,7 +160,6 @@ function PatientSuccessfulPayments() {
         return acc;
       }, {})
     };
-
 
     const printContent = `
       <!DOCTYPE html>
@@ -279,12 +262,10 @@ function PatientSuccessfulPayments() {
           </div>
         </div>
 
-
         <div class="alert-section">
           <div class="alert-title">✅ Outstanding Payment Performance</div>
           <p>All ${paymentStats.totalPayments} appointments have been successfully completed with full payment collection totaling ${formatCurrency(paymentStats.totalRevenue)}. This represents a 100% collection rate demonstrating excellent patient satisfaction and financial efficiency.</p>
         </div>
-
 
         <!-- Payment Method Analysis -->
         <h3 style="color: #1da1f2; margin-top: 30px;">💳 Payment Method Analysis</h3>
@@ -308,7 +289,6 @@ function PatientSuccessfulPayments() {
             `).join('')}
           </tbody>
         </table>
-
 
         <!-- Specialty Revenue Analysis -->
         <h3 style="color: #1da1f2; margin-top: 30px;">🏥 Medical Specialty Revenue Analysis</h3>
@@ -344,7 +324,6 @@ function PatientSuccessfulPayments() {
           </tbody>
         </table>
 
-
         <!-- Monthly Revenue Trends -->
         <h3 style="color: #1da1f2; margin-top: 30px;">📅 Monthly Revenue Performance</h3>
         <table>
@@ -369,7 +348,6 @@ function PatientSuccessfulPayments() {
               `).join('')}
           </tbody>
         </table>
-
 
         <!-- Detailed Patient Payment Records -->
         <h3 style="color: #1da1f2; margin-top: 30px;">📋 Detailed Patient Payment Records</h3>
@@ -409,7 +387,6 @@ function PatientSuccessfulPayments() {
           </tbody>
         </table>
 
-
         <!-- Key Performance Indicators -->
         <h3 style="color: #1da1f2; margin-top: 30px;">📈 Key Performance Indicators</h3>
         <table>
@@ -431,7 +408,7 @@ function PatientSuccessfulPayments() {
             <tr>
               <td><strong>Average Revenue per Patient</strong></td>
               <td class="currency"><strong>${formatCurrency(paymentStats.averagePayment)}</strong></td>
-              <td class="currency">$3,500-$5,500</td>
+              <td class="currency">LKR 3,500-LKR 5,500</td>
               <td class="center">${paymentStats.averagePayment > 5500 ? '🏆 Excellent' : paymentStats.averagePayment > 3500 ? '✅ Good' : '⚠️ Below Average'}</td>
             </tr>
             <tr>
@@ -448,7 +425,6 @@ function PatientSuccessfulPayments() {
             </tr>
           </tbody>
         </table>
-
 
         <!-- Financial Insights & Recommendations -->
         <h3 style="color: #1da1f2; margin-top: 30px;">💡 Financial Performance Insights</h3>
@@ -489,7 +465,6 @@ function PatientSuccessfulPayments() {
           </tbody>
         </table>
 
-
         <!-- Professional Signature Section -->
         <div class="signature-section">
           <h3>📋 Payment Report Authorization</h3>
@@ -518,7 +493,6 @@ function PatientSuccessfulPayments() {
           </div>
         </div>
 
-
         <!-- Report Footer -->
         <div class="report-footer">
           <p><strong>This is a system-generated patient payment report from Heal-x Healthcare Management System</strong></p>
@@ -527,7 +501,6 @@ function PatientSuccessfulPayments() {
           <p>Data Source: Live Appointments API • Payment Status: All Successful (100% Collection Rate)</p>
           <p>Report covers ${paymentStats.totalPayments} successful payments totaling ${formatCurrency(paymentStats.totalRevenue)} • Average: ${formatCurrency(paymentStats.averagePayment)}</p>
         </div>
-
 
         <!-- Print Controls -->
         <div class="no-print" style="margin-top: 30px; text-align: center;">
@@ -538,16 +511,13 @@ function PatientSuccessfulPayments() {
       </html>
     `;
 
-
     const printWindow = window.open('', '_blank');
     printWindow.document.write(printContent);
     printWindow.document.close();
 
-
     setSuccess("Patient Successful Payments report opened! Use Ctrl+P to save as PDF.");
     setTimeout(() => setSuccess(""), 3000);
   };
-
 
   // Export to CSV
   const exportToCSV = () => {
@@ -555,7 +525,6 @@ function PatientSuccessfulPayments() {
       setError("No successful payments data to export");
       return;
     }
-
 
     let csvContent = `Heal-x Patient Successful Payments Report - ${new Date().toLocaleDateString()}\n\n`;
     
@@ -584,7 +553,6 @@ function PatientSuccessfulPayments() {
     setTimeout(() => setSuccess(''), 3000);
   };
 
-
   const handleReturnHome = () => navigate("/admin/financial");
   
   // **FIXED: Updated handlePaymentAnalysis to pass the correct data structure**
@@ -594,7 +562,6 @@ function PatientSuccessfulPayments() {
       ...payment,
       status: "accepted" // Ensure status is set
     }));
-
 
     navigate("/admin/financial/payments/total-view", { 
       state: { 
@@ -628,7 +595,6 @@ function PatientSuccessfulPayments() {
     });
   };
 
-
   const handleInventoryAnalysis = () => {
     navigate("/admin/financial/payments/inventory-view", {
       state: {
@@ -656,7 +622,6 @@ function PatientSuccessfulPayments() {
     });
   };
 
-
   const renderDetails = (a) => (
     <div className="appointment-details successful-payment">
       <div className="success-header">
@@ -664,7 +629,7 @@ function PatientSuccessfulPayments() {
         <span> Payment Confirmed!</span>
       </div>
       <div className="fee-display">
-        <span>${a.totalAmount.toLocaleString()}</span> <small>{a.doctorSpecialty}</small>
+        <span>LKR {a.totalAmount.toLocaleString()}</span> <small>{a.doctorSpecialty}</small>
       </div>
       <div className="info-grid">
         <div><strong>Patient:</strong> {a.name}</div>
@@ -675,7 +640,6 @@ function PatientSuccessfulPayments() {
       </div>
     </div>
   );
-
 
   // **ADDED: generatePatientReceipt function that was missing**
   const generatePatientReceipt = (appointment) => {
@@ -706,7 +670,7 @@ function PatientSuccessfulPayments() {
           <p><strong>Payment Method:</strong> ${appointment.paymentMethod}</p>
         </div>
         <div class="receipt-total">
-          <p>Amount Paid: $${appointment.totalAmount.toLocaleString()}</p>
+          <p>Amount Paid: LKR ${appointment.totalAmount.toLocaleString()}</p>
           <p>Status: PAID ✅</p>
         </div>
         <div style="text-align: center; margin-top: 30px;">
@@ -716,7 +680,6 @@ function PatientSuccessfulPayments() {
       </html>
     `;
 
-
     const newWindow = window.open('', '_blank', 'width=800,height=600');
     if (newWindow) {
       newWindow.document.write(receiptContent);
@@ -725,9 +688,7 @@ function PatientSuccessfulPayments() {
     }
   };
 
-
   if (loading) return <div className="loading-spinner">Loading...</div>;
-
 
   return (
     <div className="patient-payments-container">
@@ -738,13 +699,11 @@ function PatientSuccessfulPayments() {
         </div>
       )}
 
-
       {error && (
         <div className="alert alert-error" style={{margin: '20px', padding: '15px', backgroundColor: '#f8d7da', border: '1px solid #f5c6cb', borderRadius: '5px', color: '#721c24'}}>
           ❌ {error}
         </div>
       )}
-
 
       {/* Header */}
       <div className="patient-payments-header">
@@ -764,7 +723,6 @@ function PatientSuccessfulPayments() {
           </button>
         </div>
       </div>
-
 
       {/* Report Generation Section */}
       <div className="report-generation-section" style={{margin: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '5px', border: '1px solid #dee2e6'}}>
@@ -811,7 +769,6 @@ function PatientSuccessfulPayments() {
         </div>
       </div>
 
-
       {/* Summary */}
       <div className="success-summary">
         <div className="summary-card">
@@ -820,10 +777,9 @@ function PatientSuccessfulPayments() {
         </div>
         <div className="summary-card">
           <MdPayment size={32} />
-          <div><h3>${totalRevenue.toLocaleString()}</h3><p>Total Revenue</p></div>
+          <div><h3>LKR {totalRevenue.toLocaleString()}</h3><p>Total Revenue</p></div>
         </div>
       </div>
-
 
       {/* Filters */}
       <div className="search-filter-section">
@@ -844,9 +800,7 @@ function PatientSuccessfulPayments() {
         </div>
       </div>
 
-
       {message && <div className="status-message">{message}</div>}
-
 
       {/* Table */}
       <div className="payments-table-container">
@@ -864,8 +818,8 @@ function PatientSuccessfulPayments() {
               filtered.map((a) => (
                 <tr key={a._id}>
                   <td>{renderDetails(a)}</td>
-                  <td>${a.totalAmount.toLocaleString()}</td>
-                  <td>${a.amountPaid.toLocaleString()}</td>
+                  <td>LKR {a.totalAmount.toLocaleString()}</td>
+                  <td>LKR {a.amountPaid.toLocaleString()}</td>
                   <td>
                     <button 
                       className="btn-receipt"
@@ -914,6 +868,5 @@ function PatientSuccessfulPayments() {
     </div>
   );
 }
-
 
 export default PatientSuccessfulPayments;
