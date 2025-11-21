@@ -38,26 +38,27 @@ const useFormValidation = () => {
         }
         break;
 
-      case 'vendor_name':
-        if (!value || value.trim() === '') {
-          error = 'Vendor name is required';
-        } else if (!/^[a-zA-Z\s]+LKR /.test(value.trim())) {
-          error = 'Vendor name must contain only letters and spaces';
-        } else if (value.trim().length < 2) {
-          error = 'Vendor name must be at least 2 characters long';
-        } else if (value.trim().length > 50) {
-          error = 'Vendor name cannot exceed 50 characters';
-        }
-        break;
+case 'vendor_name':
+  if (!value || value.trim() === '') {
+    error = 'Vendor name is required';
+  } else if (!/^[a-zA-Z\s]+$/.test(value.trim())) {  // FIXED: Removed "LKR "
+    error = 'Vendor name must contain only letters and spaces';
+  } else if (value.trim().length < 2) {
+    error = 'Vendor name must be at least 2 characters long';
+  } else if (value.trim().length > 50) {
+    error = 'Vendor name cannot exceed 50 characters';
+  }
+  break;
 
-      case 'invoice_number':
-        if (value && value.trim() !== '') {
-          const cleanValue = value.trim();
-          if (!/^[a-zA-Z0-9]{6}LKR /.test(cleanValue)) {
-            error = 'Invoice number must be exactly 6 characters (letters and numbers only)';
-          }
-        }
-        break;
+case 'invoice_number':
+  if (value && value.trim() !== '') {
+    const cleanValue = value.trim();
+    if (!/^[a-zA-Z0-9]{6}$/.test(cleanValue)) {  // FIXED: Removed "LKR "
+      error = 'Invoice number must be exactly 6 characters (letters and numbers only)';
+    }
+  }
+  break;
+
 
       case 'billing_period_start':
         if (!value) {
